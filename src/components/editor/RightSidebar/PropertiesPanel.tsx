@@ -1,0 +1,140 @@
+import { useUIStore } from '../../../stores/uiStore'
+import { useElementsStore } from '../../../stores/elementsStore'
+import { isTableElement } from '../../../types/elements'
+import { computeSeatPositions } from '../../../lib/seatLayout'
+import type { TableElement } from '../../../types/elements'
+
+export function PropertiesPanel() {
+  const selectedIds = useUIStore((s) => s.selectedIds)
+  const elements = useElementsStore((s) => s.elements)
+  const updateElement = useElementsStore((s) => s.updateElement)
+
+  if (selectedIds.length === 0) {
+    return <div className="text-sm text-gray-400 text-center py-8">Select an element to see its properties</div>
+  }
+
+  if (selectedIds.length > 1) {
+    return <div className="text-sm text-gray-500 text-center py-8">{selectedIds.length} elements selected</div>
+  }
+
+  const el = elements[selectedIds[0]]
+  if (!el) return null
+
+  const update = (updates: Record<string, unknown>) => updateElement(el.id, updates)
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <label className="text-xs font-medium text-gray-500 mb-1 block">Label</label>
+        <input
+          className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400"
+          value={el.label}
+          onChange={(e) => update({ label: e.target.value })}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="text-xs font-medium text-gray-500 mb-1 block">X</label>
+          <input
+            type="number"
+            className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400"
+            value={Math.round(el.x)}
+            onChange={(e) => update({ x: Number(e.target.value) })}
+          />
+        </div>
+        <div>
+          <label className="text-xs font-medium text-gray-500 mb-1 block">Y</label>
+          <input
+            type="number"
+            className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400"
+            value={Math.round(el.y)}
+            onChange={(e) => update({ y: Number(e.target.value) })}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="text-xs font-medium text-gray-500 mb-1 block">Width</label>
+          <input
+            type="number"
+            className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400"
+            value={Math.round(el.width)}
+            onChange={(e) => update({ width: Number(e.target.value) })}
+          />
+        </div>
+        <div>
+          <label className="text-xs font-medium text-gray-500 mb-1 block">Height</label>
+          <input
+            type="number"
+            className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400"
+            value={Math.round(el.height)}
+            onChange={(e) => update({ height: Number(e.target.value) })}
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="text-xs font-medium text-gray-500 mb-1 block">Rotation</label>
+        <input
+          type="number"
+          className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400"
+          value={Math.round(el.rotation)}
+          onChange={(e) => update({ rotation: Number(e.target.value) % 360 })}
+          min={0}
+          max={359}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="text-xs font-medium text-gray-500 mb-1 block">Fill</label>
+          <input
+            type="color"
+            className="w-full h-8 border border-gray-200 rounded cursor-pointer"
+            value={el.style.fill}
+            onChange={(e) => update({ style: { ...el.style, fill: e.target.value } })}
+          />
+        </div>
+        <div>
+          <label className="text-xs font-medium text-gray-500 mb-1 block">Stroke</label>
+          <input
+            type="color"
+            className="w-full h-8 border border-gray-200 rounded cursor-pointer"
+            value={el.style.stroke}
+            onChange={(e) => update({ style: { ...el.style, stroke: e.target.value } })}
+          />
+        </div>
+      </div>
+
+      {isTableElement(el) && (
+        <div>
+          <label className="text-xs font-medium text-gray-500 mb-1 block">Seats</label>
+          <input
+            type="number"
+            className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400"
+            value={el.seatCount}
+            min={1}
+            max={30}
+            onChange={(e) => {
+              const count = Number(e.target.value)
+              const seats = computeSeatPositions(el.type, count, el.seatLayout, el.width, el.height)
+              update({ seatCount: count, seats } as Partial<TableElement>)
+            }}
+          />
+        </div>
+      )}
+
+      <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={el.locked}
+          onChange={(e) => update({ locked: e.target.checked })}
+          className="rounded"
+        />
+        Locked
+      </label>
+    </div>
+  )
+}
