@@ -9,9 +9,15 @@ import { ContextMenu } from './ContextMenu'
 import { CSVImportDialog } from './RightSidebar/CSVImportDialog'
 import { ExportDialog } from './ExportDialog'
 import { NewProjectModal } from '../dashboard/NewProjectModal'
+import { ShareModal } from './ShareModal'
+import { Minimap } from './Minimap'
 import { useUIStore } from '../../stores/uiStore'
 import { useProjectStore } from '../../stores/projectStore'
+import { useElementsStore } from '../../stores/elementsStore'
+import { useSeatingStore } from '../../stores/seatingStore'
+import { useCanvasStore } from '../../stores/canvasStore'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
+import { useAutoSave, loadAutoSave } from '../../hooks/useAutoSave'
 import { useEffect } from 'react'
 
 export function EditorPage() {
@@ -21,17 +27,27 @@ export function EditorPage() {
   const currentProject = useProjectStore((s) => s.currentProject)
 
   useKeyboardShortcuts()
+  useAutoSave()
 
   useEffect(() => {
     if (!currentProject) {
-      createNewProject()
+      const saved = loadAutoSave()
+      if (saved && saved.project) {
+        useProjectStore.getState().setCurrentProject(saved.project)
+        useElementsStore.getState().setElements(saved.elements || {})
+        useSeatingStore.getState().setGuests(saved.guests || {})
+        if (saved.settings) useCanvasStore.getState().setSettings(saved.settings)
+      } else {
+        createNewProject()
+      }
     }
-  }, [currentProject, createNewProject])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (presentationMode) {
     return (
       <div className="w-screen h-screen bg-white">
         <CanvasStage />
+        <KeyboardShortcutsOverlay />
       </div>
     )
   }
@@ -48,6 +64,7 @@ export function EditorPage() {
         <div className="flex-1 relative bg-gray-100 overflow-hidden">
           <CanvasStage />
           <StatusBar />
+          <Minimap />
         </div>
         {rightSidebarOpen && (
           <div className="w-[320px] flex-shrink-0 bg-white border-l border-gray-200 overflow-y-auto">
@@ -60,6 +77,7 @@ export function EditorPage() {
       <CSVImportDialog />
       <ExportDialog />
       <NewProjectModal />
+      <ShareModal />
     </div>
   )
 }
