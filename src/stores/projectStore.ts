@@ -20,7 +20,7 @@ interface ProjectState {
   createNewProject: (name?: string) => Project
 }
 
-export const useProjectStore = create<ProjectState>((set, get) => ({
+export const useProjectStore = create<ProjectState>((set, _get) => ({
   currentProject: null,
   versions: [],
   isDirty: false,

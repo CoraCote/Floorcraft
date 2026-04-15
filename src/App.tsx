@@ -1,10 +1,12 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { EditorPage } from './components/editor/EditorPage'
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<div className="flex items-center justify-center h-screen text-2xl font-bold">Floocraft</div>} />
+        <Route path="/" element={<Navigate to="/project/new" replace />} />
+        <Route path="/project/:slug" element={<EditorPage />} />
       </Routes>
     </BrowserRouter>
   )
