@@ -7,6 +7,8 @@ import { CanvasStage } from './Canvas/CanvasStage'
 import { KeyboardShortcutsOverlay } from './KeyboardShortcutsOverlay'
 import { ContextMenu } from './ContextMenu'
 import { CSVImportDialog } from './RightSidebar/CSVImportDialog'
+import { ExportDialog } from './ExportDialog'
+import { NewProjectModal } from '../dashboard/NewProjectModal'
 import { useUIStore } from '../../stores/uiStore'
 import { useProjectStore } from '../../stores/projectStore'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
@@ -56,6 +58,8 @@ export function EditorPage() {
       <ContextMenu />
       <KeyboardShortcutsOverlay />
       <CSVImportDialog />
+      <ExportDialog />
+      <NewProjectModal />
     </div>
   )
 }
