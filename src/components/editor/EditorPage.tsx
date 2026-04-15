@@ -4,8 +4,11 @@ import { ElementLibrary } from './LeftSidebar/ElementLibrary'
 import { RightSidebar } from './RightSidebar/RightSidebar'
 import { StatusBar } from './StatusBar'
 import { CanvasStage } from './Canvas/CanvasStage'
+import { KeyboardShortcutsOverlay } from './KeyboardShortcutsOverlay'
+import { ContextMenu } from './ContextMenu'
 import { useUIStore } from '../../stores/uiStore'
 import { useProjectStore } from '../../stores/projectStore'
+import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 import { useEffect } from 'react'
 
 export function EditorPage() {
@@ -13,6 +16,8 @@ export function EditorPage() {
   const presentationMode = useUIStore((s) => s.presentationMode)
   const createNewProject = useProjectStore((s) => s.createNewProject)
   const currentProject = useProjectStore((s) => s.currentProject)
+
+  useKeyboardShortcuts()
 
   useEffect(() => {
     if (!currentProject) {
@@ -47,6 +52,8 @@ export function EditorPage() {
           </div>
         )}
       </div>
+      <ContextMenu />
+      <KeyboardShortcutsOverlay />
     </div>
   )
 }
