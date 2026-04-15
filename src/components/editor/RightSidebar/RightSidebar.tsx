@@ -1,4 +1,6 @@
 import { useUIStore } from '../../../stores/uiStore'
+import { GuestListPanel } from './GuestListPanel'
+import { PropertiesPanel } from './PropertiesPanel'
 
 export function RightSidebar() {
   const tab = useUIStore((s) => s.rightSidebarTab)
@@ -29,12 +31,10 @@ export function RightSidebar() {
         ))}
       </div>
       <div className="flex-1 overflow-y-auto p-3">
-        <div className="text-sm text-gray-400">
-          {tab === 'properties' && 'Select an element to see its properties'}
-          {tab === 'guests' && 'Guest list panel'}
-          {tab === 'comments' && 'Comments panel'}
-          {tab === 'versions' && 'Version history panel'}
-        </div>
+        {tab === 'properties' && <PropertiesPanel />}
+        {tab === 'guests' && <GuestListPanel />}
+        {tab === 'comments' && <div className="text-sm text-gray-400">Comments panel</div>}
+        {tab === 'versions' && <div className="text-sm text-gray-400">Version history panel</div>}
       </div>
     </div>
   )

@@ -6,6 +6,7 @@ import { StatusBar } from './StatusBar'
 import { CanvasStage } from './Canvas/CanvasStage'
 import { KeyboardShortcutsOverlay } from './KeyboardShortcutsOverlay'
 import { ContextMenu } from './ContextMenu'
+import { CSVImportDialog } from './RightSidebar/CSVImportDialog'
 import { useUIStore } from '../../stores/uiStore'
 import { useProjectStore } from '../../stores/projectStore'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
@@ -54,6 +55,7 @@ export function EditorPage() {
       </div>
       <ContextMenu />
       <KeyboardShortcutsOverlay />
+      <CSVImportDialog />
     </div>
   )
 }
