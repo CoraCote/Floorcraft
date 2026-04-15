@@ -2,9 +2,10 @@ import { useSeatingStore } from '../../../stores/seatingStore'
 import { useUIStore } from '../../../stores/uiStore'
 import { useState } from 'react'
 import { Search, Plus, Upload, Users, X } from 'lucide-react'
+import { useShallow } from 'zustand/react/shallow'
 
 export function GuestListPanel() {
-  const { searchQuery, setSearchQuery, sortBy, setSortBy, addGuest, removeGuest, getFilteredGuests, getAssignedCount } = useSeatingStore()
+  const { searchQuery, setSearchQuery, sortBy, setSortBy, addGuest, removeGuest, getFilteredGuests, getAssignedCount } = useSeatingStore(useShallow((s) => ({ searchQuery: s.searchQuery, setSearchQuery: s.setSearchQuery, sortBy: s.sortBy, setSortBy: s.setSortBy, addGuest: s.addGuest, removeGuest: s.removeGuest, getFilteredGuests: s.getFilteredGuests, getAssignedCount: s.getAssignedCount })))
   const setCsvImportOpen = useUIStore((s) => s.setCsvImportOpen)
   const guests = getFilteredGuests()
   const totalGuests = Object.keys(useSeatingStore.getState().guests).length

@@ -3,6 +3,7 @@ import { useRef, useCallback, useState, useEffect } from 'react'
 import type Konva from 'konva'
 import { useCanvasStore } from '../../../stores/canvasStore'
 import { useUIStore } from '../../../stores/uiStore'
+import { useShallow } from 'zustand/react/shallow'
 import { GridLayer } from './GridLayer'
 import { ElementRenderer } from './ElementRenderer'
 import { SelectionOverlay } from './SelectionOverlay'
@@ -16,8 +17,8 @@ export function CanvasStage() {
   const containerRef = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ width: 800, height: 600 })
 
-  const { stageX, stageY, stageScale, setStagePosition, setStageScale, activeTool } = useCanvasStore()
-  const { clearSelection, setContextMenu } = useUIStore()
+  const { stageX, stageY, stageScale, setStagePosition, setStageScale, activeTool } = useCanvasStore(useShallow((s) => ({ stageX: s.stageX, stageY: s.stageY, stageScale: s.stageScale, setStagePosition: s.setStagePosition, setStageScale: s.setStageScale, activeTool: s.activeTool })))
+  const { clearSelection, setContextMenu } = useUIStore(useShallow((s) => ({ clearSelection: s.clearSelection, setContextMenu: s.setContextMenu })))
   const { wallDrawingState, handleCanvasClick, handleCanvasMouseMove, handleCanvasDoubleClick } = useWallDrawing()
 
   useEffect(() => {

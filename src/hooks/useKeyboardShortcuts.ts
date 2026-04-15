@@ -2,12 +2,13 @@ import { useEffect } from 'react'
 import { useElementsStore } from '../stores/elementsStore'
 import { useCanvasStore } from '../stores/canvasStore'
 import { useUIStore } from '../stores/uiStore'
+import { useShallow } from 'zustand/react/shallow'
 
 export function useKeyboardShortcuts() {
-  const { selectedIds, clearSelection, setPresentationMode, presentationMode, setShortcutsOverlayOpen } = useUIStore()
-  const { removeElements, duplicateElements, moveElements, groupElements, ungroupElements } = useElementsStore()
+  const { selectedIds, clearSelection, setPresentationMode, presentationMode, setShortcutsOverlayOpen } = useUIStore(useShallow((s) => ({ selectedIds: s.selectedIds, clearSelection: s.clearSelection, setPresentationMode: s.setPresentationMode, presentationMode: s.presentationMode, setShortcutsOverlayOpen: s.setShortcutsOverlayOpen })))
+  const { removeElements, duplicateElements, moveElements, groupElements, ungroupElements } = useElementsStore(useShallow((s) => ({ removeElements: s.removeElements, duplicateElements: s.duplicateElements, moveElements: s.moveElements, groupElements: s.groupElements, ungroupElements: s.ungroupElements })))
   const elements = useElementsStore((s) => s.elements)
-  const { setActiveTool, toggleGrid, zoomIn, zoomOut, resetZoom } = useCanvasStore()
+  const { setActiveTool, toggleGrid, zoomIn, zoomOut, resetZoom } = useCanvasStore(useShallow((s) => ({ setActiveTool: s.setActiveTool, toggleGrid: s.toggleGrid, zoomIn: s.zoomIn, zoomOut: s.zoomOut, resetZoom: s.resetZoom })))
   const undo = useElementsStore.temporal.getState().undo
   const redo = useElementsStore.temporal.getState().redo
 

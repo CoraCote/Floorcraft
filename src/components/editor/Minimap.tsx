@@ -1,13 +1,14 @@
 import { useElementsStore } from '../../stores/elementsStore'
 import { useCanvasStore } from '../../stores/canvasStore'
 import { useMemo, useCallback, useRef } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 
 const MINIMAP_WIDTH = 180
 const MINIMAP_HEIGHT = 120
 
 export function Minimap() {
   const elements = useElementsStore((s) => s.elements)
-  const { stageX, stageY, stageScale, setStagePosition } = useCanvasStore()
+  const { stageX, stageY, stageScale, setStagePosition } = useCanvasStore(useShallow((s) => ({ stageX: s.stageX, stageY: s.stageY, stageScale: s.stageScale, setStagePosition: s.setStagePosition })))
   const ref = useRef<HTMLDivElement>(null)
 
   // Compute bounding box of all elements

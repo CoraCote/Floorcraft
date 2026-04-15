@@ -2,6 +2,7 @@ import { useUIStore } from '../../stores/uiStore'
 import { useElementsStore } from '../../stores/elementsStore'
 import { useCanvasStore } from '../../stores/canvasStore'
 import { useEffect, useRef } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 
 export function ContextMenu() {
   const contextMenu = useUIStore((s) => s.contextMenu)
@@ -9,7 +10,7 @@ export function ContextMenu() {
   const selectedIds = useUIStore((s) => s.selectedIds)
   const setSelectedIds = useUIStore((s) => s.setSelectedIds)
   const setEditingLabelId = useUIStore((s) => s.setEditingLabelId)
-  const { removeElements, duplicateElements, bringToFront, sendToBack, bringForward, sendBackward, groupElements, ungroupElements, updateElement } = useElementsStore()
+  const { removeElements, duplicateElements, bringToFront, sendToBack, bringForward, sendBackward, groupElements, ungroupElements, updateElement } = useElementsStore(useShallow((s) => ({ removeElements: s.removeElements, duplicateElements: s.duplicateElements, bringToFront: s.bringToFront, sendToBack: s.sendToBack, bringForward: s.bringForward, sendBackward: s.sendBackward, groupElements: s.groupElements, ungroupElements: s.ungroupElements, updateElement: s.updateElement })))
   const elements = useElementsStore((s) => s.elements)
   const ref = useRef<HTMLDivElement>(null)
 

@@ -1,5 +1,6 @@
 import { Layer, Line } from 'react-konva'
 import { useCanvasStore } from '../../../stores/canvasStore'
+import { useShallow } from 'zustand/react/shallow'
 
 interface GridLayerProps {
   width: number
@@ -7,7 +8,7 @@ interface GridLayerProps {
 }
 
 export function GridLayer({ width, height }: GridLayerProps) {
-  const { stageX, stageY, stageScale, settings } = useCanvasStore()
+  const { stageX, stageY, stageScale, settings } = useCanvasStore(useShallow((s) => ({ stageX: s.stageX, stageY: s.stageY, stageScale: s.stageScale, settings: s.settings })))
 
   if (!settings.showGrid) return null
 

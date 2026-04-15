@@ -2,6 +2,7 @@ import { Layer, Group } from 'react-konva'
 import { useElementsStore } from '../../../stores/elementsStore'
 import { useUIStore } from '../../../stores/uiStore'
 import { useCanvasStore } from '../../../stores/canvasStore'
+import { useShallow } from 'zustand/react/shallow'
 import { isTableElement, isWallElement } from '../../../types/elements'
 import { TableRenderer } from './TableRenderer'
 import { FurnitureRenderer } from './FurnitureRenderer'
@@ -13,7 +14,7 @@ import { snapToGrid } from '../../../lib/geometry'
 export function ElementRenderer() {
   const elements = useElementsStore((s) => s.elements)
   const updateElement = useElementsStore((s) => s.updateElement)
-  const { setSelectedIds, toggleSelection, setContextMenu } = useUIStore()
+  const { setSelectedIds, toggleSelection, setContextMenu } = useUIStore(useShallow((s) => ({ setSelectedIds: s.setSelectedIds, toggleSelection: s.toggleSelection, setContextMenu: s.setContextMenu })))
   const activeTool = useCanvasStore((s) => s.activeTool)
   const gridSize = useCanvasStore((s) => s.settings.gridSize)
   const showGrid = useCanvasStore((s) => s.settings.showGrid)

@@ -2,6 +2,7 @@ import { useProjectStore } from '../../stores/projectStore'
 import { useCanvasStore } from '../../stores/canvasStore'
 import { useUIStore } from '../../stores/uiStore'
 import { useElementsStore } from '../../stores/elementsStore'
+import { useShallow } from 'zustand/react/shallow'
 import {
   Undo2, Redo2, ZoomIn, ZoomOut, Share2, Download,
   Maximize2, PanelRightOpen, PanelRightClose
@@ -11,8 +12,8 @@ import { useState, useRef, useEffect } from 'react'
 export function TopBar() {
   const project = useProjectStore((s) => s.currentProject)
   const updateName = useProjectStore((s) => s.updateProjectName)
-  const { stageScale, zoomIn, zoomOut, resetZoom } = useCanvasStore()
-  const { rightSidebarOpen, setRightSidebarOpen, setShareModalOpen, setExportDialogOpen, setPresentationMode } = useUIStore()
+  const { stageScale, zoomIn, zoomOut, resetZoom } = useCanvasStore(useShallow((s) => ({ stageScale: s.stageScale, zoomIn: s.zoomIn, zoomOut: s.zoomOut, resetZoom: s.resetZoom })))
+  const { rightSidebarOpen, setRightSidebarOpen, setShareModalOpen, setExportDialogOpen, setPresentationMode } = useUIStore(useShallow((s) => ({ rightSidebarOpen: s.rightSidebarOpen, setRightSidebarOpen: s.setRightSidebarOpen, setShareModalOpen: s.setShareModalOpen, setExportDialogOpen: s.setExportDialogOpen, setPresentationMode: s.setPresentationMode })))
   const undo = useElementsStore.temporal.getState().undo
   const redo = useElementsStore.temporal.getState().redo
 
