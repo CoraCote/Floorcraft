@@ -2,9 +2,10 @@ import { Layer, Group } from 'react-konva'
 import { useElementsStore } from '../../../stores/elementsStore'
 import { useUIStore } from '../../../stores/uiStore'
 import { useCanvasStore } from '../../../stores/canvasStore'
-import { isTableElement } from '../../../types/elements'
+import { isTableElement, isWallElement } from '../../../types/elements'
 import { TableRenderer } from './TableRenderer'
 import { FurnitureRenderer } from './FurnitureRenderer'
+import { WallRenderer } from './WallRenderer'
 import { useCallback } from 'react'
 import type Konva from 'konva'
 import { snapToGrid } from '../../../lib/geometry'
@@ -65,6 +66,7 @@ export function ElementRenderer() {
         return (
           <Group
             key={el.id}
+            id={`element-${el.id}`}
             draggable={draggable}
             onDragEnd={(e) => handleDragEnd(el.id, e)}
             onClick={(e) => handleClick(el.id, e)}
@@ -73,6 +75,8 @@ export function ElementRenderer() {
           >
             {isTableElement(el) ? (
               <TableRenderer element={el} />
+            ) : isWallElement(el) ? (
+              <WallRenderer element={el} />
             ) : (
               <FurnitureRenderer element={el} />
             )}
