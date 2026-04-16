@@ -13,11 +13,14 @@ export type ElementType =
   | 'counter'
   | 'table-rect'
   | 'table-conference'
+  | 'table-round'       // NEW
+  | 'table-oval'        // NEW
   | 'divider'
   | 'planter'
   | 'custom-shape'
   | 'text-label'
   | 'background-image'
+  | 'decor'             // NEW
 
 export interface ElementStyle {
   fill: string
@@ -72,7 +75,7 @@ export interface SeatPosition {
   assignedGuestId: string | null
 }
 
-export type TableType = 'table-rect' | 'table-conference'
+export type TableType = 'table-rect' | 'table-conference' | 'table-round' | 'table-oval'
 
 export interface TableElement extends BaseElement {
   type: TableType
@@ -91,6 +94,7 @@ export interface BackgroundImageElement extends BaseElement {
 // Assignable elements (have seats for employees)
 export interface DeskElement extends BaseElement {
   type: 'desk' | 'hot-desk'
+  shape?: 'straight' | 'l-shape' | 'cubicle'   // optional; undefined === 'straight'
   deskId: string           // e.g., "D-101"
   assignedEmployeeId: string | null
   capacity: 1
@@ -105,6 +109,7 @@ export interface WorkstationElement extends BaseElement {
 
 export interface PrivateOfficeElement extends BaseElement {
   type: 'private-office'
+  shape?: 'rectangular' | 'u-shape'   // optional; undefined === 'rectangular'
   deskId: string
   capacity: 1 | 2
   assignedEmployeeIds: string[]
@@ -126,6 +131,22 @@ export interface CommonAreaElement extends BaseElement {
   areaName: string       // e.g., "Kitchen", "Lounge"
 }
 
+export type DecorShape =
+  | 'armchair'
+  | 'couch'
+  | 'reception'
+  | 'kitchen-counter'
+  | 'fridge'
+  | 'whiteboard'
+  | 'column'
+  | 'stairs'
+  | 'elevator'
+
+export interface DecorElement extends BaseElement {
+  type: 'decor'
+  shape: DecorShape
+}
+
 export type CanvasElement =
   | WallElement
   | DoorElement
@@ -138,6 +159,7 @@ export type CanvasElement =
   | ConferenceRoomElement
   | PhoneBoothElement
   | CommonAreaElement
+  | DecorElement           // NEW
   | BaseElement
 
 export function isWallElement(el: CanvasElement): el is WallElement {
@@ -153,7 +175,12 @@ export function isWindowElement(el: CanvasElement): el is WindowElement {
 }
 
 export function isTableElement(el: CanvasElement): el is TableElement {
-  return el.type === 'table-rect' || el.type === 'table-conference'
+  return (
+    el.type === 'table-rect' ||
+    el.type === 'table-conference' ||
+    el.type === 'table-round' ||
+    el.type === 'table-oval'
+  )
 }
 
 export function isBackgroundImageElement(el: CanvasElement): el is BackgroundImageElement {
@@ -182,4 +209,8 @@ export function isCommonAreaElement(el: CanvasElement): el is CommonAreaElement 
 
 export function isAssignableElement(el: CanvasElement): el is DeskElement | WorkstationElement | PrivateOfficeElement {
   return el.type === 'desk' || el.type === 'hot-desk' || el.type === 'workstation' || el.type === 'private-office'
+}
+
+export function isDecorElement(el: CanvasElement): el is DecorElement {
+  return el.type === 'decor'
 }
