@@ -27,7 +27,13 @@ export function CanvasStage() {
   const { clearSelection, setContextMenu } = useUIStore(useShallow((s) => ({ clearSelection: s.clearSelection, setContextMenu: s.setContextMenu })))
   const orgChartOverlayEnabled = useUIStore((s) => s.orgChartOverlayEnabled)
   const seatMapColorMode = useUIStore((s) => s.seatMapColorMode)
-  const { wallDrawingState, handleCanvasClick, handleCanvasMouseMove, handleCanvasDoubleClick } = useWallDrawing()
+  const {
+    wallDrawingState,
+    handleCanvasMouseDown: onWallMouseDown,
+    handleCanvasMouseMove,
+    handleCanvasMouseUp: onWallMouseUp,
+    handleCanvasDoubleClick,
+  } = useWallDrawing()
 
   useEffect(() => {
     const container = containerRef.current
@@ -96,7 +102,7 @@ export function CanvasStage() {
         if (!pointer) return
         const canvasX = (pointer.x - stageX) / stageScale
         const canvasY = (pointer.y - stageY) / stageScale
-        handleCanvasClick(canvasX, canvasY)
+        onWallMouseDown(canvasX, canvasY)
         return
       }
 
@@ -105,7 +111,7 @@ export function CanvasStage() {
         setContextMenu(null)
       }
     },
-    [activeTool, clearSelection, setContextMenu, stageX, stageY, stageScale, handleCanvasClick]
+    [activeTool, clearSelection, setContextMenu, stageX, stageY, stageScale, onWallMouseDown]
   )
 
   const handleMouseMove = useCallback(
@@ -132,7 +138,16 @@ export function CanvasStage() {
 
   const handleMouseUp = useCallback(() => {
     isPanning.current = false
-  }, [])
+    if (activeTool === 'wall') {
+      const stage = stageRef.current
+      if (!stage) return
+      const pointer = stage.getPointerPosition()
+      if (!pointer) return
+      const canvasX = (pointer.x - stageX) / stageScale
+      const canvasY = (pointer.y - stageY) / stageScale
+      onWallMouseUp(canvasX, canvasY)
+    }
+  }, [activeTool, stageX, stageY, stageScale, onWallMouseUp])
 
   const cursor = activeTool === 'pan' ? 'grab' : activeTool === 'wall' ? 'crosshair' : 'default'
 

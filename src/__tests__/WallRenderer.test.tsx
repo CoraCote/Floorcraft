@@ -43,7 +43,11 @@ beforeAll(() => {
     isPointInPath: () => false,
     canvas: { width: 0, height: 0 },
   } as unknown as CanvasRenderingContext2D
-  HTMLCanvasElement.prototype.getContext = () => mockCtx
+  // Cast through unknown: getContext is an overloaded signature returning
+  // different context types per id; this mock only covers '2d', which is
+  // all Konva needs.
+  HTMLCanvasElement.prototype.getContext = (() =>
+    mockCtx) as unknown as HTMLCanvasElement['getContext']
 })
 
 function wall(overrides: Partial<WallElement> = {}): WallElement {
