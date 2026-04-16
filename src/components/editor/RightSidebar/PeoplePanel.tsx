@@ -148,6 +148,7 @@ export function PeoplePanel() {
               disabled={!newName.trim()}
               className="p-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-40"
               title="Add employee"
+              aria-label="Add employee"
             >
               <Plus size={14} />
             </button>

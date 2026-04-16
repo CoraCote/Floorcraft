@@ -7,6 +7,7 @@ import { useFloorStore } from '../../stores/floorStore'
 import { exportProjectJson } from '../../lib/exportJson'
 import { exportEmployeeCSV } from '../../lib/csv'
 import { FileText, Table, FileJson, X } from 'lucide-react'
+import { useEffect } from 'react'
 
 export function ExportDialog() {
   const open = useUIStore((s) => s.exportDialogOpen)
@@ -16,6 +17,15 @@ export function ExportDialog() {
   const employees = useEmployeeStore((s) => s.employees)
   const settings = useCanvasStore((s) => s.settings)
   const floors = useFloorStore((s) => s.floors)
+
+  useEffect(() => {
+    if (!open) return
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [open, setOpen])
 
   if (!open) return null
 
@@ -68,7 +78,7 @@ export function ExportDialog() {
       <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Export</h2>
-          <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+          <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600" aria-label="Close export dialog"><X size={18} /></button>
         </div>
         <div className="flex flex-col gap-2">
           {exports.map((exp) => (

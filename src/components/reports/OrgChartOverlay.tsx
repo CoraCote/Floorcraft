@@ -17,8 +17,8 @@ export function OrgChartOverlay() {
     }))
   )
 
-  const lines = useMemo(() => {
-    if (!orgChartOverlayEnabled) return []
+  const { lines, crossFloorStubs } = useMemo(() => {
+    if (!orgChartOverlayEnabled) return { lines: [], crossFloorStubs: [] }
 
     const allEmployees = Object.values(employees)
     const floorEmployees = allEmployees.filter((e) => e.floorId === activeFloorId)
@@ -26,7 +26,12 @@ export function OrgChartOverlay() {
     // Build a quick lookup: employeeId -> employee
     const empMap = employees
 
-    const result: Array<{
+    const lines: Array<{
+      key: string
+      points: number[]
+      color: string
+    }> = []
+    const crossFloorStubs: Array<{
       key: string
       points: number[]
       color: string
@@ -36,24 +41,40 @@ export function OrgChartOverlay() {
       if (!emp.managerId || !emp.seatId) continue
 
       const manager = empMap[emp.managerId]
-      if (!manager || manager.floorId !== activeFloorId || !manager.seatId) continue
+      if (!manager || !manager.seatId) continue
 
       const empElement = floorElements[emp.seatId]
-      const mgrElement = floorElements[manager.seatId]
-      if (!empElement || !mgrElement) continue
+      if (!empElement) continue
 
-      // Elements use (x, y) as CENTER (renderers offset children by -width/2, -height/2)
-      result.push({
-        key: `${manager.id}-${emp.id}`,
-        points: [mgrElement.x, mgrElement.y, empElement.x, empElement.y],
-        color: manager.department ? getDepartmentColor(manager.department) : '#6B7280',
-      })
+      const color = manager.department ? getDepartmentColor(manager.department) : '#6B7280'
+
+      if (manager.floorId === activeFloorId) {
+        // Same floor — draw the org-line to the manager's seat if we can
+        // resolve it on this floor.
+        const mgrElement = floorElements[manager.seatId]
+        if (!mgrElement) continue
+
+        // Elements use (x, y) as CENTER (renderers offset children by -width/2, -height/2)
+        lines.push({
+          key: `${manager.id}-${emp.id}`,
+          points: [mgrElement.x, mgrElement.y, empElement.x, empElement.y],
+          color,
+        })
+      } else {
+        // Manager is on a different floor — surface a short dashed stub pointing
+        // up from the report's seat so the relationship isn't silently hidden.
+        crossFloorStubs.push({
+          key: `xfloor-${manager.id}-${emp.id}`,
+          points: [empElement.x, empElement.y, empElement.x, empElement.y - 20],
+          color,
+        })
+      }
     }
 
-    return result
+    return { lines, crossFloorStubs }
   }, [orgChartOverlayEnabled, activeFloorId, floorElements, employees, getDepartmentColor])
 
-  if (!orgChartOverlayEnabled || lines.length === 0) {
+  if (!orgChartOverlayEnabled || (lines.length === 0 && crossFloorStubs.length === 0)) {
     return null
   }
 
@@ -67,6 +88,16 @@ export function OrgChartOverlay() {
           strokeWidth={1.5}
           dash={[6, 4]}
           opacity={0.7}
+        />
+      ))}
+      {crossFloorStubs.map((stub) => (
+        <Line
+          key={stub.key}
+          points={stub.points}
+          stroke={stub.color}
+          strokeWidth={1.5}
+          dash={[2, 3]}
+          opacity={0.6}
         />
       ))}
     </Layer>

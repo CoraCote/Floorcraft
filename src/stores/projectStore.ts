@@ -47,7 +47,7 @@ export const useProjectStore = create<ProjectState>((set, _get) => ({
   createNewProject: (name) => {
     const defaultFloorId = nanoid()
     const project: Project = {
-      id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2),
+      id: nanoid(),
       ownerId: null,
       name: name || 'Untitled Office Plan',
       slug: generateSlug(),

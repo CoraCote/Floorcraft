@@ -1,7 +1,7 @@
 import { useUIStore } from '../../stores/uiStore'
 import { useProjectStore } from '../../stores/projectStore'
 import { X, Copy, Check } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export function ShareModal() {
   const open = useUIStore((s) => s.shareModalOpen)
@@ -9,6 +9,15 @@ export function ShareModal() {
   const project = useProjectStore((s) => s.currentProject)
   const updatePermission = useProjectStore((s) => s.updateSharePermission)
   const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    if (!open) return
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [open, setOpen])
 
   if (!open || !project) return null
 
@@ -26,7 +35,7 @@ export function ShareModal() {
       <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Share</h2>
-          <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+          <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600" aria-label="Close share dialog"><X size={18} /></button>
         </div>
 
         {/* Permission */}
@@ -75,6 +84,7 @@ export function ShareModal() {
             <button
               onClick={() => handleCopy(embedCode)}
               className="px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600"
+              aria-label="Copy embed code"
             >
               <Copy size={14} />
             </button>

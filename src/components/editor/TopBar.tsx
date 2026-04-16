@@ -66,10 +66,10 @@ export function TopBar() {
       <div className="w-px h-6 bg-gray-200" />
 
       <div className="flex items-center gap-1">
-        <button onClick={() => undo()} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" title="Undo (Ctrl+Z)">
+        <button onClick={() => undo()} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" title="Undo (Ctrl+Z)" aria-label="Undo">
           <Undo2 size={16} />
         </button>
-        <button onClick={() => redo()} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" title="Redo (Ctrl+Shift+Z)">
+        <button onClick={() => redo()} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" title="Redo (Ctrl+Shift+Z)" aria-label="Redo">
           <Redo2 size={16} />
         </button>
       </div>
@@ -77,7 +77,7 @@ export function TopBar() {
       <div className="w-px h-6 bg-gray-200" />
 
       <div className="flex items-center gap-1">
-        <button onClick={zoomOut} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" title="Zoom Out">
+        <button onClick={zoomOut} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" title="Zoom Out" aria-label="Zoom out">
           <ZoomOut size={16} />
         </button>
         <button
@@ -87,7 +87,7 @@ export function TopBar() {
         >
           {Math.round(stageScale * 100)}%
         </button>
-        <button onClick={zoomIn} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" title="Zoom In">
+        <button onClick={zoomIn} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" title="Zoom In" aria-label="Zoom in">
           <ZoomIn size={16} />
         </button>
       </div>
@@ -98,6 +98,7 @@ export function TopBar() {
         onClick={() => setPresentationMode(true)}
         className="p-1.5 rounded hover:bg-gray-100 text-gray-600"
         title="Presentation Mode (P)"
+        aria-label="Enter presentation mode"
       >
         <Maximize2 size={16} />
       </button>
@@ -106,6 +107,7 @@ export function TopBar() {
         onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
         className="p-1.5 rounded hover:bg-gray-100 text-gray-600"
         title="Toggle Right Sidebar"
+        aria-label={rightSidebarOpen ? 'Close right sidebar' : 'Open right sidebar'}
       >
         {rightSidebarOpen ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
       </button>

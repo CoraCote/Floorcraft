@@ -1,7 +1,7 @@
 import { useUIStore } from '../../../stores/uiStore'
 import { useEmployeeStore } from '../../../stores/employeeStore'
 import { parseEmployeeCSV } from '../../../lib/csv'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 
 export function CSVImportDialog() {
   const open = useUIStore((s) => s.csvImportOpen)
@@ -86,6 +86,15 @@ export function CSVImportDialog() {
     }
     reader.readAsText(file)
   }, [])
+
+  useEffect(() => {
+    if (!open) return
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [open, setOpen])
 
   if (!open) return null
 

@@ -4,6 +4,7 @@ import { useProjectStore } from '../../stores/projectStore'
 import { useCanvasStore } from '../../stores/canvasStore'
 import { TEMPLATES } from '../../data/templates'
 import { X } from 'lucide-react'
+import { useEffect } from 'react'
 
 export function NewProjectModal() {
   const open = useUIStore((s) => s.templatePickerOpen)
@@ -11,6 +12,15 @@ export function NewProjectModal() {
   const setElements = useElementsStore((s) => s.setElements)
   const createNewProject = useProjectStore((s) => s.createNewProject)
   const setSettings = useCanvasStore((s) => s.setSettings)
+
+  useEffect(() => {
+    if (!open) return
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [open, setOpen])
 
   if (!open) return null
 
@@ -35,7 +45,7 @@ export function NewProjectModal() {
       <div className="bg-white rounded-xl shadow-2xl p-6 max-w-2xl w-full mx-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">New Project</h2>
-          <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+          <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600" aria-label="Close new project dialog"><X size={18} /></button>
         </div>
         <p className="text-sm text-gray-500 mb-4">Choose an office template or start with a blank canvas</p>
         <div className="grid grid-cols-2 gap-3">
