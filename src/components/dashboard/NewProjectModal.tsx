@@ -37,7 +37,7 @@ export function NewProjectModal() {
           <h2 className="text-lg font-semibold">New Project</h2>
           <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
         </div>
-        <p className="text-sm text-gray-500 mb-4">Choose a template or start with a blank canvas</p>
+        <p className="text-sm text-gray-500 mb-4">Choose an office template or start with a blank canvas</p>
         <div className="grid grid-cols-2 gap-3">
           {TEMPLATES.map((t) => (
             <button

@@ -1,6 +1,6 @@
 import { useFloorStore } from '../../stores/floorStore'
 import { useElementsStore } from '../../stores/elementsStore'
-import { Plus, MoreHorizontal } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 

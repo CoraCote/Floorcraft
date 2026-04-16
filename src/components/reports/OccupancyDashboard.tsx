@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import { useEmployeeStore } from '../../stores/employeeStore'
 import { useFloorStore } from '../../stores/floorStore'
-import { useShallow } from 'zustand/react/shallow'
 import {
   isDeskElement,
   isWorkstationElement,

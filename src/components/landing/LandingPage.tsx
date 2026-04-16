@@ -31,14 +31,14 @@ export function LandingPage() {
           Floocraft
         </h1>
         <p className="text-xl text-gray-500 mb-8 max-w-2xl mx-auto">
-          Design floor plans, arrange furniture, and assign seats — all in one interactive tool.
-          Share with your team in real time.
+          Plan your office layout, manage employee seating, and track space utilization.
+          All in one interactive tool.
         </p>
         <button
           onClick={() => handleStart('blank')}
           className="px-8 py-3 bg-blue-600 text-white text-lg font-medium rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all"
         >
-          Create a Floor Plan
+          Create an Office Plan
         </button>
       </div>
 
@@ -62,7 +62,7 @@ export function LandingPage() {
 
       {/* Footer */}
       <div className="border-t border-gray-100 py-6 text-center text-sm text-gray-400">
-        Floocraft — Interactive floor plans & seating charts
+        Floocraft — Office layout & seat management
       </div>
     </div>
   )

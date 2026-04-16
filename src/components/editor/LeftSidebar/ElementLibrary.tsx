@@ -51,7 +51,6 @@ function isTableType(type: ElementType): type is TableType {
 export function ElementLibrary() {
   const addElement = useElementsStore((s) => s.addElement)
   const getMaxZIndex = useElementsStore((s) => s.getMaxZIndex)
-  const elements = useElementsStore((s) => s.elements)
   const stageScale = useCanvasStore((s) => s.stageScale)
   const stageX = useCanvasStore((s) => s.stageX)
   const stageY = useCanvasStore((s) => s.stageY)

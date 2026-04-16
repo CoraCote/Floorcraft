@@ -2,8 +2,6 @@ import { describe, it, expect } from 'vitest'
 import { analyzeUtilization } from '../../lib/analyzers/utilization'
 import type { AnalyzerInput } from '../../types/insights'
 import type { DeskElement } from '../../types/elements'
-import type { Employee } from '../../types/employee'
-
 function makeDeskElement(overrides: Partial<DeskElement> = {}): DeskElement {
   return {
     id: overrides.id || 'desk-1',
@@ -18,19 +16,6 @@ function makeDeskElement(overrides: Partial<DeskElement> = {}): DeskElement {
     zone: overrides.zone,
     ...overrides,
   } as DeskElement
-}
-
-function makeEmployee(overrides: Partial<Employee> = {}): Employee {
-  return {
-    id: overrides.id || 'emp-1',
-    name: overrides.name || 'Test Employee',
-    email: '', department: null, team: null, title: null,
-    managerId: null, employmentType: 'full-time', officeDays: [],
-    startDate: null, endDate: null, equipmentNeeds: [], equipmentStatus: 'not-needed',
-    photoUrl: null, tags: [], seatId: null, floorId: null,
-    createdAt: new Date().toISOString(),
-    ...overrides,
-  }
 }
 
 function makeInput(overrides: Partial<AnalyzerInput> = {}): AnalyzerInput {

@@ -10,16 +10,6 @@ import {
 } from '../../types/elements'
 import type { CanvasElement } from '../../types/elements'
 
-function getAssignedEmployeeIds(elements: Record<string, CanvasElement>): Set<string> {
-  const ids = new Set<string>()
-  for (const el of Object.values(elements)) {
-    if (isDeskElement(el)) {
-      if (el.assignedEmployeeId) ids.add(el.assignedEmployeeId)
-    }
-  }
-  return ids
-}
-
 function getOpenDesks(
   elements: Record<string, CanvasElement>,
   assignedSeatIds: Set<string>

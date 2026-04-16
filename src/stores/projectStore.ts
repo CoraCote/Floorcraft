@@ -2,7 +2,6 @@ import { create } from 'zustand'
 import { nanoid } from 'nanoid'
 import type { Project } from '../types/project'
 import { DEFAULT_CANVAS_SETTINGS } from '../types/project'
-import type { Floor } from '../types/floor'
 import { generateSlug } from '../lib/slug'
 
 interface ProjectState {

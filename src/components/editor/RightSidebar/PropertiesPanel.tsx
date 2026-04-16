@@ -8,7 +8,6 @@ import {
   isPrivateOfficeElement,
   isConferenceRoomElement,
   isCommonAreaElement,
-  isAssignableElement,
 } from '../../../types/elements'
 import { computeSeatPositions } from '../../../lib/seatLayout'
 import type { TableElement, DeskElement, WorkstationElement, PrivateOfficeElement, ConferenceRoomElement, CommonAreaElement } from '../../../types/elements'

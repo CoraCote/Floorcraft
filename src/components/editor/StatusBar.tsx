@@ -1,6 +1,4 @@
 import { useElementsStore } from '../../stores/elementsStore'
-import { useEmployeeStore } from '../../stores/employeeStore'
-import { useFloorStore } from '../../stores/floorStore'
 import { useMemo } from 'react'
 import {
   isDeskElement,
@@ -10,8 +8,6 @@ import {
 
 export function StatusBar() {
   const elements = useElementsStore((s) => s.elements)
-  const employees = useEmployeeStore((s) => s.employees)
-  const activeFloorId = useFloorStore((s) => s.activeFloorId)
 
   const { totalDesks, assignedDesks, openDesks, occupancyPct } = useMemo(() => {
     let totalDesks = 0

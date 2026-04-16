@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Layer, Line, Text, Rect } from 'react-konva'
+import { Layer, Line } from 'react-konva'
 import { useEmployeeStore } from '../../stores/employeeStore'
 import { useFloorStore } from '../../stores/floorStore'
 import { useUIStore } from '../../stores/uiStore'

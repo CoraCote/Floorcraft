@@ -1,8 +1,7 @@
 import { create } from 'zustand'
 import { temporal } from 'zundo'
 import { nanoid } from 'nanoid'
-import type { CanvasElement, TableElement, SeatPosition } from '../types/elements'
-import { isTableElement } from '../types/elements'
+import type { CanvasElement } from '../types/elements'
 import { UNDO_LIMIT } from '../lib/constants'
 
 interface ElementsState {
