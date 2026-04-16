@@ -1,4 +1,4 @@
-import { ELEMENT_DEFAULTS, TABLE_SEAT_DEFAULTS } from '../../../lib/constants'
+import { SHAPE_DEFAULTS, TABLE_SEAT_DEFAULTS, getDefaults } from '../../../lib/constants'
 import type {
   ElementType,
   TableType,
@@ -10,6 +10,8 @@ import type {
   ConferenceRoomElement,
   PhoneBoothElement,
   CommonAreaElement,
+  DecorElement,
+  DecorShape,
 } from '../../../types/elements'
 import { useElementsStore } from '../../../stores/elementsStore'
 import { useCanvasStore } from '../../../stores/canvasStore'
@@ -20,32 +22,56 @@ interface LibraryItem {
   type: ElementType
   label: string
   category: string
+  shape?: string    // NEW — optional shape override
 }
 
 const LIBRARY_ITEMS: LibraryItem[] = [
-  // Workspaces
-  { type: 'desk', label: 'Desk', category: 'Workspaces' },
-  { type: 'hot-desk', label: 'Hot Desk', category: 'Workspaces' },
-  { type: 'workstation', label: 'Workstation', category: 'Workspaces' },
-  { type: 'private-office', label: 'Private Office', category: 'Workspaces' },
+  // Tables
+  { type: 'table-rect',        label: 'Rect Table',     category: 'Tables' },
+  { type: 'table-conference',  label: 'Conf. Table',    category: 'Tables' },
+  { type: 'table-round',       label: 'Round Table',    category: 'Tables' },
+  { type: 'table-oval',        label: 'Oval Table',     category: 'Tables' },
+
+  // Desks
+  { type: 'desk',              label: 'Desk',           category: 'Desks' },
+  { type: 'hot-desk',          label: 'Hot Desk',       category: 'Desks' },
+  { type: 'desk',              label: 'L-Shape Desk',   category: 'Desks', shape: 'l-shape' },
+  { type: 'desk',              label: 'Cubicle',        category: 'Desks', shape: 'cubicle' },
+  { type: 'workstation',       label: 'Workstation',    category: 'Desks' },
+  { type: 'private-office',    label: 'Private Office', category: 'Desks' },
+  { type: 'private-office',    label: 'U-Shape Office', category: 'Desks', shape: 'u-shape' },
+
   // Rooms
-  { type: 'conference-room', label: 'Conference Room', category: 'Rooms' },
-  { type: 'phone-booth', label: 'Phone Booth', category: 'Rooms' },
-  { type: 'common-area', label: 'Common Area', category: 'Rooms' },
+  { type: 'conference-room',   label: 'Conference Room', category: 'Rooms' },
+  { type: 'phone-booth',       label: 'Phone Booth',     category: 'Rooms' },
+  { type: 'common-area',       label: 'Common Area',     category: 'Rooms' },
+
+  // Seating
+  { type: 'chair',             label: 'Office Chair',    category: 'Seating' },
+  { type: 'decor',             label: 'Armchair',        category: 'Seating', shape: 'armchair' },
+  { type: 'decor',             label: 'Couch',           category: 'Seating', shape: 'couch' },
+
   // Structure
-  { type: 'divider', label: 'Divider', category: 'Structure' },
-  { type: 'planter', label: 'Planter', category: 'Structure' },
+  { type: 'decor',             label: 'Column',          category: 'Structure', shape: 'column' },
+  { type: 'decor',             label: 'Stairs',          category: 'Structure', shape: 'stairs' },
+  { type: 'decor',             label: 'Elevator',        category: 'Structure', shape: 'elevator' },
+  { type: 'divider',           label: 'Divider',         category: 'Structure' },
+  { type: 'planter',           label: 'Planter',         category: 'Structure' },
+
+  // Facilities
+  { type: 'decor',             label: 'Reception Desk',  category: 'Facilities', shape: 'reception' },
+  { type: 'decor',             label: 'Kitchen Counter', category: 'Facilities', shape: 'kitchen-counter' },
+  { type: 'decor',             label: 'Fridge',          category: 'Facilities', shape: 'fridge' },
+  { type: 'decor',             label: 'Whiteboard',      category: 'Facilities', shape: 'whiteboard' },
+  { type: 'counter',           label: 'Counter',         category: 'Facilities' },
+
   // Other
-  { type: 'chair', label: 'Chair', category: 'Other' },
-  { type: 'counter', label: 'Counter', category: 'Other' },
-  { type: 'table-rect', label: 'Table', category: 'Other' },
-  { type: 'table-conference', label: 'Conference Table', category: 'Other' },
-  { type: 'custom-shape', label: 'Custom Shape', category: 'Other' },
-  { type: 'text-label', label: 'Text Label', category: 'Other' },
+  { type: 'custom-shape',      label: 'Custom Shape',    category: 'Other' },
+  { type: 'text-label',        label: 'Text Label',      category: 'Other' },
 ]
 
 function isTableType(type: ElementType): type is TableType {
-  return type === 'table-rect' || type === 'table-conference'
+  return type === 'table-rect' || type === 'table-conference' || type === 'table-round' || type === 'table-oval'
 }
 
 export function ElementLibrary() {
@@ -56,7 +82,7 @@ export function ElementLibrary() {
   const stageY = useCanvasStore((s) => s.stageY)
 
   const handleAddElement = (item: LibraryItem) => {
-    const defaults = ELEMENT_DEFAULTS[item.type] || { width: 60, height: 60, fill: '#F3F4F6', stroke: '#6B7280' }
+    const defaults = getDefaults(item.type, item.shape) || { width: 60, height: 60, fill: '#F3F4F6', stroke: '#6B7280' }
     const id = nanoid()
 
     const x = (-stageX + 400) / stageScale
@@ -79,7 +105,7 @@ export function ElementLibrary() {
 
     if (isTableType(item.type)) {
       const seatCount = TABLE_SEAT_DEFAULTS[item.type] || 6
-      const layout = item.type === 'table-conference' ? 'around' as const : 'both-sides' as const
+      const layout = item.type === 'table-conference' || item.type === 'table-round' || item.type === 'table-oval' ? 'around' as const : 'both-sides' as const
 
       const element: TableElement = {
         ...baseProps,
@@ -100,6 +126,7 @@ export function ElementLibrary() {
         deskId,
         assignedEmployeeId: null,
         capacity: 1,
+        ...(item.shape ? { shape: item.shape as DeskElement['shape'] } : {}),
       }
       addElement(element)
       return
@@ -124,8 +151,9 @@ export function ElementLibrary() {
         ...baseProps,
         type: 'private-office',
         deskId,
-        capacity: 1,
+        capacity: item.shape === 'u-shape' ? 2 : 1,
         assignedEmployeeIds: [],
+        ...(item.shape ? { shape: item.shape as PrivateOfficeElement['shape'] } : {}),
       }
       addElement(element)
       return
@@ -161,6 +189,16 @@ export function ElementLibrary() {
       return
     }
 
+    if (item.type === 'decor') {
+      const el: DecorElement = {
+        ...baseProps,
+        type: 'decor',
+        shape: item.shape as DecorShape,
+      } as DecorElement
+      addElement(el)
+      return
+    }
+
     // Default: generic BaseElement for chair, counter, divider, planter, custom-shape, text-label
     const element: BaseElement = {
       ...baseProps,
@@ -180,15 +218,15 @@ export function ElementLibrary() {
           <div className="grid grid-cols-2 gap-1">
             {LIBRARY_ITEMS.filter((i) => i.category === cat).map((item) => (
               <button
-                key={item.type}
+                key={`${item.type}${item.shape ? `-${item.shape}` : ''}-${item.label}`}
                 onClick={() => handleAddElement(item)}
                 className="flex items-center gap-1.5 px-2 py-1.5 text-xs text-gray-700 hover:bg-gray-100 rounded border border-gray-100 hover:border-gray-200 transition-colors"
               >
                 <div
                   className="w-5 h-4 rounded-sm border flex-shrink-0"
                   style={{
-                    backgroundColor: ELEMENT_DEFAULTS[item.type]?.fill || '#F3F4F6',
-                    borderColor: ELEMENT_DEFAULTS[item.type]?.stroke || '#6B7280',
+                    backgroundColor: (getDefaults(item.type, item.shape) || SHAPE_DEFAULTS[item.type])?.fill || '#F3F4F6',
+                    borderColor: (getDefaults(item.type, item.shape) || SHAPE_DEFAULTS[item.type])?.stroke || '#6B7280',
                   }}
                 />
                 <span className="truncate">{item.label}</span>

@@ -72,6 +72,8 @@ export const ELEMENT_DEFAULTS: Record<string, { width: number; height: number; f
 export const TABLE_SEAT_DEFAULTS: Record<string, number> = {
   'table-rect': 6,
   'table-conference': 14,
+  'table-round': 4,
+  'table-oval': 6,
 }
 
 /**
