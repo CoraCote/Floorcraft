@@ -1,3 +1,25 @@
+/**
+ * Arc math for walls.
+ *
+ * A wall is a polyline with optional per-segment bulges. `bulges[i]` is the
+ * signed perpendicular offset, in world units, from the midpoint of the chord
+ * (points[i*2..i*2+3]) to the midpoint of the arc. `0` (or an undefined/missing
+ * bulges array) = straight segment.
+ *
+ * **Sign convention (screen coordinates, y grows downward):**
+ *   For a chord going from (x0,y0) to (x1,y1) with `dx = x1-x0`, `dy = y1-y0`,
+ *   `c = hypot(dx,dy)`, the "left normal" unit vector is `(dy/c, -dx/c)`.
+ *   For a left-to-right horizontal chord this is `(0, -1)` — pointing UP on
+ *   screen. So a **positive bulge visually lifts the arc above the chord**.
+ *
+ * Every function in this file that resolves bulge → geometry (`arcFromBulge`,
+ * `segmentMidpoint`, `sampleArc`, `tangentAt`) uses this convention. Downstream
+ * code that computes a bulge from a pointer position MUST use the same form.
+ *
+ * **Half-circle clamp:** bulge magnitude is clamped to `chordLength/2` by
+ * upstream drawing/editing code, so every arc is at most a half-circle. This
+ * keeps `ArcGeometry.largeArc = 0` and avoids ambiguity in sweep direction.
+ */
 import type { Point } from './geometry'
 
 export interface WallSegment {
@@ -44,8 +66,8 @@ export function wallSegments(points: number[], bulges?: number[]): WallSegment[]
  *   - radius r = (c² + 4s²) / (8|s|)
  *   - perpendicular offset from chord midpoint to center = r - |s|,
  *     on the side opposite the bulge
- *   - "left normal" of chord direction: (-dy/c, dx/c) — points to the
- *     left when walking from (x0,y0) → (x1,y1)
+ *   - "left normal" of chord direction in screen coords (y-down): (dy/c, -dx/c)
+ *     — see the module header for the sign-convention discussion.
  */
 export function arcFromBulge(seg: WallSegment): ArcGeometry | null {
   if (seg.bulge === 0) return null

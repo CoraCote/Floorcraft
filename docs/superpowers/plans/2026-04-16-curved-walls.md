@@ -829,9 +829,11 @@ function signedPerpOffset(
   const dy = y1 - y0
   const c = Math.hypot(dx, dy)
   if (c === 0) return 0
-  // Left-normal unit: (-dy/c, dx/c)
-  const lnx = -dy / c
-  const lny = dx / c
+  // Left-normal unit in screen coords (y grows downward): (dy/c, -dx/c).
+  // Matches the convention in src/lib/wallPath.ts — positive bulge places
+  // the arc midpoint VISUALLY above a left-to-right chord.
+  const lnx = dy / c
+  const lny = -dx / c
   const mx = (x0 + x1) / 2
   const my = (y0 + y1) / 2
   return (px - mx) * lnx + (py - my) * lny
