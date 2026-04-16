@@ -39,6 +39,7 @@ export interface BaseElement {
   zIndex: number
   label: string
   visible: boolean
+  zone?: string
   style: ElementStyle
 }
 
