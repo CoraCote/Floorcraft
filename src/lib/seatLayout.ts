@@ -1,6 +1,47 @@
 import type { SeatPosition, TableType } from '../types/elements'
 import { nanoid } from 'nanoid'
 
+function computeRoundSeats(seatCount: number, width: number, height: number): SeatPosition[] {
+  // Inscribed circle: use min dimension / 2 plus a small offset for chair placement
+  const r = Math.min(width, height) / 2 + 8
+  const positions: SeatPosition[] = []
+  for (let i = 0; i < seatCount; i++) {
+    const angle = (i / seatCount) * Math.PI * 2 - Math.PI / 2
+    const offsetX = Math.cos(angle) * r
+    const offsetY = Math.sin(angle) * r
+    // Rotation points from seat toward center (0 = up, increases clockwise in Konva)
+    const rotation = ((angle * 180) / Math.PI + 90 + 180) % 360
+    positions.push({
+      id: `seat-${i}`,
+      offsetX,
+      offsetY,
+      rotation,
+      assignedGuestId: null,
+    })
+  }
+  return positions
+}
+
+function computeOvalSeats(seatCount: number, width: number, height: number): SeatPosition[] {
+  const rx = width / 2 + 10
+  const ry = height / 2 + 10
+  const positions: SeatPosition[] = []
+  for (let i = 0; i < seatCount; i++) {
+    const angle = (i / seatCount) * Math.PI * 2 - Math.PI / 2
+    const offsetX = Math.cos(angle) * rx
+    const offsetY = Math.sin(angle) * ry
+    const rotation = ((angle * 180) / Math.PI + 90 + 180) % 360
+    positions.push({
+      id: `seat-${i}`,
+      offsetX,
+      offsetY,
+      rotation,
+      assignedGuestId: null,
+    })
+  }
+  return positions
+}
+
 export function computeSeatPositions(
   tableType: TableType,
   seatCount: number,
@@ -8,6 +49,9 @@ export function computeSeatPositions(
   tableWidth: number,
   tableHeight: number
 ): SeatPosition[] {
+  if (tableType === 'table-round') return computeRoundSeats(seatCount, tableWidth, tableHeight)
+  if (tableType === 'table-oval')  return computeOvalSeats(seatCount, tableWidth, tableHeight)
+
   switch (tableType) {
     case 'table-rect':
       return computeRectSeats(seatCount, seatLayout, tableWidth, tableHeight)
