@@ -66,9 +66,51 @@ export const ELEMENT_DEFAULTS: Record<string, { width: number; height: number; f
   'conference-room': { width: 200, height: 140, fill: '#FEF3C7', stroke: '#F59E0B' },
   'phone-booth': { width: 60, height: 60, fill: '#F0FDF4', stroke: '#16A34A' },
   'common-area': { width: 160, height: 120, fill: '#DCFCE7', stroke: '#16A34A' },
+  'decor': { width: 60, height: 60, fill: '#E5E7EB', stroke: '#6B7280' },
 }
 
 export const TABLE_SEAT_DEFAULTS: Record<string, number> = {
   'table-rect': 6,
   'table-conference': 14,
+}
+
+/**
+ * Per-shape defaults. Falls back to ELEMENT_DEFAULTS[type] when a shape
+ * variant is not listed here. Keys are "<type>/<shape>" strings.
+ */
+export const SHAPE_DEFAULTS: Record<string, { width: number; height: number; fill: string; stroke: string }> = {
+  // Desk variants
+  'desk/l-shape':       { width: 120, height: 100, fill: '#D4C5B0', stroke: '#6B4423' },
+  'desk/cubicle':       { width: 120, height: 120, fill: '#F3F0EA', stroke: '#6B4423' },
+  'hot-desk/l-shape':   { width: 120, height: 100, fill: '#FEF3C7', stroke: '#B45309' },
+  'hot-desk/cubicle':   { width: 120, height: 120, fill: '#FEF3C7', stroke: '#B45309' },
+
+  // Private office variants
+  'private-office/u-shape': { width: 200, height: 160, fill: '#E8DCC4', stroke: '#6B4423' },
+
+  // Table variants
+  'table-round':        { width: 100, height: 100, fill: '#A7C7E7', stroke: '#1E40AF' },
+  'table-oval':         { width: 140, height: 90,  fill: '#A7C7E7', stroke: '#1E40AF' },
+
+  // Decor
+  'decor/armchair':         { width: 60,  height: 60,  fill: '#C4A57B', stroke: '#6B4423' },
+  'decor/couch':            { width: 150, height: 60,  fill: '#C4A57B', stroke: '#6B4423' },
+  'decor/reception':        { width: 180, height: 90,  fill: '#D4C5B0', stroke: '#6B4423' },
+  'decor/kitchen-counter':  { width: 200, height: 60,  fill: '#CBD5E1', stroke: '#475569' },
+  'decor/fridge':           { width: 70,  height: 70,  fill: '#E2E8F0', stroke: '#475569' },
+  'decor/whiteboard':       { width: 140, height: 20,  fill: '#FFFFFF', stroke: '#475569' },
+  'decor/column':           { width: 40,  height: 40,  fill: '#94A3B8', stroke: '#334155' },
+  'decor/stairs':           { width: 120, height: 80,  fill: '#E2E8F0', stroke: '#475569' },
+  'decor/elevator':         { width: 100, height: 100, fill: '#E2E8F0', stroke: '#475569' },
+}
+
+/** Resolve the effective default for a type + optional shape. */
+export function getDefaults(type: string, shape?: string) {
+  if (shape) {
+    const key = `${type}/${shape}`
+    if (SHAPE_DEFAULTS[key]) return SHAPE_DEFAULTS[key]
+  }
+  // 'table-round'/'table-oval' are top-level types with no shape subdiscriminator
+  if (SHAPE_DEFAULTS[type]) return SHAPE_DEFAULTS[type]
+  return ELEMENT_DEFAULTS[type]
 }
