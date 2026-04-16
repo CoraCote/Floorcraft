@@ -3,6 +3,19 @@ import { nanoid } from 'nanoid'
 import type { Employee } from '../types/employee'
 import { DEPARTMENT_COLORS } from '../lib/constants'
 
+// Single source of truth for mapping a department name to a palette color.
+// Used by both CSV bulk-import (addEmployees) and the on-demand fallback in
+// getDepartmentColor so both paths agree on the same color for a given name.
+function hashDepartmentColor(name: string): string {
+  let hash = 0
+  for (let i = 0; i < name.length; i++) {
+    hash = ((hash << 5) - hash) + name.charCodeAt(i)
+    hash |= 0
+  }
+  const idx = Math.abs(hash) % DEPARTMENT_COLORS.length
+  return DEPARTMENT_COLORS[idx]
+}
+
 interface EmployeeState {
   employees: Record<string, Employee>
   departmentColors: Record<string, string>
@@ -72,7 +85,6 @@ export const useEmployeeStore = create<EmployeeState>((set, get) => ({
     set((state) => {
       const next = { ...state.employees }
       const nextColors = { ...state.departmentColors }
-      let colorIdx = Object.keys(nextColors).length
 
       for (const e of newEmployees) {
         const id = nanoid()
@@ -96,9 +108,11 @@ export const useEmployeeStore = create<EmployeeState>((set, get) => ({
           floorId: e.floorId || null,
           createdAt: new Date().toISOString(),
         }
+        // Use the same hash-based derivation as getDepartmentColor so the
+        // two strategies can't disagree. Preserve any existing persisted
+        // entry — only compute when the dept isn't already in the map.
         if (e.department && !nextColors[e.department]) {
-          nextColors[e.department] = DEPARTMENT_COLORS[colorIdx % DEPARTMENT_COLORS.length]
-          colorIdx++
+          nextColors[e.department] = hashDepartmentColor(e.department)
         }
       }
       return { employees: next, departmentColors: nextColors }
@@ -146,14 +160,10 @@ export const useEmployeeStore = create<EmployeeState>((set, get) => ({
   getDepartmentColor: (department) => {
     const state = get()
     if (state.departmentColors[department]) return state.departmentColors[department]
-    // Pure derivation: hash department name -> palette index. No state mutation
-    // during render, avoiding render->set->render loops (Bug #6).
-    let hash = 0
-    for (let i = 0; i < department.length; i++) {
-      hash = (hash * 31 + department.charCodeAt(i)) | 0
-    }
-    const idx = Math.abs(hash) % DEPARTMENT_COLORS.length
-    return DEPARTMENT_COLORS[idx]
+    // Pure derivation via the shared helper — single source of truth with
+    // addEmployees. No state mutation during render, avoiding render->set->render
+    // loops (Bug #6).
+    return hashDepartmentColor(department)
   },
 
   getFilteredEmployees: () => {

@@ -24,6 +24,11 @@ export function assignEmployee(employeeId: string, targetElementId: string, floo
   const employee = employeeStore.employees[employeeId]
   if (!employee) return
 
+  // Short-circuit if the employee is already seated at the target on the same
+  // floor — avoids a clear-then-re-add cycle that would publish an intermediate
+  // invalid state and pollute undo history with no-op frames.
+  if (employee.seatId === targetElementId && employee.floorId === floorId) return
+
   // 1. If employee was previously assigned, clear the old desk (which may be on
   //    the active floor OR on another floor stored in floorStore)
   if (employee.seatId && employee.floorId) {
@@ -160,10 +165,72 @@ export function deleteFloor(floorId: string): void {
 }
 
 /**
- * When an element is deleted, clear any employees assigned to it.
+ * Clear all assignment state for an element — both sides. Safe to call at any
+ * time (idempotent): clears the element's `assignedEmployeeId` /
+ * `assignedEmployeeIds` / table-seat `assignedGuestId` first, then clears any
+ * employees pointing at it. Works whether the element is on the active floor
+ * (live elementsStore) or stored on another floor.
  */
 export function cleanupElementAssignments(elementId: string): void {
   const employeeStore = useEmployeeStore.getState()
+  const elementsStore = useElementsStore.getState()
+  const floorStore = useFloorStore.getState()
+
+  // 1. Locate the element: active floor first, then other floors.
+  let foundFloorId: string | null = null
+  let foundElement: CanvasElement | null = null
+
+  const activeElement = elementsStore.elements[elementId]
+  if (activeElement) {
+    foundFloorId = floorStore.activeFloorId
+    foundElement = activeElement
+  } else {
+    for (const floor of floorStore.floors) {
+      if (floor.id === floorStore.activeFloorId) continue
+      const el = floor.elements[elementId]
+      if (el) {
+        foundFloorId = floor.id
+        foundElement = el
+        break
+      }
+    }
+  }
+
+  // 2. Clear element-side assignments.
+  if (foundElement && foundFloorId) {
+    let cleaned: CanvasElement | null = null
+    if (isDeskElement(foundElement)) {
+      if (foundElement.assignedEmployeeId !== null) {
+        cleaned = { ...foundElement, assignedEmployeeId: null }
+      }
+    } else if (isWorkstationElement(foundElement)) {
+      if (foundElement.assignedEmployeeIds.length > 0) {
+        cleaned = { ...foundElement, assignedEmployeeIds: [] }
+      }
+    } else if (isPrivateOfficeElement(foundElement)) {
+      if (foundElement.assignedEmployeeIds.length > 0) {
+        cleaned = { ...foundElement, assignedEmployeeIds: [] }
+      }
+    } else if (isTableElement(foundElement)) {
+      if (foundElement.seats.some((s) => s.assignedGuestId !== null)) {
+        cleaned = {
+          ...foundElement,
+          seats: foundElement.seats.map((s) => ({ ...s, assignedGuestId: null })),
+        }
+      }
+    }
+
+    if (cleaned) {
+      if (foundFloorId === floorStore.activeFloorId) {
+        elementsStore.updateElement(elementId, cleaned)
+      } else {
+        const current = floorStore.getFloorElements(foundFloorId)
+        floorStore.setFloorElements(foundFloorId, { ...current, [elementId]: cleaned })
+      }
+    }
+  }
+
+  // 3. Clear employee-side pointers.
   const affected = Object.values(employeeStore.employees).filter((e) => e.seatId === elementId)
   for (const emp of affected) {
     employeeStore.updateEmployee(emp.id, { seatId: null, floorId: null })

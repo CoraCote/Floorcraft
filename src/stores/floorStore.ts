@@ -64,9 +64,15 @@ export const useFloorStore = create<FloorState>((set, get) => ({
     })),
 
   reorderFloor: (floorId, newOrder) =>
-    set((state) => ({
-      floors: state.floors.map((f) => (f.id === floorId ? { ...f, order: newOrder } : f)),
-    })),
+    set((state) => {
+      const sorted = [...state.floors].sort((a, b) => a.order - b.order)
+      const moving = sorted.find((f) => f.id === floorId)
+      if (!moving) return state
+      const rest = sorted.filter((f) => f.id !== floorId)
+      const clampedIndex = Math.max(0, Math.min(newOrder, rest.length))
+      rest.splice(clampedIndex, 0, moving)
+      return { floors: rest.map((f, i) => ({ ...f, order: i })) }
+    }),
 
   getActiveFloor: () => {
     const state = get()

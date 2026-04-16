@@ -4,6 +4,7 @@ import { useCanvasStore } from '../stores/canvasStore'
 import { useUIStore } from '../stores/uiStore'
 import { useShallow } from 'zustand/react/shallow'
 import { cleanupElementAssignments } from '../lib/seatAssignment'
+import { isWallElement } from '../types/elements'
 
 export function useKeyboardShortcuts() {
   const { selectedIds, clearSelection, setPresentationMode, presentationMode, setShortcutsOverlayOpen } = useUIStore(useShallow((s) => ({ selectedIds: s.selectedIds, clearSelection: s.clearSelection, setPresentationMode: s.setPresentationMode, presentationMode: s.presentationMode, setShortcutsOverlayOpen: s.setShortcutsOverlayOpen })))
@@ -87,7 +88,26 @@ export function useKeyboardShortcuts() {
         const amount = e.shiftKey ? 10 : 1
         const dx = e.key === 'ArrowLeft' ? -amount : e.key === 'ArrowRight' ? amount : 0
         const dy = e.key === 'ArrowUp' ? -amount : e.key === 'ArrowDown' ? amount : 0
-        moveElements(selectedIds, dx, dy)
+
+        // Walls are rendered at (0, 0) with geometry baked into `points`, so
+        // nudging x/y has no visible effect. Shift each point instead.
+        const nonWallIds: string[] = []
+        const updateElement = useElementsStore.getState().updateElement
+        for (const id of selectedIds) {
+          const el = elements[id]
+          if (!el || el.locked) continue
+          if (isWallElement(el)) {
+            const shifted: number[] = new Array(el.points.length)
+            for (let i = 0; i < el.points.length; i += 2) {
+              shifted[i] = el.points[i] + dx
+              shifted[i + 1] = el.points[i + 1] + dy
+            }
+            updateElement(id, { points: shifted, x: 0, y: 0 })
+          } else {
+            nonWallIds.push(id)
+          }
+        }
+        if (nonWallIds.length > 0) moveElements(nonWallIds, dx, dy)
         return
       }
 

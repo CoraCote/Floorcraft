@@ -144,7 +144,13 @@ export const useElementsStore = create<ElementsState>()(
         set((state) => {
           const el = state.elements[id]
           if (!el) return state
-          const minZ = Math.min(...Object.values(state.elements).map((e) => e.zIndex))
+          // Manual loop instead of Math.min(...arr) to avoid hitting the JS
+          // argument-count limit on very large element sets.
+          let minZ = Infinity
+          for (const e of Object.values(state.elements)) {
+            if (e.zIndex < minZ) minZ = e.zIndex
+          }
+          if (minZ === Infinity) minZ = 0
           return {
             elements: {
               ...state.elements,
@@ -203,9 +209,13 @@ export const useElementsStore = create<ElementsState>()(
         }),
 
       getMaxZIndex: () => {
-        const els = Object.values(get().elements)
-        if (els.length === 0) return 0
-        return Math.max(...els.map((e) => e.zIndex))
+        // Manual loop instead of Math.max(...arr) to avoid hitting the JS
+        // argument-count limit on very large element sets.
+        let maxZ = -Infinity
+        for (const e of Object.values(get().elements)) {
+          if (e.zIndex > maxZ) maxZ = e.zIndex
+        }
+        return maxZ === -Infinity ? 0 : maxZ
       },
 
       getElementsByGroup: (groupId) =>

@@ -3,6 +3,8 @@ import { useRef, useCallback, useState, useEffect } from 'react'
 import type Konva from 'konva'
 import { useCanvasStore } from '../../../stores/canvasStore'
 import { useUIStore } from '../../../stores/uiStore'
+import { useElementsStore } from '../../../stores/elementsStore'
+import { useFloorStore } from '../../../stores/floorStore'
 import { useShallow } from 'zustand/react/shallow'
 import { GridLayer } from './GridLayer'
 import { ElementRenderer } from './ElementRenderer'
@@ -13,6 +15,8 @@ import { OrgChartOverlay } from '../../reports/OrgChartOverlay'
 import { SeatMapColorMode } from '../../reports/SeatMapColorMode'
 import { useWallDrawing } from '../../../hooks/useWallDrawing'
 import { ZOOM_MIN, ZOOM_MAX } from '../../../lib/constants'
+import { isAssignableElement } from '../../../types/elements'
+import { assignEmployee } from '../../../lib/seatAssignment'
 
 export function CanvasStage() {
   const stageRef = useRef<Konva.Stage>(null)
@@ -132,8 +136,65 @@ export function CanvasStage() {
 
   const cursor = activeTool === 'pan' ? 'grab' : activeTool === 'wall' ? 'crosshair' : 'default'
 
+  // Accept employee drags from PeoplePanel and assign the dropped employee
+  // to whatever assignable element is under the cursor.
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    if (e.dataTransfer.types.includes('application/employee-id')) {
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'move'
+    }
+  }, [])
+
+  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    const empId = e.dataTransfer.getData('application/employee-id')
+    if (!empId) return
+    e.preventDefault()
+
+    const stage = stageRef.current
+    if (!stage) return
+
+    // Translate the drop's client coords into stage-local coords.
+    stage.setPointersPositions(e.nativeEvent)
+    const pointer = stage.getPointerPosition()
+    if (!pointer) return
+    const pos = stage.getAbsoluteTransform().copy().invert().point(pointer)
+
+    // Hit-test assignable elements. (el.x, el.y) is CENTER; rotation is
+    // ignored for this drop target (acceptable simplification).
+    const elements = useElementsStore.getState().elements
+    let hitId: string | null = null
+    let hitZ = -Infinity
+    for (const el of Object.values(elements)) {
+      if (!isAssignableElement(el)) continue
+      const halfW = el.width / 2
+      const halfH = el.height / 2
+      if (
+        pos.x >= el.x - halfW &&
+        pos.x <= el.x + halfW &&
+        pos.y >= el.y - halfH &&
+        pos.y <= el.y + halfH
+      ) {
+        // Prefer topmost element on overlap.
+        if (el.zIndex >= hitZ) {
+          hitZ = el.zIndex
+          hitId = el.id
+        }
+      }
+    }
+
+    if (hitId) {
+      assignEmployee(empId, hitId, useFloorStore.getState().activeFloorId)
+    }
+  }, [])
+
   return (
-    <div ref={containerRef} className="w-full h-full" style={{ cursor }}>
+    <div
+      ref={containerRef}
+      className="w-full h-full"
+      style={{ cursor }}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
       <Stage
         ref={stageRef}
         width={size.width}
