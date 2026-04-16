@@ -3,12 +3,12 @@ import { useElementsStore } from '../stores/elementsStore'
 import { useCanvasStore } from '../stores/canvasStore'
 import { useUIStore } from '../stores/uiStore'
 import { useShallow } from 'zustand/react/shallow'
-import { cleanupElementAssignments } from '../lib/seatAssignment'
+import { deleteElements } from '../lib/seatAssignment'
 import { isWallElement } from '../types/elements'
 
 export function useKeyboardShortcuts() {
   const { selectedIds, clearSelection, setPresentationMode, presentationMode, setShortcutsOverlayOpen } = useUIStore(useShallow((s) => ({ selectedIds: s.selectedIds, clearSelection: s.clearSelection, setPresentationMode: s.setPresentationMode, presentationMode: s.presentationMode, setShortcutsOverlayOpen: s.setShortcutsOverlayOpen })))
-  const { removeElements, duplicateElements, moveElements, groupElements, ungroupElements } = useElementsStore(useShallow((s) => ({ removeElements: s.removeElements, duplicateElements: s.duplicateElements, moveElements: s.moveElements, groupElements: s.groupElements, ungroupElements: s.ungroupElements })))
+  const { duplicateElements, moveElements, groupElements, ungroupElements } = useElementsStore(useShallow((s) => ({ duplicateElements: s.duplicateElements, moveElements: s.moveElements, groupElements: s.groupElements, ungroupElements: s.ungroupElements })))
   const elements = useElementsStore((s) => s.elements)
   const { setActiveTool, toggleGrid, zoomIn, zoomOut, resetZoom } = useCanvasStore(useShallow((s) => ({ setActiveTool: s.setActiveTool, toggleGrid: s.toggleGrid, zoomIn: s.zoomIn, zoomOut: s.zoomOut, resetZoom: s.resetZoom })))
   const undo = useElementsStore.temporal.getState().undo
@@ -37,8 +37,7 @@ export function useKeyboardShortcuts() {
 
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedIds.length > 0) {
         e.preventDefault()
-        for (const id of selectedIds) cleanupElementAssignments(id, { skipElementWrite: true })
-        removeElements(selectedIds)
+        deleteElements(selectedIds)
         clearSelection()
         return
       }
@@ -128,7 +127,7 @@ export function useKeyboardShortcuts() {
     return () => window.removeEventListener('keydown', handler)
   }, [
     selectedIds, elements, presentationMode,
-    clearSelection, removeElements, duplicateElements, moveElements,
+    clearSelection, duplicateElements, moveElements,
     groupElements, ungroupElements, setActiveTool, toggleGrid,
     zoomIn, zoomOut, resetZoom, setPresentationMode, setShortcutsOverlayOpen,
     undo, redo,

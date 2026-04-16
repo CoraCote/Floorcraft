@@ -1,7 +1,7 @@
 import { useUIStore } from '../../stores/uiStore'
 import { useElementsStore } from '../../stores/elementsStore'
 import { useCanvasStore } from '../../stores/canvasStore'
-import { cleanupElementAssignments } from '../../lib/seatAssignment'
+import { deleteElements } from '../../lib/seatAssignment'
 import { useEffect, useRef } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 
@@ -11,7 +11,7 @@ export function ContextMenu() {
   const selectedIds = useUIStore((s) => s.selectedIds)
   const setSelectedIds = useUIStore((s) => s.setSelectedIds)
   const setEditingLabelId = useUIStore((s) => s.setEditingLabelId)
-  const { removeElements, duplicateElements, bringToFront, sendToBack, bringForward, sendBackward, groupElements, ungroupElements, updateElement } = useElementsStore(useShallow((s) => ({ removeElements: s.removeElements, duplicateElements: s.duplicateElements, bringToFront: s.bringToFront, sendToBack: s.sendToBack, bringForward: s.bringForward, sendBackward: s.sendBackward, groupElements: s.groupElements, ungroupElements: s.ungroupElements, updateElement: s.updateElement })))
+  const { duplicateElements, bringToFront, sendToBack, bringForward, sendBackward, groupElements, ungroupElements, updateElement } = useElementsStore(useShallow((s) => ({ duplicateElements: s.duplicateElements, bringToFront: s.bringToFront, sendToBack: s.sendToBack, bringForward: s.bringForward, sendBackward: s.sendBackward, groupElements: s.groupElements, ungroupElements: s.ungroupElements, updateElement: s.updateElement })))
   const elements = useElementsStore((s) => s.elements)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -37,8 +37,7 @@ export function ContextMenu() {
     }})
     items.push({ label: 'Delete', shortcut: 'Del', onClick: () => {
       const toDelete = selectedIds.length ? selectedIds : [el.id]
-      for (const id of toDelete) cleanupElementAssignments(id, { skipElementWrite: true })
-      removeElements(toDelete)
+      deleteElements(toDelete)
       useUIStore.getState().clearSelection()
     }})
     items.push({ label: '', onClick: () => {}, separator: true })
