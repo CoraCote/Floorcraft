@@ -1,4 +1,5 @@
 import { useUIStore } from '../../../stores/uiStore'
+import { InsightsPanel } from './InsightsPanel'
 import { PeoplePanel } from './PeoplePanel'
 import { PropertiesPanel } from './PropertiesPanel'
 import { ReportsPanel } from './ReportsPanel'
@@ -11,6 +12,7 @@ export function RightSidebar() {
     { id: 'properties' as const, label: 'Properties' },
     { id: 'people' as const, label: 'People' },
     { id: 'reports' as const, label: 'Reports' },
+    { id: 'insights' as const, label: 'Insights' },
   ]
 
   return (
@@ -34,6 +36,7 @@ export function RightSidebar() {
         {tab === 'properties' && <PropertiesPanel />}
         {tab === 'people' && <PeoplePanel />}
         {tab === 'reports' && <ReportsPanel />}
+        {tab === 'insights' && <InsightsPanel />}
       </div>
     </div>
   )
