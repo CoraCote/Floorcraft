@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from 'react'
+import { useEffect, useCallback, useRef, useMemo } from 'react'
 import { RefreshCw, CheckCircle } from 'lucide-react'
 import { useInsightsStore } from '../../../stores/insightsStore'
 import { useElementsStore } from '../../../stores/elementsStore'
@@ -7,7 +7,6 @@ import { useShallow } from 'zustand/react/shallow'
 import { SeveritySummary } from './SeveritySummary'
 import { InsightFilters } from './InsightFilters'
 import { InsightCard } from './InsightCard'
-import type { Insight } from '../../../types/insights'
 
 export function InsightsPanel() {
   const elements = useElementsStore((s) => s.elements)
@@ -60,17 +59,22 @@ export function InsightsPanel() {
   const dismissed = useInsightsStore((s) => s.insights.filter((i) => i.dismissed))
   const counts = getCounts()
 
-  const handleAction = (_insightId: string, _actionIndex: number) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleAction = useCallback((_insightId: string, _actionIndex: number) => {
     // Action execution will be wired to canvas navigation/assignment in future tasks
-  }
+  }, [])
 
-  const handleCardClick = (_insight: Insight) => {
+  const handleCardClick = useCallback(() => {
     // Highlight related elements on canvas — future wire-up
-  }
+  }, [])
 
-  const lastAnalyzedLabel = lastAnalyzedAt
-    ? `${Math.round((Date.now() - lastAnalyzedAt) / 1000)}s ago`
-    : 'never'
+  const lastAnalyzedLabel = useMemo(
+    () =>
+      lastAnalyzedAt
+        ? new Date(lastAnalyzedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        : 'never',
+    [lastAnalyzedAt]
+  )
 
   return (
     <div className="flex flex-col h-full gap-3">
