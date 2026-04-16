@@ -4,24 +4,12 @@ import { useEmployeeStore } from '../../stores/employeeStore'
 import { useFloorStore } from '../../stores/floorStore'
 import { useUIStore } from '../../stores/uiStore'
 import { useShallow } from 'zustand/react/shallow'
-import type { CanvasElement } from '../../types/elements'
-
-interface DeskCenter {
-  x: number
-  y: number
-}
-
-function getElementCenter(el: CanvasElement): DeskCenter {
-  return {
-    x: el.x + el.width / 2,
-    y: el.y + el.height / 2,
-  }
-}
+import { useFloorElements } from '../../hooks/useActiveFloorElements'
 
 export function OrgChartOverlay() {
   const orgChartOverlayEnabled = useUIStore((s) => s.orgChartOverlayEnabled)
   const activeFloorId = useFloorStore((s) => s.activeFloorId)
-  const floors = useFloorStore((s) => s.floors)
+  const floorElements = useFloorElements(activeFloorId)
   const { employees, getDepartmentColor } = useEmployeeStore(
     useShallow((s) => ({
       employees: s.employees,
@@ -32,10 +20,6 @@ export function OrgChartOverlay() {
   const lines = useMemo(() => {
     if (!orgChartOverlayEnabled) return []
 
-    const floor = floors.find((f) => f.id === activeFloorId)
-    if (!floor) return []
-
-    const floorElements = floor.elements
     const allEmployees = Object.values(employees)
     const floorEmployees = allEmployees.filter((e) => e.floorId === activeFloorId)
 
@@ -58,18 +42,16 @@ export function OrgChartOverlay() {
       const mgrElement = floorElements[manager.seatId]
       if (!empElement || !mgrElement) continue
 
-      const empCenter = getElementCenter(empElement)
-      const mgrCenter = getElementCenter(mgrElement)
-
+      // Elements use (x, y) as CENTER (renderers offset children by -width/2, -height/2)
       result.push({
         key: `${manager.id}-${emp.id}`,
-        points: [mgrCenter.x, mgrCenter.y, empCenter.x, empCenter.y],
+        points: [mgrElement.x, mgrElement.y, empElement.x, empElement.y],
         color: manager.department ? getDepartmentColor(manager.department) : '#6B7280',
       })
     }
 
     return result
-  }, [orgChartOverlayEnabled, activeFloorId, floors, employees, getDepartmentColor])
+  }, [orgChartOverlayEnabled, activeFloorId, floorElements, employees, getDepartmentColor])
 
   if (!orgChartOverlayEnabled || lines.length === 0) {
     return null

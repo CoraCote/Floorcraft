@@ -1,6 +1,7 @@
 import { useUIStore } from '../../stores/uiStore'
 import { useElementsStore } from '../../stores/elementsStore'
 import { useCanvasStore } from '../../stores/canvasStore'
+import { cleanupElementAssignments } from '../../lib/seatAssignment'
 import { useEffect, useRef } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 
@@ -35,7 +36,9 @@ export function ContextMenu() {
       setSelectedIds(newIds)
     }})
     items.push({ label: 'Delete', shortcut: 'Del', onClick: () => {
-      removeElements(selectedIds.length ? selectedIds : [el.id])
+      const toDelete = selectedIds.length ? selectedIds : [el.id]
+      for (const id of toDelete) cleanupElementAssignments(id)
+      removeElements(toDelete)
       useUIStore.getState().clearSelection()
     }})
     items.push({ label: '', onClick: () => {}, separator: true })

@@ -1,5 +1,6 @@
 import { useFloorStore } from '../../stores/floorStore'
 import { useElementsStore } from '../../stores/elementsStore'
+import { switchToFloor } from '../../lib/seatAssignment'
 import { Plus } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { useShallow } from 'zustand/react/shallow'
@@ -47,13 +48,7 @@ export function FloorSwitcher() {
   }, [contextMenuFloorId])
 
   const handleSwitchFloor = (newFloorId: string) => {
-    if (newFloorId === activeFloorId) return
-    // Save current floor's elements
-    setFloorElements(activeFloorId, elements)
-    // Set new active floor
-    setActiveFloor(newFloorId)
-    // Load the new floor's elements
-    setElements(getFloorElements(newFloorId))
+    switchToFloor(newFloorId)
   }
 
   const handleAddFloor = () => {

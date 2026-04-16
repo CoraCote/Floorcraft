@@ -3,6 +3,7 @@ import { useElementsStore } from '../stores/elementsStore'
 import { useCanvasStore } from '../stores/canvasStore'
 import { useUIStore } from '../stores/uiStore'
 import { useShallow } from 'zustand/react/shallow'
+import { cleanupElementAssignments } from '../lib/seatAssignment'
 
 export function useKeyboardShortcuts() {
   const { selectedIds, clearSelection, setPresentationMode, presentationMode, setShortcutsOverlayOpen } = useUIStore(useShallow((s) => ({ selectedIds: s.selectedIds, clearSelection: s.clearSelection, setPresentationMode: s.setPresentationMode, presentationMode: s.presentationMode, setShortcutsOverlayOpen: s.setShortcutsOverlayOpen })))
@@ -35,6 +36,7 @@ export function useKeyboardShortcuts() {
 
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedIds.length > 0) {
         e.preventDefault()
+        for (const id of selectedIds) cleanupElementAssignments(id)
         removeElements(selectedIds)
         clearSelection()
         return

@@ -33,7 +33,7 @@ interface ConferenceRoomRendererProps {
 
 function ConferenceRoomRenderer({ element, isSelected }: ConferenceRoomRendererProps) {
   return (
-    <Group x={element.x} y={element.y} rotation={element.rotation} listening={!element.locked}>
+    <Group rotation={element.rotation} listening={!element.locked}>
       <Rect
         x={-element.width / 2}
         y={-element.height / 2}
@@ -83,7 +83,7 @@ interface PhoneBoothRendererProps {
 
 function PhoneBoothRenderer({ element, isSelected }: PhoneBoothRendererProps) {
   return (
-    <Group x={element.x} y={element.y} rotation={element.rotation} listening={!element.locked}>
+    <Group rotation={element.rotation} listening={!element.locked}>
       <Rect
         x={-element.width / 2}
         y={-element.height / 2}
@@ -119,7 +119,7 @@ interface CommonAreaRendererProps {
 
 function CommonAreaRenderer({ element, isSelected }: CommonAreaRendererProps) {
   return (
-    <Group x={element.x} y={element.y} rotation={element.rotation} listening={!element.locked}>
+    <Group rotation={element.rotation} listening={!element.locked}>
       <Rect
         x={-element.width / 2}
         y={-element.height / 2}

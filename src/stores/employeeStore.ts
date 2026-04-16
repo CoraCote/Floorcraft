@@ -17,8 +17,6 @@ interface EmployeeState {
   removeEmployee: (id: string) => void
   removeEmployees: (ids: string[]) => void
   setEmployees: (employees: Record<string, Employee>) => void
-  assignEmployeeToSeat: (employeeId: string, seatId: string, floorId: string) => void
-  unassignEmployee: (employeeId: string) => void
   setSearchQuery: (query: string) => void
   setFilterBy: (filter: EmployeeState['filterBy']) => void
   setSortBy: (sort: EmployeeState['sortBy']) => void
@@ -67,9 +65,6 @@ export const useEmployeeStore = create<EmployeeState>((set, get) => ({
     set((state) => ({
       employees: { ...state.employees, [id]: employee },
     }))
-    if (employee.department) {
-      get().getDepartmentColor(employee.department)
-    }
     return id
   },
 
@@ -131,30 +126,6 @@ export const useEmployeeStore = create<EmployeeState>((set, get) => ({
 
   setEmployees: (employees) => set({ employees }),
 
-  assignEmployeeToSeat: (employeeId, seatId, floorId) =>
-    set((state) => {
-      const employee = state.employees[employeeId]
-      if (!employee) return state
-      return {
-        employees: {
-          ...state.employees,
-          [employeeId]: { ...employee, seatId, floorId },
-        },
-      }
-    }),
-
-  unassignEmployee: (employeeId) =>
-    set((state) => {
-      const employee = state.employees[employeeId]
-      if (!employee) return state
-      return {
-        employees: {
-          ...state.employees,
-          [employeeId]: { ...employee, seatId: null, floorId: null },
-        },
-      }
-    }),
-
   setSearchQuery: (query) => set({ searchQuery: query }),
   setFilterBy: (filter) => set({ filterBy: filter }),
   setSortBy: (sort) => set({ sortBy: sort }),
@@ -175,10 +146,14 @@ export const useEmployeeStore = create<EmployeeState>((set, get) => ({
   getDepartmentColor: (department) => {
     const state = get()
     if (state.departmentColors[department]) return state.departmentColors[department]
-    const colorIdx = Object.keys(state.departmentColors).length
-    const color = DEPARTMENT_COLORS[colorIdx % DEPARTMENT_COLORS.length]
-    set((s) => ({ departmentColors: { ...s.departmentColors, [department]: color } }))
-    return color
+    // Pure derivation: hash department name -> palette index. No state mutation
+    // during render, avoiding render->set->render loops (Bug #6).
+    let hash = 0
+    for (let i = 0; i < department.length; i++) {
+      hash = (hash * 31 + department.charCodeAt(i)) | 0
+    }
+    const idx = Math.abs(hash) % DEPARTMENT_COLORS.length
+    return DEPARTMENT_COLORS[idx]
   },
 
   getFilteredEmployees: () => {

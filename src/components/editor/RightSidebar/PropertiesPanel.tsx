@@ -1,6 +1,7 @@
 import { useUIStore } from '../../../stores/uiStore'
 import { useElementsStore } from '../../../stores/elementsStore'
 import { useEmployeeStore } from '../../../stores/employeeStore'
+import { unassignEmployee } from '../../../lib/seatAssignment'
 import {
   isTableElement,
   isDeskElement,
@@ -17,7 +18,6 @@ export function PropertiesPanel() {
   const elements = useElementsStore((s) => s.elements)
   const updateElement = useElementsStore((s) => s.updateElement)
   const employees = useEmployeeStore((s) => s.employees)
-  const unassignEmployee = useEmployeeStore((s) => s.unassignEmployee)
 
   if (selectedIds.length === 0) {
     return <div className="text-sm text-gray-400 text-center py-8">Select an element to see its properties</div>
@@ -164,7 +164,6 @@ export function PropertiesPanel() {
                 <button
                   onClick={() => {
                     unassignEmployee(el.assignedEmployeeId!)
-                    update({ assignedEmployeeId: null } as Partial<DeskElement>)
                   }}
                   className="text-xs text-red-500 hover:text-red-700 flex-shrink-0"
                 >
@@ -216,9 +215,6 @@ export function PropertiesPanel() {
                     <button
                       onClick={() => {
                         unassignEmployee(empId)
-                        update({
-                          assignedEmployeeIds: el.assignedEmployeeIds.filter((id) => id !== empId),
-                        } as Partial<WorkstationElement>)
                       }}
                       className="text-xs text-red-500 hover:text-red-700 flex-shrink-0"
                     >
@@ -261,9 +257,6 @@ export function PropertiesPanel() {
                     <button
                       onClick={() => {
                         unassignEmployee(empId)
-                        update({
-                          assignedEmployeeIds: el.assignedEmployeeIds.filter((id) => id !== empId),
-                        } as Partial<PrivateOfficeElement>)
                       }}
                       className="text-xs text-red-500 hover:text-red-700 flex-shrink-0"
                     >

@@ -4,6 +4,7 @@ import { useEmployeeStore } from '../../stores/employeeStore'
 import { useFloorStore } from '../../stores/floorStore'
 import { useUIStore } from '../../stores/uiStore'
 import { useShallow } from 'zustand/react/shallow'
+import { switchToFloor } from '../../lib/seatAssignment'
 import type { Employee } from '../../types/employee'
 
 type SortColumn =
@@ -30,8 +31,6 @@ export function EmployeeDirectory() {
       setActiveReport: s.setActiveReport,
     }))
   )
-  const setActiveFloor = useFloorStore((s) => s.setActiveFloor)
-
   const [search, setSearch] = useState('')
   const [sortColumn, setSortColumn] = useState<SortColumn>('name')
   const [sortDir, setSortDir] = useState<SortDirection>('asc')
@@ -116,7 +115,9 @@ export function EmployeeDirectory() {
   const handleRowClick = useCallback(
     (emp: Employee) => {
       if (emp.floorId) {
-        setActiveFloor(emp.floorId)
+        // switchToFloor saves the outgoing floor's live elements before loading
+        // the target floor, so unsaved edits on the current floor are preserved.
+        switchToFloor(emp.floorId)
       }
       if (emp.seatId) {
         setSelectedIds([emp.seatId])
@@ -124,7 +125,7 @@ export function EmployeeDirectory() {
       setEmployeeDirectoryOpen(false)
       setActiveReport(null)
     },
-    [setActiveFloor, setSelectedIds, setEmployeeDirectoryOpen, setActiveReport]
+    [setSelectedIds, setEmployeeDirectoryOpen, setActiveReport]
   )
 
   const handleClose = useCallback(() => {

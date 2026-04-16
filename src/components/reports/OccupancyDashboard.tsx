@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useEmployeeStore } from '../../stores/employeeStore'
-import { useFloorStore } from '../../stores/floorStore'
+import { useAllFloorElements } from '../../hooks/useActiveFloorElements'
 import {
   isDeskElement,
   isWorkstationElement,
@@ -31,28 +31,28 @@ function countAssignableSeats(elements: Record<string, CanvasElement>): number {
 export function OccupancyDashboard() {
   const employees = useEmployeeStore((s) => s.employees)
   const getDepartmentColor = useEmployeeStore((s) => s.getDepartmentColor)
-  const floors = useFloorStore((s) => s.floors)
+  const floorsWithElements = useAllFloorElements()
 
   const allEmployees = useMemo(() => Object.values(employees), [employees])
 
   const overall = useMemo(() => {
     let totalSeats = 0
-    for (const floor of floors) {
-      totalSeats += countAssignableSeats(floor.elements)
+    for (const f of floorsWithElements) {
+      totalSeats += countAssignableSeats(f.elements)
     }
     const assigned = allEmployees.filter((e) => e.seatId !== null).length
     const pct = totalSeats > 0 ? Math.round((assigned / totalSeats) * 100) : 0
     return { assigned, totalSeats, pct }
-  }, [floors, allEmployees])
+  }, [floorsWithElements, allEmployees])
 
   const perFloor = useMemo(() => {
-    return floors.map((floor) => {
-      const seats = countAssignableSeats(floor.elements)
-      const assigned = allEmployees.filter((e) => e.floorId === floor.id && e.seatId !== null).length
+    return floorsWithElements.map((f) => {
+      const seats = countAssignableSeats(f.elements)
+      const assigned = allEmployees.filter((e) => e.floorId === f.floorId && e.seatId !== null).length
       const pct = seats > 0 ? Math.round((assigned / seats) * 100) : 0
-      return { id: floor.id, name: floor.name, assigned, seats, pct }
+      return { id: f.floorId, name: f.floorName, assigned, seats, pct }
     })
-  }, [floors, allEmployees])
+  }, [floorsWithElements, allEmployees])
 
   const perDepartment = useMemo(() => {
     const deptMap: Record<string, { total: number; assigned: number }> = {}

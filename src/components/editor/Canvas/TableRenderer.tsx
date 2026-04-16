@@ -15,7 +15,7 @@ export function TableRenderer({ element }: TableRendererProps) {
   const getDepartmentColor = useEmployeeStore((s) => s.getDepartmentColor)
 
   return (
-    <Group x={element.x} y={element.y} rotation={element.rotation} listening={!element.locked}>
+    <Group rotation={element.rotation} listening={!element.locked}>
       <Rect
         x={-element.width / 2}
         y={-element.height / 2}

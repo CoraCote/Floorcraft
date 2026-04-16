@@ -4,6 +4,7 @@ import { useEmployeeStore } from '../../stores/employeeStore'
 import { useFloorStore } from '../../stores/floorStore'
 import { useUIStore } from '../../stores/uiStore'
 import { useShallow } from 'zustand/react/shallow'
+import { useFloorElements } from '../../hooks/useActiveFloorElements'
 import {
   isDeskElement,
   isWorkstationElement,
@@ -47,7 +48,7 @@ interface LegendEntry {
 export function SeatMapColorMode() {
   const seatMapColorMode = useUIStore((s) => s.seatMapColorMode)
   const activeFloorId = useFloorStore((s) => s.activeFloorId)
-  const floors = useFloorStore((s) => s.floors)
+  const floorElements = useFloorElements(activeFloorId)
   const { employees, getDepartmentColor } = useEmployeeStore(
     useShallow((s) => ({
       employees: s.employees,
@@ -57,9 +58,6 @@ export function SeatMapColorMode() {
 
   const { overlays, legend } = useMemo(() => {
     if (!seatMapColorMode) return { overlays: [], legend: [] }
-
-    const floor = floors.find((f) => f.id === activeFloorId)
-    if (!floor) return { overlays: [], legend: [] }
 
     // Build seatId -> employee lookup
     const seatToEmployee: Record<string, typeof employees[string]> = {}
@@ -76,7 +74,7 @@ export function SeatMapColorMode() {
     const resultOverlays: SeatOverlay[] = []
     const legendMap: Record<string, string> = {}
 
-    for (const el of Object.values(floor.elements)) {
+    for (const el of Object.values(floorElements)) {
       if (!isAssignable(el)) continue
 
       const emp = seatToEmployee[el.id]
@@ -114,10 +112,11 @@ export function SeatMapColorMode() {
 
       legendMap[legendLabel] = fill
 
+      // (el.x, el.y) is the CENTER; Rect needs the top-left corner.
       resultOverlays.push({
         key: el.id,
-        x: el.x,
-        y: el.y,
+        x: el.x - el.width / 2,
+        y: el.y - el.height / 2,
         width: el.width,
         height: el.height,
         fill,
@@ -133,7 +132,7 @@ export function SeatMapColorMode() {
       .map(([label, color]) => ({ label, color }))
 
     return { overlays: resultOverlays, legend: legendEntries }
-  }, [seatMapColorMode, activeFloorId, floors, employees, getDepartmentColor])
+  }, [seatMapColorMode, activeFloorId, floorElements, employees, getDepartmentColor])
 
   if (!seatMapColorMode || overlays.length === 0) {
     return null

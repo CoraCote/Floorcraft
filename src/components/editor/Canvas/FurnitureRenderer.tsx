@@ -11,7 +11,7 @@ export function FurnitureRenderer({ element }: FurnitureRendererProps) {
   const isSelected = selectedIds.includes(element.id)
 
   return (
-    <Group x={element.x} y={element.y} rotation={element.rotation} listening={!element.locked}>
+    <Group rotation={element.rotation} listening={!element.locked}>
       <Rect
         x={-element.width / 2}
         y={-element.height / 2}

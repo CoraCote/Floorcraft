@@ -77,10 +77,14 @@ export function ElementRenderer() {
       {sorted.map((el) => {
         const draggable = activeTool === 'select' && !el.locked
 
+        // Walls position themselves via `points`, not via x/y — skip Group position for them.
+        const isWall = isWallElement(el)
         return (
           <Group
             key={el.id}
             id={`element-${el.id}`}
+            x={isWall ? 0 : el.x}
+            y={isWall ? 0 : el.y}
             draggable={draggable}
             onDragEnd={(e) => handleDragEnd(el.id, e)}
             onClick={(e) => handleClick(el.id, e)}

@@ -43,7 +43,7 @@ function DeskElementRenderer({ element, isSelected, employees, getDepartmentColo
   const borderDash = employee ? undefined : [4, 4]
 
   return (
-    <Group x={element.x} y={element.y} rotation={element.rotation} listening={!element.locked}>
+    <Group rotation={element.rotation} listening={!element.locked}>
       <Rect
         x={-element.width / 2}
         y={-element.height / 2}
@@ -126,7 +126,7 @@ function WorkstationRenderer({ element, isSelected, employees, getDepartmentColo
   const borderColor = isSelected ? '#3B82F6' : element.style.stroke
 
   return (
-    <Group x={element.x} y={element.y} rotation={element.rotation} listening={!element.locked}>
+    <Group rotation={element.rotation} listening={!element.locked}>
       <Rect
         x={-element.width / 2}
         y={-element.height / 2}
@@ -223,7 +223,7 @@ function PrivateOfficeRenderer({ element, isSelected, employees, getDepartmentCo
     : null
 
   return (
-    <Group x={element.x} y={element.y} rotation={element.rotation} listening={!element.locked}>
+    <Group rotation={element.rotation} listening={!element.locked}>
       <Rect
         x={-element.width / 2}
         y={-element.height / 2}

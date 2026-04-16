@@ -4,6 +4,8 @@ import { useEmployeeStore } from '../../stores/employeeStore'
 import { useFloorStore } from '../../stores/floorStore'
 import { useUIStore } from '../../stores/uiStore'
 import { useShallow } from 'zustand/react/shallow'
+import { useAllFloorElements } from '../../hooks/useActiveFloorElements'
+import { assignEmployee } from '../../lib/seatAssignment'
 import {
   isDeskElement,
   isWorkstationElement,
@@ -20,8 +22,8 @@ interface PendingMove {
 
 export function MovePlanner() {
   const employees = useEmployeeStore((s) => s.employees)
-  const assignEmployeeToSeat = useEmployeeStore((s) => s.assignEmployeeToSeat)
   const floors = useFloorStore((s) => s.floors)
+  const floorsWithElements = useAllFloorElements()
   const { setMovePlannerActive, setActiveReport } = useUIStore(
     useShallow((s) => ({
       setMovePlannerActive: s.setMovePlannerActive,
@@ -44,13 +46,13 @@ export function MovePlanner() {
 
   const assignableDesks = useMemo(() => {
     if (!selectedFloorId) return []
-    const floor = floors.find((f) => f.id === selectedFloorId)
-    if (!floor) return []
-    return Object.values(floor.elements)
+    const f = floorsWithElements.find((x) => x.floorId === selectedFloorId)
+    if (!f) return []
+    return Object.values(f.elements)
       .filter((el) => isDeskElement(el) || isWorkstationElement(el) || isPrivateOfficeElement(el))
       .map((el) => ({ id: el.id, label: el.label || el.id }))
       .sort((a, b) => a.label.localeCompare(b.label))
-  }, [floors, selectedFloorId])
+  }, [floorsWithElements, selectedFloorId])
 
   const handleAddMove = useCallback(() => {
     if (!selectedEmployeeId || !selectedFloorId || !selectedDeskId) return
@@ -73,10 +75,10 @@ export function MovePlanner() {
 
   const handleApplyAll = useCallback(() => {
     for (const move of pendingMoves) {
-      assignEmployeeToSeat(move.employeeId, move.toSeatId, move.toFloorId)
+      assignEmployee(move.employeeId, move.toSeatId, move.toFloorId)
     }
     setPendingMoves([])
-  }, [pendingMoves, assignEmployeeToSeat])
+  }, [pendingMoves])
 
   const handleDiscard = useCallback(() => {
     setPendingMoves([])

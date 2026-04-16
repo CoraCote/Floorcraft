@@ -1,8 +1,9 @@
 import { useState, useMemo, useCallback } from 'react'
 import { User, Monitor } from 'lucide-react'
 import { useEmployeeStore } from '../../stores/employeeStore'
-import { useFloorStore } from '../../stores/floorStore'
 import { useShallow } from 'zustand/react/shallow'
+import { useAllFloorElements } from '../../hooks/useActiveFloorElements'
+import { assignEmployee } from '../../lib/seatAssignment'
 import {
   isDeskElement,
   isWorkstationElement,
@@ -26,14 +27,13 @@ function getOpenDesks(
 }
 
 export function UnassignedReport() {
-  const { employees, getUnassignedEmployees, assignEmployeeToSeat } = useEmployeeStore(
+  const { employees, getUnassignedEmployees } = useEmployeeStore(
     useShallow((s) => ({
       employees: s.employees,
       getUnassignedEmployees: s.getUnassignedEmployees,
-      assignEmployeeToSeat: s.assignEmployeeToSeat,
     }))
   )
-  const floors = useFloorStore((s) => s.floors)
+  const floorsWithElements = useAllFloorElements()
 
   const [highlightedEmpId, setHighlightedEmpId] = useState<string | null>(null)
 
@@ -58,20 +58,20 @@ export function UnassignedReport() {
   }, [employees])
 
   const openDesksByFloor = useMemo(() => {
-    return floors.map((floor) => ({
-      floorId: floor.id,
-      floorName: floor.name,
-      desks: getOpenDesks(floor.elements, assignedSeatIds),
+    return floorsWithElements.map((f) => ({
+      floorId: f.floorId,
+      floorName: f.floorName,
+      desks: getOpenDesks(f.elements, assignedSeatIds),
     })).filter((f) => f.desks.length > 0)
-  }, [floors, assignedSeatIds])
+  }, [floorsWithElements, assignedSeatIds])
 
   const handleDeskClick = useCallback(
     (deskId: string, floorId: string) => {
       if (!highlightedEmpId) return
-      assignEmployeeToSeat(highlightedEmpId, deskId, floorId)
+      assignEmployee(highlightedEmpId, deskId, floorId)
       setHighlightedEmpId(null)
     },
-    [highlightedEmpId, assignEmployeeToSeat]
+    [highlightedEmpId]
   )
 
   const handleEmpClick = useCallback((empId: string) => {
