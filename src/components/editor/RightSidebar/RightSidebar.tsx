@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useInsightsStore } from '../../../stores/insightsStore'
 import { useUIStore } from '../../../stores/uiStore'
 import { InsightsPanel } from './InsightsPanel'
@@ -9,8 +10,17 @@ export function RightSidebar() {
   const tab = useUIStore((s) => s.rightSidebarTab)
   const setTab = useUIStore((s) => s.setRightSidebarTab)
 
-  const insightCounts = useInsightsStore((s) => s.getCounts())
-  const badgeCount = insightCounts.critical + insightCounts.warning
+  const insights = useInsightsStore((s) => s.insights)
+  const badgeCount = useMemo(() => {
+    let critical = 0
+    let warning = 0
+    for (const i of insights) {
+      if (i.dismissed) continue
+      if (i.severity === 'critical') critical++
+      else if (i.severity === 'warning') warning++
+    }
+    return critical + warning
+  }, [insights])
 
   const tabs = [
     { id: 'properties' as const, label: 'Properties' },

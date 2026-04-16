@@ -20,8 +20,6 @@ export function InsightsPanel() {
     restoreInsight,
     toggleCategory,
     toggleSeverity,
-    getFilteredInsights,
-    getCounts,
     filter,
   } = useInsightsStore(
     useShallow((s) => ({
@@ -32,8 +30,6 @@ export function InsightsPanel() {
       restoreInsight: s.restoreInsight,
       toggleCategory: s.toggleCategory,
       toggleSeverity: s.toggleSeverity,
-      getFilteredInsights: s.getFilteredInsights,
-      getCounts: s.getCounts,
       filter: s.filter,
     }))
   )
@@ -55,9 +51,38 @@ export function InsightsPanel() {
     }
   }, [triggerAnalysis])
 
-  const filtered = getFilteredInsights()
-  const dismissed = useInsightsStore((s) => s.insights.filter((i) => i.dismissed))
-  const counts = getCounts()
+  // Subscribe to raw state
+  const insights = useInsightsStore((s) => s.insights)
+
+  // Derive filtered insights
+  const filtered = useMemo(() => {
+    return insights.filter((insight) => {
+      if (!filter.categories.has(insight.category)) return false
+      if (!filter.severities.has(insight.severity)) return false
+      if (insight.dismissed && !filter.showDismissed) return false
+      return true
+    })
+  }, [insights, filter.categories, filter.severities, filter.showDismissed])
+
+  // Derive dismissed list
+  const dismissed = useMemo(
+    () => insights.filter((i) => i.dismissed),
+    [insights]
+  )
+
+  // Derive counts
+  const counts = useMemo(() => {
+    let critical = 0
+    let warning = 0
+    let info = 0
+    for (const i of insights) {
+      if (i.dismissed) continue
+      if (i.severity === 'critical') critical++
+      else if (i.severity === 'warning') warning++
+      else if (i.severity === 'info') info++
+    }
+    return { critical, warning, info }
+  }, [insights])
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleAction = useCallback((_insightId: string, _actionIndex: number) => {
