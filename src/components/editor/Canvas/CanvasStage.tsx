@@ -9,6 +9,8 @@ import { ElementRenderer } from './ElementRenderer'
 import { SelectionOverlay } from './SelectionOverlay'
 import { AlignmentGuides } from './AlignmentGuides'
 import { WallDrawingOverlay } from './WallDrawingOverlay'
+import { OrgChartOverlay } from '../../reports/OrgChartOverlay'
+import { SeatMapColorMode } from '../../reports/SeatMapColorMode'
 import { useWallDrawing } from '../../../hooks/useWallDrawing'
 import { ZOOM_MIN, ZOOM_MAX } from '../../../lib/constants'
 
@@ -19,6 +21,8 @@ export function CanvasStage() {
 
   const { stageX, stageY, stageScale, setStagePosition, setStageScale, activeTool } = useCanvasStore(useShallow((s) => ({ stageX: s.stageX, stageY: s.stageY, stageScale: s.stageScale, setStagePosition: s.setStagePosition, setStageScale: s.setStageScale, activeTool: s.activeTool })))
   const { clearSelection, setContextMenu } = useUIStore(useShallow((s) => ({ clearSelection: s.clearSelection, setContextMenu: s.setContextMenu })))
+  const orgChartOverlayEnabled = useUIStore((s) => s.orgChartOverlayEnabled)
+  const seatMapColorMode = useUIStore((s) => s.seatMapColorMode)
   const { wallDrawingState, handleCanvasClick, handleCanvasMouseMove, handleCanvasDoubleClick } = useWallDrawing()
 
   useEffect(() => {
@@ -148,6 +152,8 @@ export function CanvasStage() {
         <GridLayer width={size.width} height={size.height} />
         <ElementRenderer />
         <SelectionOverlay />
+        {orgChartOverlayEnabled && <OrgChartOverlay />}
+        {seatMapColorMode && <SeatMapColorMode />}
         <AlignmentGuides guides={[]} />
         <WallDrawingOverlay {...wallDrawingState} />
       </Stage>

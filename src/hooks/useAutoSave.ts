@@ -3,6 +3,7 @@ import { useElementsStore } from '../stores/elementsStore'
 import { useEmployeeStore } from '../stores/employeeStore'
 import { useProjectStore } from '../stores/projectStore'
 import { useCanvasStore } from '../stores/canvasStore'
+import { useFloorStore } from '../stores/floorStore'
 
 const SAVE_KEY = 'floocraft-autosave'
 const SAVE_DEBOUNCE = 2000
@@ -14,6 +15,8 @@ export function useAutoSave() {
   const project = useProjectStore((s) => s.currentProject)
   const settings = useCanvasStore((s) => s.settings)
   const setLastSavedAt = useProjectStore((s) => s.setLastSavedAt)
+  const floors = useFloorStore((s) => s.floors)
+  const activeFloorId = useFloorStore((s) => s.activeFloorId)
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
@@ -27,6 +30,8 @@ export function useAutoSave() {
         elements,
         employees,
         departmentColors,
+        floors,
+        activeFloorId,
         settings,
         savedAt: new Date().toISOString(),
       }
@@ -37,7 +42,7 @@ export function useAutoSave() {
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current)
     }
-  }, [elements, employees, departmentColors, project, settings, setLastSavedAt])
+  }, [elements, employees, departmentColors, floors, activeFloorId, project, settings, setLastSavedAt])
 }
 
 export function loadAutoSave(): {
@@ -45,6 +50,8 @@ export function loadAutoSave(): {
   elements: ReturnType<typeof useElementsStore.getState>['elements']
   employees: ReturnType<typeof useEmployeeStore.getState>['employees']
   departmentColors: ReturnType<typeof useEmployeeStore.getState>['departmentColors']
+  floors: ReturnType<typeof useFloorStore.getState>['floors']
+  activeFloorId: ReturnType<typeof useFloorStore.getState>['activeFloorId']
   settings: ReturnType<typeof useCanvasStore.getState>['settings']
 } | null {
   const raw = localStorage.getItem(SAVE_KEY)

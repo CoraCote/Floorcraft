@@ -3,9 +3,10 @@ import { useProjectStore } from '../../stores/projectStore'
 import { useElementsStore } from '../../stores/elementsStore'
 import { useEmployeeStore } from '../../stores/employeeStore'
 import { useCanvasStore } from '../../stores/canvasStore'
+import { useFloorStore } from '../../stores/floorStore'
 import { exportProjectJson } from '../../lib/exportJson'
 import { exportEmployeeCSV } from '../../lib/csv'
-import { Image, FileText, Table, FileJson, X } from 'lucide-react'
+import { FileText, Table, FileJson, X } from 'lucide-react'
 
 export function ExportDialog() {
   const open = useUIStore((s) => s.exportDialogOpen)
@@ -14,27 +15,33 @@ export function ExportDialog() {
   const elements = useElementsStore((s) => s.elements)
   const employees = useEmployeeStore((s) => s.employees)
   const settings = useCanvasStore((s) => s.settings)
+  const floors = useFloorStore((s) => s.floors)
 
   if (!open) return null
 
   const projectName = project?.name || 'floorplan'
 
   const handleExportJSON = () => {
-    exportProjectJson(projectName, settings, elements, employees)
+    exportProjectJson(projectName, settings, elements, employees, floors)
     setOpen(false)
   }
 
   const handleExportCSV = () => {
+    const floorMap: Record<string, string> = {}
+    for (const f of floors) {
+      floorMap[f.id] = f.name
+    }
     const employeeList = Object.values(employees).map((e) => ({
       name: e.name,
       email: e.email,
       department: e.department || '',
       team: e.team || '',
       title: e.title || '',
+      floor: e.floorId ? (floorMap[e.floorId] || '') : '',
+      desk: e.seatId || '',
+      manager: e.managerId ? (employees[e.managerId]?.name || '') : '',
       type: e.employmentType,
-      seatId: e.seatId || '',
-      floorId: e.floorId || '',
-      officeDays: e.officeDays.join(', '),
+      office_days: e.officeDays.join(', '),
       tags: e.tags.join(', '),
     }))
     const csv = exportEmployeeCSV(employeeList)
@@ -51,10 +58,9 @@ export function ExportDialog() {
   }
 
   const exports = [
-    { icon: <Image size={20} />, label: 'PNG Image', desc: 'Standard or high-res image', onClick: () => { setOpen(false) } },
-    { icon: <FileText size={20} />, label: 'PDF Document', desc: 'Print-ready at 300dpi', onClick: () => { setOpen(false) } },
-    { icon: <Table size={20} />, label: 'Employee Roster (CSV)', desc: 'Spreadsheet with seat assignments', onClick: handleExportCSV },
-    { icon: <FileJson size={20} />, label: 'Project Backup (JSON)', desc: 'Full project data for import', onClick: handleExportJSON },
+    { icon: <FileText size={20} />, label: 'PDF Floor Plan', desc: 'Print-ready floor plan at 300dpi', onClick: () => { setOpen(false) } },
+    { icon: <Table size={20} />, label: 'CSV Employee Roster', desc: 'Spreadsheet with seat assignments', onClick: handleExportCSV },
+    { icon: <FileJson size={20} />, label: 'JSON Project Data', desc: 'Full project data including floors and employees', onClick: handleExportJSON },
   ]
 
   return (

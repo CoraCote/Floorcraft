@@ -54,10 +54,11 @@ export function exportEmployeeCSV(
     department: string
     team: string
     title: string
+    floor: string
+    desk: string
+    manager: string
     type: string
-    seatId: string
-    floorId: string
-    officeDays: string
+    office_days: string
     tags: string
   }>
 ): string {
