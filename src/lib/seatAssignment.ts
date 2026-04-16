@@ -1,7 +1,7 @@
 import { useEmployeeStore } from '../stores/employeeStore'
 import { useElementsStore } from '../stores/elementsStore'
 import { useFloorStore } from '../stores/floorStore'
-import type { CanvasElement } from '../types/elements'
+import type { CanvasElement, DoorElement, WindowElement } from '../types/elements'
 import {
   isDeskElement,
   isWorkstationElement,
@@ -320,7 +320,7 @@ export function deleteElements(elementIds: string[]): void {
       for (const [childId, child] of Object.entries(elementsState)) {
         if (
           (child.type === 'door' || child.type === 'window') &&
-          (child as any).parentWallId === id
+          (child as DoorElement | WindowElement).parentWallId === id
         ) {
           toDelete.add(childId)
         }
