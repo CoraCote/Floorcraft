@@ -25,9 +25,25 @@ export function assignEmployee(employeeId: string, targetElementId: string, floo
   if (!employee) return
 
   // Short-circuit if the employee is already seated at the target on the same
-  // floor — avoids a clear-then-re-add cycle that would publish an intermediate
-  // invalid state and pollute undo history with no-op frames.
-  if (employee.seatId === targetElementId && employee.floorId === floorId) return
+  // floor AND the element side agrees — avoids a clear-then-re-add cycle that
+  // would publish an intermediate invalid state and pollute undo history with
+  // no-op frames. If the element disagrees (drift), fall through so the full
+  // assignment flow heals the inconsistency.
+  if (employee.seatId === targetElementId && employee.floorId === floorId) {
+    const isTargetOnActive = floorId === floorStore.activeFloorId
+    const targetElements = isTargetOnActive
+      ? elementsStore.elements
+      : floorStore.getFloorElements(floorId)
+    const target = targetElements[targetElementId]
+    if (target && isAssignableElement(target)) {
+      const agrees = isDeskElement(target)
+        ? target.assignedEmployeeId === employeeId
+        : isWorkstationElement(target) || isPrivateOfficeElement(target)
+          ? target.assignedEmployeeIds.includes(employeeId)
+          : false
+      if (agrees) return
+    }
+  }
 
   // 1. If employee was previously assigned, clear the old desk (which may be on
   //    the active floor OR on another floor stored in floorStore)
@@ -171,10 +187,14 @@ export function deleteFloor(floorId: string): void {
  * employees pointing at it. Works whether the element is on the active floor
  * (live elementsStore) or stored on another floor.
  */
-export function cleanupElementAssignments(elementId: string): void {
+export function cleanupElementAssignments(
+  elementId: string,
+  options?: { skipElementWrite?: boolean }
+): void {
   const employeeStore = useEmployeeStore.getState()
   const elementsStore = useElementsStore.getState()
   const floorStore = useFloorStore.getState()
+  const skipElementWrite = options?.skipElementWrite === true
 
   // 1. Locate the element: active floor first, then other floors.
   let foundFloorId: string | null = null
@@ -196,8 +216,10 @@ export function cleanupElementAssignments(elementId: string): void {
     }
   }
 
-  // 2. Clear element-side assignments.
-  if (foundElement && foundFloorId) {
+  // 2. Clear element-side assignments (skipped when the caller is about to
+  //    delete the element anyway — avoids a wasted write and an extra frame
+  //    in undo history).
+  if (!skipElementWrite && foundElement && foundFloorId) {
     let cleaned: CanvasElement | null = null
     if (isDeskElement(foundElement)) {
       if (foundElement.assignedEmployeeId !== null) {

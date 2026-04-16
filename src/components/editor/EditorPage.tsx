@@ -19,6 +19,7 @@ import { useElementsStore } from '../../stores/elementsStore'
 import { useCanvasStore } from '../../stores/canvasStore'
 import { useFloorStore } from '../../stores/floorStore'
 import { useEmployeeStore } from '../../stores/employeeStore'
+import { useInsightsStore } from '../../stores/insightsStore'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 import { useAutoSave, loadAutoSave } from '../../hooks/useAutoSave'
 import { useEffect } from 'react'
@@ -36,6 +37,7 @@ export function EditorPage() {
   useEffect(() => {
     if (!currentProject) {
       const saved = loadAutoSave()
+      let activeProjectId: string | null = null
       if (saved && saved.project) {
         useProjectStore.getState().setCurrentProject(saved.project)
         useElementsStore.getState().setElements(saved.elements || {})
@@ -48,13 +50,18 @@ export function EditorPage() {
         }
         if (saved.floors) useFloorStore.getState().setFloors(saved.floors)
         if (saved.activeFloorId) useFloorStore.getState().setActiveFloor(saved.activeFloorId)
+        activeProjectId = saved.project.id ?? null
       } else {
         const project = createNewProject()
         if (project.floors?.length) {
           useFloorStore.getState().setFloors(project.floors)
           useFloorStore.getState().setActiveFloor(project.activeFloorId)
         }
+        activeProjectId = project.id ?? null
       }
+      // Scope insight dismissals to this project so they don't bleed across
+      // projects that share the same browser localStorage.
+      useInsightsStore.getState().setCurrentProjectId(activeProjectId)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 

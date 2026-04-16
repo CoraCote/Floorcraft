@@ -37,7 +37,7 @@ export function ContextMenu() {
     }})
     items.push({ label: 'Delete', shortcut: 'Del', onClick: () => {
       const toDelete = selectedIds.length ? selectedIds : [el.id]
-      for (const id of toDelete) cleanupElementAssignments(id)
+      for (const id of toDelete) cleanupElementAssignments(id, { skipElementWrite: true })
       removeElements(toDelete)
       useUIStore.getState().clearSelection()
     }})

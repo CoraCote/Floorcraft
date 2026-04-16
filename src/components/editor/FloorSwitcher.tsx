@@ -11,7 +11,6 @@ export function FloorSwitcher() {
   )
   const addFloor = useFloorStore((s) => s.addFloor)
   const renameFloor = useFloorStore((s) => s.renameFloor)
-  const setFloorElements = useFloorStore((s) => s.setFloorElements)
   const getFloorElements = useFloorStore((s) => s.getFloorElements)
 
   const elements = useElementsStore((s) => s.elements)
@@ -49,10 +48,9 @@ export function FloorSwitcher() {
   }
 
   const handleAddFloor = () => {
-    // Save current floor's elements before creating the new floor. Then
-    // delegate to the centralized switchToFloor so the switch-and-load
-    // happens through one code path.
-    setFloorElements(activeFloorId, elements)
+    // switchToFloor already snapshots the outgoing floor's live elements
+    // before loading the new one, so we just need to create the new floor
+    // and hand off to the centralized switch.
     const newId = addFloor()
     switchToFloor(newId)
   }

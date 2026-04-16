@@ -153,19 +153,27 @@ export function CanvasStage() {
     const stage = stageRef.current
     if (!stage) return
 
-    // Translate the drop's client coords into stage-local coords.
+    // Translate the drop's client coords into canvas (stage-local) coords.
+    // Match the convention used elsewhere in this file (wall-drawing click/move,
+    // wheel zoom): subtract the stage origin and divide by scale.
     stage.setPointersPositions(e.nativeEvent)
     const pointer = stage.getPointerPosition()
     if (!pointer) return
-    const pos = stage.getAbsoluteTransform().copy().invert().point(pointer)
+    const pos = {
+      x: (pointer.x - stageX) / stageScale,
+      y: (pointer.y - stageY) / stageScale,
+    }
 
     // Hit-test assignable elements. (el.x, el.y) is CENTER; rotation is
     // ignored for this drop target (acceptable simplification).
+    // Skip locked and hidden elements — they can't accept a drop.
     const elements = useElementsStore.getState().elements
     let hitId: string | null = null
     let hitZ = -Infinity
     for (const el of Object.values(elements)) {
       if (!isAssignableElement(el)) continue
+      if (el.locked) continue
+      if (el.visible === false) continue
       const halfW = el.width / 2
       const halfH = el.height / 2
       if (
@@ -174,8 +182,9 @@ export function CanvasStage() {
         pos.y >= el.y - halfH &&
         pos.y <= el.y + halfH
       ) {
-        // Prefer topmost element on overlap.
-        if (el.zIndex >= hitZ) {
+        // Prefer topmost element on overlap. Use strict `>` so ties resolve
+        // to the first iterated match (stable order).
+        if (el.zIndex > hitZ) {
           hitZ = el.zIndex
           hitId = el.id
         }
@@ -185,7 +194,7 @@ export function CanvasStage() {
     if (hitId) {
       assignEmployee(empId, hitId, useFloorStore.getState().activeFloorId)
     }
-  }, [])
+  }, [stageX, stageY, stageScale])
 
   return (
     <div

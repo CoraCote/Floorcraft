@@ -6,7 +6,8 @@ import { useState, useCallback } from 'react'
 export function CSVImportDialog() {
   const open = useUIStore((s) => s.csvImportOpen)
   const setOpen = useUIStore((s) => s.setCsvImportOpen)
-  const addEmployees = useEmployeeStore((s) => s.addEmployees)
+  const addEmployee = useEmployeeStore((s) => s.addEmployee)
+  const updateEmployee = useEmployeeStore((s) => s.updateEmployee)
 
   const [csvText, setCsvText] = useState('')
   const [preview, setPreview] = useState<ReturnType<typeof parseEmployeeCSV> | null>(null)
@@ -18,30 +19,63 @@ export function CSVImportDialog() {
 
   const handleImport = useCallback(() => {
     if (!preview) return
-    addEmployees(
-      preview.rows.map((r) => ({
+
+    // Two-pass import so we can resolve `manager` (a name string in the CSV)
+    // to a `managerId` including employees we just added in the first pass.
+    //
+    // Pass 1: create every employee with managerId: null, recording the
+    // (newId → rawManagerName) pairs for rows that had a manager column.
+    const pending: Array<{ empId: string; managerName: string }> = []
+    for (const r of preview.rows) {
+      const newId = addEmployee({
         name: r.name,
         email: r.email || '',
         department: r.department || null,
         team: r.team || null,
         title: r.title || null,
         managerId: null,
-        employmentType: (r.type as 'full-time' | 'contractor' | 'part-time' | 'intern') || 'full-time',
+        employmentType:
+          (r.type as 'full-time' | 'contractor' | 'part-time' | 'intern') || 'full-time',
         officeDays: r.office_days ? r.office_days.split(',').map((d) => d.trim()) : [],
         startDate: r.start_date || null,
         endDate: null,
         equipmentNeeds: [],
-        equipmentStatus: 'not-needed' as const,
+        equipmentStatus: 'not-needed',
         photoUrl: null,
         tags: r.tags ? r.tags.split(',').map((t) => t.trim()) : [],
         seatId: null,
         floorId: null,
-      }))
-    )
+      })
+      const rawManager = r.manager?.trim()
+      if (rawManager) {
+        pending.push({ empId: newId, managerName: rawManager })
+      }
+    }
+
+    // Pass 2: resolve manager names against the full store (new + pre-existing).
+    // Case-insensitive, trimmed equality. Ambiguous matches stay unresolved.
+    const warnings: string[] = []
+    const allEmployees = Object.values(useEmployeeStore.getState().employees)
+    for (const { empId, managerName } of pending) {
+      const needle = managerName.toLowerCase()
+      const matches = allEmployees.filter((e) => e.name.trim().toLowerCase() === needle)
+      if (matches.length === 1) {
+        updateEmployee(empId, { managerId: matches[0].id })
+      } else if (matches.length === 0) {
+        warnings.push(`No employee found matching manager "${managerName}"`)
+      } else {
+        warnings.push(`Ambiguous manager "${managerName}" — ${matches.length} matches`)
+      }
+    }
+    if (warnings.length > 0) {
+      // eslint-disable-next-line no-console
+      console.warn('CSV import — unresolved managers:\n' + warnings.join('\n'))
+    }
+
     setOpen(false)
     setCsvText('')
     setPreview(null)
-  }, [preview, addEmployees, setOpen])
+  }, [preview, addEmployee, updateEmployee, setOpen])
 
   const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]

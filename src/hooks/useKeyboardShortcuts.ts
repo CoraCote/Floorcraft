@@ -37,7 +37,7 @@ export function useKeyboardShortcuts() {
 
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedIds.length > 0) {
         e.preventDefault()
-        for (const id of selectedIds) cleanupElementAssignments(id)
+        for (const id of selectedIds) cleanupElementAssignments(id, { skipElementWrite: true })
         removeElements(selectedIds)
         clearSelection()
         return

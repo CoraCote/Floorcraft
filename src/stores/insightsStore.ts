@@ -7,6 +7,7 @@ import type { Employee } from '../types/employee'
 interface InsightsState {
   insights: Insight[]
   dismissedIds: Set<string>
+  currentProjectId: string | null
   filter: {
     categories: Set<InsightCategory>
     severities: Set<Severity>
@@ -19,6 +20,7 @@ interface InsightsState {
   runAnalysis: (elements: CanvasElement[], employees: Employee[]) => void
   dismissInsight: (id: string) => void
   restoreInsight: (id: string) => void
+  setCurrentProjectId: (id: string | null) => void
   toggleCategory: (category: InsightCategory) => void
   toggleSeverity: (severity: Severity) => void
   setShowDismissed: (show: boolean) => void
@@ -54,6 +56,7 @@ function saveDismissedIds(ids: Set<string>, projectId?: string) {
 export const useInsightsStore = create<InsightsState>((set, get) => ({
   insights: [],
   dismissedIds: loadDismissedIds(),
+  currentProjectId: null,
   filter: {
     categories: new Set(ALL_CATEGORIES),
     severities: new Set(ALL_SEVERITIES),
@@ -77,7 +80,7 @@ export const useInsightsStore = create<InsightsState>((set, get) => ({
     set((state) => {
       const next = new Set(state.dismissedIds)
       next.add(id)
-      saveDismissedIds(next)
+      saveDismissedIds(next, state.currentProjectId ?? 'default')
       return {
         dismissedIds: next,
         insights: state.insights.map((i) =>
@@ -91,7 +94,7 @@ export const useInsightsStore = create<InsightsState>((set, get) => ({
     set((state) => {
       const next = new Set(state.dismissedIds)
       next.delete(id)
-      saveDismissedIds(next)
+      saveDismissedIds(next, state.currentProjectId ?? 'default')
       return {
         dismissedIds: next,
         insights: state.insights.map((i) =>
@@ -99,6 +102,23 @@ export const useInsightsStore = create<InsightsState>((set, get) => ({
         ),
       }
     })
+  },
+
+  setCurrentProjectId: (id) => {
+    // Swapping projects → re-hydrate dismissals from the new project's
+    // localStorage bucket so prior project's dismissed insights don't bleed
+    // into this one. Insights are re-marked on the next runAnalysis call.
+    if (id === null) {
+      set({ currentProjectId: null })
+      return
+    }
+    const dismissed = loadDismissedIds(id)
+    set((state) => ({
+      currentProjectId: id,
+      dismissedIds: dismissed,
+      // Refresh the `dismissed` flag on existing insights against the new set.
+      insights: state.insights.map((i) => ({ ...i, dismissed: dismissed.has(i.id) })),
+    }))
   },
 
   toggleCategory: (category) => {

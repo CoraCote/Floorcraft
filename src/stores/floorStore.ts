@@ -53,8 +53,12 @@ export const useFloorStore = create<FloorState>((set, get) => ({
     set((state) => {
       if (state.floors.length <= 1) return state
       const nextFloors = state.floors.filter((f) => f.id !== floorId)
+      // When the active floor is being deleted, fall back to the floor with
+      // the lowest `order`, not whatever happens to be first in the array.
       const nextActiveId =
-        state.activeFloorId === floorId ? nextFloors[0].id : state.activeFloorId
+        state.activeFloorId === floorId
+          ? [...nextFloors].sort((a, b) => a.order - b.order)[0].id
+          : state.activeFloorId
       return { floors: nextFloors, activeFloorId: nextActiveId }
     }),
 
