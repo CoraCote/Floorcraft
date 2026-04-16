@@ -34,7 +34,7 @@ export function WallRenderer({ element }: WallRendererProps) {
           strokeWidth={element.thickness}
           lineCap="round"
           lineJoin="round"
-          hitStrokeWidth={12}
+          hitStrokeWidth={hitStrokeWidth}
         />
       )}
     </Group>

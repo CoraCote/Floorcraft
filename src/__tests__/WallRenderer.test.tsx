@@ -97,7 +97,11 @@ describe('WallRenderer', () => {
     expect(konvaKindsFor(wall({ bulges: [25, 0] }))).toEqual(['Path'])
   })
 
-  it('selected state still flips stroke regardless of curve', () => {
-    expect(() => konvaKindsFor(wall({ bulges: [25, 0] }))).not.toThrow()
+  it('negative bulge still routes to Path (bulge sign does not matter)', () => {
+    expect(konvaKindsFor(wall({ bulges: [0, -25] }))).toEqual(['Path'])
+  })
+
+  it('mixed zero + non-zero bulges route to Path (any non-zero wins)', () => {
+    expect(konvaKindsFor(wall({ bulges: [0, 10, 0] }))).toEqual(['Path'])
   })
 })
