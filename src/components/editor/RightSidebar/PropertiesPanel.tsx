@@ -1,13 +1,24 @@
 import { useUIStore } from '../../../stores/uiStore'
 import { useElementsStore } from '../../../stores/elementsStore'
-import { isTableElement } from '../../../types/elements'
+import { useEmployeeStore } from '../../../stores/employeeStore'
+import {
+  isTableElement,
+  isDeskElement,
+  isWorkstationElement,
+  isPrivateOfficeElement,
+  isConferenceRoomElement,
+  isCommonAreaElement,
+  isAssignableElement,
+} from '../../../types/elements'
 import { computeSeatPositions } from '../../../lib/seatLayout'
-import type { TableElement } from '../../../types/elements'
+import type { TableElement, DeskElement, WorkstationElement, PrivateOfficeElement, ConferenceRoomElement, CommonAreaElement } from '../../../types/elements'
 
 export function PropertiesPanel() {
   const selectedIds = useUIStore((s) => s.selectedIds)
   const elements = useElementsStore((s) => s.elements)
   const updateElement = useElementsStore((s) => s.updateElement)
+  const employees = useEmployeeStore((s) => s.employees)
+  const unassignEmployee = useEmployeeStore((s) => s.unassignEmployee)
 
   if (selectedIds.length === 0) {
     return <div className="text-sm text-gray-400 text-center py-8">Select an element to see its properties</div>
@@ -21,6 +32,13 @@ export function PropertiesPanel() {
   if (!el) return null
 
   const update = (updates: Record<string, unknown>) => updateElement(el.id, updates)
+
+  // Helper to find assigned employee name for desk/private-office
+  const getAssignedEmployeeName = (employeeId: string | null): string | null => {
+    if (!employeeId) return null
+    const emp = employees[employeeId]
+    return emp ? emp.name : null
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -122,6 +140,181 @@ export function PropertiesPanel() {
               const seats = computeSeatPositions(el.type, count, el.seatLayout, el.width, el.height)
               update({ seatCount: count, seats } as Partial<TableElement>)
             }}
+          />
+        </div>
+      )}
+
+      {/* Desk / Hot-desk properties */}
+      {isDeskElement(el) && (
+        <>
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">Desk ID</label>
+            <input
+              className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400"
+              value={el.deskId}
+              onChange={(e) => update({ deskId: e.target.value } as Partial<DeskElement>)}
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">Assigned To</label>
+            {el.assignedEmployeeId ? (
+              <div className="flex items-center justify-between gap-2 text-sm border border-gray-200 rounded px-2 py-1.5">
+                <span className="text-gray-800 truncate">
+                  {getAssignedEmployeeName(el.assignedEmployeeId) || el.assignedEmployeeId}
+                </span>
+                <button
+                  onClick={() => {
+                    unassignEmployee(el.assignedEmployeeId!)
+                    update({ assignedEmployeeId: null } as Partial<DeskElement>)
+                  }}
+                  className="text-xs text-red-500 hover:text-red-700 flex-shrink-0"
+                >
+                  Clear
+                </button>
+              </div>
+            ) : (
+              <div className="text-sm text-gray-400 border border-gray-200 rounded px-2 py-1.5">
+                No one assigned
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Workstation properties */}
+      {isWorkstationElement(el) && (
+        <>
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">Desk ID</label>
+            <input
+              className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400"
+              value={el.deskId}
+              onChange={(e) => update({ deskId: e.target.value } as Partial<WorkstationElement>)}
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">Positions</label>
+            <input
+              type="number"
+              className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400"
+              value={el.positions}
+              min={1}
+              max={20}
+              onChange={(e) => update({ positions: Number(e.target.value) } as Partial<WorkstationElement>)}
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">
+              Assigned ({el.assignedEmployeeIds.length} / {el.positions})
+            </label>
+            {el.assignedEmployeeIds.length > 0 ? (
+              <div className="flex flex-col gap-1">
+                {el.assignedEmployeeIds.map((empId) => (
+                  <div key={empId} className="flex items-center justify-between gap-2 text-sm border border-gray-200 rounded px-2 py-1">
+                    <span className="text-gray-800 truncate">
+                      {getAssignedEmployeeName(empId) || empId}
+                    </span>
+                    <button
+                      onClick={() => {
+                        unassignEmployee(empId)
+                        update({
+                          assignedEmployeeIds: el.assignedEmployeeIds.filter((id) => id !== empId),
+                        } as Partial<WorkstationElement>)
+                      }}
+                      className="text-xs text-red-500 hover:text-red-700 flex-shrink-0"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-sm text-gray-400 border border-gray-200 rounded px-2 py-1.5">
+                No one assigned
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Private office properties */}
+      {isPrivateOfficeElement(el) && (
+        <>
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">Desk ID</label>
+            <input
+              className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400"
+              value={el.deskId}
+              onChange={(e) => update({ deskId: e.target.value } as Partial<PrivateOfficeElement>)}
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">
+              Assigned ({el.assignedEmployeeIds.length} / {el.capacity})
+            </label>
+            {el.assignedEmployeeIds.length > 0 ? (
+              <div className="flex flex-col gap-1">
+                {el.assignedEmployeeIds.map((empId) => (
+                  <div key={empId} className="flex items-center justify-between gap-2 text-sm border border-gray-200 rounded px-2 py-1">
+                    <span className="text-gray-800 truncate">
+                      {getAssignedEmployeeName(empId) || empId}
+                    </span>
+                    <button
+                      onClick={() => {
+                        unassignEmployee(empId)
+                        update({
+                          assignedEmployeeIds: el.assignedEmployeeIds.filter((id) => id !== empId),
+                        } as Partial<PrivateOfficeElement>)
+                      }}
+                      className="text-xs text-red-500 hover:text-red-700 flex-shrink-0"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-sm text-gray-400 border border-gray-200 rounded px-2 py-1.5">
+                No one assigned
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Conference room properties */}
+      {isConferenceRoomElement(el) && (
+        <>
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">Room Name</label>
+            <input
+              className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400"
+              value={el.roomName}
+              onChange={(e) => update({ roomName: e.target.value } as Partial<ConferenceRoomElement>)}
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">Capacity</label>
+            <input
+              type="number"
+              className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400"
+              value={el.capacity}
+              min={1}
+              max={100}
+              onChange={(e) => update({ capacity: Number(e.target.value) } as Partial<ConferenceRoomElement>)}
+            />
+          </div>
+        </>
+      )}
+
+      {/* Common area properties */}
+      {isCommonAreaElement(el) && (
+        <div>
+          <label className="text-xs font-medium text-gray-500 mb-1 block">Area Name</label>
+          <input
+            className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400"
+            value={el.areaName}
+            onChange={(e) => update({ areaName: e.target.value } as Partial<CommonAreaElement>)}
           />
         </div>
       )}

@@ -1,13 +1,13 @@
 import Papa from 'papaparse'
-import type { GuestImportRow } from '../types/guests'
+import type { EmployeeImportRow } from '../types/employee'
 
-export interface CSVParseResult {
+export interface EmployeeCSVParseResult {
   headers: string[]
-  rows: GuestImportRow[]
+  rows: EmployeeImportRow[]
   errors: string[]
 }
 
-export function parseGuestCSV(text: string): CSVParseResult {
+export function parseEmployeeCSV(text: string): EmployeeCSVParseResult {
   const result = Papa.parse<Record<string, string>>(text, {
     header: true,
     skipEmptyLines: true,
@@ -17,26 +17,49 @@ export function parseGuestCSV(text: string): CSVParseResult {
   const headers = result.meta.fields || []
   const errors = result.errors.map((e) => `Row ${e.row}: ${e.message}`)
 
-  const rows: GuestImportRow[] = result.data.map((row) => ({
-    name: row.name || row.full_name || row.fullname || '',
-    group: row.group || row.group_name || row.party || row.table_group || undefined,
-    dietary: row.dietary || row.diet || row.dietary_restrictions || row.food || undefined,
-    vip: row.vip === 'true' || row.vip === 'yes' || row.vip === '1' || false,
-    ...row,
-  }))
+  const rows: EmployeeImportRow[] = result.data.map((row) => {
+    // Flexible column name mapping
+    const name = row.name || row.full_name || row.employee_name || ''
+    const email = row.email || row.email_address || undefined
+    const department = row.department || row.dept || undefined
+    const team = row.team || row.group || undefined
+    const title = row.title || row.role || row.job_title || undefined
+    const manager = row.manager || row.manager_name || row.reports_to || undefined
+    const type = row.type || row.employment_type || 'full-time'
+    const office_days = row.office_days || row.days || row.in_office || undefined
+    const start_date = row.start_date || row.hire_date || undefined
+    const tags = row.tags || undefined
+
+    return {
+      name,
+      email,
+      department,
+      team,
+      title,
+      manager,
+      type,
+      office_days,
+      start_date,
+      tags,
+    }
+  })
 
   return { headers, rows: rows.filter((r) => r.name.trim() !== ''), errors }
 }
 
-export function exportGuestsCSV(
-  guests: Array<{
+export function exportEmployeeCSV(
+  employees: Array<{
     name: string
-    group: string
-    table: string
-    seat: string
-    dietary: string
-    vip: boolean
+    email: string
+    department: string
+    team: string
+    title: string
+    type: string
+    seatId: string
+    floorId: string
+    officeDays: string
+    tags: string
   }>
 ): string {
-  return Papa.unparse(guests)
+  return Papa.unparse(employees)
 }

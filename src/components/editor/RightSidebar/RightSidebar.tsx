@@ -1,6 +1,7 @@
 import { useUIStore } from '../../../stores/uiStore'
-import { GuestListPanel } from './GuestListPanel'
+import { PeoplePanel } from './PeoplePanel'
 import { PropertiesPanel } from './PropertiesPanel'
+import { ReportsPanel } from './ReportsPanel'
 
 export function RightSidebar() {
   const tab = useUIStore((s) => s.rightSidebarTab)
@@ -8,9 +9,8 @@ export function RightSidebar() {
 
   const tabs = [
     { id: 'properties' as const, label: 'Properties' },
-    { id: 'guests' as const, label: 'Guests' },
-    { id: 'comments' as const, label: 'Comments' },
-    { id: 'versions' as const, label: 'Versions' },
+    { id: 'people' as const, label: 'People' },
+    { id: 'reports' as const, label: 'Reports' },
   ]
 
   return (
@@ -32,9 +32,8 @@ export function RightSidebar() {
       </div>
       <div className="flex-1 overflow-y-auto p-3">
         {tab === 'properties' && <PropertiesPanel />}
-        {tab === 'guests' && <GuestListPanel />}
-        {tab === 'comments' && <div className="text-sm text-gray-400">Comments panel</div>}
-        {tab === 'versions' && <div className="text-sm text-gray-400">Version history panel</div>}
+        {tab === 'people' && <PeoplePanel />}
+        {tab === 'reports' && <ReportsPanel />}
       </div>
     </div>
   )

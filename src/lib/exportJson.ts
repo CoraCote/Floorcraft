@@ -1,5 +1,5 @@
 import type { CanvasElement } from '../types/elements'
-import type { Guest } from '../types/guests'
+import type { Employee } from '../types/employee'
 import type { CanvasSettings } from '../types/project'
 
 export interface FloocraftExport {
@@ -9,7 +9,7 @@ export interface FloocraftExport {
     settings: CanvasSettings
   }
   elements: CanvasElement[]
-  guests: Guest[]
+  employees: Employee[]
   exportedAt: string
 }
 
@@ -17,14 +17,14 @@ export function exportProjectJson(
   name: string,
   settings: CanvasSettings,
   elements: Record<string, CanvasElement>,
-  guests: Record<string, Guest>,
+  employees: Record<string, Employee>,
   fileName?: string
 ) {
   const data: FloocraftExport = {
     version: '1.0',
     project: { name, settings },
     elements: Object.values(elements),
-    guests: Object.values(guests),
+    employees: Object.values(employees),
     exportedAt: new Date().toISOString(),
   }
 

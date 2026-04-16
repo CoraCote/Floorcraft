@@ -1,11 +1,10 @@
 import { useUIStore } from '../../stores/uiStore'
 import { useProjectStore } from '../../stores/projectStore'
 import { useElementsStore } from '../../stores/elementsStore'
-import { useSeatingStore } from '../../stores/seatingStore'
+import { useEmployeeStore } from '../../stores/employeeStore'
 import { useCanvasStore } from '../../stores/canvasStore'
 import { exportProjectJson } from '../../lib/exportJson'
-import { exportGuestsCSV } from '../../lib/csv'
-import { isTableElement } from '../../types/elements'
+import { exportEmployeeCSV } from '../../lib/csv'
 import { Image, FileText, Table, FileJson, X } from 'lucide-react'
 
 export function ExportDialog() {
@@ -13,7 +12,7 @@ export function ExportDialog() {
   const setOpen = useUIStore((s) => s.setExportDialogOpen)
   const project = useProjectStore((s) => s.currentProject)
   const elements = useElementsStore((s) => s.elements)
-  const guests = useSeatingStore((s) => s.guests)
+  const employees = useEmployeeStore((s) => s.employees)
   const settings = useCanvasStore((s) => s.settings)
 
   if (!open) return null
@@ -21,40 +20,28 @@ export function ExportDialog() {
   const projectName = project?.name || 'floorplan'
 
   const handleExportJSON = () => {
-    exportProjectJson(projectName, settings, elements, guests)
+    exportProjectJson(projectName, settings, elements, employees)
     setOpen(false)
   }
 
   const handleExportCSV = () => {
-    const guestList = Object.values(guests).map((g) => {
-      let tableName = ''
-      let seatName = ''
-      if (g.seatElementId) {
-        for (const el of Object.values(elements)) {
-          if (isTableElement(el)) {
-            const seat = el.seats.find((s) => s.id === g.seatElementId)
-            if (seat) {
-              tableName = el.label
-              seatName = `Seat ${el.seats.indexOf(seat) + 1}`
-              break
-            }
-          }
-        }
-      }
-      return {
-        name: g.name,
-        group: g.groupName || '',
-        table: tableName,
-        seat: seatName,
-        dietary: g.dietary || '',
-        vip: g.vip,
-      }
-    })
-    const csv = exportGuestsCSV(guestList)
+    const employeeList = Object.values(employees).map((e) => ({
+      name: e.name,
+      email: e.email,
+      department: e.department || '',
+      team: e.team || '',
+      title: e.title || '',
+      type: e.employmentType,
+      seatId: e.seatId || '',
+      floorId: e.floorId || '',
+      officeDays: e.officeDays.join(', '),
+      tags: e.tags.join(', '),
+    }))
+    const csv = exportEmployeeCSV(employeeList)
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
-    link.download = `${projectName}-guests.csv`
+    link.download = `${projectName}-employees.csv`
     link.href = url
     document.body.appendChild(link)
     link.click()
@@ -66,7 +53,7 @@ export function ExportDialog() {
   const exports = [
     { icon: <Image size={20} />, label: 'PNG Image', desc: 'Standard or high-res image', onClick: () => { setOpen(false) } },
     { icon: <FileText size={20} />, label: 'PDF Document', desc: 'Print-ready at 300dpi', onClick: () => { setOpen(false) } },
-    { icon: <Table size={20} />, label: 'Guest List (CSV)', desc: 'Spreadsheet with assignments', onClick: handleExportCSV },
+    { icon: <Table size={20} />, label: 'Employee Roster (CSV)', desc: 'Spreadsheet with seat assignments', onClick: handleExportCSV },
     { icon: <FileJson size={20} />, label: 'Project Backup (JSON)', desc: 'Full project data for import', onClick: handleExportJSON },
   ]
 
