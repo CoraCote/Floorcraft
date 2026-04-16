@@ -8,6 +8,7 @@ import {
   isPrivateOfficeElement,
   isAssignableElement,
   isTableElement,
+  isWallElement,
 } from '../types/elements'
 
 /**
@@ -287,6 +288,78 @@ function clearEmployeeFromElement(elementId: string, employeeId: string, floorId
   } else {
     floorStore.setFloorElements(floorId, { ...elements, [elementId]: updated })
   }
+}
+
+/**
+ * Atomically delete one or more elements from the currently active floor.
+ * Performs cascades and cleanup in a single store update so zundo sees it
+ * as one undoable step:
+ *
+ *   - Walls: cascade-delete any doors/windows whose parentWallId matches.
+ *   - Assignable elements (desk/workstation/private-office): unassign any
+ *     employees currently seated at them.
+ *   - Locked elements: silently skipped.
+ */
+export function deleteElements(elementIds: string[]): void {
+  const elementsState = useElementsStore.getState().elements
+  const employeesState = useEmployeeStore.getState().employees
+
+  // 1. Filter out locked + unknown ids.
+  const validIds = elementIds.filter((id) => {
+    const el = elementsState[id]
+    return !!el && !el.locked
+  })
+  if (validIds.length === 0) return
+
+  // 2. Collect the final deletion set (including wall cascades).
+  const toDelete = new Set<string>(validIds)
+  for (const id of validIds) {
+    const el = elementsState[id]
+    if (!el) continue
+    if (isWallElement(el)) {
+      for (const [childId, child] of Object.entries(elementsState)) {
+        if (
+          (child.type === 'door' || child.type === 'window') &&
+          (child as any).parentWallId === id
+        ) {
+          toDelete.add(childId)
+        }
+      }
+    }
+  }
+
+  // 3. Collect employees to unassign (from assignable elements in toDelete).
+  const employeesToUnassign: string[] = []
+  for (const id of toDelete) {
+    const el = elementsState[id]
+    if (!el) continue
+    if (isAssignableElement(el)) {
+      for (const emp of Object.values(employeesState)) {
+        if (emp.seatId === id) employeesToUnassign.push(emp.id)
+      }
+    }
+    // Tables also carry guest assignments on their seats, but guests are a
+    // separate concept from employees and already cleaned up elsewhere
+    // (see deleteEmployee). We only need employee unassignment here.
+  }
+
+  // 4. Apply both mutations in ONE combined update so zundo snapshots once.
+  const nextElements = { ...elementsState }
+  for (const id of toDelete) delete nextElements[id]
+
+  const nextEmployees = { ...employeesState }
+  for (const empId of employeesToUnassign) {
+    const cur = nextEmployees[empId]
+    if (cur) {
+      nextEmployees[empId] = { ...cur, seatId: null, floorId: null }
+    }
+  }
+
+  // elementsStore is the temporal (zundo-tracked) store. Write elements first,
+  // then employees — employees are excluded from the undo partialize so their
+  // update can be applied separately without affecting the snapshot count.
+  useElementsStore.setState({ elements: nextElements })
+  useEmployeeStore.setState({ employees: nextEmployees })
 }
 
 /**
