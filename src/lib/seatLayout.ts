@@ -9,31 +9,11 @@ export function computeSeatPositions(
   tableHeight: number
 ): SeatPosition[] {
   switch (tableType) {
-    case 'table-round':
-      return computeRoundSeats(seatCount, tableWidth)
     case 'table-rect':
       return computeRectSeats(seatCount, seatLayout, tableWidth, tableHeight)
-    case 'table-banquet':
-      return computeBanquetSeats(seatCount, tableWidth, tableHeight)
     case 'table-conference':
       return computeConferenceSeats(seatCount, tableWidth, tableHeight)
   }
-}
-
-function computeRoundSeats(seatCount: number, diameter: number): SeatPosition[] {
-  const seats: SeatPosition[] = []
-  const radius = diameter / 2 + 16 // seats sit outside table edge
-  for (let i = 0; i < seatCount; i++) {
-    const angle = (2 * Math.PI * i) / seatCount - Math.PI / 2
-    seats.push({
-      id: nanoid(8),
-      offsetX: Math.cos(angle) * radius,
-      offsetY: Math.sin(angle) * radius,
-      rotation: (angle * 180) / Math.PI + 90,
-      assignedGuestId: null,
-    })
-  }
-  return seats
 }
 
 function computeRectSeats(
@@ -114,39 +94,6 @@ function computeRectSeats(
     for (let i = 0; i < leftCount; i++) {
       seats.push({ id: nanoid(8), offsetX: -(width / 2 + offset), offsetY: leftStart - i * seatSpacing, rotation: 90, assignedGuestId: null })
     }
-  }
-
-  return seats
-}
-
-function computeBanquetSeats(seatCount: number, width: number, height: number): SeatPosition[] {
-  const seats: SeatPosition[] = []
-  const perSide = Math.ceil(seatCount / 2)
-  const seatSpacing = Math.min(30, (width - 20) / perSide)
-  const offset = 18
-  const startX = -(perSide - 1) * seatSpacing / 2
-
-  // Top side
-  for (let i = 0; i < perSide; i++) {
-    seats.push({
-      id: nanoid(8),
-      offsetX: startX + i * seatSpacing,
-      offsetY: -(height / 2 + offset),
-      rotation: 180,
-      assignedGuestId: null,
-    })
-  }
-  // Bottom side
-  const bottomCount = seatCount - perSide
-  const startX2 = -(bottomCount - 1) * seatSpacing / 2
-  for (let i = 0; i < bottomCount; i++) {
-    seats.push({
-      id: nanoid(8),
-      offsetX: startX2 + i * seatSpacing,
-      offsetY: height / 2 + offset,
-      rotation: 0,
-      assignedGuestId: null,
-    })
   }
 
   return seats

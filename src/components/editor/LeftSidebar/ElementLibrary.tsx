@@ -1,10 +1,20 @@
 import { ELEMENT_DEFAULTS, TABLE_SEAT_DEFAULTS } from '../../../lib/constants'
-import type { ElementType, TableType } from '../../../types/elements'
+import type {
+  ElementType,
+  TableType,
+  TableElement,
+  BaseElement,
+  DeskElement,
+  WorkstationElement,
+  PrivateOfficeElement,
+  ConferenceRoomElement,
+  PhoneBoothElement,
+  CommonAreaElement,
+} from '../../../types/elements'
 import { useElementsStore } from '../../../stores/elementsStore'
 import { useCanvasStore } from '../../../stores/canvasStore'
 import { nanoid } from 'nanoid'
 import { computeSeatPositions } from '../../../lib/seatLayout'
-import type { TableElement, BaseElement } from '../../../types/elements'
 
 interface LibraryItem {
   type: ElementType
@@ -13,33 +23,35 @@ interface LibraryItem {
 }
 
 const LIBRARY_ITEMS: LibraryItem[] = [
-  { type: 'table-round', label: 'Round Table', category: 'Tables' },
-  { type: 'table-rect', label: 'Rectangular Table', category: 'Tables' },
-  { type: 'table-banquet', label: 'Banquet Table', category: 'Tables' },
-  { type: 'table-conference', label: 'Conference Table', category: 'Tables' },
-  { type: 'chair', label: 'Chair', category: 'Seating' },
-  { type: 'sofa', label: 'Sofa', category: 'Seating' },
-  { type: 'stool', label: 'Stool', category: 'Seating' },
-  { type: 'desk', label: 'Desk', category: 'Work' },
-  { type: 'counter', label: 'Counter', category: 'Work' },
-  { type: 'podium', label: 'Podium', category: 'Work' },
-  { type: 'lectern', label: 'Lectern', category: 'Work' },
-  { type: 'stage', label: 'Stage', category: 'Venue' },
-  { type: 'bar', label: 'Bar', category: 'Venue' },
-  { type: 'reception', label: 'Reception Desk', category: 'Venue' },
-  { type: 'dance-floor', label: 'Dance Floor', category: 'Venue' },
-  { type: 'custom-shape', label: 'Custom Shape', category: 'Zones' },
-  { type: 'divider', label: 'Divider', category: 'Zones' },
-  { type: 'planter', label: 'Planter', category: 'Zones' },
+  // Workspaces
+  { type: 'desk', label: 'Desk', category: 'Workspaces' },
+  { type: 'hot-desk', label: 'Hot Desk', category: 'Workspaces' },
+  { type: 'workstation', label: 'Workstation', category: 'Workspaces' },
+  { type: 'private-office', label: 'Private Office', category: 'Workspaces' },
+  // Rooms
+  { type: 'conference-room', label: 'Conference Room', category: 'Rooms' },
+  { type: 'phone-booth', label: 'Phone Booth', category: 'Rooms' },
+  { type: 'common-area', label: 'Common Area', category: 'Rooms' },
+  // Structure
+  { type: 'divider', label: 'Divider', category: 'Structure' },
+  { type: 'planter', label: 'Planter', category: 'Structure' },
+  // Other
+  { type: 'chair', label: 'Chair', category: 'Other' },
+  { type: 'counter', label: 'Counter', category: 'Other' },
+  { type: 'table-rect', label: 'Table', category: 'Other' },
+  { type: 'table-conference', label: 'Conference Table', category: 'Other' },
+  { type: 'custom-shape', label: 'Custom Shape', category: 'Other' },
+  { type: 'text-label', label: 'Text Label', category: 'Other' },
 ]
 
 function isTableType(type: ElementType): type is TableType {
-  return type === 'table-round' || type === 'table-rect' || type === 'table-banquet' || type === 'table-conference'
+  return type === 'table-rect' || type === 'table-conference'
 }
 
 export function ElementLibrary() {
   const addElement = useElementsStore((s) => s.addElement)
   const getMaxZIndex = useElementsStore((s) => s.getMaxZIndex)
+  const elements = useElementsStore((s) => s.elements)
   const stageScale = useCanvasStore((s) => s.stageScale)
   const stageX = useCanvasStore((s) => s.stageX)
   const stageY = useCanvasStore((s) => s.stageY)
@@ -51,48 +63,111 @@ export function ElementLibrary() {
     const x = (-stageX + 400) / stageScale
     const y = (-stageY + 300) / stageScale
 
+    const baseProps = {
+      id,
+      x,
+      y,
+      width: defaults.width,
+      height: defaults.height,
+      rotation: 0,
+      locked: false,
+      groupId: null,
+      zIndex: getMaxZIndex() + 1,
+      label: item.label,
+      visible: true,
+      style: { fill: defaults.fill, stroke: defaults.stroke, strokeWidth: 2, opacity: 1 },
+    } as const
+
     if (isTableType(item.type)) {
       const seatCount = TABLE_SEAT_DEFAULTS[item.type] || 6
-      const layout = item.type === 'table-round' ? 'around' as const
-        : item.type === 'table-banquet' ? 'both-sides' as const
-        : item.type === 'table-conference' ? 'around' as const
-        : 'both-sides' as const
+      const layout = item.type === 'table-conference' ? 'around' as const : 'both-sides' as const
 
       const element: TableElement = {
-        id,
+        ...baseProps,
         type: item.type,
-        x, y,
-        width: defaults.width,
-        height: defaults.height,
-        rotation: 0,
-        locked: false,
-        groupId: null,
-        zIndex: getMaxZIndex() + 1,
-        label: item.label,
-        visible: true,
-        style: { fill: defaults.fill, stroke: defaults.stroke, strokeWidth: 2, opacity: 1 },
         seatCount,
         seatLayout: layout,
         seats: computeSeatPositions(item.type, seatCount, layout, defaults.width, defaults.height),
       }
       addElement(element)
-    } else {
-      const element: BaseElement = {
-        id,
+      return
+    }
+
+    if (item.type === 'desk' || item.type === 'hot-desk') {
+      const deskId = `D-${nanoid(6)}`
+      const element: DeskElement = {
+        ...baseProps,
         type: item.type,
-        x, y,
-        width: defaults.width,
-        height: defaults.height,
-        rotation: 0,
-        locked: false,
-        groupId: null,
-        zIndex: getMaxZIndex() + 1,
-        label: item.label,
-        visible: true,
-        style: { fill: defaults.fill, stroke: defaults.stroke, strokeWidth: 2, opacity: 1 },
+        deskId,
+        assignedEmployeeId: null,
+        capacity: 1,
       }
       addElement(element)
+      return
     }
+
+    if (item.type === 'workstation') {
+      const deskId = `W-${nanoid(6)}`
+      const element: WorkstationElement = {
+        ...baseProps,
+        type: 'workstation',
+        deskId,
+        positions: 4,
+        assignedEmployeeIds: [],
+      }
+      addElement(element)
+      return
+    }
+
+    if (item.type === 'private-office') {
+      const deskId = `PO-${nanoid(6)}`
+      const element: PrivateOfficeElement = {
+        ...baseProps,
+        type: 'private-office',
+        deskId,
+        capacity: 1,
+        assignedEmployeeIds: [],
+      }
+      addElement(element)
+      return
+    }
+
+    if (item.type === 'conference-room') {
+      const element: ConferenceRoomElement = {
+        ...baseProps,
+        type: 'conference-room',
+        roomName: 'Conference Room',
+        capacity: 8,
+      }
+      addElement(element)
+      return
+    }
+
+    if (item.type === 'phone-booth') {
+      const element: PhoneBoothElement = {
+        ...baseProps,
+        type: 'phone-booth',
+      }
+      addElement(element)
+      return
+    }
+
+    if (item.type === 'common-area') {
+      const element: CommonAreaElement = {
+        ...baseProps,
+        type: 'common-area',
+        areaName: 'Common Area',
+      }
+      addElement(element)
+      return
+    }
+
+    // Default: generic BaseElement for chair, counter, divider, planter, custom-shape, text-label
+    const element: BaseElement = {
+      ...baseProps,
+      type: item.type,
+    }
+    addElement(element)
   }
 
   const categories = [...new Set(LIBRARY_ITEMS.map((i) => i.category))]

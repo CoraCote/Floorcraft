@@ -58,7 +58,7 @@ export function TopBar() {
               setEditing(true)
             }}
           >
-            {project?.name || 'Untitled Floor Plan'}
+            {project?.name || 'Untitled Office Plan'}
           </button>
         )}
       </div>
