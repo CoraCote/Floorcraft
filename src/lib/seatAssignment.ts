@@ -7,6 +7,7 @@ import {
   isWorkstationElement,
   isPrivateOfficeElement,
   isAssignableElement,
+  isTableElement,
 } from '../types/elements'
 
 /**
@@ -82,10 +83,80 @@ export function unassignEmployee(employeeId: string): void {
 
 /**
  * Fully delete an employee, clearing them from any assigned desk first.
+ * Also walks every floor's elements to clear stale `assignedGuestId`
+ * references on TableElement seats.
  */
 export function deleteEmployee(employeeId: string): void {
   unassignEmployee(employeeId)
+
+  // Walk all floors and clean TableElement seat references.
+  const floorStore = useFloorStore.getState()
+  const elementsStore = useElementsStore.getState()
+  const activeFloorId = floorStore.activeFloorId
+
+  for (const floor of floorStore.floors) {
+    const isActive = floor.id === activeFloorId
+    const elements = isActive ? elementsStore.elements : floor.elements
+    for (const el of Object.values(elements)) {
+      if (!isTableElement(el)) continue
+      const hasStale = el.seats.some((s) => s.assignedGuestId === employeeId)
+      if (!hasStale) continue
+      const cleaned = {
+        ...el,
+        seats: el.seats.map((s) =>
+          s.assignedGuestId === employeeId ? { ...s, assignedGuestId: null } : s
+        ),
+      }
+      if (isActive) {
+        elementsStore.updateElement(el.id, cleaned)
+      } else {
+        const current = floorStore.getFloorElements(floor.id)
+        floorStore.setFloorElements(floor.id, { ...current, [el.id]: cleaned })
+      }
+    }
+  }
+
   useEmployeeStore.getState().removeEmployee(employeeId)
+}
+
+/**
+ * Centralized floor deletion: clears any employee `seatId`/`floorId`
+ * references that point at elements on the floor being deleted, then removes
+ * the floor. If the deleted floor was active, reloads the new active floor's
+ * elements into elementsStore.
+ */
+export function deleteFloor(floorId: string): void {
+  const floorStore = useFloorStore.getState()
+  const elementsStore = useElementsStore.getState()
+  const employeeStore = useEmployeeStore.getState()
+  const wasActive = floorStore.activeFloorId === floorId
+
+  // Read the floor's elements — live elementsStore if active, otherwise
+  // the stored copy in floorStore.
+  const floorElements = wasActive
+    ? elementsStore.elements
+    : floorStore.getFloorElements(floorId)
+
+  // Clear any employee that is assigned to an element on this floor.
+  for (const emp of Object.values(employeeStore.employees)) {
+    if (emp.floorId !== floorId) continue
+    if (emp.seatId && floorElements[emp.seatId]) {
+      employeeStore.updateEmployee(emp.id, { seatId: null, floorId: null })
+    } else if (emp.seatId === null) {
+      // floorId set but seatId null — still reset the floor pointer.
+      employeeStore.updateEmployee(emp.id, { floorId: null })
+    }
+  }
+
+  // Remove the floor (this also picks a new activeFloorId if needed).
+  floorStore.removeFloor(floorId)
+
+  if (wasActive) {
+    const newActiveId = useFloorStore.getState().activeFloorId
+    elementsStore.setElements(
+      useFloorStore.getState().getFloorElements(newActiveId)
+    )
+  }
 }
 
 /**

@@ -198,7 +198,17 @@ export function PropertiesPanel() {
               value={el.positions}
               min={1}
               max={20}
-              onChange={(e) => update({ positions: Number(e.target.value) } as Partial<WorkstationElement>)}
+              onChange={(e) => {
+                const newCount = Number(e.target.value)
+                // If shrinking below the number of current assignees, unassign
+                // the tail employees so they aren't stranded claiming this
+                // workstation with no visible seat.
+                if (newCount < el.assignedEmployeeIds.length) {
+                  const toRemove = el.assignedEmployeeIds.slice(newCount)
+                  toRemove.forEach((empId) => unassignEmployee(empId))
+                }
+                update({ positions: newCount } as Partial<WorkstationElement>)
+              }}
             />
           </div>
           <div>

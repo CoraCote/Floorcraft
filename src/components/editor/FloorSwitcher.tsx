@@ -1,6 +1,6 @@
 import { useFloorStore } from '../../stores/floorStore'
 import { useElementsStore } from '../../stores/elementsStore'
-import { switchToFloor } from '../../lib/seatAssignment'
+import { switchToFloor, deleteFloor } from '../../lib/seatAssignment'
 import { Plus } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { useShallow } from 'zustand/react/shallow'
@@ -9,15 +9,12 @@ export function FloorSwitcher() {
   const { floors, activeFloorId } = useFloorStore(
     useShallow((s) => ({ floors: s.floors, activeFloorId: s.activeFloorId }))
   )
-  const setActiveFloor = useFloorStore((s) => s.setActiveFloor)
   const addFloor = useFloorStore((s) => s.addFloor)
-  const removeFloor = useFloorStore((s) => s.removeFloor)
   const renameFloor = useFloorStore((s) => s.renameFloor)
   const setFloorElements = useFloorStore((s) => s.setFloorElements)
   const getFloorElements = useFloorStore((s) => s.getFloorElements)
 
   const elements = useElementsStore((s) => s.elements)
-  const setElements = useElementsStore((s) => s.setElements)
 
   const [contextMenuFloorId, setContextMenuFloorId] = useState<string | null>(null)
   const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 })
@@ -52,11 +49,12 @@ export function FloorSwitcher() {
   }
 
   const handleAddFloor = () => {
-    // Save current floor's elements before switching
+    // Save current floor's elements before creating the new floor. Then
+    // delegate to the centralized switchToFloor so the switch-and-load
+    // happens through one code path.
     setFloorElements(activeFloorId, elements)
     const newId = addFloor()
-    setActiveFloor(newId)
-    setElements({})
+    switchToFloor(newId)
   }
 
   const handleContextMenu = (e: React.MouseEvent, floorId: string) => {
@@ -85,7 +83,11 @@ export function FloorSwitcher() {
     if (floors.length <= 1) return
 
     const floor = floors.find((f) => f.id === floorId)
-    const floorElements = getFloorElements(floorId)
+    // For the active floor, the live elements live in elementsStore; for
+    // others they're in floorStore. Inspect the right source for the
+    // confirmation prompt.
+    const floorElements =
+      floorId === activeFloorId ? elements : getFloorElements(floorId)
     const hasElements = Object.keys(floorElements).length > 0
 
     if (hasElements) {
@@ -95,15 +97,7 @@ export function FloorSwitcher() {
       if (!confirmed) return
     }
 
-    // If deleting the active floor, save current elements first
-    if (floorId === activeFloorId) {
-      // removeFloor will pick a new activeFloorId
-      removeFloor(floorId)
-      const newActiveId = useFloorStore.getState().activeFloorId
-      setElements(getFloorElements(newActiveId))
-    } else {
-      removeFloor(floorId)
-    }
+    deleteFloor(floorId)
   }
 
   return (

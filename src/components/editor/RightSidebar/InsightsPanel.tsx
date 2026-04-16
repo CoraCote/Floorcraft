@@ -1,15 +1,28 @@
 import { useEffect, useCallback, useRef, useMemo } from 'react'
 import { RefreshCw, CheckCircle } from 'lucide-react'
 import { useInsightsStore } from '../../../stores/insightsStore'
-import { useElementsStore } from '../../../stores/elementsStore'
 import { useEmployeeStore } from '../../../stores/employeeStore'
+import { useAllFloorElements } from '../../../hooks/useActiveFloorElements'
+import type { CanvasElement } from '../../../types/elements'
 import { useShallow } from 'zustand/react/shallow'
 import { SeveritySummary } from './SeveritySummary'
 import { InsightFilters } from './InsightFilters'
 import { InsightCard } from './InsightCard'
 
 export function InsightsPanel() {
-  const elements = useElementsStore((s) => s.elements)
+  const floorsWithElements = useAllFloorElements()
+  // TODO: analyzers currently do not distinguish elements by floor — merge
+  // every floor's elements into a single map so the panel reflects the whole
+  // project, not just the active floor. If analyzers ever need floor context,
+  // extend runAllAnalyzers to take the full floorsWithElements array.
+  const elements = useMemo(
+    () =>
+      floorsWithElements.reduce(
+        (acc, f) => Object.assign(acc, f.elements),
+        {} as Record<string, CanvasElement>
+      ),
+    [floorsWithElements]
+  )
   const employees = useEmployeeStore((s) => s.employees)
 
   const {
