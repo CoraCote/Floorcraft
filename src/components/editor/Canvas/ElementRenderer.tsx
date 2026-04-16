@@ -11,10 +11,12 @@ import {
   isPrivateOfficeElement,
   isConferenceRoomElement,
   isCommonAreaElement,
+  isDecorElement,
   type ConferenceRoomElement,
   type PhoneBoothElement,
   type CommonAreaElement,
 } from '../../../types/elements'
+import { getShapeRenderer } from './shapes'
 import { TableRenderer } from './TableRenderer'
 import { FurnitureRenderer } from './FurnitureRenderer'
 import { WallRenderer } from './WallRenderer'
@@ -91,17 +93,22 @@ export function ElementRenderer() {
             onTap={(e) => handleClick(el.id, e)}
             onContextMenu={(e) => handleContextMenu(el.id, e)}
           >
-            {isDeskElement(el) || isWorkstationElement(el) || isPrivateOfficeElement(el) ? (
-              <DeskRenderer element={el} />
-            ) : isConferenceRoomElement(el) || isCommonAreaElement(el) || el.type === 'phone-booth' ? (
-              <RoomRenderer element={el as ConferenceRoomElement | PhoneBoothElement | CommonAreaElement} />
-            ) : isTableElement(el) ? (
-              <TableRenderer element={el} />
-            ) : isWallElement(el) ? (
-              <WallRenderer element={el} />
-            ) : (
-              <FurnitureRenderer element={el} />
-            )}
+            {(() => {
+              const VariantRenderer = getShapeRenderer(el)
+              if (VariantRenderer) return <VariantRenderer element={el} />
+
+              if (isDeskElement(el) || isWorkstationElement(el) || isPrivateOfficeElement(el))
+                return <DeskRenderer element={el} />
+              if (isConferenceRoomElement(el) || isCommonAreaElement(el) || el.type === 'phone-booth')
+                return <RoomRenderer element={el as ConferenceRoomElement | PhoneBoothElement | CommonAreaElement} />
+              if (isTableElement(el))
+                return <TableRenderer element={el} />
+              if (isWallElement(el))
+                return <WallRenderer element={el} />
+              if (isDecorElement(el))
+                return <FurnitureRenderer element={el} />
+              return <FurnitureRenderer element={el} />
+            })()}
           </Group>
         )
       })}
