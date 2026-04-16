@@ -29,14 +29,9 @@ interface ElementsState {
   groupElements: (ids: string[]) => string
   ungroupElements: (groupId: string) => void
 
-  // Seat assignment
-  assignSeat: (elementId: string, seatId: string, guestId: string) => void
-  unassignSeat: (elementId: string, seatId: string) => void
-
   // Helpers
   getMaxZIndex: () => number
   getElementsByGroup: (groupId: string) => CanvasElement[]
-  getAllSeats: () => { element: TableElement; seat: SeatPosition }[]
 }
 
 export const useElementsStore = create<ElementsState>()(
@@ -187,36 +182,6 @@ export const useElementsStore = create<ElementsState>()(
           return { elements: next }
         }),
 
-      assignSeat: (elementId, seatId, guestId) =>
-        set((state) => {
-          const el = state.elements[elementId]
-          if (!el || !isTableElement(el)) return state
-          const seats = el.seats.map((s) =>
-            s.id === seatId ? { ...s, assignedGuestId: guestId } : s
-          )
-          return {
-            elements: {
-              ...state.elements,
-              [elementId]: { ...el, seats } as TableElement,
-            },
-          }
-        }),
-
-      unassignSeat: (elementId, seatId) =>
-        set((state) => {
-          const el = state.elements[elementId]
-          if (!el || !isTableElement(el)) return state
-          const seats = el.seats.map((s) =>
-            s.id === seatId ? { ...s, assignedGuestId: null } : s
-          )
-          return {
-            elements: {
-              ...state.elements,
-              [elementId]: { ...el, seats } as TableElement,
-            },
-          }
-        }),
-
       getMaxZIndex: () => {
         const els = Object.values(get().elements)
         if (els.length === 0) return 0
@@ -225,18 +190,6 @@ export const useElementsStore = create<ElementsState>()(
 
       getElementsByGroup: (groupId) =>
         Object.values(get().elements).filter((e) => e.groupId === groupId),
-
-      getAllSeats: () => {
-        const result: { element: TableElement; seat: SeatPosition }[] = []
-        for (const el of Object.values(get().elements)) {
-          if (isTableElement(el)) {
-            for (const seat of el.seats) {
-              result.push({ element: el, seat })
-            }
-          }
-        }
-        return result
-      },
     }),
     { limit: UNDO_LIMIT }
   )

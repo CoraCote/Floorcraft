@@ -1,28 +1,23 @@
 export type ElementType =
   | 'wall'
-  | 'room'
   | 'door'
   | 'window'
-  | 'table-round'
-  | 'table-rect'
-  | 'table-banquet'
-  | 'table-conference'
-  | 'chair'
-  | 'sofa'
   | 'desk'
+  | 'hot-desk'
+  | 'workstation'
+  | 'private-office'
+  | 'conference-room'
+  | 'phone-booth'
+  | 'common-area'
+  | 'chair'
   | 'counter'
-  | 'stage'
-  | 'bar'
-  | 'reception'
-  | 'dance-floor'
+  | 'table-rect'
+  | 'table-conference'
+  | 'divider'
+  | 'planter'
   | 'custom-shape'
   | 'text-label'
   | 'background-image'
-  | 'divider'
-  | 'planter'
-  | 'stool'
-  | 'podium'
-  | 'lectern'
 
 export interface ElementStyle {
   fill: string
@@ -76,7 +71,7 @@ export interface SeatPosition {
   assignedGuestId: string | null
 }
 
-export type TableType = 'table-round' | 'table-rect' | 'table-banquet' | 'table-conference'
+export type TableType = 'table-rect' | 'table-conference'
 
 export interface TableElement extends BaseElement {
   type: TableType
@@ -92,12 +87,56 @@ export interface BackgroundImageElement extends BaseElement {
   originalHeight: number
 }
 
+// Assignable elements (have seats for employees)
+export interface DeskElement extends BaseElement {
+  type: 'desk' | 'hot-desk'
+  deskId: string           // e.g., "D-101"
+  assignedEmployeeId: string | null
+  capacity: 1
+}
+
+export interface WorkstationElement extends BaseElement {
+  type: 'workstation'
+  deskId: string
+  positions: number        // how many positions (N seats)
+  assignedEmployeeIds: string[]
+}
+
+export interface PrivateOfficeElement extends BaseElement {
+  type: 'private-office'
+  deskId: string
+  capacity: 1 | 2
+  assignedEmployeeIds: string[]
+}
+
+// Non-assignable space elements
+export interface ConferenceRoomElement extends BaseElement {
+  type: 'conference-room'
+  roomName: string
+  capacity: number
+}
+
+export interface PhoneBoothElement extends BaseElement {
+  type: 'phone-booth'
+}
+
+export interface CommonAreaElement extends BaseElement {
+  type: 'common-area'
+  areaName: string       // e.g., "Kitchen", "Lounge"
+}
+
 export type CanvasElement =
   | WallElement
   | DoorElement
   | WindowElement
   | TableElement
   | BackgroundImageElement
+  | DeskElement
+  | WorkstationElement
+  | PrivateOfficeElement
+  | ConferenceRoomElement
+  | PhoneBoothElement
+  | CommonAreaElement
   | BaseElement
 
 export function isWallElement(el: CanvasElement): el is WallElement {
@@ -113,14 +152,33 @@ export function isWindowElement(el: CanvasElement): el is WindowElement {
 }
 
 export function isTableElement(el: CanvasElement): el is TableElement {
-  return (
-    el.type === 'table-round' ||
-    el.type === 'table-rect' ||
-    el.type === 'table-banquet' ||
-    el.type === 'table-conference'
-  )
+  return el.type === 'table-rect' || el.type === 'table-conference'
 }
 
 export function isBackgroundImageElement(el: CanvasElement): el is BackgroundImageElement {
   return el.type === 'background-image'
+}
+
+export function isDeskElement(el: CanvasElement): el is DeskElement {
+  return el.type === 'desk' || el.type === 'hot-desk'
+}
+
+export function isWorkstationElement(el: CanvasElement): el is WorkstationElement {
+  return el.type === 'workstation'
+}
+
+export function isPrivateOfficeElement(el: CanvasElement): el is PrivateOfficeElement {
+  return el.type === 'private-office'
+}
+
+export function isConferenceRoomElement(el: CanvasElement): el is ConferenceRoomElement {
+  return el.type === 'conference-room'
+}
+
+export function isCommonAreaElement(el: CanvasElement): el is CommonAreaElement {
+  return el.type === 'common-area'
+}
+
+export function isAssignableElement(el: CanvasElement): el is DeskElement | WorkstationElement | PrivateOfficeElement {
+  return el.type === 'desk' || el.type === 'hot-desk' || el.type === 'workstation' || el.type === 'private-office'
 }

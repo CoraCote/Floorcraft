@@ -1,5 +1,4 @@
-import type { CanvasElement } from './elements'
-import type { Guest } from './guests'
+import type { Floor } from './floor'
 
 export interface CanvasSettings {
   gridSize: number
@@ -14,20 +13,13 @@ export interface Project {
   name: string
   slug: string
   sharePermission: 'private' | 'view' | 'comment' | 'edit'
-  canvasData: Record<string, CanvasElement>
+  buildingName: string | null
+  floors: Floor[]
+  activeFloorId: string
   canvasSettings: CanvasSettings
   thumbnailUrl: string | null
   createdAt: string
   updatedAt: string
-}
-
-export interface ProjectVersion {
-  id: string
-  projectId: string
-  name: string | null
-  canvasData: Record<string, CanvasElement>
-  guestData: Guest[]
-  createdAt: string
 }
 
 export const DEFAULT_CANVAS_SETTINGS: CanvasSettings = {

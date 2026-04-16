@@ -1,19 +1,18 @@
 import { create } from 'zustand'
-import type { Project, ProjectVersion } from '../types/project'
+import { nanoid } from 'nanoid'
+import type { Project } from '../types/project'
 import { DEFAULT_CANVAS_SETTINGS } from '../types/project'
+import type { Floor } from '../types/floor'
 import { generateSlug } from '../lib/slug'
 
 interface ProjectState {
   currentProject: Project | null
-  versions: ProjectVersion[]
   isDirty: boolean
   lastSavedAt: string | null
 
   setCurrentProject: (project: Project) => void
   updateProjectName: (name: string) => void
   updateSharePermission: (perm: Project['sharePermission']) => void
-  setVersions: (versions: ProjectVersion[]) => void
-  addVersion: (version: ProjectVersion) => void
   setDirty: (dirty: boolean) => void
   setLastSavedAt: (at: string) => void
 
@@ -22,7 +21,6 @@ interface ProjectState {
 
 export const useProjectStore = create<ProjectState>((set, _get) => ({
   currentProject: null,
-  versions: [],
   isDirty: false,
   lastSavedAt: null,
 
@@ -44,27 +42,31 @@ export const useProjectStore = create<ProjectState>((set, _get) => ({
       isDirty: true,
     })),
 
-  setVersions: (versions) => set({ versions }),
-  addVersion: (version) =>
-    set((state) => ({ versions: [version, ...state.versions] })),
-
   setDirty: (dirty) => set({ isDirty: dirty }),
   setLastSavedAt: (at) => set({ lastSavedAt: at, isDirty: false }),
 
   createNewProject: (name) => {
+    const defaultFloorId = nanoid()
     const project: Project = {
       id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2),
       ownerId: null,
-      name: name || 'Untitled Floor Plan',
+      name: name || 'Untitled Office Plan',
       slug: generateSlug(),
       sharePermission: 'private',
-      canvasData: {},
+      buildingName: null,
+      floors: [{
+        id: defaultFloorId,
+        name: 'Floor 1',
+        order: 0,
+        elements: {},
+      }],
+      activeFloorId: defaultFloorId,
       canvasSettings: { ...DEFAULT_CANVAS_SETTINGS },
       thumbnailUrl: null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }
-    set({ currentProject: project, versions: [], isDirty: false })
+    set({ currentProject: project, isDirty: false })
     return project
   },
 }))

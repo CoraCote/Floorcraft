@@ -7,7 +7,7 @@ interface UIState {
 
   // Panels
   rightSidebarOpen: boolean
-  rightSidebarTab: 'properties' | 'guests' | 'table' | 'comments' | 'versions'
+  rightSidebarTab: 'properties' | 'people' | 'reports'
 
   // Modals
   shareModalOpen: boolean
@@ -24,6 +24,13 @@ interface UIState {
 
   // Inline editing
   editingLabelId: string | null
+
+  // Reports & overlays
+  activeReport: string | null
+  orgChartOverlayEnabled: boolean
+  seatMapColorMode: 'department' | 'team' | 'employment-type' | 'office-days' | null
+  movePlannerActive: boolean
+  employeeDirectoryOpen: boolean
 
   // Actions
   setSelectedIds: (ids: string[]) => void
@@ -42,6 +49,11 @@ interface UIState {
   setPresentationMode: (mode: boolean) => void
   setContextMenu: (menu: UIState['contextMenu']) => void
   setEditingLabelId: (id: string | null) => void
+  setActiveReport: (report: string | null) => void
+  setOrgChartOverlayEnabled: (enabled: boolean) => void
+  setSeatMapColorMode: (mode: UIState['seatMapColorMode']) => void
+  setMovePlannerActive: (active: boolean) => void
+  setEmployeeDirectoryOpen: (open: boolean) => void
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -57,6 +69,11 @@ export const useUIStore = create<UIState>((set) => ({
   presentationMode: false,
   contextMenu: null,
   editingLabelId: null,
+  activeReport: null,
+  orgChartOverlayEnabled: false,
+  seatMapColorMode: null,
+  movePlannerActive: false,
+  employeeDirectoryOpen: false,
 
   setSelectedIds: (ids) => set({ selectedIds: ids }),
   addToSelection: (id) => set((s) => ({ selectedIds: [...s.selectedIds, id] })),
@@ -80,4 +97,9 @@ export const useUIStore = create<UIState>((set) => ({
   setPresentationMode: (mode) => set({ presentationMode: mode }),
   setContextMenu: (menu) => set({ contextMenu: menu }),
   setEditingLabelId: (id) => set({ editingLabelId: id }),
+  setActiveReport: (report) => set({ activeReport: report }),
+  setOrgChartOverlayEnabled: (enabled) => set({ orgChartOverlayEnabled: enabled }),
+  setSeatMapColorMode: (mode) => set({ seatMapColorMode: mode }),
+  setMovePlannerActive: (active) => set({ movePlannerActive: active }),
+  setEmployeeDirectoryOpen: (open) => set({ employeeDirectoryOpen: open }),
 }))
