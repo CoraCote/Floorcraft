@@ -1,7 +1,7 @@
 import { useUIStore } from '../../../stores/uiStore'
 import { useElementsStore } from '../../../stores/elementsStore'
 import { useEmployeeStore } from '../../../stores/employeeStore'
-import { unassignEmployee } from '../../../lib/seatAssignment'
+import { unassignEmployee, deleteElements } from '../../../lib/seatAssignment'
 import {
   isTableElement,
   isDeskElement,
@@ -24,7 +24,23 @@ export function PropertiesPanel() {
   }
 
   if (selectedIds.length > 1) {
-    return <div className="text-sm text-gray-500 text-center py-8">{selectedIds.length} elements selected</div>
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="text-sm text-gray-500 text-center py-4">
+          {selectedIds.length} elements selected
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            deleteElements(selectedIds)
+            useUIStore.getState().clearSelection()
+          }}
+          className="mt-2 w-full px-3 py-1.5 text-sm font-medium text-red-600 border border-red-300 rounded hover:bg-red-50 transition-colors"
+        >
+          Delete {selectedIds.length} elements
+        </button>
+      </div>
+    )
   }
 
   const el = elements[selectedIds[0]]
@@ -330,6 +346,19 @@ export function PropertiesPanel() {
         />
         Locked
       </label>
+
+      {selectedIds.length >= 1 && (
+        <button
+          type="button"
+          onClick={() => {
+            deleteElements(selectedIds)
+            useUIStore.getState().clearSelection()
+          }}
+          className="mt-2 w-full px-3 py-1.5 text-sm font-medium text-red-600 border border-red-300 rounded hover:bg-red-50 transition-colors"
+        >
+          {selectedIds.length === 1 ? 'Delete element' : `Delete ${selectedIds.length} elements`}
+        </button>
+      )}
     </div>
   )
 }
