@@ -49,6 +49,14 @@ export interface BaseElement {
 export interface WallElement extends BaseElement {
   type: 'wall'
   points: number[]
+  /**
+   * Optional per-segment arc bulges. Length === (points.length / 2) - 1.
+   * bulges[i] is the signed perpendicular offset, in world units, from the
+   * midpoint of the chord (points[i*2..i*2+3]) to the midpoint of the arc.
+   * Positive = bulge to the LEFT of the chord direction (start → end).
+   * 0 (or missing/undefined array) = straight segment.
+   */
+  bulges?: number[]
   thickness: number
   connectedWallIds: string[]
 }
