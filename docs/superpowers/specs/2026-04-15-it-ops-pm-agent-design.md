@@ -291,26 +291,51 @@ The `AnalyzerInput` type includes an optional `externalData` field:
 
 ```typescript
 externalData?: {
-  tickets?: ExternalTicket[]           // Monday.com / Jira
-  calendarEvents?: ExternalEvent[]     // Google Calendar
-  slackChannels?: ExternalChannel[]    // Slack team membership
+  mondayItems?: ExternalMondayItem[]         // Monday.com boards/items
+  jiraIssues?: ExternalJiraIssue[]           // Jira tickets
+  calendarEvents?: ExternalCalendarEvent[]   // Google Calendar events
+  driveFiles?: ExternalDriveFile[]           // Google Drive documents
+  slackChannels?: ExternalSlackChannel[]     // Slack channels & membership
+  slackMessages?: ExternalSlackMessage[]     // Slack relevant messages
 }
 ```
 
-The `ExternalTicket`, `ExternalEvent`, and `ExternalChannel` types are intentionally left undefined — they will be specified when the first integration is built. The `externalData` field exists now as an architectural seam.
+The `External*` types are intentionally left undefined — they will be specified when each integration is built. The `externalData` field exists now as an architectural seam.
 
-### 7.2 How Integrations Plug In
+### 7.2 Target Integrations
 
-- Each integration is a **data provider** — a function that fetches and normalizes external data into the typed interfaces above
-- Data providers are registered in a provider registry and called before analysis
-- Analyzers that understand external data produce richer insights; others ignore the field
-- Auth/connection configuration is deferred — the architectural seam is ready
+Each integration is a **data provider** — a function that fetches and normalizes external data into the typed interfaces above. Data providers are registered in a provider registry and called before analysis. Analyzers that understand external data produce richer insights; others ignore the field. Auth/connection configuration is deferred — the architectural seam is ready.
 
-### 7.3 Example Future Insights (with integrations)
+| Platform | Data Provider | What It Feeds | Example Insight |
+|----------|--------------|---------------|-----------------|
+| **Monday.com** | Boards, items, statuses, assignees | Onboarding tasks, equipment procurement, move tracking, IT tickets | "Jane's onboarding ticket in Monday is marked 'Blocked' — equipment not ordered yet" |
+| **Jira** | Issues, statuses, assignees, labels | Facilities tickets, maintenance requests, IT provisioning | "3 open Jira facilities tickets are linked to desks in Zone A — possible maintenance issue" |
+| **Google Calendar** | Room bookings, meeting events | Room utilization, scheduling conflicts, move date tracking | "Conference room B is booked 90% of the time but seats only 4 — consider a larger room" |
+| **Google Drive** | Floor plan documents, org charts, policy docs | Document references in insight narratives, org structure | "Updated org chart in Drive shows 4 new hires in Engineering not yet reflected in Floocraft" |
+| **Slack** | Channel membership, team channels, relevant messages | Team structure, communication patterns, notifications | "The #marketing Slack channel has 12 members but only 8 have desks assigned" |
+| **Claude AI** | See Section 6 — AI Enrichment Layer | Enhanced narratives, cross-domain pattern detection, smart recommendations | "Based on team reporting structure, co-locating Sarah near her manager in Zone A would reduce her commute between meetings by ~15 min/day" |
 
-- "Jane's onboarding ticket in Monday is marked 'Blocked' — equipment not ordered yet" (Monday + employee data)
-- "Conference room B is booked 90% of the time but seats only 4 — consider a larger room" (Calendar + spatial data)
-- "The #marketing Slack channel has 12 members but only 8 have desks assigned" (Slack + employee data)
+### 7.3 Provider Architecture
+
+```typescript
+// Each integration implements this interface
+interface DataProvider<T> {
+  id: string                              // e.g., 'monday', 'jira', 'google-calendar'
+  name: string                            // display name
+  isConnected: () => boolean              // auth status check
+  fetch: () => Promise<T>                 // fetch and normalize external data
+}
+
+// Registry manages all providers
+interface ProviderRegistry {
+  register: (provider: DataProvider<unknown>) => void
+  unregister: (id: string) => void
+  fetchAll: () => Promise<ExternalData>   // calls all connected providers
+  getConnected: () => DataProvider<unknown>[]
+}
+```
+
+The registry is called by the engine coordinator before running analyzers. Only connected providers are called. Failed fetches are caught and logged — they never block the rules engine.
 
 ---
 
@@ -368,9 +393,14 @@ src/
 
 ### Deferred (v2+)
 
-- AI enrichment implementation (prompts, API proxy, response parsing)
-- External tool integrations (Monday, Jira, Slack, Calendar)
-- Integration auth/connection UI
+- **Claude AI enrichment** — prompt engineering, API proxy (Supabase Edge Function), response parsing, cost controls
+- **Monday.com integration** — board sync, item status tracking, onboarding/equipment board templates
+- **Jira integration** — facilities/IT issue sync, status updates, linked desk annotations
+- **Google Calendar integration** — room booking analysis, move date tracking, meeting pattern insights
+- **Google Drive integration** — org chart sync, floor plan document linking, policy references
+- **Slack integration** — team channel membership for org structure, notification delivery, message context
+- Integration auth/connection UI (OAuth flows, settings panel per provider)
+- Provider registry UI (connect/disconnect/status per integration)
 - Trend history persistence in Supabase (currently localStorage only)
 - Notification preferences (email/Slack alerts for critical insights)
 - Custom analyzer API (user-defined rules)
