@@ -9,6 +9,9 @@ export interface Employee {
   employmentType: 'full-time' | 'contractor' | 'part-time' | 'intern'
   officeDays: string[]
   startDate: string | null
+  endDate: string | null
+  equipmentNeeds: string[]
+  equipmentStatus: 'pending' | 'provisioned' | 'not-needed'
   photoUrl: string | null
   tags: string[]
   seatId: string | null
