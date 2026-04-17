@@ -1,8 +1,9 @@
 import { useEmployeeStore } from '../../../stores/employeeStore'
 import { useUIStore } from '../../../stores/uiStore'
 import { useState } from 'react'
-import { Search, Plus, Upload, Users, ChevronDown, ChevronRight } from 'lucide-react'
+import { Search, Plus, Upload, Users, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
+import { Link, useParams } from 'react-router-dom'
 
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/)
@@ -39,6 +40,7 @@ export function PeoplePanel() {
   )
 
   const setCsvImportOpen = useUIStore((s) => s.setCsvImportOpen)
+  const { slug } = useParams<{ slug: string }>()
 
   const filteredEmployees = getFilteredEmployees()
   const totalCount = Object.keys(employees).length
@@ -92,6 +94,16 @@ export function PeoplePanel() {
         <div className="flex items-center gap-2">
           <Users size={14} className="text-gray-500" />
           <span className="text-sm font-medium text-gray-700">{totalCount} people</span>
+          {slug && (
+            <Link
+              to={`/project/${slug}/roster`}
+              className="inline-flex items-center gap-0.5 text-[11px] text-blue-600 hover:text-blue-800 hover:underline"
+              title="Open full roster view"
+            >
+              Open Roster
+              <ExternalLink size={10} />
+            </Link>
+          )}
         </div>
         <div className="flex gap-1">
           <button

@@ -1,17 +1,12 @@
+import { Outlet } from 'react-router-dom'
+import { useEffect } from 'react'
 import { TopBar } from './TopBar'
-import { FloorSwitcher } from './FloorSwitcher'
-import { ToolSelector } from './LeftSidebar/ToolSelector'
-import { ElementLibrary } from './LeftSidebar/ElementLibrary'
-import { RightSidebar } from './RightSidebar/RightSidebar'
-import { StatusBar } from './StatusBar'
-import { CanvasStage } from './Canvas/CanvasStage'
-import { KeyboardShortcutsOverlay } from './KeyboardShortcutsOverlay'
 import { ContextMenu } from './ContextMenu'
+import { KeyboardShortcutsOverlay } from './KeyboardShortcutsOverlay'
 import { CSVImportDialog } from './RightSidebar/CSVImportDialog'
 import { ExportDialog } from './ExportDialog'
 import { NewProjectModal } from '../dashboard/NewProjectModal'
 import { ShareModal } from './ShareModal'
-import { Minimap } from './Minimap'
 import { EmployeeDirectory } from '../reports/EmployeeDirectory'
 import { useUIStore } from '../../stores/uiStore'
 import { useProjectStore } from '../../stores/projectStore'
@@ -22,14 +17,22 @@ import { useEmployeeStore } from '../../stores/employeeStore'
 import { useInsightsStore } from '../../stores/insightsStore'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 import { useAutoSave, loadAutoSave } from '../../hooks/useAutoSave'
-import { useEffect } from 'react'
 
-export function EditorPage() {
-  const rightSidebarOpen = useUIStore((s) => s.rightSidebarOpen)
-  const presentationMode = useUIStore((s) => s.presentationMode)
+/**
+ * Shared shell for all project views (/project/:slug/*). Owns:
+ *  - the top navigation bar (with MAP/ROSTER pills)
+ *  - one-time project bootstrap from autosave (so a cold load on the
+ *    roster route still works the same as on the map route)
+ *  - global modals
+ *  - session-level hooks: keyboard shortcuts, autosave
+ *
+ * Individual views (MapView, RosterPage) render inside the `<Outlet />`
+ * and bring only their own layout concerns.
+ */
+export function ProjectShell() {
   const employeeDirectoryOpen = useUIStore((s) => s.employeeDirectoryOpen)
-  const createNewProject = useProjectStore((s) => s.createNewProject)
   const currentProject = useProjectStore((s) => s.currentProject)
+  const createNewProject = useProjectStore((s) => s.createNewProject)
 
   useKeyboardShortcuts()
   useAutoSave()
@@ -49,7 +52,8 @@ export function EditorPage() {
           }
         }
         if (saved.floors) useFloorStore.getState().setFloors(saved.floors)
-        if (saved.activeFloorId) useFloorStore.getState().setActiveFloor(saved.activeFloorId)
+        if (saved.activeFloorId)
+          useFloorStore.getState().setActiveFloor(saved.activeFloorId)
         activeProjectId = saved.project.id ?? null
       } else {
         const project = createNewProject()
@@ -65,46 +69,10 @@ export function EditorPage() {
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (presentationMode) {
-    return (
-      <div className="w-screen h-screen bg-white relative">
-        <CanvasStage />
-        <KeyboardShortcutsOverlay />
-        {/* Always-visible exit affordance — Escape/P alone is undiscoverable */}
-        <button
-          onClick={() => useUIStore.getState().setPresentationMode(false)}
-          className="absolute top-4 right-4 z-50 px-3 py-2 rounded-md bg-gray-900/80 hover:bg-gray-900 text-white text-sm font-medium shadow-lg backdrop-blur-sm flex items-center gap-2 transition-colors"
-          title="Exit presentation mode (Esc or P)"
-          aria-label="Exit presentation mode"
-        >
-          <span>Exit</span>
-          <kbd className="text-[10px] font-mono bg-white/20 px-1.5 py-0.5 rounded">Esc</kbd>
-        </button>
-      </div>
-    )
-  }
-
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-gray-50">
       <TopBar />
-      <FloorSwitcher />
-      <div className="flex flex-1 overflow-hidden">
-        <div className="w-[260px] flex-shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-y-auto">
-          <ToolSelector />
-          <div className="border-t border-gray-200" />
-          <ElementLibrary />
-        </div>
-        <div className="flex-1 relative bg-gray-100 overflow-hidden">
-          <CanvasStage />
-          <StatusBar />
-          <Minimap />
-        </div>
-        {rightSidebarOpen && (
-          <div className="w-[320px] flex-shrink-0 bg-white border-l border-gray-200 overflow-y-auto">
-            <RightSidebar />
-          </div>
-        )}
-      </div>
+      <Outlet />
       <ContextMenu />
       <KeyboardShortcutsOverlay />
       <CSVImportDialog />
