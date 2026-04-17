@@ -21,9 +21,18 @@ export function useAutoSave() {
   const activeFloorId = useFloorStore((s) => s.activeFloorId)
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  // Skip the very first effect run — on mount, every tracked store is just
+  // its initial value (or the payload we just rehydrated in `loadAutoSave`).
+  // Writing it straight back would flash "Saving…" → "Saved" with no user
+  // change, and would overwrite the freshly-loaded timestamp.
+  const isFirstRun = useRef(true)
 
   // Save
   useEffect(() => {
+    if (isFirstRun.current) {
+      isFirstRun.current = false
+      return
+    }
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
 
     timeoutRef.current = setTimeout(() => {
@@ -134,13 +143,24 @@ function migrateEmployees(
  * project than to load a half-broken one and crash the renderer.
  */
 function isValidPayload(value: unknown): value is Partial<AutoSavePayload> {
-  if (!value || typeof value !== 'object') return false
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
   const v = value as Record<string, unknown>
-  // `elements` must at least be an object. Other fields get looser checks.
+  // `elements` and `employees` are Records keyed by id. Arrays and
+  // non-objects get coerced to `{}` in the loader below — we DON'T reject
+  // the whole payload over a malformed sub-field, because discarding the
+  // user's entire save to punish a legacy/empty `employees: []` would be
+  // far worse than silently normalising it. Only reject if the type is
+  // genuinely unusable (e.g. `elements: "oops"`).
   if (v.elements && typeof v.elements !== 'object') return false
   if (v.employees && typeof v.employees !== 'object') return false
   if (v.floors && !Array.isArray(v.floors)) return false
   return true
+}
+
+/** Normalise a field that must be a Record. Arrays/non-objects → `{}`. */
+function ensureRecord(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+  return value as Record<string, unknown>
 }
 
 export function loadAutoSave(): AutoSavePayload | null {
@@ -154,17 +174,16 @@ export function loadAutoSave(): AutoSavePayload | null {
   }
   if (!isValidPayload(parsed)) return null
   // Apply element migrations before returning, so callers never have to
-  // think about legacy payload shapes.
+  // think about legacy payload shapes. `ensureRecord` coerces arrays /
+  // missing sub-fields into an empty object so downstream `Object.entries`
+  // never sees numeric array keys (which would otherwise produce phantom
+  // element ids like `"0"`, `"1"`).
   const payload = parsed as AutoSavePayload
-  if (payload.elements) {
-    payload.elements = migrateElements(
-      payload.elements as unknown as Record<string, unknown>,
-    )
-  }
-  if (payload.employees) {
-    payload.employees = migrateEmployees(
-      payload.employees as unknown as Record<string, unknown>,
-    )
-  }
+  payload.elements = migrateElements(
+    ensureRecord((parsed as Record<string, unknown>).elements),
+  )
+  payload.employees = migrateEmployees(
+    ensureRecord((parsed as Record<string, unknown>).employees),
+  )
   return payload
 }

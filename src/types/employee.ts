@@ -45,8 +45,13 @@ export interface EmployeeImportRow {
   title?: string
   manager?: string
   type?: string
+  status?: string
   office_days?: string
   start_date?: string
+  end_date?: string
+  equipment_needs?: string
+  equipment_status?: string
+  photo_url?: string
   tags?: string
   [key: string]: string | undefined
 }

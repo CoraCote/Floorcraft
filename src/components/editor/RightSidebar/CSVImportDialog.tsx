@@ -1,7 +1,15 @@
 import { useUIStore } from '../../../stores/uiStore'
 import { useEmployeeStore } from '../../../stores/employeeStore'
 import { parseEmployeeCSV } from '../../../lib/csv'
+import { isEmployeeStatus } from '../../../types/employee'
 import { useState, useCallback, useEffect } from 'react'
+
+/** Parse an equipment_status CSV value into our enum, defaulting safely. */
+function parseEquipmentStatus(v: string | undefined): 'pending' | 'provisioned' | 'not-needed' {
+  const lower = v?.trim().toLowerCase()
+  if (lower === 'pending' || lower === 'provisioned' || lower === 'not-needed') return lower
+  return 'not-needed'
+}
 
 export function CSVImportDialog() {
   const open = useUIStore((s) => s.csvImportOpen)
@@ -27,6 +35,18 @@ export function CSVImportDialog() {
     // (newId → rawManagerName) pairs for rows that had a manager column.
     const pending: Array<{ empId: string; managerName: string }> = []
     for (const r of preview.rows) {
+      // Split comma-separated lists; drop empty tokens so `"a,,b"` doesn't
+      // produce a phantom blank entry that would round-trip as a broken tag.
+      const officeDays = r.office_days
+        ? r.office_days.split(',').map((d) => d.trim()).filter(Boolean)
+        : []
+      const tags = r.tags
+        ? r.tags.split(',').map((t) => t.trim()).filter(Boolean)
+        : []
+      const equipmentNeeds = r.equipment_needs
+        ? r.equipment_needs.split(',').map((t) => t.trim()).filter(Boolean)
+        : []
+      const statusLower = r.status?.trim().toLowerCase()
       const newId = addEmployee({
         name: r.name,
         email: r.email || '',
@@ -36,13 +56,14 @@ export function CSVImportDialog() {
         managerId: null,
         employmentType:
           (r.type as 'full-time' | 'contractor' | 'part-time' | 'intern') || 'full-time',
-        officeDays: r.office_days ? r.office_days.split(',').map((d) => d.trim()) : [],
+        status: isEmployeeStatus(statusLower) ? statusLower : 'active',
+        officeDays,
         startDate: r.start_date || null,
-        endDate: null,
-        equipmentNeeds: [],
-        equipmentStatus: 'not-needed',
-        photoUrl: null,
-        tags: r.tags ? r.tags.split(',').map((t) => t.trim()) : [],
+        endDate: r.end_date || null,
+        equipmentNeeds,
+        equipmentStatus: parseEquipmentStatus(r.equipment_status),
+        photoUrl: r.photo_url || null,
+        tags,
         seatId: null,
         floorId: null,
       })

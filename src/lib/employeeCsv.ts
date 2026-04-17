@@ -25,6 +25,10 @@ export function employeesToCSV(
     status: e.status,
     office_days: e.officeDays.join(', '),
     start_date: e.startDate ?? '',
+    end_date: e.endDate ?? '',
+    equipment_needs: e.equipmentNeeds.join(', '),
+    equipment_status: e.equipmentStatus,
+    photo_url: e.photoUrl ?? '',
     tags: e.tags.join(', '),
   }))
   return Papa.unparse(rows, { header: true })
@@ -33,15 +37,28 @@ export function employeesToCSV(
 /**
  * Trigger a browser download of the provided CSV text. Extracted so callers
  * can test the CSV generation independently of the download side-effect.
+ *
+ * Returns `true` on success. Returns `false` (and logs) when the browser
+ * refuses — `URL.createObjectURL` can throw in sandboxed iframes or private
+ * Safari; we don't want that to bubble into the autosave indicator.
  */
-export function downloadCSV(filename: string, csv: string): void {
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = filename
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
+export function downloadCSV(filename: string, csv: string): boolean {
+  let url: string | null = null
+  let link: HTMLAnchorElement | null = null
+  try {
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+    url = URL.createObjectURL(blob)
+    link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    return true
+  } catch (err) {
+    if (typeof console !== 'undefined') console.error('CSV download failed:', err)
+    return false
+  } finally {
+    if (link && link.parentNode) link.parentNode.removeChild(link)
+    if (url) URL.revokeObjectURL(url)
+  }
 }

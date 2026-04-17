@@ -18,7 +18,9 @@ export function parseEmployeeCSV(text: string): EmployeeCSVParseResult {
   const errors = result.errors.map((e) => `Row ${e.row}: ${e.message}`)
 
   const rows: EmployeeImportRow[] = result.data.map((row) => {
-    // Flexible column name mapping
+    // Flexible column name mapping — accept a few common aliases for each
+    // field so the parser can round-trip `employeesToCSV` output AND be
+    // forgiving of hand-written spreadsheets.
     const name = row.name || row.full_name || row.employee_name || ''
     const email = row.email || row.email_address || undefined
     const department = row.department || row.dept || undefined
@@ -26,8 +28,13 @@ export function parseEmployeeCSV(text: string): EmployeeCSVParseResult {
     const title = row.title || row.role || row.job_title || undefined
     const manager = row.manager || row.manager_name || row.reports_to || undefined
     const type = row.type || row.employment_type || 'full-time'
+    const status = row.status || row.employee_status || undefined
     const office_days = row.office_days || row.days || row.in_office || undefined
     const start_date = row.start_date || row.hire_date || undefined
+    const end_date = row.end_date || row.termination_date || undefined
+    const equipment_needs = row.equipment_needs || row.equipment || undefined
+    const equipment_status = row.equipment_status || undefined
+    const photo_url = row.photo_url || row.photo || row.avatar || undefined
     const tags = row.tags || undefined
 
     return {
@@ -38,8 +45,13 @@ export function parseEmployeeCSV(text: string): EmployeeCSVParseResult {
       title,
       manager,
       type,
+      status,
       office_days,
       start_date,
+      end_date,
+      equipment_needs,
+      equipment_status,
+      photo_url,
       tags,
     }
   })
