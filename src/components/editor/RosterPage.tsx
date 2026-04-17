@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowUpDown, Download, Plus, Upload, MoreHorizontal, X } from 'lucide-react'
 import { useEmployeeStore } from '../../stores/employeeStore'
@@ -106,10 +106,29 @@ export function RosterPage() {
           break
         case 'status': av = a.status; bv = b.status; break
       }
-      return av.localeCompare(bv) * dir
+      // `sensitivity: 'base'` makes "alice" and "Alice" equal so case
+      // differences don't scatter same-spelled names across the list; we
+      // also sort numeric segments naturally so "D-2" < "D-10".
+      return av.localeCompare(bv, undefined, { sensitivity: 'base', numeric: true }) * dir
     })
     return copy
   }, [filtered, sortColumn, sortDir, floorMap])
+
+  // Prune `selected` whenever the visible set changes (filters applied,
+  // employees deleted elsewhere, etc.) so "Delete selected" can never
+  // operate on a ghost id and the select-all checkbox stays coherent.
+  useEffect(() => {
+    setSelected((prev) => {
+      const visibleIds = new Set(sorted.map((e) => e.id))
+      let changed = false
+      const next = new Set<string>()
+      for (const id of prev) {
+        if (visibleIds.has(id)) next.add(id)
+        else changed = true
+      }
+      return changed ? next : prev
+    })
+  }, [sorted])
 
   const handleSort = (col: SortColumn) => {
     if (col === sortColumn) {
@@ -140,8 +159,15 @@ export function RosterPage() {
   const jumpToSeat = useCallback(
     (emp: Employee) => {
       if (!slug) return
-      if (emp.floorId) switchToFloor(emp.floorId)
-      if (emp.seatId) useUIStore.getState().setSelectedIds([emp.seatId])
+      // Re-read the employee in case the row was edited between click and
+      // here (unlikely but cheap). Bail out silently if floor/seat got
+      // cleared or the floor has since been deleted.
+      const fresh = useEmployeeStore.getState().employees[emp.id] ?? emp
+      const floor = fresh.floorId
+        ? useFloorStore.getState().floors.find((f) => f.id === fresh.floorId)
+        : null
+      if (floor) switchToFloor(floor.id)
+      if (fresh.seatId) useUIStore.getState().setSelectedIds([fresh.seatId])
       navigate(`/project/${slug}/map`)
     },
     [navigate, slug],
@@ -331,7 +357,13 @@ export function RosterPage() {
                 <td className="px-3 py-1.5 align-middle font-medium text-gray-800">
                   <InlineText
                     value={emp.name}
-                    onCommit={(v) => v && updateEmployee(emp.id, { name: v })}
+                    // Name is required; silently ignoring an empty commit
+                    // would look like a bug ("I hit Enter on nothing — did
+                    // it save?"). Reject it so the field reverts visibly.
+                    onCommit={(v) => {
+                      if (v) updateEmployee(emp.id, { name: v })
+                    }}
+                    allowEmpty={false}
                     placeholder="—"
                   />
                 </td>
@@ -430,7 +462,14 @@ export function RosterPage() {
       </div>
 
       {drawerId && (
-        <RosterDetailDrawer employeeId={drawerId} onClose={() => setDrawerId(null)} />
+        // `key` forces a fresh mount per employee so the drawer's
+        // `defaultValue` inputs re-read current field values instead of
+        // showing the previously opened person's data.
+        <RosterDetailDrawer
+          key={drawerId}
+          employeeId={drawerId}
+          onClose={() => setDrawerId(null)}
+        />
       )}
     </div>
   )
@@ -446,17 +485,28 @@ function InlineText({
   onCommit,
   placeholder,
   listId,
+  allowEmpty = true,
 }: {
   value: string
   onCommit: (v: string) => void
   placeholder: string
   listId?: string
+  /**
+   * When false, an empty commit is treated as "cancel" — the stored value
+   * is left untouched. Callers use this for required columns (e.g. name)
+   * where a blank would look like a silent save failure.
+   */
+  allowEmpty?: boolean
 }) {
   const [editing, setEditing] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const commit = (next: string) => {
     const trimmed = next.trim()
+    if (!allowEmpty && trimmed === '') {
+      setEditing(false)
+      return
+    }
     if (trimmed !== value) onCommit(trimmed)
     setEditing(false)
   }
@@ -502,14 +552,19 @@ function RowActionMenu({
 }) {
   return (
     <>
-      {/* Invisible backdrop closes the menu on outside click. */}
+      {/*
+        Invisible backdrop closes the menu on outside click. It must sit
+        above the sticky <thead> (z-10) so the first click outside the menu
+        actually closes it instead of getting eaten by the header — that
+        was the "takes two clicks to dismiss" bug.
+      */}
       <button
         onClick={onClose}
-        className="fixed inset-0 z-10 cursor-default"
+        className="fixed inset-0 z-30 cursor-default"
         aria-label="Close menu"
         tabIndex={-1}
       />
-      <div className="absolute right-2 top-full mt-1 z-20 w-44 bg-white border border-gray-200 rounded-md shadow-lg py-1">
+      <div className="absolute right-2 top-full mt-1 z-40 w-44 bg-white border border-gray-200 rounded-md shadow-lg py-1">
         <button
           onClick={onEdit}
           className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"

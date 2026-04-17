@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
 import { useEmployeeStore } from '../../stores/employeeStore'
 import { useFloorStore } from '../../stores/floorStore'
+import { useUIStore } from '../../stores/uiStore'
 import type { Employee, EmployeeStatus } from '../../types/employee'
 import { EMPLOYEE_STATUSES } from '../../types/employee'
 
@@ -32,30 +33,74 @@ const OFFICE_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
  * Submit-on-blur / on-change — every field writes through
  * `updateEmployee` as soon as the user leaves it, mirroring the inline cells
  * in the table so the two editing modes stay consistent. No Save button.
+ *
+ * Modal behavior:
+ * - Bumps `modalOpenCount` on the ui-store for its whole lifetime so global
+ *   keyboard shortcuts (Escape, M/R nav, tool hotkeys) stand down while the
+ *   drawer owns focus.
+ * - Escape / backdrop click closes; Tab/Shift+Tab wrap within the drawer.
+ * - First focusable input (email) is focused on mount for keyboard users.
+ *
+ * Fields use `defaultValue` (uncontrolled) for submit-on-blur ergonomics.
+ * The parent MUST pass `key={employeeId}` so switching rows forces a fresh
+ * mount and `defaultValue` re-reads the new employee — otherwise the stale
+ * previous record lingers until the user focuses each field.
  */
 export function RosterDetailDrawer({ employeeId, onClose }: Props) {
   const employee = useEmployeeStore((s) => s.employees[employeeId])
   const employees = useEmployeeStore((s) => s.employees)
   const updateEmployee = useEmployeeStore((s) => s.updateEmployee)
   const floors = useFloorStore((s) => s.floors)
+  const registerModalOpen = useUIStore((s) => s.registerModalOpen)
+  const registerModalClose = useUIStore((s) => s.registerModalClose)
 
-  // Close on Escape for discoverability. We use capture so this beats the
-  // global keyboard-shortcut handler in ProjectShell, which otherwise steals
-  // Escape for tool reset.
+  const drawerRef = useRef<HTMLElement>(null)
+  const firstFieldRef = useRef<HTMLInputElement>(null)
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
+
+  // Register as an open modal so `useKeyboardShortcuts` stops reacting to
+  // global Escape/hotkeys. We also listen locally for Escape and Tab so the
+  // drawer doesn't depend on any other handler running.
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopImmediatePropagation()
-        e.preventDefault()
-        onCloseRef.current()
-      }
-    }
-    window.addEventListener('keydown', handler, { capture: true })
-    return () =>
-      window.removeEventListener('keydown', handler, { capture: true } as EventListenerOptions)
+    registerModalOpen()
+    return () => registerModalClose()
+  }, [registerModalOpen, registerModalClose])
+
+  // Autofocus the first field on mount so keyboard users land inside the
+  // drawer immediately. Done in an effect (not autoFocus prop) so it runs
+  // after layout and works with the transition.
+  useEffect(() => {
+    firstFieldRef.current?.focus()
   }, [])
+
+  // Escape closes; Tab/Shift+Tab wrap within the drawer so focus never
+  // escapes into the dimmed underlay behind us.
+  const onRootKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.stopPropagation()
+      e.preventDefault()
+      onCloseRef.current()
+      return
+    }
+    if (e.key !== 'Tab') return
+    const root = drawerRef.current
+    if (!root) return
+    const focusables = root.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    )
+    if (focusables.length === 0) return
+    const first = focusables[0]
+    const last = focusables[focusables.length - 1]
+    const active = document.activeElement as HTMLElement | null
+    if (e.shiftKey && active === first) {
+      e.preventDefault()
+      last.focus()
+    } else if (!e.shiftKey && active === last) {
+      e.preventDefault()
+      first.focus()
+    }
+  }
 
   if (!employee) return null
 
@@ -88,7 +133,7 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex">
+    <div className="fixed inset-0 z-40 flex" onKeyDown={onRootKeyDown}>
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/30"
@@ -98,8 +143,10 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
 
       {/* Drawer */}
       <aside
+        ref={drawerRef}
         className="relative ml-auto w-[420px] max-w-full h-full bg-white shadow-2xl overflow-y-auto flex flex-col"
         role="dialog"
+        aria-modal="true"
         aria-label={`Edit ${employee.name}`}
       >
         <header className="flex items-center justify-between px-5 py-4 border-b border-gray-200 flex-shrink-0">
@@ -119,9 +166,12 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
         <div className="flex-1 px-5 py-4 space-y-4">
           <Field label="Email">
             <input
+              ref={firstFieldRef}
               className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               defaultValue={employee.email}
-              onBlur={(e) => updateEmployee(employee.id, { email: e.target.value })}
+              onBlur={(e) =>
+                updateEmployee(employee.id, { email: e.target.value.trim() })
+              }
               type="email"
             />
           </Field>

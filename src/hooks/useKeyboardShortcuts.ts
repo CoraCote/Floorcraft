@@ -20,7 +20,22 @@ export function useKeyboardShortcuts() {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return
+      // Focus guard: don't hijack typing. SELECT is included because its
+      // native keyboard handling (Enter to open, letters to jump-select)
+      // would otherwise be eaten by our hotkeys.
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT' ||
+        target.isContentEditable
+      ) return
+
+      // Modal guard: while a drawer/dialog owns focus, global shortcuts
+      // stand down so Escape closes the modal (not the canvas selection)
+      // and tool hotkeys don't flip behind the user's back. Presentation
+      // mode is the one global state exempt from this — Escape MUST always
+      // be able to exit it regardless of what's on top.
+      const modalsOpen = useUIStore.getState().modalOpenCount > 0
 
       const mod = e.metaKey || e.ctrlKey
 
@@ -32,7 +47,7 @@ export function useKeyboardShortcuts() {
           e.preventDefault()
           e.stopImmediatePropagation()
           setPresentationMode(false)
-        } else {
+        } else if (!modalsOpen) {
           // Cancel any in-flight canvas drawing session (walls, shapes).
           // Uses an event-bus counter on uiStore so this hook doesn't need
           // to import the drawing hook directly.
@@ -42,6 +57,11 @@ export function useKeyboardShortcuts() {
         }
         return
       }
+
+      // Everything below this line is a global editor shortcut — skip
+      // entirely when a modal is open so Cmd+A, Cmd+Z, arrow nudges, etc.
+      // don't leak behind the drawer and mutate the canvas/selection.
+      if (modalsOpen) return
 
       if (mod && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return }
       if (mod && e.key === 'z' && e.shiftKey) { e.preventDefault(); redo(); return }
