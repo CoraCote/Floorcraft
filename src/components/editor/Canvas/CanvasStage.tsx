@@ -94,6 +94,10 @@ export function CanvasStage() {
   // ghost preview. Null when the cursor has left the canvas so the ghost
   // disappears cleanly (no stale phantom between sessions on the same tool).
   const [ghostCursor, setGhostCursor] = useState<{ x: number; y: number } | null>(null)
+  // Mirrored hit state from <AttachmentGhost> so we can set the DOM cursor
+  // to `not-allowed` when hovering off any wall without running the
+  // expensive elements-walk in two places.
+  const [ghostHasHit, setGhostHasHit] = useState(false)
 
   const handleMouseDown = useCallback(
     (e: Konva.KonvaEventObject<MouseEvent>) => {
@@ -274,17 +278,12 @@ export function CanvasStage() {
 
   // Base cursor per tool. For door/window we additionally flip to
   // `not-allowed` when the cursor is NOT over a wall in snap range — so the
-  // user learns where they can click without silent no-ops. The hit test
-  // here is the same one the ghost uses (findNearestStraightWallHit).
+  // user learns where they can click without silent no-ops. AttachmentGhost
+  // owns the reactive hit test and pushes the result up via `onHitChange`;
+  // this avoids duplicating the elements-map walk here on every render.
   let cursor: string = activeTool === 'pan' ? 'grab' : activeTool === 'wall' ? 'crosshair' : 'default'
   if ((activeTool === 'door' || activeTool === 'window') && ghostCursor) {
-    const hit = findNearestStraightWallHit(
-      useElementsStore.getState().elements,
-      ghostCursor.x,
-      ghostCursor.y,
-      DOOR_WINDOW_SNAP_PX / stageScale,
-    )
-    cursor = hit ? 'crosshair' : 'not-allowed'
+    cursor = ghostHasHit ? 'crosshair' : 'not-allowed'
   }
 
   // Accept employee drags from PeoplePanel and assign the dropped employee
@@ -408,6 +407,7 @@ export function CanvasStage() {
           cursor={ghostCursor}
           stageScale={stageScale}
           snapPx={DOOR_WINDOW_SNAP_PX}
+          onHitChange={setGhostHasHit}
         />
       </Stage>
     </div>

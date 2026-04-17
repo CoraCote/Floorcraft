@@ -66,6 +66,10 @@ export function findNearestStraightWallHit(
   let best: WallHit | null = null
   for (const el of Object.values(elements) as unknown as WallElement[]) {
     if (!isWallElement(el)) continue
+    // Hidden walls are invisible in the canvas; snapping a door to one the
+    // user can't see produces a dangling element. Locked walls remain
+    // eligible — a locked wall is still visible and a valid anchor.
+    if (el.visible === false) continue
     const segs = wallSegments(el.points, el.bulges)
 
     // Precompute the total STRAIGHT length so we can convert local

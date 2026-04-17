@@ -1,3 +1,4 @@
+import { useEffect, useMemo } from 'react'
 import { Group, Rect, Line, Arc, Layer, Circle } from 'react-konva'
 import { useElementsStore } from '../../../stores/elementsStore'
 import { findNearestStraightWallHit } from '../../../lib/wallAttachment'
@@ -12,6 +13,13 @@ interface AttachmentGhostProps {
   stageScale: number
   /** Max canvas-unit distance to snap from — matches CanvasStage's click logic. */
   snapPx: number
+  /**
+   * Called with `true` when the cursor is within snap range of a wall,
+   * `false` otherwise. CanvasStage uses this to flip the DOM cursor to
+   * `not-allowed` without having to re-run the hit test itself — one walk
+   * of the elements map per mousemove is plenty.
+   */
+  onHitChange?: (hasHit: boolean) => void
 }
 
 /**
@@ -20,17 +28,32 @@ interface AttachmentGhostProps {
  * on click, so WYSIWYG. When there's no wall in range we render a small
  * greyed crosshair so the user sees the tool is tracking but nothing will
  * be placed; CanvasStage also flips its cursor to `not-allowed` in that
- * case (see CanvasStage.tsx cursor derivation).
+ * case via `onHitChange`.
+ *
+ * This component owns the reactive subscription to the elements map. The
+ * hit is memoised on the inputs (elements + cursor + snap), so it only
+ * re-runs when something that matters changed — not on every unrelated
+ * drag/update in the editor.
  */
-export function AttachmentGhost({ tool, cursor, stageScale, snapPx }: AttachmentGhostProps) {
+export function AttachmentGhost({ tool, cursor, stageScale, snapPx, onHitChange }: AttachmentGhostProps) {
   // Subscribe so the ghost updates when walls are added/removed.
   const elements = useElementsStore((s) => s.elements)
 
-  if (tool !== 'door' && tool !== 'window') return null
-  if (!cursor) return null
+  const active = (tool === 'door' || tool === 'window') && cursor !== null
+  const hit = useMemo(() => {
+    if (!active || !cursor) return null
+    return findNearestStraightWallHit(elements, cursor.x, cursor.y, snapPx / stageScale)
+  }, [active, elements, cursor, stageScale, snapPx])
 
-  // Same scaled radius as the click handler so hover matches click.
-  const hit = findNearestStraightWallHit(elements, cursor.x, cursor.y, snapPx / stageScale)
+  // Push the hit/no-hit state up to CanvasStage for cursor styling. Using
+  // an effect (not render) avoids "setState during render" warnings and
+  // keeps CanvasStage decoupled from the hit test.
+  const hasHit = hit !== null
+  useEffect(() => {
+    onHitChange?.(hasHit)
+  }, [hasHit, onHitChange])
+
+  if (!active || !cursor) return null
 
   // No wall nearby: render a small greyed crosshair at the cursor so the
   // user sees the tool is live but sees no snap target.
