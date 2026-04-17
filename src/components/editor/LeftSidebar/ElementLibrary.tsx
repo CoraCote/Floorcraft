@@ -18,12 +18,20 @@ import { useCanvasStore } from '../../../stores/canvasStore'
 import { nanoid } from 'nanoid'
 import { computeSeatPositions } from '../../../lib/seatLayout'
 
-interface LibraryItem {
+export interface LibraryItem {
   type: ElementType
   label: string
   category: string
   shape?: string    // NEW — optional shape override
 }
+
+/**
+ * Mime type carried on the HTML5 drag payload when a library tile is
+ * dragged onto the canvas. CanvasStage checks for this mime to distinguish
+ * library drags from employee-assignment drags (which use
+ * `application/employee-id`).
+ */
+export const LIBRARY_DRAG_MIME = 'application/floocraft-element-type'
 
 const LIBRARY_ITEMS: LibraryItem[] = [
   // Tables
@@ -74,6 +82,143 @@ function isTableType(type: ElementType): type is TableType {
   return type === 'table-rect' || type === 'table-conference' || type === 'table-round' || type === 'table-oval'
 }
 
+type AnyLibraryElement =
+  | TableElement
+  | DeskElement
+  | WorkstationElement
+  | PrivateOfficeElement
+  | ConferenceRoomElement
+  | PhoneBoothElement
+  | CommonAreaElement
+  | DecorElement
+  | BaseElement
+
+/**
+ * Build (but do not insert) an element from a library item at the given
+ * canvas-space coords. Extracted so the click-to-add path (centres in the
+ * current viewport) and the drag-to-canvas path (drops at the cursor)
+ * share the exact same factory — keep this pure so it can be called from
+ * the library tile click handler or from CanvasStage's drop handler.
+ */
+export function buildLibraryElement(
+  item: LibraryItem,
+  x: number,
+  y: number,
+  zIndex: number,
+): AnyLibraryElement {
+  const defaults = getDefaults(item.type, item.shape) || { width: 60, height: 60, fill: '#F3F4F6', stroke: '#6B7280' }
+  const id = nanoid()
+
+  const baseProps = {
+    id,
+    x,
+    y,
+    width: defaults.width,
+    height: defaults.height,
+    rotation: 0,
+    locked: false,
+    groupId: null,
+    zIndex,
+    label: item.label,
+    visible: true,
+    style: { fill: defaults.fill, stroke: defaults.stroke, strokeWidth: 2, opacity: 1 },
+  } as const
+
+  if (isTableType(item.type)) {
+    const seatCount = TABLE_SEAT_DEFAULTS[item.type] || 6
+    const layout = item.type === 'table-conference' || item.type === 'table-round' || item.type === 'table-oval' ? 'around' as const : 'both-sides' as const
+    const element: TableElement = {
+      ...baseProps,
+      type: item.type,
+      seatCount,
+      seatLayout: layout,
+      seats: computeSeatPositions(item.type, seatCount, layout, defaults.width, defaults.height),
+    }
+    return element
+  }
+
+  if (item.type === 'desk' || item.type === 'hot-desk') {
+    const deskId = `D-${nanoid(6)}`
+    const element: DeskElement = {
+      ...baseProps,
+      type: item.type,
+      deskId,
+      assignedEmployeeId: null,
+      capacity: 1,
+      ...(item.shape ? { shape: item.shape as DeskElement['shape'] } : {}),
+    }
+    return element
+  }
+
+  if (item.type === 'workstation') {
+    const deskId = `W-${nanoid(6)}`
+    const element: WorkstationElement = {
+      ...baseProps,
+      type: 'workstation',
+      deskId,
+      positions: 4,
+      assignedEmployeeIds: [],
+    }
+    return element
+  }
+
+  if (item.type === 'private-office') {
+    const deskId = `PO-${nanoid(6)}`
+    const element: PrivateOfficeElement = {
+      ...baseProps,
+      type: 'private-office',
+      deskId,
+      capacity: item.shape === 'u-shape' ? 2 : 1,
+      assignedEmployeeIds: [],
+      ...(item.shape ? { shape: item.shape as PrivateOfficeElement['shape'] } : {}),
+    }
+    return element
+  }
+
+  if (item.type === 'conference-room') {
+    const element: ConferenceRoomElement = {
+      ...baseProps,
+      type: 'conference-room',
+      roomName: 'Conference Room',
+      capacity: 8,
+    }
+    return element
+  }
+
+  if (item.type === 'phone-booth') {
+    const element: PhoneBoothElement = {
+      ...baseProps,
+      type: 'phone-booth',
+    }
+    return element
+  }
+
+  if (item.type === 'common-area') {
+    const element: CommonAreaElement = {
+      ...baseProps,
+      type: 'common-area',
+      areaName: 'Common Area',
+    }
+    return element
+  }
+
+  if (item.type === 'decor') {
+    const el: DecorElement = {
+      ...baseProps,
+      type: 'decor',
+      shape: item.shape as DecorShape,
+    } as DecorElement
+    return el
+  }
+
+  // Default: generic BaseElement for chair, counter, divider, planter, custom-shape, text-label
+  const element: BaseElement = {
+    ...baseProps,
+    type: item.type,
+  }
+  return element
+}
+
 export function ElementLibrary() {
   const addElement = useElementsStore((s) => s.addElement)
   const getMaxZIndex = useElementsStore((s) => s.getMaxZIndex)
@@ -82,129 +227,19 @@ export function ElementLibrary() {
   const stageY = useCanvasStore((s) => s.stageY)
 
   const handleAddElement = (item: LibraryItem) => {
-    const defaults = getDefaults(item.type, item.shape) || { width: 60, height: 60, fill: '#F3F4F6', stroke: '#6B7280' }
-    const id = nanoid()
-
+    // Click-to-add drops the element near the centre of the current
+    // viewport (approx 400, 300 screen px from the canvas origin).
     const x = (-stageX + 400) / stageScale
     const y = (-stageY + 300) / stageScale
+    addElement(buildLibraryElement(item, x, y, getMaxZIndex() + 1))
+  }
 
-    const baseProps = {
-      id,
-      x,
-      y,
-      width: defaults.width,
-      height: defaults.height,
-      rotation: 0,
-      locked: false,
-      groupId: null,
-      zIndex: getMaxZIndex() + 1,
-      label: item.label,
-      visible: true,
-      style: { fill: defaults.fill, stroke: defaults.stroke, strokeWidth: 2, opacity: 1 },
-    } as const
-
-    if (isTableType(item.type)) {
-      const seatCount = TABLE_SEAT_DEFAULTS[item.type] || 6
-      const layout = item.type === 'table-conference' || item.type === 'table-round' || item.type === 'table-oval' ? 'around' as const : 'both-sides' as const
-
-      const element: TableElement = {
-        ...baseProps,
-        type: item.type,
-        seatCount,
-        seatLayout: layout,
-        seats: computeSeatPositions(item.type, seatCount, layout, defaults.width, defaults.height),
-      }
-      addElement(element)
-      return
-    }
-
-    if (item.type === 'desk' || item.type === 'hot-desk') {
-      const deskId = `D-${nanoid(6)}`
-      const element: DeskElement = {
-        ...baseProps,
-        type: item.type,
-        deskId,
-        assignedEmployeeId: null,
-        capacity: 1,
-        ...(item.shape ? { shape: item.shape as DeskElement['shape'] } : {}),
-      }
-      addElement(element)
-      return
-    }
-
-    if (item.type === 'workstation') {
-      const deskId = `W-${nanoid(6)}`
-      const element: WorkstationElement = {
-        ...baseProps,
-        type: 'workstation',
-        deskId,
-        positions: 4,
-        assignedEmployeeIds: [],
-      }
-      addElement(element)
-      return
-    }
-
-    if (item.type === 'private-office') {
-      const deskId = `PO-${nanoid(6)}`
-      const element: PrivateOfficeElement = {
-        ...baseProps,
-        type: 'private-office',
-        deskId,
-        capacity: item.shape === 'u-shape' ? 2 : 1,
-        assignedEmployeeIds: [],
-        ...(item.shape ? { shape: item.shape as PrivateOfficeElement['shape'] } : {}),
-      }
-      addElement(element)
-      return
-    }
-
-    if (item.type === 'conference-room') {
-      const element: ConferenceRoomElement = {
-        ...baseProps,
-        type: 'conference-room',
-        roomName: 'Conference Room',
-        capacity: 8,
-      }
-      addElement(element)
-      return
-    }
-
-    if (item.type === 'phone-booth') {
-      const element: PhoneBoothElement = {
-        ...baseProps,
-        type: 'phone-booth',
-      }
-      addElement(element)
-      return
-    }
-
-    if (item.type === 'common-area') {
-      const element: CommonAreaElement = {
-        ...baseProps,
-        type: 'common-area',
-        areaName: 'Common Area',
-      }
-      addElement(element)
-      return
-    }
-
-    if (item.type === 'decor') {
-      const el: DecorElement = {
-        ...baseProps,
-        type: 'decor',
-        shape: item.shape as DecorShape,
-      } as DecorElement
-      addElement(el)
-      return
-    }
-
-    // Default: generic BaseElement for chair, counter, divider, planter, custom-shape, text-label
-    const element: BaseElement = {
-      ...baseProps,
-      type: item.type,
-    }
-    addElement(element)
+  // Drag-to-canvas: serialise the LibraryItem into the drag payload. The
+  // CanvasStage drop handler reads this, translates the drop coords into
+  // canvas space, and calls buildLibraryElement at the cursor.
+  const handleDragStart = (item: LibraryItem) => (e: React.DragEvent<HTMLButtonElement>) => {
+    e.dataTransfer.setData(LIBRARY_DRAG_MIME, JSON.stringify(item))
+    e.dataTransfer.effectAllowed = 'copy'
   }
 
   const categories = [...new Set(LIBRARY_ITEMS.map((i) => i.category))]
@@ -220,7 +255,10 @@ export function ElementLibrary() {
               <button
                 key={`${item.type}${item.shape ? `-${item.shape}` : ''}-${item.label}`}
                 onClick={() => handleAddElement(item)}
-                className="flex items-center gap-1.5 px-2 py-1.5 text-xs text-gray-700 hover:bg-gray-100 rounded border border-gray-100 hover:border-gray-200 transition-colors"
+                draggable
+                onDragStart={handleDragStart(item)}
+                title={`Click to add to centre, or drag onto the canvas to place exactly`}
+                className="flex items-center gap-1.5 px-2 py-1.5 text-xs text-gray-700 hover:bg-gray-100 rounded border border-gray-100 hover:border-gray-200 transition-colors cursor-grab active:cursor-grabbing"
               >
                 <div
                   className="w-5 h-4 rounded-sm border flex-shrink-0"
