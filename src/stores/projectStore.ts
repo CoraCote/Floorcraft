@@ -4,16 +4,24 @@ import type { Project } from '../types/project'
 import { DEFAULT_CANVAS_SETTINGS } from '../types/project'
 import { generateSlug } from '../lib/slug'
 
+/**
+ * Save-cycle state surfaced by `useAutoSave` so UI can show a live indicator.
+ * `'idle'` is the resting state when nothing has saved yet this session.
+ */
+export type SaveState = 'idle' | 'saving' | 'saved' | 'error'
+
 interface ProjectState {
   currentProject: Project | null
   isDirty: boolean
   lastSavedAt: string | null
+  saveState: SaveState
 
   setCurrentProject: (project: Project) => void
   updateProjectName: (name: string) => void
   updateSharePermission: (perm: Project['sharePermission']) => void
   setDirty: (dirty: boolean) => void
   setLastSavedAt: (at: string) => void
+  setSaveState: (s: SaveState) => void
 
   createNewProject: (name?: string) => Project
 }
@@ -22,6 +30,7 @@ export const useProjectStore = create<ProjectState>((set, _get) => ({
   currentProject: null,
   isDirty: false,
   lastSavedAt: null,
+  saveState: 'idle',
 
   setCurrentProject: (project) => set({ currentProject: project }),
 
@@ -43,6 +52,7 @@ export const useProjectStore = create<ProjectState>((set, _get) => ({
 
   setDirty: (dirty) => set({ isDirty: dirty }),
   setLastSavedAt: (at) => set({ lastSavedAt: at, isDirty: false }),
+  setSaveState: (s) => set({ saveState: s }),
 
   createNewProject: (name) => {
     const defaultFloorId = nanoid()

@@ -4,6 +4,7 @@ import { useEmployeeStore } from '../stores/employeeStore'
 import { useProjectStore } from '../stores/projectStore'
 import { useCanvasStore } from '../stores/canvasStore'
 import { useFloorStore } from '../stores/floorStore'
+import { isEmployeeStatus } from '../types/employee'
 
 const SAVE_KEY = 'floocraft-autosave'
 const SAVE_DEBOUNCE = 2000
@@ -15,6 +16,7 @@ export function useAutoSave() {
   const project = useProjectStore((s) => s.currentProject)
   const settings = useCanvasStore((s) => s.settings)
   const setLastSavedAt = useProjectStore((s) => s.setLastSavedAt)
+  const setSaveState = useProjectStore((s) => s.setSaveState)
   const floors = useFloorStore((s) => s.floors)
   const activeFloorId = useFloorStore((s) => s.activeFloorId)
 
@@ -25,24 +27,36 @@ export function useAutoSave() {
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
 
     timeoutRef.current = setTimeout(() => {
-      const data = {
-        project,
-        elements,
-        employees,
-        departmentColors,
-        floors,
-        activeFloorId,
-        settings,
-        savedAt: new Date().toISOString(),
+      // Flip to 'saving' at the start so the TopBar indicator can show the
+      // in-flight state — even though localStorage is synchronous, this makes
+      // the transition visible to users (and to disk-bound future backends).
+      setSaveState('saving')
+      try {
+        const data = {
+          project,
+          elements,
+          employees,
+          departmentColors,
+          floors,
+          activeFloorId,
+          settings,
+          savedAt: new Date().toISOString(),
+        }
+        localStorage.setItem(SAVE_KEY, JSON.stringify(data))
+        setLastSavedAt(data.savedAt)
+        setSaveState('saved')
+      } catch (err) {
+        // localStorage can throw on quota exceeded or in private-mode Safari.
+        // Surface via saveState so the UI can prompt a manual retry.
+        if (typeof console !== 'undefined') console.error('Autosave failed:', err)
+        setSaveState('error')
       }
-      localStorage.setItem(SAVE_KEY, JSON.stringify(data))
-      setLastSavedAt(data.savedAt)
     }, SAVE_DEBOUNCE)
 
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current)
     }
-  }, [elements, employees, departmentColors, floors, activeFloorId, project, settings, setLastSavedAt])
+  }, [elements, employees, departmentColors, floors, activeFloorId, project, settings, setLastSavedAt, setSaveState])
 }
 
 type AutoSavePayload = {
@@ -94,6 +108,26 @@ function migrateElements(
 }
 
 /**
+ * Migrate a deserialized employees map. Older payloads predate the
+ * `status` field; back-fill to `'active'` (and coerce any invalid value
+ * to `'active'` too) so consumers can trust the enum unconditionally.
+ */
+function migrateEmployees(
+  employees: Record<string, unknown>,
+): ReturnType<typeof useEmployeeStore.getState>['employees'] {
+  const out: Record<string, unknown> = {}
+  for (const [id, raw] of Object.entries(employees ?? {})) {
+    if (!raw || typeof raw !== 'object') continue
+    const e = raw as Record<string, unknown>
+    out[id] = {
+      ...e,
+      status: isEmployeeStatus(e.status) ? e.status : 'active',
+    }
+  }
+  return out as ReturnType<typeof useEmployeeStore.getState>['employees']
+}
+
+/**
  * Shape-validate a deserialized autosave payload. We don't run a full schema
  * (overkill for a local-storage autosave), but we reject payloads where
  * required top-level fields are the wrong type — better to start a new
@@ -125,6 +159,11 @@ export function loadAutoSave(): AutoSavePayload | null {
   if (payload.elements) {
     payload.elements = migrateElements(
       payload.elements as unknown as Record<string, unknown>,
+    )
+  }
+  if (payload.employees) {
+    payload.employees = migrateEmployees(
+      payload.employees as unknown as Record<string, unknown>,
     )
   }
   return payload
