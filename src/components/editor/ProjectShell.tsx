@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import { TopBar } from './TopBar'
 import { ContextMenu } from './ContextMenu'
@@ -36,6 +36,24 @@ export function ProjectShell() {
 
   useKeyboardShortcuts()
   useAutoSave()
+
+  // Keep the browser tab title in sync with the project + view so users
+  // tabbing between multiple projects / roster vs. map can tell them apart
+  // without clicking. `Floocraft` remains the fallback brand name.
+  const location = useLocation()
+  useEffect(() => {
+    const name = currentProject?.name?.trim() || 'Untitled Office Plan'
+    const view = location.pathname.includes('/roster')
+      ? 'Roster'
+      : location.pathname.includes('/map')
+        ? 'Map'
+        : ''
+    const prev = document.title
+    document.title = view ? `${view} · ${name} — Floocraft` : `${name} — Floocraft`
+    return () => {
+      document.title = prev
+    }
+  }, [currentProject?.name, location.pathname])
 
   useEffect(() => {
     if (!currentProject) {

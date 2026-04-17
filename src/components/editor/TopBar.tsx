@@ -39,10 +39,39 @@ export function TopBar() {
   // Tick a state every 10s so the "Saved Xs ago" label stays fresh. We
   // intentionally use a counter (not a date) so React compares primitives
   // and we keep the derivation pure.
+  //
+  // Pause the interval when the tab is hidden — the user can't see the
+  // indicator anyway, and browsers already throttle background intervals,
+  // so it would land as a burst of spurious re-renders on tab focus. When
+  // the tab comes back we force a tick immediately so the label catches
+  // up to the actual elapsed time instead of showing the stale last value.
   const [, forceTick] = useState(0)
   useEffect(() => {
-    const id = setInterval(() => forceTick((n) => n + 1), 10_000)
-    return () => clearInterval(id)
+    let id: ReturnType<typeof setInterval> | null = null
+    const start = () => {
+      if (id !== null) return
+      id = setInterval(() => forceTick((n) => n + 1), 10_000)
+    }
+    const stop = () => {
+      if (id !== null) {
+        clearInterval(id)
+        id = null
+      }
+    }
+    const onVisibility = () => {
+      if (document.hidden) {
+        stop()
+      } else {
+        forceTick((n) => n + 1)
+        start()
+      }
+    }
+    if (!document.hidden) start()
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      stop()
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
   }, [])
 
   const handleNameSubmit = () => {

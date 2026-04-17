@@ -16,6 +16,9 @@ export function formatRelative(iso: string | null, now: number = Date.now()): st
   if (!iso) return null
   const t = Date.parse(iso)
   if (Number.isNaN(t)) return null
+  // Clock skew between a persisted autosave and the current machine can make
+  // `t` slightly greater than `now`. We clamp to 0 so a future timestamp
+  // reports "just now" instead of something nonsensical like "-3s ago".
   const seconds = Math.max(0, Math.floor((now - t) / 1000))
   if (seconds < 5) return 'just now'
   if (seconds < 60) return `${seconds}s ago`

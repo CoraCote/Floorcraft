@@ -80,9 +80,9 @@ function toolHint(tool: string): string | null {
     case 'wall':
       return 'Click to add vertices, drag to curve, double-click to finish — Esc to cancel'
     case 'door':
-      return 'Hover a wall to preview — click to place a door'
+      return 'Hover a wall to preview — click to place a door — Esc to cancel'
     case 'window':
-      return 'Hover a wall to preview — click to place a window'
+      return 'Hover a wall to preview — click to place a window — Esc to cancel'
     case 'pan':
       return 'Drag to pan the canvas'
     default:

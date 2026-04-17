@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react'
+import { useRef, useSyncExternalStore } from 'react'
 import { useElementsStore } from '../stores/elementsStore'
 
 /**
@@ -8,19 +8,35 @@ import { useElementsStore } from '../stores/elementsStore'
  * `useElementsStore.temporal`, which doesn't come with a React hook built
  * in — `useSyncExternalStore` is the React-recommended way to bridge.
  *
- * Only the two booleans are projected to keep re-renders cheap. Reading
- * the raw past/future arrays would force a re-render on every snapshot.
+ * We project both booleans through a single subscription so the two
+ * fields always reflect the same temporal snapshot. Two independent
+ * `useSyncExternalStore` calls can commit out of order and briefly show a
+ * state that never actually existed (e.g. `canUndo` true but `canRedo`
+ * stale), which then gets overwritten a tick later — the classic
+ * subscription-tearing footgun.
+ *
+ * The `cacheRef` keeps the returned object's identity stable when neither
+ * boolean changed; React uses reference equality to decide whether to
+ * re-render, so returning a fresh object every subscription bump would
+ * otherwise force unnecessary re-renders of every subscriber.
  */
 export function useTemporalState(): { canUndo: boolean; canRedo: boolean } {
-  const canUndo = useSyncExternalStore(
+  const cacheRef = useRef<{ canUndo: boolean; canRedo: boolean }>({
+    canUndo: false,
+    canRedo: false,
+  })
+  return useSyncExternalStore(
     useElementsStore.temporal.subscribe,
-    () => useElementsStore.temporal.getState().pastStates.length > 0,
-    () => false,
+    () => {
+      const { pastStates, futureStates } = useElementsStore.temporal.getState()
+      const canUndo = pastStates.length > 0
+      const canRedo = futureStates.length > 0
+      const prev = cacheRef.current
+      if (prev.canUndo === canUndo && prev.canRedo === canRedo) return prev
+      const next = { canUndo, canRedo }
+      cacheRef.current = next
+      return next
+    },
+    () => cacheRef.current,
   )
-  const canRedo = useSyncExternalStore(
-    useElementsStore.temporal.subscribe,
-    () => useElementsStore.temporal.getState().futureStates.length > 0,
-    () => false,
-  )
-  return { canUndo, canRedo }
 }

@@ -1,4 +1,4 @@
-import { SHAPE_DEFAULTS, TABLE_SEAT_DEFAULTS, getDefaults } from '../../../lib/constants'
+import { TABLE_SEAT_DEFAULTS, getDefaults } from '../../../lib/constants'
 import type {
   ElementType,
   TableType,
@@ -251,25 +251,32 @@ export function ElementLibrary() {
         <div key={cat} className="mb-3">
           <div className="text-xs font-medium text-gray-400 mb-1">{cat}</div>
           <div className="grid grid-cols-2 gap-1">
-            {LIBRARY_ITEMS.filter((i) => i.category === cat).map((item) => (
-              <button
-                key={`${item.type}${item.shape ? `-${item.shape}` : ''}-${item.label}`}
-                onClick={() => handleAddElement(item)}
-                draggable
-                onDragStart={handleDragStart(item)}
-                title={`Click to add to centre, or drag onto the canvas to place exactly`}
-                className="flex items-center gap-1.5 px-2 py-1.5 text-xs text-gray-700 hover:bg-gray-100 rounded border border-gray-100 hover:border-gray-200 transition-colors cursor-grab active:cursor-grabbing"
-              >
-                <div
-                  className="w-5 h-4 rounded-sm border flex-shrink-0"
-                  style={{
-                    backgroundColor: (getDefaults(item.type, item.shape) || SHAPE_DEFAULTS[item.type])?.fill || '#F3F4F6',
-                    borderColor: (getDefaults(item.type, item.shape) || SHAPE_DEFAULTS[item.type])?.stroke || '#6B7280',
-                  }}
-                />
-                <span className="truncate">{item.label}</span>
-              </button>
-            ))}
+            {LIBRARY_ITEMS.filter((i) => i.category === cat).map((item) => {
+              // `getDefaults` already falls back `shape` → `type` → element
+              // defaults internally, so the old `|| SHAPE_DEFAULTS[...]`
+              // outer chain was dead. One call, one fallback for the swatch
+              // colors if the registry somehow returns nothing.
+              const d = getDefaults(item.type, item.shape)
+              return (
+                <button
+                  key={`${item.type}${item.shape ? `-${item.shape}` : ''}-${item.label}`}
+                  onClick={() => handleAddElement(item)}
+                  draggable
+                  onDragStart={handleDragStart(item)}
+                  title={`Click to add to centre, or drag onto the canvas to place exactly`}
+                  className="flex items-center gap-1.5 px-2 py-1.5 text-xs text-gray-700 hover:bg-gray-100 rounded border border-gray-100 hover:border-gray-200 transition-colors cursor-grab active:cursor-grabbing"
+                >
+                  <div
+                    className="w-5 h-4 rounded-sm border flex-shrink-0"
+                    style={{
+                      backgroundColor: d?.fill || '#F3F4F6',
+                      borderColor: d?.stroke || '#6B7280',
+                    }}
+                  />
+                  <span className="truncate">{item.label}</span>
+                </button>
+              )
+            })}
           </div>
         </div>
       ))}
