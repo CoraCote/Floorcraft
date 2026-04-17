@@ -7,13 +7,12 @@ import { useElementsStore } from '../stores/elementsStore'
 import { isWallElement } from '../types/elements'
 import { wallSegments } from './wallPath'
 
-const BULGE_DEADZONE_PX = 2
-const BULGE_ROUND_DECIMALS = 2
+export const BULGE_DEADZONE_PX = 2
+export const BULGE_ROUND_DECIMALS = 2
 
 /**
  * Signed perpendicular offset from chord midpoint to pointer.
- * Uses the SAME left-normal convention as src/lib/wallPath.ts and
- * src/hooks/useWallDrawing.ts:
+ * Uses the SAME left-normal convention as src/lib/wallPath.ts:
  *   lnx = dy/c, lny = -dx/c   (screen coords, y grows downward)
  * Positive result = pointer is VISUALLY above a left-to-right chord,
  * matching how wallPath.ts renders positive bulges.
@@ -37,6 +36,11 @@ export function signedPerpOffset(
   return (px - mx) * lnx + (py - my) * lny
 }
 
+/**
+ * Apply deadzone + half-chord clamp + rounding to a raw perp offset.
+ * Shared by the drawing hook (live preview) and the edit overlay
+ * (midpoint-handle drag) so sign/clamp/rounding can never drift.
+ */
 export function clampBulge(raw: number, chordLen: number): number {
   if (Math.abs(raw) < BULGE_DEADZONE_PX) return 0
   const max = chordLen / 2

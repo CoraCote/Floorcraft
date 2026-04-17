@@ -4,13 +4,10 @@ import { useElementsStore } from '../stores/elementsStore'
 import { nanoid } from 'nanoid'
 import type { WallElement } from '../types/elements'
 import { snapToGrid } from '../lib/geometry'
+import { signedPerpOffset, clampBulge } from '../lib/wallEditing'
 
 /** Min pointer travel (canvas units) before a press counts as a drag. */
 const DRAG_THRESHOLD_PX = 4
-/** Perp-offset magnitude below which a drag snaps back to 0 (straight). */
-const BULGE_DEADZONE_PX = 2
-/** Decimal places for committed bulges (keeps serialized diffs clean). */
-const BULGE_ROUND_DECIMALS = 2
 
 interface WallDrawingState {
   isDrawing: boolean
@@ -27,40 +24,6 @@ const INITIAL_STATE: WallDrawingState = {
   bulges: [],
   currentPoint: null,
   previewBulge: null,
-}
-
-/**
- * Signed perpendicular offset from chord midpoint to pointer.
- * Uses the SAME left-normal convention as src/lib/wallPath.ts:
- *   lnx = dy/c, lny = -dx/c   (screen coords, y grows downward)
- * Positive result = pointer is VISUALLY above a left-to-right chord,
- * matching the sign convention wallPath.ts uses when rendering arcs.
- */
-function signedPerpOffset(
-  x0: number,
-  y0: number,
-  x1: number,
-  y1: number,
-  px: number,
-  py: number,
-): number {
-  const dx = x1 - x0
-  const dy = y1 - y0
-  const c = Math.hypot(dx, dy)
-  if (c === 0) return 0
-  const lnx = dy / c
-  const lny = -dx / c
-  const mx = (x0 + x1) / 2
-  const my = (y0 + y1) / 2
-  return (px - mx) * lnx + (py - my) * lny
-}
-
-function clampBulge(raw: number, chordLen: number): number {
-  if (Math.abs(raw) < BULGE_DEADZONE_PX) return 0
-  const max = chordLen / 2
-  const clamped = Math.max(-max, Math.min(max, raw))
-  const factor = 10 ** BULGE_ROUND_DECIMALS
-  return Math.round(clamped * factor) / factor
 }
 
 export function useWallDrawing() {
