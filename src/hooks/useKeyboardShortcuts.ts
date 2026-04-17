@@ -23,8 +23,17 @@ export function useKeyboardShortcuts() {
 
       if (e.key === 'Escape') {
         if (presentationMode) {
+          // In presentation mode, Escape MUST exit. Prevent the browser
+          // default (which in some browsers exits native fullscreen without
+          // clearing our state) and stop other listeners from competing.
+          e.preventDefault()
+          e.stopImmediatePropagation()
           setPresentationMode(false)
         } else {
+          // Cancel any in-flight canvas drawing session (walls, shapes).
+          // Uses an event-bus counter on uiStore so this hook doesn't need
+          // to import the drawing hook directly.
+          useUIStore.getState().requestCancelDrawing()
           clearSelection()
           setActiveTool('select')
         }
@@ -123,8 +132,11 @@ export function useKeyboardShortcuts() {
       }
     }
 
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
+    // Capture phase: runs BEFORE modal/dialog bubble-phase listeners, so
+    // Escape reliably exits presentation mode even if a modal happens to be
+    // open when presentation mode is toggled.
+    window.addEventListener('keydown', handler, { capture: true })
+    return () => window.removeEventListener('keydown', handler, { capture: true } as EventListenerOptions)
   }, [
     selectedIds, elements, presentationMode,
     clearSelection, duplicateElements, moveElements,

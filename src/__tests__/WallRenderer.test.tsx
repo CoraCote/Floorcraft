@@ -72,10 +72,19 @@ function wall(overrides: Partial<WallElement> = {}): WallElement {
   }
 }
 
-/** Snapshot the Konva node types produced for a given wall. */
+/**
+ * Collect the Konva class names rendered for a wall. The renderer now emits
+ * a SINGLE <Path> regardless of whether any segment is curved — this is
+ * intentional so Konva's node identity stays stable when the user toggles
+ * a segment between straight and curved during an edit. The previous
+ * behavior (swap between Line and Path) forced react-konva to destroy and
+ * recreate the node, disrupting Transformer refs and in-flight drags.
+ */
 function konvaKindsFor(el: WallElement): string[] {
   let stage: any
-  const setStage = (s: any) => { stage = s }
+  const setStage = (s: any) => {
+    stage = s
+  }
   render(
     <Stage width={200} height={200} ref={setStage}>
       <Layer>
@@ -84,28 +93,31 @@ function konvaKindsFor(el: WallElement): string[] {
     </Stage>,
   )
   const kinds: string[] = []
-  stage.findOne('Group')?.getChildren().forEach((c: any) => kinds.push(c.getClassName()))
+  // The renderer no longer wraps in an inner <Group>; its node is a direct
+  // child of the test Layer. Collect all non-layer descendants.
+  const layer = stage?.findOne('Layer')
+  layer?.getChildren().forEach((c: any) => kinds.push(c.getClassName()))
   return kinds
 }
 
 describe('WallRenderer', () => {
-  it('bulges undefined → Line fast path', () => {
-    expect(konvaKindsFor(wall({ bulges: undefined }))).toEqual(['Line'])
+  it('bulges undefined → single Path', () => {
+    expect(konvaKindsFor(wall({ bulges: undefined }))).toEqual(['Path'])
   })
 
-  it('bulges all zero → Line fast path', () => {
-    expect(konvaKindsFor(wall({ bulges: [0, 0] }))).toEqual(['Line'])
+  it('bulges all zero → single Path (straight segments become L commands)', () => {
+    expect(konvaKindsFor(wall({ bulges: [0, 0] }))).toEqual(['Path'])
   })
 
-  it('any non-zero bulge → Path', () => {
+  it('any non-zero bulge → single Path', () => {
     expect(konvaKindsFor(wall({ bulges: [25, 0] }))).toEqual(['Path'])
   })
 
-  it('negative bulge still routes to Path (bulge sign does not matter)', () => {
+  it('negative bulge still a single Path (sign does not change node type)', () => {
     expect(konvaKindsFor(wall({ bulges: [0, -25] }))).toEqual(['Path'])
   })
 
-  it('mixed zero + non-zero bulges route to Path (any non-zero wins)', () => {
+  it('mixed zero + non-zero bulges still a single Path', () => {
     expect(konvaKindsFor(wall({ bulges: [0, 10, 0] }))).toEqual(['Path'])
   })
 })

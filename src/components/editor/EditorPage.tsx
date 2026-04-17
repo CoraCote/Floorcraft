@@ -67,9 +67,19 @@ export function EditorPage() {
 
   if (presentationMode) {
     return (
-      <div className="w-screen h-screen bg-white">
+      <div className="w-screen h-screen bg-white relative">
         <CanvasStage />
         <KeyboardShortcutsOverlay />
+        {/* Always-visible exit affordance — Escape/P alone is undiscoverable */}
+        <button
+          onClick={() => useUIStore.getState().setPresentationMode(false)}
+          className="absolute top-4 right-4 z-50 px-3 py-2 rounded-md bg-gray-900/80 hover:bg-gray-900 text-white text-sm font-medium shadow-lg backdrop-blur-sm flex items-center gap-2 transition-colors"
+          title="Exit presentation mode (Esc or P)"
+          aria-label="Exit presentation mode"
+        >
+          <span>Exit</span>
+          <kbd className="text-[10px] font-mono bg-white/20 px-1.5 py-0.5 rounded">Esc</kbd>
+        </button>
       </div>
     )
   }

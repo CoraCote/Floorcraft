@@ -18,6 +18,12 @@ import { useWallDrawing } from '../../../hooks/useWallDrawing'
 import { ZOOM_MIN, ZOOM_MAX } from '../../../lib/constants'
 import { isAssignableElement } from '../../../types/elements'
 import { assignEmployee } from '../../../lib/seatAssignment'
+import { findNearestStraightWallHit } from '../../../lib/wallAttachment'
+import { nanoid } from 'nanoid'
+import type { DoorElement, WindowElement } from '../../../types/elements'
+
+/** Max canvas-unit distance a click can be from a wall to still snap to it. */
+const DOOR_WINDOW_SNAP_PX = 24
 
 export function CanvasStage() {
   const stageRef = useRef<Konva.Stage>(null)
@@ -104,6 +110,86 @@ export function CanvasStage() {
         const canvasX = (pointer.x - stageX) / stageScale
         const canvasY = (pointer.y - stageY) / stageScale
         onWallMouseDown(canvasX, canvasY)
+        return
+      }
+
+      if ((activeTool === 'door' || activeTool === 'window') && e.evt.button === 0) {
+        const stage = stageRef.current
+        if (!stage) return
+        const pointer = stage.getPointerPosition()
+        if (!pointer) return
+        const canvasX = (pointer.x - stageX) / stageScale
+        const canvasY = (pointer.y - stageY) / stageScale
+        // Snap to the nearest straight wall segment. If no wall is close,
+        // ignore the click — don't silently create an orphaned element.
+        const elementsStore = useElementsStore.getState()
+        const hit = findNearestStraightWallHit(
+          elementsStore.elements,
+          canvasX,
+          canvasY,
+          // Snap distance is measured in canvas units. Scale it by the
+          // inverse of the current zoom so a click feels like ~24 screen
+          // pixels regardless of how far the user has zoomed in/out.
+          DOOR_WINDOW_SNAP_PX / stageScale,
+        )
+        if (!hit) return
+        const nextZ = elementsStore.getMaxZIndex() + 1
+        if (activeTool === 'door') {
+          const door: DoorElement = {
+            id: nanoid(),
+            type: 'door',
+            x: hit.point.x,
+            y: hit.point.y,
+            width: 36,
+            height: Math.max(6, hit.wall.thickness),
+            rotation: 0,
+            locked: false,
+            groupId: null,
+            zIndex: nextZ,
+            label: 'Door',
+            visible: true,
+            style: {
+              fill: '#ffffff',
+              stroke: '#111827',
+              strokeWidth: 1,
+              opacity: 1,
+            },
+            parentWallId: hit.wall.id,
+            positionOnWall: hit.positionOnWall,
+            swingDirection: 'left',
+            openAngle: 90,
+          }
+          elementsStore.addElement(door)
+          useUIStore.getState().setSelectedIds([door.id])
+        } else {
+          const win: WindowElement = {
+            id: nanoid(),
+            type: 'window',
+            x: hit.point.x,
+            y: hit.point.y,
+            width: 48,
+            height: Math.max(4, hit.wall.thickness),
+            rotation: 0,
+            locked: false,
+            groupId: null,
+            zIndex: nextZ,
+            label: 'Window',
+            visible: true,
+            style: {
+              fill: '#DBEAFE',
+              stroke: '#1E3A8A',
+              strokeWidth: 1,
+              opacity: 1,
+            },
+            parentWallId: hit.wall.id,
+            positionOnWall: hit.positionOnWall,
+          }
+          elementsStore.addElement(win)
+          useUIStore.getState().setSelectedIds([win.id])
+        }
+        // Return to select tool after placement so the user isn't stuck
+        // placing doors/windows on every subsequent click.
+        useCanvasStore.getState().setActiveTool('select')
         return
       }
 

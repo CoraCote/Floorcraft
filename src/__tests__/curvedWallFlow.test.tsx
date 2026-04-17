@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeEach } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import { useWallDrawing } from '../hooks/useWallDrawing'
@@ -101,7 +100,7 @@ describe('Curved wall end-to-end flow', () => {
       connectedWallIds: [],
     }
     useElementsStore.setState({ elements: { w1: w } })
-    const temporal = (useElementsStore as any).temporal.getState()
+    const temporal = useElementsStore.temporal.getState()
     // zundo auto-snapshots on setState; trigger an update and undo.
     act(() => {
       applyBulgeFromDrag('w1', 0, { x: 50, y: -30 })

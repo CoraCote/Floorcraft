@@ -12,6 +12,8 @@ import {
   isConferenceRoomElement,
   isCommonAreaElement,
   isDecorElement,
+  isDoorElement,
+  isWindowElement,
   type ConferenceRoomElement,
   type PhoneBoothElement,
   type CommonAreaElement,
@@ -20,6 +22,8 @@ import { getShapeRenderer } from './shapes'
 import { TableRenderer } from './TableRenderer'
 import { FurnitureRenderer } from './FurnitureRenderer'
 import { WallRenderer } from './WallRenderer'
+import { DoorRenderer } from './DoorRenderer'
+import { WindowRenderer } from './WindowRenderer'
 import { DeskRenderer } from './DeskRenderer'
 import { RoomRenderer } from './RoomRenderer'
 import { useCallback } from 'react'
@@ -79,15 +83,25 @@ export function ElementRenderer() {
       {sorted.map((el) => {
         const draggable = activeTool === 'select' && !el.locked
 
-        // Walls position themselves via `points`, not via x/y — skip Group position for them.
+        // Walls position themselves via `points`, not via x/y. Doors and
+        // windows resolve their own world position from the parent wall's
+        // geometry (see Door/WindowRenderer), so the wrapping Group must
+        // not re-offset them either — we anchor those at (0, 0) too.
         const isWall = isWallElement(el)
+        const isAttached = isDoorElement(el) || isWindowElement(el)
+        const ownsPosition = isWall || isAttached
+        // Doors/windows derive their position from the parent wall; dragging
+        // the element directly would desync `positionOnWall` from the real
+        // coords, so we disable drag on attached elements. Repositioning is
+        // done in the properties panel (positionOnWall slider).
+        const groupDraggable = draggable && !isAttached
         return (
           <Group
             key={el.id}
             id={`element-${el.id}`}
-            x={isWall ? 0 : el.x}
-            y={isWall ? 0 : el.y}
-            draggable={draggable}
+            x={ownsPosition ? 0 : el.x}
+            y={ownsPosition ? 0 : el.y}
+            draggable={groupDraggable}
             onDragEnd={(e) => handleDragEnd(el.id, e)}
             onClick={(e) => handleClick(el.id, e)}
             onTap={(e) => handleClick(el.id, e)}
@@ -105,6 +119,10 @@ export function ElementRenderer() {
                 return <TableRenderer element={el} />
               if (isWallElement(el))
                 return <WallRenderer element={el} />
+              if (isDoorElement(el))
+                return <DoorRenderer element={el} />
+              if (isWindowElement(el))
+                return <WindowRenderer element={el} />
               if (isDecorElement(el))
                 return <FurnitureRenderer element={el} />
               return <FurnitureRenderer element={el} />

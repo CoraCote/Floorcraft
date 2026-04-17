@@ -73,7 +73,7 @@ describe('Wall persistence', () => {
     expect(w.points).toEqual([0, 0, 100, 0, 200, 0])
   })
 
-  it('legacy wall with no bulges field loads with bulges undefined', () => {
+  it('legacy wall with no bulges field is migrated to a zero-filled bulges array', () => {
     const legacyWall = {
       id: 'w1',
       type: 'wall',
@@ -106,6 +106,10 @@ describe('Wall persistence', () => {
 
     const loaded = loadAutoSave()!
     const w = (loaded.elements as Record<string, WallElement>).w1
-    expect(w.bulges).toBeUndefined()
+    // Migration: a 2-vertex wall has 1 segment → bulges length 1, all zeros.
+    expect(w.bulges).toEqual([0])
+    // Migration also back-fills connectedWallIds when absent — already had
+    // it here, so just confirm it's preserved as an array.
+    expect(Array.isArray(w.connectedWallIds)).toBe(true)
   })
 })

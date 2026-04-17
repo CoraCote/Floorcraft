@@ -25,6 +25,16 @@ interface UIState {
   // Inline editing
   editingLabelId: string | null
 
+  /**
+   * Event-bus counter incremented when global Escape should cancel any
+   * in-flight canvas drawing session (walls, future shapes). Subscribers
+   * (hooks like useWallDrawing) watch this counter in a useEffect and
+   * reset their session when it changes. Using a counter instead of a
+   * boolean means every bump triggers the subscriber even if they
+   * already handled a previous cancel.
+   */
+  drawingCancelTick: number
+
   // Reports & overlays
   activeReport: string | null
   orgChartOverlayEnabled: boolean
@@ -54,6 +64,8 @@ interface UIState {
   setSeatMapColorMode: (mode: UIState['seatMapColorMode']) => void
   setMovePlannerActive: (active: boolean) => void
   setEmployeeDirectoryOpen: (open: boolean) => void
+  /** Bump `drawingCancelTick` to ask any active drawing session to cancel. */
+  requestCancelDrawing: () => void
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -74,6 +86,7 @@ export const useUIStore = create<UIState>((set) => ({
   seatMapColorMode: null,
   movePlannerActive: false,
   employeeDirectoryOpen: false,
+  drawingCancelTick: 0,
 
   setSelectedIds: (ids) => set({ selectedIds: ids }),
   addToSelection: (id) => set((s) => ({ selectedIds: [...s.selectedIds, id] })),
@@ -102,4 +115,6 @@ export const useUIStore = create<UIState>((set) => ({
   setSeatMapColorMode: (mode) => set({ seatMapColorMode: mode }),
   setMovePlannerActive: (active) => set({ movePlannerActive: active }),
   setEmployeeDirectoryOpen: (open) => set({ employeeDirectoryOpen: open }),
+  requestCancelDrawing: () =>
+    set((s) => ({ drawingCancelTick: s.drawingCancelTick + 1 })),
 }))

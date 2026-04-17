@@ -1,6 +1,7 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useCanvasStore } from '../stores/canvasStore'
 import { useElementsStore } from '../stores/elementsStore'
+import { useUIStore } from '../stores/uiStore'
 import { nanoid } from 'nanoid'
 import type { WallElement } from '../types/elements'
 import { snapToGrid } from '../lib/geometry'
@@ -8,6 +9,7 @@ import { signedPerpOffset, clampBulge } from '../lib/wallEditing'
 
 /** Min pointer travel (canvas units) before a press counts as a drag. */
 const DRAG_THRESHOLD_PX = 4
+const DRAG_THRESHOLD_SQ = DRAG_THRESHOLD_PX * DRAG_THRESHOLD_PX
 
 interface WallDrawingState {
   isDrawing: boolean
@@ -31,14 +33,47 @@ export function useWallDrawing() {
    * React state mirrors `sessionRef` so overlays re-render. The ref is the
    * authoritative source so the hook stays correct even when multiple
    * handlers fire inside a single `act()` block (state updates batch
-   * together and `stateRef.current` would be stale).
+   * together and a state read would be stale).
+   *
+   * Preview moves (one per mouse event, potentially 100 Hz) are
+   * coalesced via requestAnimationFrame into a single React commit per
+   * frame. Commits (mouseup/dblclick/cancel) flush synchronously so no
+   * vertex is lost.
    */
   const [state, setState] = useState<WallDrawingState>(INITIAL_STATE)
   const sessionRef = useRef<WallDrawingState>(INITIAL_STATE)
+  const rafRef = useRef<number | null>(null)
 
-  const setSession = useCallback((next: WallDrawingState) => {
+  /** Flush any pending rAF-scheduled React state to match sessionRef. */
+  const flushSession = useCallback(() => {
+    if (rafRef.current != null) {
+      cancelAnimationFrame(rafRef.current)
+      rafRef.current = null
+    }
+    setState(sessionRef.current)
+  }, [])
+
+  /** Commit path: update ref and React state synchronously. */
+  const commitSession = useCallback(
+    (next: WallDrawingState) => {
+      sessionRef.current = next
+      if (rafRef.current != null) {
+        cancelAnimationFrame(rafRef.current)
+        rafRef.current = null
+      }
+      setState(next)
+    },
+    [],
+  )
+
+  /** Preview path: update ref sync, coalesce React state to next rAF. */
+  const scheduleSession = useCallback((next: WallDrawingState) => {
     sessionRef.current = next
-    setState(next)
+    if (rafRef.current != null) return
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null
+      setState(sessionRef.current)
+    })
   }, [])
 
   const activeTool = useCanvasStore((s) => s.activeTool)
@@ -64,6 +99,78 @@ export function useWallDrawing() {
     [gridSize, showGrid],
   )
 
+  const resetSession = useCallback(() => {
+    pressRef.current = null
+    dragEndpointRef.current = null
+    commitSession(INITIAL_STATE)
+  }, [commitSession])
+
+  // Tool change kills any in-flight drawing session. This prevents a
+  // stale `pressRef` from surviving into a different tool and committing
+  // a phantom vertex on the next click. Also resets draft state so
+  // switching back to the wall tool starts fresh.
+  //
+  // We subscribe to the store directly instead of reading `activeTool` as
+  // a selector and depending on it in the effect body: a selector would
+  // force this effect to call `resetSession` (setState) synchronously in
+  // render, which breaks React's "no setState in effect body" guidance and
+  // is flagged by our lint config. Subscribing is the intended pattern for
+  // "react to changes in an external store."
+  useEffect(() => {
+    let prev = useCanvasStore.getState().activeTool
+    return useCanvasStore.subscribe((state) => {
+      if (state.activeTool !== prev) {
+        prev = state.activeTool
+        resetSession()
+      }
+    })
+  }, [resetSession])
+
+  // Global cancel bus: Escape (handled in useKeyboardShortcuts) bumps
+  // `drawingCancelTick` to kill any in-flight drawing session without
+  // coupling the keyboard hook directly to this one. Same subscribe-to-
+  // store pattern as the tool-change effect above.
+  useEffect(() => {
+    let prev = useUIStore.getState().drawingCancelTick
+    return useUIStore.subscribe((state) => {
+      if (state.drawingCancelTick !== prev) {
+        prev = state.drawingCancelTick
+        resetSession()
+      }
+    })
+  }, [resetSession])
+
+  // Off-canvas mouseup: Konva's Stage-level onMouseUp only fires for
+  // releases inside the stage container. If the user presses inside
+  // canvas, drags out (onto a sidebar, toolbar, or past the window
+  // edge), and releases there, we never hear about it and `pressRef`
+  // stays set forever. Watching window-level mouseup clears the press
+  // state on off-canvas release. We only arm the listener while the
+  // wall tool is active to avoid spurious work.
+  useEffect(() => {
+    if (activeTool !== 'wall') return
+    const onWindowUp = () => {
+      if (!pressRef.current) return
+      // Treat off-canvas release as cancel of the pending drag (no vertex
+      // commit, clear preview). The Stage onMouseUp, if it fires inside
+      // the canvas, sees pressRef null and early-returns — so there's no
+      // double-commit.
+      pressRef.current = null
+      dragEndpointRef.current = null
+      commitSession({ ...sessionRef.current, previewBulge: null })
+    }
+    window.addEventListener('mouseup', onWindowUp)
+    return () => window.removeEventListener('mouseup', onWindowUp)
+  }, [activeTool, commitSession])
+
+  // Unmount cleanup: cancel any scheduled rAF so we don't leak a
+  // microtask that resolves after the component is gone.
+  useEffect(() => {
+    return () => {
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current)
+    }
+  }, [])
+
   const handleCanvasMouseDown = useCallback(
     (canvasX: number, canvasY: number) => {
       if (activeTool !== 'wall') return
@@ -83,7 +190,7 @@ export function useWallDrawing() {
       const snapped = snapPoint(canvasX, canvasY)
       const prev = sessionRef.current
       if (!prev.isDrawing) {
-        setSession({ ...prev, currentPoint: snapped })
+        scheduleSession({ ...prev, currentPoint: snapped })
         return
       }
       // Compute live preview bulge if pressing and we have a prior vertex.
@@ -93,7 +200,7 @@ export function useWallDrawing() {
         const dx = canvasX - pressRef.current.x
         const dy = canvasY - pressRef.current.y
         const travel2 = dx * dx + dy * dy
-        if (travel2 >= DRAG_THRESHOLD_PX * DRAG_THRESHOLD_PX) {
+        if (travel2 >= DRAG_THRESHOLD_SQ) {
           const pressSnap = snapPoint(pressRef.current.x, pressRef.current.y)
           const chord = Math.hypot(pressSnap.x - lastX, pressSnap.y - lastY)
           const raw = signedPerpOffset(
@@ -104,7 +211,7 @@ export function useWallDrawing() {
             canvasX,
             canvasY,
           )
-          setSession({
+          scheduleSession({
             ...prev,
             currentPoint: snapped,
             previewBulge: clampBulge(raw, chord),
@@ -112,9 +219,9 @@ export function useWallDrawing() {
           return
         }
       }
-      setSession({ ...prev, currentPoint: snapped, previewBulge: null })
+      scheduleSession({ ...prev, currentPoint: snapped, previewBulge: null })
     },
-    [activeTool, snapPoint, setSession],
+    [activeTool, snapPoint, scheduleSession],
   )
 
   const handleCanvasMouseUp = useCallback(
@@ -130,11 +237,15 @@ export function useWallDrawing() {
       const snapped = snapPoint(press.x, press.y)
       const dx = endpoint.x - press.x
       const dy = endpoint.y - press.y
-      const isDrag = dx * dx + dy * dy >= DRAG_THRESHOLD_PX * DRAG_THRESHOLD_PX
+      const isDrag = dx * dx + dy * dy >= DRAG_THRESHOLD_SQ
 
+      // Any pending scheduled preview is obsolete — this commit supersedes
+      // it. Flush synchronously so the committed state is immediately
+      // visible to the next event.
+      flushSession()
       const prev = sessionRef.current
       if (!prev.isDrawing) {
-        setSession({
+        commitSession({
           isDrawing: true,
           points: [snapped.x, snapped.y],
           bulges: [],
@@ -159,7 +270,7 @@ export function useWallDrawing() {
         )
         committedBulge = clampBulge(raw, chord)
       }
-      setSession({
+      commitSession({
         ...prev,
         points: [...prev.points, snapped.x, snapped.y],
         bulges: [...prev.bulges, committedBulge],
@@ -167,7 +278,7 @@ export function useWallDrawing() {
         previewBulge: null,
       })
     },
-    [activeTool, snapPoint, setSession],
+    [activeTool, snapPoint, commitSession, flushSession],
   )
 
   const handleCanvasDoubleClick = useCallback(() => {
@@ -175,10 +286,25 @@ export function useWallDrawing() {
     const { points, bulges } = sessionRef.current
     if (points.length >= 4) {
       const expectedBulges = points.length / 2 - 1
-      // Defensive normalize: pad or trim so length matches exactly.
+      // In dev builds, surface any mismatch so accounting bugs don't
+      // silently get papered over by the normalization below.
+      if (
+        import.meta.env?.DEV &&
+        bulges.length !== expectedBulges &&
+        typeof console !== 'undefined'
+      ) {
+        console.warn('useWallDrawing: bulges/points length mismatch at commit', {
+          pointsLen: points.length,
+          expectedBulges,
+          bulges,
+        })
+      }
+      // Defensive normalize: pad or trim so length matches exactly,
+      // filtering any NaN that could have leaked through arithmetic.
       const normalizedBulges: number[] = []
       for (let i = 0; i < expectedBulges; i++) {
-        normalizedBulges.push(bulges[i] ?? 0)
+        const b = bulges[i]
+        normalizedBulges.push(Number.isFinite(b) ? b : 0)
       }
       const wall: WallElement = {
         id: nanoid(),
@@ -201,16 +327,8 @@ export function useWallDrawing() {
       }
       addElement(wall)
     }
-    setSession(INITIAL_STATE)
-    pressRef.current = null
-    dragEndpointRef.current = null
-  }, [activeTool, addElement, getMaxZIndex, setSession])
-
-  const cancelDrawing = useCallback(() => {
-    setSession(INITIAL_STATE)
-    pressRef.current = null
-    dragEndpointRef.current = null
-  }, [setSession])
+    resetSession()
+  }, [activeTool, addElement, getMaxZIndex, resetSession])
 
   return {
     wallDrawingState: state,
@@ -218,6 +336,7 @@ export function useWallDrawing() {
     handleCanvasMouseMove,
     handleCanvasMouseUp,
     handleCanvasDoubleClick,
-    cancelDrawing,
+    cancelDrawing: resetSession,
+    resetSession,
   }
 }

@@ -72,7 +72,16 @@ export function applyBulgeFromDrag(
   store.updateElement(wallId, { bulges: nextBulges })
 }
 
-/** Move an endpoint vertex to the given pointer position. */
+/**
+ * Move an endpoint vertex to the given pointer position AND re-clamp the
+ * bulges of the segments that touch it. Moving a vertex changes the chord
+ * length of the 0, 1, or 2 adjacent segments; a bulge set while the chord
+ * was long can exceed chord/2 after the chord shortens and produce a wrong
+ * or degenerate arc. We clamp those bulges back into the legal range here
+ * so the arc always stays a valid circular segment (|bulge| ≤ chord/2).
+ *
+ * We do NOT touch non-adjacent segments — their chord didn't change.
+ */
 export function applyVertexMove(
   wallId: string,
   vertexIndex: number,
@@ -81,8 +90,34 @@ export function applyVertexMove(
   const store = useElementsStore.getState()
   const el = store.elements[wallId]
   if (!el || !isWallElement(el)) return
+
   const nextPoints = [...el.points]
   nextPoints[vertexIndex * 2] = pointer.x
   nextPoints[vertexIndex * 2 + 1] = pointer.y
-  store.updateElement(wallId, { points: nextPoints })
+
+  // Vertex v touches at most two segments: [v-1 -> v] as seg (v-1) and
+  // [v -> v+1] as seg v. Skip bulge work when the wall has no bulges array
+  // (pre-migration walls) or no bulges touching this vertex.
+  const segmentCount = nextPoints.length / 2 - 1
+  const existingBulges = el.bulges ?? []
+  const nextBulges: number[] = Array.from({ length: segmentCount }, (_, i) =>
+    Number.isFinite(existingBulges[i]) ? existingBulges[i] : 0,
+  )
+
+  const reclampAt = (segIdx: number) => {
+    if (segIdx < 0 || segIdx >= segmentCount) return
+    const b = nextBulges[segIdx]
+    if (!b) return // nothing to re-clamp; 0 stays 0.
+    const x0 = nextPoints[segIdx * 2]
+    const y0 = nextPoints[segIdx * 2 + 1]
+    const x1 = nextPoints[segIdx * 2 + 2]
+    const y1 = nextPoints[segIdx * 2 + 3]
+    const chord = Math.hypot(x1 - x0, y1 - y0)
+    nextBulges[segIdx] = clampBulge(b, chord)
+  }
+
+  reclampAt(vertexIndex - 1)
+  reclampAt(vertexIndex)
+
+  store.updateElement(wallId, { points: nextPoints, bulges: nextBulges })
 }

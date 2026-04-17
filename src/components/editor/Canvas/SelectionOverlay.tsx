@@ -1,19 +1,42 @@
 import { Layer, Transformer } from 'react-konva'
 import { useUIStore } from '../../../stores/uiStore'
-import { useRef, useEffect } from 'react'
+import { useElementsStore } from '../../../stores/elementsStore'
+import { useRef, useEffect, useMemo } from 'react'
 import type Konva from 'konva'
+import {
+  isWallElement,
+  isDoorElement,
+  isWindowElement,
+} from '../../../types/elements'
 
 export function SelectionOverlay() {
   const selectedIds = useUIStore((s) => s.selectedIds)
+  const elements = useElementsStore((s) => s.elements)
   const trRef = useRef<Konva.Transformer>(null)
   const nodesRef = useRef<Konva.Node[]>([])
+
+  // Transformer handles scale/rotate — those don't make sense for walls
+  // (which have their own vertex + midpoint overlay) or for doors/windows
+  // (which derive position from their parent wall and don't own their
+  // coordinates). Filter those out before attaching the Transformer.
+  const transformableIds = useMemo(
+    () =>
+      selectedIds.filter((id) => {
+        const el = elements[id]
+        if (!el) return false
+        if (isWallElement(el)) return false
+        if (isDoorElement(el) || isWindowElement(el)) return false
+        return true
+      }),
+    [selectedIds, elements],
+  )
 
   useEffect(() => {
     const stage = trRef.current?.getStage()
     if (!stage || !trRef.current) return
 
     const nodes: Konva.Node[] = []
-    for (const id of selectedIds) {
+    for (const id of transformableIds) {
       const node = stage.findOne(`#element-${id}`)
       if (node) nodes.push(node)
     }
@@ -21,17 +44,17 @@ export function SelectionOverlay() {
     nodesRef.current = nodes
     trRef.current.nodes(nodes)
     trRef.current.getLayer()?.batchDraw()
-  }, [selectedIds])
+  }, [transformableIds])
 
-  if (selectedIds.length === 0) return null
+  if (transformableIds.length === 0) return null
 
   return (
     <Layer>
       <Transformer
         ref={trRef}
-        rotateEnabled={selectedIds.length === 1}
+        rotateEnabled={transformableIds.length === 1}
         enabledAnchors={
-          selectedIds.length === 1
+          transformableIds.length === 1
             ? ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'middle-left', 'middle-right', 'top-center', 'bottom-center']
             : []
         }
