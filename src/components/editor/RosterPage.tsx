@@ -1,6 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { AlertCircle, ArrowUpDown, Download, Plus, Upload, MoreHorizontal, X } from 'lucide-react'
+import {
+  AlertCircle,
+  ArrowUpDown,
+  Download,
+  LayoutGrid,
+  List,
+  Mail,
+  MoreHorizontal,
+  Plus,
+  Upload,
+  X,
+} from 'lucide-react'
 import { useEmployeeStore } from '../../stores/employeeStore'
 import { useFloorStore } from '../../stores/floorStore'
 import { useUIStore } from '../../stores/uiStore'
@@ -16,12 +27,79 @@ import { downloadCSV, employeesToCSV } from '../../lib/employeeCsv'
 
 type SortColumn = 'name' | 'department' | 'title' | 'seat' | 'status'
 type SortDir = 'asc' | 'desc'
+// Two display modes for the roster. The default table is great for dense
+// spreadsheet-style editing; cards are more scannable on wide screens and
+// feel closer to "Who's in the office?" posters on a wall.
+type ViewMode = 'list' | 'cards'
 
 // Our office-day checkboxes persist 'Mon'|'Tue'|'Wed'|'Thu'|'Fri' strings
 // (see RosterDetailDrawer). Align the "in today" stat to that vocabulary.
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
 const OFFICE_DAYS_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] as const
 const MS_PER_DAY = 24 * 60 * 60 * 1000
+
+/**
+ * Named preset views. Each entry is (a) a label shown in the preset picker
+ * and (b) a predicate applied to each employee when `?preset=<id>` is
+ * active. We keep these as one place so the picker UI and the filter
+ * predicate can never drift out of sync.
+ *
+ * The predicates read ambient fields (`Date.now()`, today's weekday) at
+ * call time. That's fine for a local-only UI filter: a fresh render
+ * re-evaluates, and we don't care about cross-render stability more
+ * granular than a minute.
+ */
+const ROSTER_PRESETS: Array<{
+  id: string
+  label: string
+  hint: string
+  match: (e: Employee) => boolean
+}> = [
+  {
+    id: 'new-hires',
+    label: 'New hires · last 30 days',
+    hint: 'People whose start date is within the last 30 days',
+    match: (e) => withinDays(e.startDate, 30, 'past'),
+  },
+  {
+    id: 'ending-soon',
+    label: 'Contracts ending · next 30 days',
+    hint: 'People whose end date falls within the next 30 days',
+    match: (e) => withinDays(e.endDate, 30, 'future'),
+  },
+  {
+    id: 'unassigned-active',
+    label: 'Active · no seat',
+    hint: 'Active people who still need a seat assignment',
+    match: (e) => e.status === 'active' && !e.seatId,
+  },
+  {
+    id: 'missing-email',
+    label: 'Missing email',
+    hint: 'Rows with an empty email (blocks "send invite")',
+    match: (e) => !e.email?.trim(),
+  },
+  {
+    id: 'missing-photo',
+    label: 'Missing photo',
+    hint: 'Rows without a photo URL',
+    match: (e) => !e.photoUrl?.trim(),
+  },
+]
+
+function withinDays(iso: string | null, n: number, direction: 'past' | 'future'): boolean {
+  if (!iso) return false
+  const t = Date.parse(iso)
+  if (Number.isNaN(t)) return false
+  const delta = t - Date.now()
+  if (direction === 'past') return delta <= 0 && delta >= -n * MS_PER_DAY
+  return delta >= 0 && delta <= n * MS_PER_DAY
+}
+
+function matchesPreset(employee: Employee, presetId: string): boolean {
+  const preset = ROSTER_PRESETS.find((p) => p.id === presetId)
+  return preset ? preset.match(employee) : true
+}
 
 /**
  * Full-height roster view. Reuses `useEmployeeStore` + `useFloorStore`
@@ -53,8 +131,18 @@ export function RosterPage() {
   // weekday — an office manager's fastest "who's in?" answer.
   const seatFilter = searchParams.get('seat') ?? ''
   const dayFilter = searchParams.get('day') ?? ''
+  // Presets are named views with pre-baked filter semantics that don't
+  // cleanly map to a single axis (e.g. "Hired in the last 30 days" is a
+  // date computation, not a literal match). They stack on top of the
+  // other filters rather than replacing them — so you can still narrow a
+  // preset to a specific department.
+  const presetFilter = searchParams.get('preset') ?? ''
+  // `view` controls layout (list vs. cards) and is deliberately kept out of
+  // `hasAnyFilter` — switching to cards doesn't hide people, so the "Clear
+  // filters" button shouldn't appear just because the user picked cards.
+  const viewMode: ViewMode = searchParams.get('view') === 'cards' ? 'cards' : 'list'
   const hasAnyFilter = Boolean(
-    q || deptFilter || statusFilter || floorFilter || seatFilter || dayFilter,
+    q || deptFilter || statusFilter || floorFilter || seatFilter || dayFilter || presetFilter,
   )
 
   const setFilter = useCallback(
@@ -129,8 +217,11 @@ export function RosterPage() {
     if (dayFilter && OFFICE_DAYS_ORDER.includes(dayFilter as typeof OFFICE_DAYS_ORDER[number])) {
       list = list.filter((e) => e.officeDays.includes(dayFilter))
     }
+    if (presetFilter) {
+      list = list.filter((e) => matchesPreset(e, presetFilter))
+    }
     return list
-  }, [allEmployees, q, deptFilter, statusFilter, floorFilter, seatFilter, dayFilter])
+  }, [allEmployees, q, deptFilter, statusFilter, floorFilter, seatFilter, dayFilter, presetFilter])
 
   // Aggregate counts for the stats bar — derived from the *unfiltered* set
   // so the chips represent "the whole company" and don't flicker as filters
@@ -434,6 +525,31 @@ export function RosterPage() {
           ))}
         </select>
 
+        {/*
+          Preset views — one-click shortcuts for the recurring office-ops
+          questions (who started this month? whose contract is ending?
+          which active people still need a seat?). Stored in the URL so they
+          share-link cleanly and survive a reload.
+        */}
+        <select
+          value={presetFilter}
+          onChange={(e) => setFilter('preset', e.target.value)}
+          className="px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          aria-label="Preset view"
+          title={
+            presetFilter
+              ? ROSTER_PRESETS.find((p) => p.id === presetFilter)?.hint
+              : 'Pre-baked roster views'
+          }
+        >
+          <option value="">All people</option>
+          {ROSTER_PRESETS.map((p) => (
+            <option key={p.id} value={p.id} title={p.hint}>
+              {p.label}
+            </option>
+          ))}
+        </select>
+
         {hasAnyFilter && (
           <button
             onClick={clearAllFilters}
@@ -445,6 +561,46 @@ export function RosterPage() {
         )}
 
         <div className="flex-1" />
+
+        {/*
+          List/Cards toggle — a segmented pair of icon buttons. The active
+          segment flips to a solid fill so the current mode is obvious
+          without reading a label.
+        */}
+        <div
+          className="inline-flex items-center border border-gray-200 rounded overflow-hidden"
+          role="group"
+          aria-label="View mode"
+        >
+          <button
+            onClick={() => setFilter('view', '')}
+            className={`flex items-center gap-1 px-2 py-1.5 text-xs font-medium ${
+              viewMode === 'list'
+                ? 'bg-gray-800 text-white'
+                : 'bg-white text-gray-600 hover:bg-gray-50'
+            }`}
+            aria-pressed={viewMode === 'list'}
+            aria-label="List view"
+            title="List view"
+          >
+            <List size={14} />
+            List
+          </button>
+          <button
+            onClick={() => setFilter('view', 'cards')}
+            className={`flex items-center gap-1 px-2 py-1.5 text-xs font-medium border-l border-gray-200 ${
+              viewMode === 'cards'
+                ? 'bg-gray-800 text-white'
+                : 'bg-white text-gray-600 hover:bg-gray-50'
+            }`}
+            aria-pressed={viewMode === 'cards'}
+            aria-label="Card view"
+            title="Card view"
+          >
+            <LayoutGrid size={14} />
+            Cards
+          </button>
+        </div>
 
         <button
           onClick={handleAdd}
@@ -548,7 +704,51 @@ export function RosterPage() {
         </div>
       )}
 
-      {/* Table */}
+      {/* Table OR card grid, based on `view` URL param */}
+      {viewMode === 'cards' ? (
+        <div className="flex-1 overflow-auto p-5 bg-gray-50/50" data-testid="roster-cards">
+          {sorted.length === 0 ? (
+            <div className="text-center text-gray-400 text-sm py-16">
+              {hasAnyFilter ? (
+                <>
+                  No people match these filters.{' '}
+                  <button
+                    onClick={clearAllFilters}
+                    className="text-blue-600 hover:underline"
+                  >
+                    Clear filters
+                  </button>
+                </>
+              ) : (
+                'No people yet. Click + Add person or Import CSV to get started.'
+              )}
+            </div>
+          ) : (
+            <div className="grid gap-3 grid-cols-[repeat(auto-fill,minmax(220px,1fr))]">
+              {sorted.map((emp) => (
+                <PersonCard
+                  key={emp.id}
+                  employee={emp}
+                  floorName={emp.floorId ? floorMap[emp.floorId] ?? null : null}
+                  deptColor={
+                    emp.department
+                      ? departmentColors[emp.department] ?? getDepartmentColor(emp.department)
+                      : null
+                  }
+                  isSelected={selected.has(emp.id)}
+                  todayLabel={todayLabel}
+                  isDuplicateEmail={
+                    !!emp.email && duplicateEmails.has(emp.email.trim().toLowerCase())
+                  }
+                  onToggleSelect={() => toggleRow(emp.id)}
+                  onOpen={() => setDrawerId(emp.id)}
+                  onJumpToSeat={() => jumpToSeat(emp)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
       <div className="flex-1 overflow-auto">
         <table className="w-full text-sm">
           <thead className="sticky top-0 bg-gray-50 border-b border-gray-200 z-10">
@@ -719,6 +919,7 @@ export function RosterPage() {
                   </button>
                   {openMenuId === emp.id && (
                     <RowActionMenu
+                      employee={emp}
                       onEdit={() => {
                         setDrawerId(emp.id)
                         setOpenMenuId(null)
@@ -766,6 +967,7 @@ export function RosterPage() {
           ))}
         </datalist>
       </div>
+      )}
 
       {/* Footer */}
       <div className="px-5 py-2 border-t border-gray-200 text-xs text-gray-500 flex-shrink-0">
@@ -1169,17 +1371,139 @@ function EndingSoonBadge({ endDate }: { endDate: string | null }) {
   )
 }
 
+/**
+ * Compact card used by the grid view. Shows avatar + name + dept dot +
+ * status and a little row of Mon-Fri pills so the density is close to a
+ * "who's in the office" board. Clicking the body opens the detail drawer;
+ * the seat chip and checkbox are separate clickable targets.
+ */
+function PersonCard({
+  employee,
+  floorName,
+  deptColor,
+  isSelected,
+  todayLabel,
+  isDuplicateEmail,
+  onToggleSelect,
+  onOpen,
+  onJumpToSeat,
+}: {
+  employee: Employee
+  floorName: string | null
+  deptColor: string | null
+  isSelected: boolean
+  todayLabel: string
+  isDuplicateEmail: boolean
+  onToggleSelect: () => void
+  onOpen: () => void
+  onJumpToSeat: () => void
+}) {
+  const statusTone =
+    employee.status === 'active'
+      ? 'bg-emerald-100 text-emerald-700'
+      : employee.status === 'on-leave'
+        ? 'bg-amber-100 text-amber-700'
+        : 'bg-gray-100 text-gray-500'
+  return (
+    <div
+      onDoubleClick={(e) => {
+        const t = e.target as HTMLElement
+        // Same guard as the table row — ignore double-clicks on interactive
+        // targets so the drawer doesn't hijack the checkbox / seat button.
+        if (
+          t.tagName === 'INPUT' ||
+          t.tagName === 'BUTTON' ||
+          t.tagName === 'A'
+        ) return
+        onOpen()
+      }}
+      className={`group relative rounded-lg border bg-white shadow-sm hover:shadow transition-shadow p-3 ${
+        isSelected ? 'border-blue-400 ring-2 ring-blue-200' : 'border-gray-200'
+      }`}
+    >
+      <label className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100">
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={onToggleSelect}
+          aria-label={`Select ${employee.name}`}
+        />
+      </label>
+      <div className="flex items-start gap-3">
+        <Avatar employee={employee} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <button
+              type="button"
+              onClick={onOpen}
+              className="text-sm font-semibold text-gray-800 truncate hover:underline text-left"
+              title="Open details"
+            >
+              {employee.name}
+            </button>
+            {isDuplicateEmail && (
+              <span
+                className="inline-flex items-center gap-0.5 text-amber-700 bg-amber-100 px-1 py-0.5 rounded text-[10px] font-medium flex-shrink-0"
+                title="Another person shares this email"
+              >
+                <AlertCircle size={10} /> dupe
+              </span>
+            )}
+          </div>
+          {employee.title && (
+            <div className="text-xs text-gray-500 truncate">{employee.title}</div>
+          )}
+          <div className="flex items-center gap-1.5 mt-1 min-w-0">
+            <DeptDot color={deptColor} />
+            <span className="text-xs text-gray-600 truncate">
+              {employee.department ?? <span className="text-gray-400">No department</span>}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center justify-between mt-2.5">
+        <OfficeDays days={employee.officeDays} todayLabel={todayLabel} />
+        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${statusTone}`}>
+          {employee.status}
+        </span>
+      </div>
+      <div className="flex items-center justify-between mt-2 text-[11px]">
+        {employee.seatId ? (
+          <button
+            onClick={onJumpToSeat}
+            className="text-blue-600 hover:underline truncate"
+            title="Show seat on map"
+          >
+            {floorName ?? '?'} / {employee.seatId}
+          </button>
+        ) : (
+          <span className="text-gray-400">Unassigned</span>
+        )}
+        <EndingSoonBadge endDate={employee.endDate} />
+      </div>
+    </div>
+  )
+}
+
 function RowActionMenu({
+  employee,
   onEdit,
   onUnassign,
   onDelete,
   onClose,
 }: {
+  employee: Employee
   onEdit: () => void
   onUnassign: () => void
   onDelete: () => void
   onClose: () => void
 }) {
+  // "Send invite" only makes sense when we have an address. We still render
+  // the button (disabled) when the field is empty so the menu's layout
+  // doesn't jump — and the disabled state doubles as a subtle nudge that
+  // filling in email unlocks the action.
+  const hasEmail = Boolean(employee.email?.trim())
+  const mailtoHref = hasEmail ? buildInviteMailto(employee) : undefined
   return (
     <>
       {/*
@@ -1194,13 +1518,31 @@ function RowActionMenu({
         aria-label="Close menu"
         tabIndex={-1}
       />
-      <div className="absolute right-2 top-full mt-1 z-40 w-44 bg-white border border-gray-200 rounded-md shadow-lg py-1">
+      <div className="absolute right-2 top-full mt-1 z-40 w-48 bg-white border border-gray-200 rounded-md shadow-lg py-1">
         <button
           onClick={onEdit}
           className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
         >
           Edit full details
         </button>
+        {hasEmail ? (
+          <a
+            href={mailtoHref}
+            onClick={onClose}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
+            title={`Email ${employee.email}`}
+          >
+            <Mail size={12} /> Send invite…
+          </a>
+        ) : (
+          <button
+            disabled
+            className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-400 cursor-not-allowed"
+            title="Add an email to enable invites"
+          >
+            <Mail size={12} /> Send invite…
+          </button>
+        )}
         <button
           onClick={onUnassign}
           className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
@@ -1217,4 +1559,26 @@ function RowActionMenu({
       </div>
     </>
   )
+}
+
+/**
+ * Build a `mailto:` link pre-filled with a friendly first-day invite. We
+ * keep this deliberately generic so it's useful for both "welcome, please
+ * badge in at reception" and "here's your new desk" scenarios — the user
+ * can edit the draft in their mail client before sending.
+ */
+function buildInviteMailto(employee: Employee): string {
+  const subject = `Welcome to the office, ${employee.name.split(/\s+/)[0] || employee.name}`
+  const lines: string[] = [
+    `Hi ${employee.name.split(/\s+/)[0] || employee.name},`,
+    '',
+    'Welcome aboard! A few quick notes for your first day:',
+    '',
+  ]
+  if (employee.startDate) lines.push(`• Start date: ${employee.startDate}`)
+  if (employee.department) lines.push(`• Team: ${employee.department}`)
+  if (employee.seatId) lines.push(`• Your desk is reserved — we'll show you on arrival.`)
+  lines.push('', 'Reach out if you need anything before then.', '')
+  const body = lines.join('\n')
+  return `mailto:${encodeURIComponent(employee.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
 }

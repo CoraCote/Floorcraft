@@ -188,6 +188,62 @@ describe('RosterPage', () => {
     expect(badges.length).toBe(2)
   })
 
+  it('preset dropdown narrows the list to matching rows', () => {
+    // Alice has no email, Bob has one. The "missing-email" preset should
+    // hide Bob and keep Alice.
+    act(() => {
+      useEmployeeStore.setState((s) => ({
+        employees: {
+          ...s.employees,
+          e2: { ...s.employees.e2, email: 'bob@example.com' },
+        },
+      }))
+    })
+    renderAtRoute('/project/acme/roster')
+    const presetSelect = screen.getByLabelText('Preset view') as HTMLSelectElement
+    act(() => {
+      fireEvent.change(presetSelect, { target: { value: 'missing-email' } })
+    })
+    expect(screen.getByText('Alice')).toBeTruthy()
+    expect(screen.queryByText('Bob')).toBeNull()
+  })
+
+  it('row actions menu offers a Send invite link when email is present', () => {
+    act(() => {
+      useEmployeeStore.setState((s) => ({
+        employees: {
+          ...s.employees,
+          e1: { ...s.employees.e1, email: 'alice@example.com' },
+        },
+      }))
+    })
+    renderAtRoute('/project/acme/roster')
+    // Each row has a "Row actions" button — Alice's row is first. Filter
+    // by role because the table header cell also carries aria-label
+    // "Row actions" (it labels the column, not a control).
+    const actionButtons = screen
+      .getAllByLabelText('Row actions')
+      .filter((el) => el.tagName === 'BUTTON')
+    act(() => { fireEvent.click(actionButtons[0]) })
+    // The menu renders a link with visible "Send invite…" text pointing at
+    // a `mailto:` url containing the employee's encoded address.
+    const invite = screen.getByRole('link', { name: /Send invite/i }) as HTMLAnchorElement
+    expect(invite.getAttribute('href')).toMatch(/^mailto:alice%40example\.com\?subject=/)
+  })
+
+  it('view toggle swaps between list (table) and card grid', () => {
+    renderAtRoute('/project/acme/roster')
+    // Default: table view. Cards container should be absent.
+    expect(screen.queryByTestId('roster-cards')).toBeNull()
+    const cardBtn = screen.getByLabelText('Card view')
+    act(() => { fireEvent.click(cardBtn) })
+    // After the click we should be in card view — container rendered, table
+    // gone. Both employees still visible through the cards.
+    expect(screen.getByTestId('roster-cards')).toBeTruthy()
+    expect(screen.getByText('Alice')).toBeTruthy()
+    expect(screen.getByText('Bob')).toBeTruthy()
+  })
+
   it('weekly-capacity bar click filters to that day', () => {
     // Put Alice in the office Mon + Tue, Bob only Tue.
     act(() => {
