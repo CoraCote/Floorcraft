@@ -69,6 +69,13 @@ export function RosterPage() {
   )
 
   const allEmployees = useMemo(() => Object.values(employees), [employees])
+  // The id-set is derived once per store update so the prune effect below
+  // can depend on a stable identity instead of re-running for every sort /
+  // filter change (which would clobber selection on filter toggles).
+  const allEmployeeIds = useMemo(
+    () => new Set(allEmployees.map((e) => e.id)),
+    [allEmployees],
+  )
 
   const filtered = useMemo(() => {
     let list = allEmployees
@@ -114,21 +121,24 @@ export function RosterPage() {
     return copy
   }, [filtered, sortColumn, sortDir, floorMap])
 
-  // Prune `selected` whenever the visible set changes (filters applied,
-  // employees deleted elsewhere, etc.) so "Delete selected" can never
-  // operate on a ghost id and the select-all checkbox stays coherent.
+  // Prune `selected` only when an employee is actually *deleted* from the
+  // store — not when a filter hides them. The earlier version pruned
+  // against the filtered/sorted set, which meant toggling a filter and
+  // clearing it would silently drop the selection on hidden rows (even
+  // though those rows were still in the store). Now filters purely hide
+  // rows from view; the select-all checkbox still reflects the visible
+  // subset via `allVisibleSelected` below.
   useEffect(() => {
     setSelected((prev) => {
-      const visibleIds = new Set(sorted.map((e) => e.id))
       let changed = false
       const next = new Set<string>()
       for (const id of prev) {
-        if (visibleIds.has(id)) next.add(id)
+        if (allEmployeeIds.has(id)) next.add(id)
         else changed = true
       }
       return changed ? next : prev
     })
-  }, [sorted])
+  }, [allEmployeeIds])
 
   const handleSort = (col: SortColumn) => {
     if (col === sortColumn) {
@@ -148,12 +158,25 @@ export function RosterPage() {
     })
   }
 
+  // "All visible are selected" — the select-all checkbox now reflects the
+  // filtered subset rather than the global store, so filtering down to a
+  // department and selecting that checkbox only ticks visible rows.
+  const allVisibleSelected =
+    sorted.length > 0 && sorted.every((e) => selected.has(e.id))
+  const someVisibleSelected =
+    !allVisibleSelected && sorted.some((e) => selected.has(e.id))
+
   const toggleAll = () => {
-    if (selected.size === sorted.length && sorted.length > 0) {
-      setSelected(new Set())
-    } else {
-      setSelected(new Set(sorted.map((e) => e.id)))
-    }
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (allVisibleSelected) {
+        // Unselect only the visible rows; keep selections on hidden rows.
+        for (const e of sorted) next.delete(e.id)
+      } else {
+        for (const e of sorted) next.add(e.id)
+      }
+      return next
+    })
   }
 
   const jumpToSeat = useCallback(
@@ -310,10 +333,9 @@ export function RosterPage() {
               <th className="px-3 py-2 w-8">
                 <input
                   type="checkbox"
-                  checked={selected.size > 0 && selected.size === sorted.length}
+                  checked={allVisibleSelected}
                   ref={(el) => {
-                    if (el) el.indeterminate =
-                      selected.size > 0 && selected.size < sorted.length
+                    if (el) el.indeterminate = someVisibleSelected
                   }}
                   onChange={toggleAll}
                   aria-label="Toggle all"

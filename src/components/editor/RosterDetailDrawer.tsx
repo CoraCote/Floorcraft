@@ -4,19 +4,12 @@ import { useEmployeeStore } from '../../stores/employeeStore'
 import { useFloorStore } from '../../stores/floorStore'
 import { useUIStore } from '../../stores/uiStore'
 import type { Employee, EmployeeStatus } from '../../types/employee'
-import { EMPLOYEE_STATUSES } from '../../types/employee'
+import { EMPLOYEE_STATUSES, EMPLOYMENT_TYPES } from '../../types/employee'
 
 interface Props {
   employeeId: string
   onClose: () => void
 }
-
-const EMPLOYMENT_TYPES: Array<Employee['employmentType']> = [
-  'full-time',
-  'contractor',
-  'part-time',
-  'intern',
-]
 
 const EQUIPMENT_STATUSES: Array<Employee['equipmentStatus']> = [
   'pending',
@@ -78,6 +71,10 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
   // escapes into the dimmed underlay behind us.
   const onRootKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
+      // `stopPropagation` is mostly belt-and-braces — `useKeyboardShortcuts`
+      // already bails when `modalOpenCount > 0` — but it protects against
+      // any non-modal-aware listener that might sit between us and window
+      // (e.g. a future Konva canvas shortcut on the MapView underneath).
       e.stopPropagation()
       e.preventDefault()
       onCloseRef.current()
@@ -86,8 +83,23 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
     if (e.key !== 'Tab') return
     const root = drawerRef.current
     if (!root) return
+    // Selector mirrors the set browsers consider sequentially focusable:
+    // standard form controls, links, `tabindex`-adorned nodes, plus the
+    // often-overlooked `summary` (disclosure-widget toggle), media
+    // elements with user controls, and contenteditable surfaces.
     const focusables = root.querySelectorAll<HTMLElement>(
-      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      [
+        'a[href]',
+        'button:not([disabled])',
+        'input:not([disabled])',
+        'select:not([disabled])',
+        'textarea:not([disabled])',
+        'summary',
+        'audio[controls]',
+        'video[controls]',
+        '[contenteditable]:not([contenteditable="false"])',
+        '[tabindex]:not([tabindex="-1"])',
+      ].join(', '),
     )
     if (focusables.length === 0) return
     const first = focusables[0]

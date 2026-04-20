@@ -25,14 +25,48 @@ export function useAutoSave() {
   // its initial value (or the payload we just rehydrated in `loadAutoSave`).
   // Writing it straight back would flash "Saving…" → "Saved" with no user
   // change, and would overwrite the freshly-loaded timestamp.
-  const isFirstRun = useRef(true)
+  //
+  // We compare against a snapshot of the initial dependencies rather than a
+  // "first run" boolean so React 18 StrictMode's mount → cleanup → remount
+  // pass doesn't get treated as a real change: the remount sees identical
+  // deps to the discarded first mount, so `allUnchanged` is true and we
+  // still short-circuit. Once any tracked store identity differs from the
+  // snapshot, the real save pipeline runs.
+  type InitialSnapshot = {
+    project: typeof project
+    elements: typeof elements
+    employees: typeof employees
+    departmentColors: typeof departmentColors
+    floors: typeof floors
+    activeFloorId: typeof activeFloorId
+    settings: typeof settings
+  }
+  const initialSnapshotRef = useRef<InitialSnapshot | null>(null)
 
   // Save
   useEffect(() => {
-    if (isFirstRun.current) {
-      isFirstRun.current = false
+    if (initialSnapshotRef.current === null) {
+      initialSnapshotRef.current = {
+        project,
+        elements,
+        employees,
+        departmentColors,
+        floors,
+        activeFloorId,
+        settings,
+      }
       return
     }
+    const snap = initialSnapshotRef.current
+    const allUnchanged =
+      snap.project === project &&
+      snap.elements === elements &&
+      snap.employees === employees &&
+      snap.departmentColors === departmentColors &&
+      snap.floors === floors &&
+      snap.activeFloorId === activeFloorId &&
+      snap.settings === settings
+    if (allUnchanged) return
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
 
     timeoutRef.current = setTimeout(() => {
@@ -174,16 +208,23 @@ export function loadAutoSave(): AutoSavePayload | null {
   }
   if (!isValidPayload(parsed)) return null
   // Apply element migrations before returning, so callers never have to
-  // think about legacy payload shapes. `ensureRecord` coerces arrays /
-  // missing sub-fields into an empty object so downstream `Object.entries`
-  // never sees numeric array keys (which would otherwise produce phantom
-  // element ids like `"0"`, `"1"`).
+  // think about legacy payload shapes. `ensureRecord` coerces arrays into
+  // `{}` so downstream `Object.entries` never sees numeric array keys
+  // (which would otherwise produce phantom element ids like `"0"`, `"1"`).
+  //
+  // Important: only populate each field when it was *present* in the raw
+  // payload. Synthesising `employees: {}` for a payload that legitimately
+  // omitted the field (very early autosaves, or hand-crafted fixtures)
+  // would stomp on whatever the consumer has already seeded — the bootstrap
+  // in `ProjectShell` guards with `if (saved.employees)` and relies on
+  // `undefined` to mean "leave the store alone".
   const payload = parsed as AutoSavePayload
-  payload.elements = migrateElements(
-    ensureRecord((parsed as Record<string, unknown>).elements),
-  )
-  payload.employees = migrateEmployees(
-    ensureRecord((parsed as Record<string, unknown>).employees),
-  )
+  const rawObj = parsed as Record<string, unknown>
+  if (rawObj.elements !== undefined) {
+    payload.elements = migrateElements(ensureRecord(rawObj.elements))
+  }
+  if (rawObj.employees !== undefined) {
+    payload.employees = migrateEmployees(ensureRecord(rawObj.employees))
+  }
   return payload
 }

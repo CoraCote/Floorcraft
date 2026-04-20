@@ -21,6 +21,11 @@ import { useElementsStore } from '../stores/elementsStore'
  * otherwise force unnecessary re-renders of every subscriber.
  */
 export function useTemporalState(): { canUndo: boolean; canRedo: boolean } {
+  // Seeded to `{ false, false }` which matches the temporal store's actual
+  // initial state on mount (zundo starts with empty past/future arrays). A
+  // real computation happens on the first `getSnapshot` call below; the
+  // seed is only the fallback for `getServerSnapshot` in SSR, so briefly
+  // reading it before subscribe wakes up is not a hazard in practice.
   const cacheRef = useRef<{ canUndo: boolean; canRedo: boolean }>({
     canUndo: false,
     canRedo: false,
