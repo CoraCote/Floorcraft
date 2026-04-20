@@ -99,4 +99,48 @@ describe('RosterPage', () => {
     expect(screen.getByText('Alice')).toBeTruthy()
     expect(screen.queryByText('Bob')).toBeNull()
   })
+
+  it('renders status counts in the stats bar', () => {
+    // Alice is active, Bob is on-leave (set in beforeEach). Both are
+    // seat-unassigned, so the "Unassigned" chip should count 2.
+    renderAtRoute('/project/acme/roster')
+    // `On leave` chip shows the number 1 alongside its label.
+    const onLeaveChip = screen.getByRole('button', { name: /1\s+On leave/i })
+    expect(onLeaveChip).toBeTruthy()
+    // Unassigned chip counts both seed employees.
+    const unassignedChip = screen.getByRole('button', { name: /2\s+Unassigned/i })
+    expect(unassignedChip).toBeTruthy()
+  })
+
+  it('clicking the On-leave stats chip narrows to status=on-leave', () => {
+    renderAtRoute('/project/acme/roster')
+    const onLeaveChip = screen.getByRole('button', { name: /1\s+On leave/i })
+    act(() => { fireEvent.click(onLeaveChip) })
+    // After the click the status chip should be toggled on and Alice
+    // should disappear from the list.
+    expect(screen.queryByText('Alice')).toBeNull()
+    expect(screen.getByText('Bob')).toBeTruthy()
+  })
+
+  it('shows Clear filters button once a filter is active and resets on click', () => {
+    renderAtRoute('/project/acme/roster?status=active')
+    // Alice is active, Bob is on-leave → only Alice is visible.
+    expect(screen.getByText('Alice')).toBeTruthy()
+    expect(screen.queryByText('Bob')).toBeNull()
+    const clear = screen.getByTitle('Clear all filters')
+    act(() => { fireEvent.click(clear) })
+    // Both rows should be back.
+    expect(screen.getByText('Alice')).toBeTruthy()
+    expect(screen.getByText('Bob')).toBeTruthy()
+  })
+
+  it('double-clicking a row opens the detail drawer', () => {
+    renderAtRoute('/project/acme/roster')
+    // Double-click on Alice's row. Target a plain cell (the <tr> double-click
+    // handler ignores inputs/selects/buttons).
+    const row = screen.getByText('Alice').closest('tr')!
+    act(() => { fireEvent.doubleClick(row) })
+    // Drawer labels itself with the employee name via aria-label.
+    expect(screen.getByRole('dialog', { name: /Edit Alice/i })).toBeTruthy()
+  })
 })

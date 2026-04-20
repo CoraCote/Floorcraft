@@ -17,6 +17,12 @@ import { downloadCSV, employeesToCSV } from '../../lib/employeeCsv'
 type SortColumn = 'name' | 'department' | 'title' | 'seat' | 'status'
 type SortDir = 'asc' | 'desc'
 
+// Our office-day checkboxes persist 'Mon'|'Tue'|'Wed'|'Thu'|'Fri' strings
+// (see RosterDetailDrawer). Align the "in today" stat to that vocabulary.
+const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
+const OFFICE_DAYS_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] as const
+const MS_PER_DAY = 24 * 60 * 60 * 1000
+
 /**
  * Full-height roster view. Reuses `useEmployeeStore` + `useFloorStore`
  * directly (no refactor of the stores) and wires bulk/per-row actions to
@@ -28,6 +34,7 @@ export function RosterPage() {
   const employees = useEmployeeStore((s) => s.employees)
   const floors = useFloorStore((s) => s.floors)
   const departmentColors = useEmployeeStore((s) => s.departmentColors)
+  const getDepartmentColor = useEmployeeStore((s) => s.getDepartmentColor)
   const addEmployee = useEmployeeStore((s) => s.addEmployee)
   const updateEmployee = useEmployeeStore((s) => s.updateEmployee)
   const setCsvImportOpen = useUIStore((s) => s.setCsvImportOpen)
@@ -40,6 +47,15 @@ export function RosterPage() {
   const deptFilter = searchParams.get('dept') ?? ''
   const statusFilter = searchParams.get('status') ?? ''
   const floorFilter = searchParams.get('floor') ?? ''
+  // New filter axes the stats chips can toggle. `seat=unassigned` narrows
+  // to people without a seat (useful right after onboarding a batch), and
+  // `day=today` narrows to people whose `officeDays` covers the current
+  // weekday — an office manager's fastest "who's in?" answer.
+  const seatFilter = searchParams.get('seat') ?? ''
+  const dayFilter = searchParams.get('day') ?? ''
+  const hasAnyFilter = Boolean(
+    q || deptFilter || statusFilter || floorFilter || seatFilter || dayFilter,
+  )
 
   const setFilter = useCallback(
     (key: string, value: string) => {
@@ -51,11 +67,22 @@ export function RosterPage() {
     [searchParams, setSearchParams],
   )
 
+  const clearAllFilters = useCallback(() => {
+    setSearchParams(new URLSearchParams(), { replace: true })
+  }, [setSearchParams])
+
+  // Everything keyed off the current clock stays stable for the lifetime of
+  // a single render (so sort order doesn't skew as midnight rolls over
+  // mid-session — a fresh render will just pick up the new date).
+  const todayLabel = WEEKDAY_LABELS[new Date().getDay()]
+
   const [sortColumn, setSortColumn] = useState<SortColumn>('name')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [drawerId, setDrawerId] = useState<string | null>(null)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   const floorMap = useMemo(() => {
     const m: Record<string, string> = {}
@@ -94,8 +121,29 @@ export function RosterPage() {
     if (deptFilter) list = list.filter((e) => (e.department ?? '') === deptFilter)
     if (statusFilter) list = list.filter((e) => e.status === statusFilter)
     if (floorFilter) list = list.filter((e) => (e.floorId ?? '') === floorFilter)
+    if (seatFilter === 'unassigned') list = list.filter((e) => !e.seatId)
+    if (seatFilter === 'assigned') list = list.filter((e) => !!e.seatId)
+    if (dayFilter === 'today') list = list.filter((e) => e.officeDays.includes(todayLabel))
     return list
-  }, [allEmployees, q, deptFilter, statusFilter, floorFilter])
+  }, [allEmployees, q, deptFilter, statusFilter, floorFilter, seatFilter, dayFilter, todayLabel])
+
+  // Aggregate counts for the stats bar — derived from the *unfiltered* set
+  // so the chips represent "the whole company" and don't flicker as filters
+  // apply. `Active` is the default and clicking any chip narrows; clicking
+  // "Total" (or any active chip again) clears the relevant axis.
+  const stats = useMemo(() => {
+    let active = 0
+    let onLeave = 0
+    let unassigned = 0
+    let inToday = 0
+    for (const e of allEmployees) {
+      if (e.status === 'active') active++
+      if (e.status === 'on-leave') onLeave++
+      if (!e.seatId) unassigned++
+      if (e.officeDays.includes(todayLabel)) inToday++
+    }
+    return { total: allEmployees.length, active, onLeave, unassigned, inToday }
+  }, [allEmployees, todayLabel])
 
   const sorted = useMemo(() => {
     const dir = sortDir === 'asc' ? 1 : -1
@@ -139,6 +187,40 @@ export function RosterPage() {
       return changed ? next : prev
     })
   }, [allEmployeeIds])
+
+  // Page-scoped keyboard shortcuts. Deliberately attached to `window` in
+  // capture phase so the search input's own keydown (Escape clears) and
+  // the drawer's keydown (Escape closes) still get their shot — we only
+  // act on events that reach us because nothing stopped propagation.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Do nothing while the drawer (or any other modal) is open.
+      if (useUIStore.getState().modalOpenCount > 0) return
+      const target = e.target as HTMLElement | null
+      const isEditing =
+        target?.tagName === 'INPUT' ||
+        target?.tagName === 'TEXTAREA' ||
+        target?.tagName === 'SELECT' ||
+        target?.isContentEditable
+      // `/` focuses search from anywhere on the page (Gmail / GitHub
+      // convention). Skip if the user is already typing in something.
+      if (e.key === '/' && !isEditing && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault()
+        searchInputRef.current?.focus()
+        searchInputRef.current?.select()
+        return
+      }
+      // `N` adds a new person, same constraints — Shift+N still fires so
+      // mashing the shift key doesn't silently drop the shortcut.
+      if ((e.key === 'n' || e.key === 'N') && !isEditing && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault()
+        handleAdd()
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleSort = (col: SortColumn) => {
     if (col === sortColumn) {
@@ -224,13 +306,33 @@ export function RosterPage() {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-white">
+      {/* Stats bar — at-a-glance office pulse, chips are click-to-filter */}
+      <StatsBar
+        stats={stats}
+        todayLabel={todayLabel}
+        active={{ statusFilter, seatFilter, dayFilter }}
+        onSetFilter={setFilter}
+        onClearAll={clearAllFilters}
+      />
+
       {/* Filters bar */}
       <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-200 flex-shrink-0">
         <input
+          ref={searchInputRef}
           type="text"
-          placeholder="Search name, email, dept, team, title, tag…"
+          placeholder="Search name, email, dept, team, title, tag…  (press /)"
           value={q}
           onChange={(e) => setFilter('q', e.target.value)}
+          onKeyDown={(e) => {
+            // Escape while in search = clear the query AND return focus to
+            // the page body, so `/` works again without a second press.
+            if (e.key === 'Escape' && q) {
+              e.preventDefault()
+              setFilter('q', '')
+            } else if (e.key === 'Escape') {
+              ;(e.target as HTMLInputElement).blur()
+            }
+          }}
           className="flex-1 max-w-md px-3 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
 
@@ -270,11 +372,22 @@ export function RosterPage() {
           ))}
         </select>
 
+        {hasAnyFilter && (
+          <button
+            onClick={clearAllFilters}
+            className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded"
+            title="Clear all filters"
+          >
+            <X size={12} /> Clear filters
+          </button>
+        )}
+
         <div className="flex-1" />
 
         <button
           onClick={handleAdd}
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded"
+          title="Add person (N)"
         >
           <Plus size={14} /> Add person
         </button>
@@ -342,20 +455,25 @@ export function RosterPage() {
                 />
               </th>
               {[
-                { key: 'name' as const, label: 'Name' },
-                { key: 'department' as const, label: 'Department' },
-                { key: 'title' as const, label: 'Title' },
-                { key: 'seat' as const, label: 'Seat' },
-                { key: 'status' as const, label: 'Status' },
+                { key: 'name' as const, label: 'Name', sortable: true },
+                { key: 'department' as const, label: 'Department', sortable: true },
+                { key: 'title' as const, label: 'Title', sortable: true },
+                { key: 'days' as const, label: 'Days', sortable: false },
+                { key: 'seat' as const, label: 'Seat', sortable: true },
+                { key: 'status' as const, label: 'Status', sortable: true },
               ].map((col) => (
                 <th
                   key={col.key}
-                  onClick={() => handleSort(col.key)}
-                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none whitespace-nowrap"
+                  onClick={() => col.sortable && handleSort(col.key as SortColumn)}
+                  className={`px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider select-none whitespace-nowrap ${
+                    col.sortable ? 'cursor-pointer hover:bg-gray-100' : ''
+                  }`}
                 >
                   <span className="inline-flex items-center gap-1">
                     {col.label}
-                    {sortColumn === col.key && <ArrowUpDown size={12} className="text-blue-500" />}
+                    {col.sortable && sortColumn === col.key && (
+                      <ArrowUpDown size={12} className="text-blue-500" />
+                    )}
                   </span>
                 </th>
               ))}
@@ -366,6 +484,23 @@ export function RosterPage() {
             {sorted.map((emp) => (
               <tr
                 key={emp.id}
+                // Double-click anywhere on the row opens the detail drawer.
+                // Faster than reaching for the `⋯` menu on wide screens, and
+                // mirrors the spreadsheet mental model ("dive into a record").
+                // We guard against editable cells by only reacting to dblclicks
+                // whose target isn't an input/button already — React event
+                // bubbling means the inner InlineText's own click handler has
+                // already had its turn.
+                onDoubleClick={(e) => {
+                  const t = e.target as HTMLElement
+                  if (
+                    t.tagName === 'INPUT' ||
+                    t.tagName === 'SELECT' ||
+                    t.tagName === 'BUTTON' ||
+                    t.tagName === 'A'
+                  ) return
+                  setDrawerId(emp.id)
+                }}
                 className={`group transition-colors ${selected.has(emp.id) ? 'bg-blue-50/50' : 'hover:bg-gray-50'}`}
               >
                 <td className="px-3 py-1.5 align-middle">
@@ -377,25 +512,45 @@ export function RosterPage() {
                   />
                 </td>
                 <td className="px-3 py-1.5 align-middle font-medium text-gray-800">
-                  <InlineText
-                    value={emp.name}
-                    // Name is required; silently ignoring an empty commit
-                    // would look like a bug ("I hit Enter on nothing — did
-                    // it save?"). Reject it so the field reverts visibly.
-                    onCommit={(v) => {
-                      if (v) updateEmployee(emp.id, { name: v })
-                    }}
-                    allowEmpty={false}
-                    placeholder="—"
-                  />
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Avatar employee={emp} />
+                    <div className="min-w-0 flex-1">
+                      <InlineText
+                        value={emp.name}
+                        // Name is required; silently ignoring an empty commit
+                        // would look like a bug ("I hit Enter on nothing — did
+                        // it save?"). Reject it so the field reverts visibly.
+                        onCommit={(v) => {
+                          if (v) updateEmployee(emp.id, { name: v })
+                        }}
+                        allowEmpty={false}
+                        placeholder="—"
+                      />
+                      {emp.email && (
+                        <div className="px-1.5 text-[11px] text-gray-400 truncate" title={emp.email}>
+                          {emp.email}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </td>
                 <td className="px-3 py-1.5 align-middle text-gray-600">
-                  <InlineText
-                    value={emp.department ?? ''}
-                    onCommit={(v) => updateEmployee(emp.id, { department: v || null })}
-                    placeholder="—"
-                    listId="roster-dept-list"
-                  />
+                  <div className="flex items-center gap-1.5">
+                    <DeptDot
+                      color={
+                        emp.department
+                          ? departmentColors[emp.department] ??
+                            getDepartmentColor(emp.department)
+                          : null
+                      }
+                    />
+                    <InlineText
+                      value={emp.department ?? ''}
+                      onCommit={(v) => updateEmployee(emp.id, { department: v || null })}
+                      placeholder="—"
+                      listId="roster-dept-list"
+                    />
+                  </div>
                 </td>
                 <td className="px-3 py-1.5 align-middle text-gray-600">
                   <InlineText
@@ -403,6 +558,9 @@ export function RosterPage() {
                     onCommit={(v) => updateEmployee(emp.id, { title: v || null })}
                     placeholder="—"
                   />
+                </td>
+                <td className="px-3 py-1.5 align-middle">
+                  <OfficeDays days={emp.officeDays} todayLabel={todayLabel} />
                 </td>
                 <td className="px-3 py-1.5 align-middle text-gray-600">
                   {emp.seatId && emp.floorId ? (
@@ -418,17 +576,20 @@ export function RosterPage() {
                   )}
                 </td>
                 <td className="px-3 py-1.5 align-middle">
-                  <select
-                    value={emp.status}
-                    onChange={(e) =>
-                      updateEmployee(emp.id, { status: e.target.value as EmployeeStatus })
-                    }
-                    className="text-xs px-1.5 py-1 border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  >
-                    {EMPLOYEE_STATUSES.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
+                  <div className="flex items-center gap-1.5">
+                    <select
+                      value={emp.status}
+                      onChange={(e) =>
+                        updateEmployee(emp.id, { status: e.target.value as EmployeeStatus })
+                      }
+                      className="text-xs px-1.5 py-1 border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    >
+                      {EMPLOYEE_STATUSES.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                    <EndingSoonBadge endDate={emp.endDate} />
+                  </div>
                 </td>
                 <td className="px-3 py-1.5 align-middle relative">
                   <button
@@ -460,10 +621,20 @@ export function RosterPage() {
             ))}
             {sorted.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-3 py-12 text-center text-gray-400 text-sm">
-                  {q || deptFilter || statusFilter || floorFilter
-                    ? 'No people match these filters.'
-                    : 'No people yet. Click + Add person or Import CSV to get started.'}
+                <td colSpan={8} className="px-3 py-12 text-center text-gray-400 text-sm">
+                  {hasAnyFilter ? (
+                    <>
+                      No people match these filters.{' '}
+                      <button
+                        onClick={clearAllFilters}
+                        className="text-blue-600 hover:underline"
+                      >
+                        Clear filters
+                      </button>
+                    </>
+                  ) : (
+                    'No people yet. Click + Add person or Import CSV to get started.'
+                  )}
                 </td>
               </tr>
             )}
@@ -558,6 +729,249 @@ function InlineText({
     >
       {value || <span className="text-gray-400">{placeholder}</span>}
     </button>
+  )
+}
+
+/**
+ * At-a-glance office-state chips above the filter bar. Each chip is a
+ * button — clicking one flips the relevant URL-synced filter on/off so
+ * the bar acts like a dashboard + navigation widget together.
+ *
+ * "Total" clears every axis the chips control (status, seat, day). It
+ * leaves `q`, `dept`, and `floor` alone because those are deliberate
+ * scopes the user set elsewhere — the chips shouldn't fight the filter
+ * controls below.
+ */
+function StatsBar({
+  stats,
+  todayLabel,
+  active,
+  onSetFilter,
+  onClearAll,
+}: {
+  stats: { total: number; active: number; onLeave: number; unassigned: number; inToday: number }
+  todayLabel: string
+  active: { statusFilter: string; seatFilter: string; dayFilter: string }
+  onSetFilter: (key: string, value: string) => void
+  onClearAll: () => void
+}) {
+  const chip = (
+    label: string,
+    value: number,
+    isActive: boolean,
+    onClick: () => void,
+    tone: 'gray' | 'green' | 'amber' | 'red' | 'blue' = 'gray',
+    hint?: string,
+  ) => {
+    const toneClasses = {
+      gray: isActive ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50',
+      green: isActive ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50',
+      amber: isActive ? 'bg-amber-600 text-white border-amber-600' : 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50',
+      red: isActive ? 'bg-red-600 text-white border-red-600' : 'bg-white text-red-700 border-red-200 hover:bg-red-50',
+      blue: isActive ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50',
+    }[tone]
+    return (
+      <button
+        onClick={onClick}
+        className={`flex items-baseline gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-colors ${toneClasses}`}
+        title={hint ?? label}
+        aria-pressed={isActive}
+        // Explicit aria-label — the default accessible name from the two
+        // inline <span>s would concatenate without whitespace in some
+        // browsers ("1On leave"), which makes the chips hard to query in
+        // tests and awkward for screen readers.
+        aria-label={`${value} ${label}`}
+      >
+        <span className="font-semibold tabular-nums">{value}</span>
+        <span className="opacity-80">{label}</span>
+      </button>
+    )
+  }
+
+  const noChipFilter =
+    !active.statusFilter && !active.seatFilter && !active.dayFilter
+
+  return (
+    <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-100 bg-gray-50/60 flex-shrink-0 overflow-x-auto whitespace-nowrap">
+      {chip('Total', stats.total, noChipFilter, onClearAll, 'gray', 'All people (clears status/seat/day filters)')}
+      {chip(
+        'Active',
+        stats.active,
+        active.statusFilter === 'active',
+        () => onSetFilter('status', active.statusFilter === 'active' ? '' : 'active'),
+        'green',
+      )}
+      {chip(
+        'On leave',
+        stats.onLeave,
+        active.statusFilter === 'on-leave',
+        () => onSetFilter('status', active.statusFilter === 'on-leave' ? '' : 'on-leave'),
+        'amber',
+      )}
+      {chip(
+        'Unassigned',
+        stats.unassigned,
+        active.seatFilter === 'unassigned',
+        () => onSetFilter('seat', active.seatFilter === 'unassigned' ? '' : 'unassigned'),
+        'red',
+        'People without a seat',
+      )}
+      {chip(
+        `In ${todayLabel}`,
+        stats.inToday,
+        active.dayFilter === 'today',
+        () => onSetFilter('day', active.dayFilter === 'today' ? '' : 'today'),
+        'blue',
+        `People whose office days include ${todayLabel}`,
+      )}
+    </div>
+  )
+}
+
+/**
+ * Small square color swatch next to the department name. The color comes
+ * from the store's `departmentColors` map — the same map that seat fills
+ * use on the canvas — so a department's color is consistent across every
+ * surface of the app.
+ */
+function DeptDot({ color }: { color: string | null }) {
+  if (!color) {
+    return (
+      <span
+        aria-hidden="true"
+        className="w-2.5 h-2.5 rounded-sm bg-gray-200 border border-gray-200 flex-shrink-0"
+      />
+    )
+  }
+  return (
+    <span
+      aria-hidden="true"
+      className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
+      style={{ background: color, boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.1)' }}
+    />
+  )
+}
+
+/**
+ * 5 compact Mon-Fri indicators. Filled = person is in-office that day.
+ * Today's column is ringed so "is X coming in today?" is answerable at a
+ * glance without reading day letters.
+ */
+function OfficeDays({ days, todayLabel }: { days: string[]; todayLabel: string }) {
+  if (days.length === 0) {
+    return <span className="text-[11px] text-gray-300 italic">—</span>
+  }
+  return (
+    <div
+      className="flex gap-0.5"
+      aria-label={`In office: ${days.join(', ')}`}
+      title={`In office: ${days.join(', ')}`}
+    >
+      {OFFICE_DAYS_ORDER.map((d) => {
+        const on = days.includes(d)
+        const isToday = d === todayLabel
+        return (
+          <span
+            key={d}
+            className={`w-4 h-4 rounded-full text-[8px] font-bold leading-none flex items-center justify-center border ${
+              on
+                ? 'bg-blue-500 text-white border-blue-500'
+                : 'bg-white text-gray-400 border-gray-200'
+            } ${isToday ? 'ring-2 ring-blue-300 ring-offset-1 ring-offset-white' : ''}`}
+          >
+            {d[0]}
+          </span>
+        )
+      })}
+    </div>
+  )
+}
+
+/**
+ * Avatar — photo if we have a URL, otherwise a colored circle with the
+ * person's initials. The fallback color is derived from the employee id
+ * so it's stable across renders and doesn't flicker when the list resorts,
+ * and it avoids colliding with the dept color (which lives on the dot).
+ */
+function Avatar({ employee }: { employee: Employee }) {
+  const initials = useMemo(() => {
+    const parts = employee.name.trim().split(/\s+/).filter(Boolean)
+    if (parts.length === 0) return '?'
+    if (parts.length === 1) return parts[0][0]?.toUpperCase() ?? '?'
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+  }, [employee.name])
+  const hue = useMemo(() => hashHue(employee.id), [employee.id])
+
+  if (employee.photoUrl) {
+    return (
+      <img
+        src={employee.photoUrl}
+        alt=""
+        className="w-7 h-7 rounded-full object-cover bg-gray-100 flex-shrink-0"
+        onError={(e) => {
+          // If the URL 404s / CORS-fails, swap in the initials circle by
+          // hiding the broken <img> — the sibling fallback renders whenever
+          // the image isn't present.
+          const img = e.currentTarget as HTMLImageElement
+          img.style.display = 'none'
+          const sibling = img.nextElementSibling as HTMLElement | null
+          if (sibling) sibling.style.display = 'flex'
+        }}
+      />
+    )
+  }
+  return (
+    <div
+      aria-hidden="true"
+      className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold text-white flex-shrink-0"
+      style={{ background: `hsl(${hue}, 45%, 55%)` }}
+    >
+      {initials}
+    </div>
+  )
+}
+
+function hashHue(s: string): number {
+  let h = 0
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0
+  return Math.abs(h) % 360
+}
+
+/**
+ * Small amber pill on the status cell when an `endDate` is within 30 days.
+ * Helps office managers see upcoming offboarding without opening each
+ * drawer. Past end dates get a muted "Ended" label so the row doesn't
+ * disappear from attention (the person may still have an active seat).
+ */
+function EndingSoonBadge({ endDate }: { endDate: string | null }) {
+  if (!endDate) return null
+  // Parse as local midnight so "end date today" is 0 days away rather than
+  // -1 depending on the user's timezone offset.
+  const end = new Date(endDate)
+  if (Number.isNaN(end.getTime())) return null
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const endMid = new Date(end.getFullYear(), end.getMonth(), end.getDate())
+  const days = Math.round((endMid.getTime() - today.getTime()) / MS_PER_DAY)
+  if (days < 0) {
+    return (
+      <span
+        className="text-[10px] font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded"
+        title={`Ended ${endDate}`}
+      >
+        Ended
+      </span>
+    )
+  }
+  if (days > 30) return null
+  const label = days === 0 ? 'Ends today' : days === 1 ? 'Ends tomorrow' : `Ends in ${days}d`
+  return (
+    <span
+      className="text-[10px] font-medium text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded"
+      title={`End date: ${endDate}`}
+    >
+      {label}
+    </span>
   )
 }
 
