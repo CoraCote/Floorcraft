@@ -143,4 +143,67 @@ describe('RosterPage', () => {
     // Drawer labels itself with the employee name via aria-label.
     expect(screen.getByRole('dialog', { name: /Edit Alice/i })).toBeTruthy()
   })
+
+  it('bulk set-status applies to every selected row', () => {
+    renderAtRoute('/project/acme/roster')
+    // Select both people via the select-all header checkbox.
+    const toggleAll = screen.getByLabelText('Toggle all') as HTMLInputElement
+    act(() => { fireEvent.click(toggleAll) })
+    const bulkStatus = screen.getByLabelText('Set status on selected rows') as HTMLSelectElement
+    act(() => { fireEvent.change(bulkStatus, { target: { value: 'departed' } }) })
+    // Both employees should flip to 'departed'.
+    expect(useEmployeeStore.getState().employees.e1.status).toBe('departed')
+    expect(useEmployeeStore.getState().employees.e2.status).toBe('departed')
+  })
+
+  it('bulk set-department writes the same dept to every selected row', () => {
+    renderAtRoute('/project/acme/roster')
+    // Seed a dept in the colors map so it shows up in the bulk menu.
+    act(() => {
+      useEmployeeStore.setState((s) => ({
+        departmentColors: { ...s.departmentColors, Platform: '#222' },
+      }))
+    })
+    const toggleAll = screen.getByLabelText('Toggle all') as HTMLInputElement
+    act(() => { fireEvent.click(toggleAll) })
+    const bulkDept = screen.getByLabelText('Set department on selected rows') as HTMLSelectElement
+    act(() => { fireEvent.change(bulkDept, { target: { value: 'Platform' } }) })
+    expect(useEmployeeStore.getState().employees.e1.department).toBe('Platform')
+    expect(useEmployeeStore.getState().employees.e2.department).toBe('Platform')
+  })
+
+  it('flags duplicate emails with a "dupe" badge', () => {
+    act(() => {
+      useEmployeeStore.setState((s) => ({
+        employees: {
+          ...s.employees,
+          e1: { ...s.employees.e1, email: 'shared@example.com' },
+          e2: { ...s.employees.e2, email: 'SHARED@EXAMPLE.COM' },
+        },
+      }))
+    })
+    renderAtRoute('/project/acme/roster')
+    // Both rows should render a dupe badge (case-insensitive match).
+    const badges = screen.getAllByText('dupe')
+    expect(badges.length).toBe(2)
+  })
+
+  it('weekly-capacity bar click filters to that day', () => {
+    // Put Alice in the office Mon + Tue, Bob only Tue.
+    act(() => {
+      useEmployeeStore.setState((s) => ({
+        employees: {
+          ...s.employees,
+          e1: { ...s.employees.e1, officeDays: ['Mon', 'Tue'] },
+          e2: { ...s.employees.e2, officeDays: ['Tue'] },
+        },
+      }))
+    })
+    renderAtRoute('/project/acme/roster')
+    // Click the Mon bar — only Alice should remain visible.
+    const monBar = screen.getByLabelText('1 people in office on Mon')
+    act(() => { fireEvent.click(monBar) })
+    expect(screen.getByText('Alice')).toBeTruthy()
+    expect(screen.queryByText('Bob')).toBeNull()
+  })
 })

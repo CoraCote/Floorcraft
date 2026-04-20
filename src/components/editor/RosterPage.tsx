@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowUpDown, Download, Plus, Upload, MoreHorizontal, X } from 'lucide-react'
+import { AlertCircle, ArrowUpDown, Download, Plus, Upload, MoreHorizontal, X } from 'lucide-react'
 import { useEmployeeStore } from '../../stores/employeeStore'
 import { useFloorStore } from '../../stores/floorStore'
 import { useUIStore } from '../../stores/uiStore'
@@ -123,9 +123,14 @@ export function RosterPage() {
     if (floorFilter) list = list.filter((e) => (e.floorId ?? '') === floorFilter)
     if (seatFilter === 'unassigned') list = list.filter((e) => !e.seatId)
     if (seatFilter === 'assigned') list = list.filter((e) => !!e.seatId)
-    if (dayFilter === 'today') list = list.filter((e) => e.officeDays.includes(todayLabel))
+    // `day` takes a Mon|Tue|Wed|Thu|Fri literal so the weekly mini-chart
+    // and the "In <today>" stats chip share one URL key. The chip writes
+    // `day=<todayLabel>` rather than a special "today" sentinel.
+    if (dayFilter && OFFICE_DAYS_ORDER.includes(dayFilter as typeof OFFICE_DAYS_ORDER[number])) {
+      list = list.filter((e) => e.officeDays.includes(dayFilter))
+    }
     return list
-  }, [allEmployees, q, deptFilter, statusFilter, floorFilter, seatFilter, dayFilter, todayLabel])
+  }, [allEmployees, q, deptFilter, statusFilter, floorFilter, seatFilter, dayFilter])
 
   // Aggregate counts for the stats bar — derived from the *unfiltered* set
   // so the chips represent "the whole company" and don't flicker as filters
@@ -135,15 +140,42 @@ export function RosterPage() {
     let active = 0
     let onLeave = 0
     let unassigned = 0
-    let inToday = 0
+    // Per-weekday headcount for the mini capacity chart under the stats
+    // chips. Stored as an object keyed by the same Mon-Fri labels the
+    // drawer persists to, so no mapping gymnastics needed elsewhere.
+    const perDay: Record<string, number> = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0 }
     for (const e of allEmployees) {
       if (e.status === 'active') active++
       if (e.status === 'on-leave') onLeave++
       if (!e.seatId) unassigned++
-      if (e.officeDays.includes(todayLabel)) inToday++
+      for (const d of e.officeDays) {
+        if (d in perDay) perDay[d] += 1
+      }
     }
-    return { total: allEmployees.length, active, onLeave, unassigned, inToday }
+    const inToday = perDay[todayLabel] ?? 0
+    const peak = Math.max(1, ...Object.values(perDay))
+    return { total: allEmployees.length, active, onLeave, unassigned, inToday, perDay, peak }
   }, [allEmployees, todayLabel])
+
+  // Map of duplicate emails → employee ids that share them. We surface a
+  // warning chip on these rows so the office admin can dedupe (typically
+  // after a CSV import that didn't match on email). Empty strings don't
+  // count — plenty of rows legitimately have no email yet.
+  const duplicateEmails = useMemo(() => {
+    const byEmail = new Map<string, string[]>()
+    for (const e of allEmployees) {
+      const key = e.email?.trim().toLowerCase()
+      if (!key) continue
+      const bucket = byEmail.get(key)
+      if (bucket) bucket.push(e.id)
+      else byEmail.set(key, [e.id])
+    }
+    const dupes = new Set<string>()
+    for (const [email, ids] of byEmail) {
+      if (ids.length > 1) dupes.add(email)
+    }
+    return dupes
+  }, [allEmployees])
 
   const sorted = useMemo(() => {
     const dir = sortDir === 'asc' ? 1 : -1
@@ -287,6 +319,27 @@ export function RosterPage() {
     for (const id of selected) unassignEmployee(id)
   }
 
+  // Apply a single-field change to every selected employee. Used by the
+  // "Set dept →" and "Set status →" bulk controls — a common office-ops
+  // move ("move these 5 contractors to 'departed' for offboarding day").
+  // Selection is preserved so the user can follow up with another action.
+  const handleBulkSetDepartment = (dept: string) => {
+    if (!dept) return
+    for (const id of selected) {
+      updateEmployee(id, { department: dept })
+    }
+  }
+  const handleBulkClearDepartment = () => {
+    for (const id of selected) {
+      updateEmployee(id, { department: null })
+    }
+  }
+  const handleBulkSetStatus = (status: EmployeeStatus) => {
+    for (const id of selected) {
+      updateEmployee(id, { status })
+    }
+  }
+
   const handleExportAll = () => {
     const csv = employeesToCSV(allEmployees, employees)
     downloadCSV(`roster-${new Date().toISOString().slice(0, 10)}.csv`, csv)
@@ -313,6 +366,15 @@ export function RosterPage() {
         active={{ statusFilter, seatFilter, dayFilter }}
         onSetFilter={setFilter}
         onClearAll={clearAllFilters}
+      />
+
+      {/* Weekly capacity mini-chart — bars are click-to-filter by day */}
+      <WeeklyCapacity
+        perDay={stats.perDay}
+        peak={stats.peak}
+        todayLabel={todayLabel}
+        dayFilter={dayFilter}
+        onSetFilter={setFilter}
       />
 
       {/* Filters bar */}
@@ -407,16 +469,58 @@ export function RosterPage() {
 
       {/* Bulk-action bar — only visible with selection */}
       {selected.size > 0 && (
-        <div className="flex items-center gap-3 px-5 py-2 bg-blue-50 border-b border-blue-100 flex-shrink-0 text-sm">
-          <span className="font-medium text-blue-900">
+        <div className="flex items-center gap-3 px-5 py-2 bg-blue-50 border-b border-blue-100 flex-shrink-0 text-sm overflow-x-auto whitespace-nowrap">
+          <span className="font-medium text-blue-900 flex-shrink-0">
             {selected.size} selected
           </span>
-          <button
-            onClick={handleBulkDelete}
-            className="px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-100 rounded"
+
+          {/*
+            Bulk "Set dept" — the empty value doubles as the control's label
+            so the select acts like a menu: picking a dept applies it to
+            every selected row and snaps the picker back to the label,
+            ready for another pick.
+          */}
+          <select
+            value=""
+            onChange={(e) => {
+              const v = e.target.value
+              if (v === '__clear__') handleBulkClearDepartment()
+              else handleBulkSetDepartment(v)
+            }}
+            className="px-2 py-1 text-xs border border-blue-200 rounded bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            aria-label="Set department on selected rows"
           >
-            Delete
-          </button>
+            <option value="" disabled>
+              Set dept →
+            </option>
+            {allDepartments.map((d) => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+            {allDepartments.length > 0 && (
+              <option disabled>────────</option>
+            )}
+            <option value="__clear__">Clear department</option>
+          </select>
+
+          <select
+            value=""
+            onChange={(e) => {
+              const v = e.target.value as EmployeeStatus | ''
+              if (v) handleBulkSetStatus(v)
+            }}
+            className="px-2 py-1 text-xs border border-blue-200 rounded bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            aria-label="Set status on selected rows"
+          >
+            <option value="" disabled>
+              Set status →
+            </option>
+            {EMPLOYEE_STATUSES.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+
+          <span className="w-px h-4 bg-blue-200" />
+
           <button
             onClick={handleBulkUnassign}
             className="px-2 py-1 text-xs font-medium text-gray-700 hover:bg-white rounded"
@@ -430,8 +534,14 @@ export function RosterPage() {
             Export selection
           </button>
           <button
+            onClick={handleBulkDelete}
+            className="px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-100 rounded"
+          >
+            Delete
+          </button>
+          <button
             onClick={() => setSelected(new Set())}
-            className="ml-auto flex items-center gap-1 px-2 py-1 text-xs text-gray-500 hover:text-gray-800"
+            className="ml-auto flex items-center gap-1 px-2 py-1 text-xs text-gray-500 hover:text-gray-800 flex-shrink-0"
           >
             <X size={12} /> Clear
           </button>
@@ -527,8 +637,16 @@ export function RosterPage() {
                         placeholder="—"
                       />
                       {emp.email && (
-                        <div className="px-1.5 text-[11px] text-gray-400 truncate" title={emp.email}>
-                          {emp.email}
+                        <div className="px-1.5 text-[11px] text-gray-400 truncate flex items-center gap-1" title={emp.email}>
+                          {duplicateEmails.has(emp.email.trim().toLowerCase()) && (
+                            <span
+                              className="inline-flex items-center gap-0.5 text-amber-700 bg-amber-100 px-1 py-0.5 rounded text-[10px] font-medium flex-shrink-0"
+                              title="Another person shares this email — likely a duplicate from CSV import"
+                            >
+                              <AlertCircle size={10} /> dupe
+                            </span>
+                          )}
+                          <span className="truncate">{emp.email}</span>
                         </div>
                       )}
                     </div>
@@ -819,8 +937,8 @@ function StatsBar({
       {chip(
         `In ${todayLabel}`,
         stats.inToday,
-        active.dayFilter === 'today',
-        () => onSetFilter('day', active.dayFilter === 'today' ? '' : 'today'),
+        active.dayFilter === todayLabel,
+        () => onSetFilter('day', active.dayFilter === todayLabel ? '' : todayLabel),
         'blue',
         `People whose office days include ${todayLabel}`,
       )}
@@ -834,6 +952,82 @@ function StatsBar({
  * use on the canvas — so a department's color is consistent across every
  * surface of the app.
  */
+/**
+ * Horizontal Mon→Fri bar chart of office attendance. Each bar is a button:
+ * click to toggle the `day` URL filter and narrow the table to just that
+ * day. Today's bar is ringed so it reads differently from the rest even
+ * before any interaction. The bars share the same `day` URL key as the
+ * "In <today>" stats chip, so the two controls never fight each other.
+ */
+function WeeklyCapacity({
+  perDay,
+  peak,
+  todayLabel,
+  dayFilter,
+  onSetFilter,
+}: {
+  perDay: Record<string, number>
+  peak: number
+  todayLabel: string
+  dayFilter: string
+  onSetFilter: (key: string, value: string) => void
+}) {
+  return (
+    <div className="flex items-center gap-3 px-5 py-2 border-b border-gray-100 bg-white flex-shrink-0 overflow-x-auto">
+      <div className="text-[11px] font-medium text-gray-500 uppercase tracking-wider flex-shrink-0">
+        Week in office
+      </div>
+      <div className="flex items-end gap-2 min-w-0">
+        {OFFICE_DAYS_ORDER.map((d) => {
+          const count = perDay[d] ?? 0
+          const pct = peak > 0 ? Math.round((count / peak) * 100) : 0
+          const isToday = d === todayLabel
+          const isActive = dayFilter === d
+          return (
+            <button
+              key={d}
+              onClick={() => onSetFilter('day', isActive ? '' : d)}
+              className={`group flex flex-col items-center gap-1 px-2 py-1 rounded transition-colors ${
+                isActive ? 'bg-blue-50' : 'hover:bg-gray-50'
+              }`}
+              title={`${count} in office on ${d}${isActive ? ' — click again to clear' : ''}`}
+              aria-pressed={isActive}
+              aria-label={`${count} people in office on ${d}`}
+            >
+              <div className="flex items-end h-8 w-6">
+                <div
+                  className={`w-full rounded-sm transition-all ${
+                    isActive
+                      ? 'bg-blue-600'
+                      : isToday
+                        ? 'bg-blue-400'
+                        : 'bg-gray-300 group-hover:bg-gray-400'
+                  }`}
+                  style={{ height: `${Math.max(pct, count > 0 ? 12 : 6)}%` }}
+                />
+              </div>
+              <div
+                className={`text-[10px] font-semibold ${
+                  isActive ? 'text-blue-700' : 'text-gray-600'
+                } tabular-nums`}
+              >
+                {count}
+              </div>
+              <div
+                className={`text-[10px] font-medium ${
+                  isToday ? 'text-blue-700' : 'text-gray-400'
+                }`}
+              >
+                {d}
+              </div>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 function DeptDot({ color }: { color: string | null }) {
   if (!color) {
     return (
