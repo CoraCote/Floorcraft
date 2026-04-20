@@ -186,6 +186,41 @@ describe('RosterPage', () => {
     // Both rows should render a dupe badge (case-insensitive match).
     const badges = screen.getAllByText('dupe')
     expect(badges.length).toBe(2)
+    // And each tooltip should name the *other* person, not a generic
+    // "another person shares this email" string.
+    const aliceBadge = badges.find((b) =>
+      b.getAttribute('title')?.includes('Bob'),
+    )
+    const bobBadge = badges.find((b) =>
+      b.getAttribute('title')?.includes('Alice'),
+    )
+    expect(aliceBadge).toBeTruthy()
+    expect(bobBadge).toBeTruthy()
+  })
+
+  it('card view exposes a select-all toggle that marks every visible row', () => {
+    renderAtRoute('/project/acme/roster?view=cards')
+    const toggleAll = screen.getByLabelText('Toggle all') as HTMLInputElement
+    expect(toggleAll.checked).toBe(false)
+    act(() => { fireEvent.click(toggleAll) })
+    // After the click, every card's own checkbox should be ticked.
+    const aliceSel = screen.getByLabelText('Select Alice') as HTMLInputElement
+    const bobSel = screen.getByLabelText('Select Bob') as HTMLInputElement
+    expect(aliceSel.checked).toBe(true)
+    expect(bobSel.checked).toBe(true)
+  })
+
+  it('clearing filters in cards view keeps view=cards', () => {
+    renderAtRoute('/project/acme/roster?view=cards&status=active')
+    // Sanity: we're in cards and the filter narrowed the list to Alice.
+    expect(screen.getByTestId('roster-cards')).toBeTruthy()
+    expect(screen.queryByText('Bob')).toBeNull()
+    const clear = screen.getByTitle('Clear all filters')
+    act(() => { fireEvent.click(clear) })
+    // Filter gone, but we should still be in cards view (not flipped back
+    // to the table), so the cards container is still in the DOM.
+    expect(screen.getByTestId('roster-cards')).toBeTruthy()
+    expect(screen.getByText('Bob')).toBeTruthy()
   })
 
   it('preset dropdown narrows the list to matching rows', () => {

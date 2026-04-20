@@ -156,13 +156,25 @@ export function RosterPage() {
   )
 
   const clearAllFilters = useCallback(() => {
-    setSearchParams(new URLSearchParams(), { replace: true })
-  }, [setSearchParams])
+    // View mode isn't a "filter" — it's a layout preference. Clearing
+    // filters while in cards shouldn't snap the user back to the table.
+    const next = new URLSearchParams()
+    const currentView = searchParams.get('view')
+    if (currentView) next.set('view', currentView)
+    setSearchParams(next, { replace: true })
+  }, [searchParams, setSearchParams])
 
   // Everything keyed off the current clock stays stable for the lifetime of
   // a single render (so sort order doesn't skew as midnight rolls over
   // mid-session — a fresh render will just pick up the new date).
   const todayLabel = WEEKDAY_LABELS[new Date().getDay()]
+  // Only Mon-Fri are valid filter values (officeDays are persisted as
+  // Mon-Fri only). On weekends we still want to light up "today" in the
+  // OfficeDays pills, but the stats chip would be a dead button: clicking
+  // `day=Sat` passes through `OFFICE_DAYS_ORDER.includes` → false, so no
+  // filter applies but the chip shows pressed. Suppress the chip on
+  // weekends rather than faking a workday.
+  const isWorkday = (OFFICE_DAYS_ORDER as readonly string[]).includes(todayLabel)
 
   const [sortColumn, setSortColumn] = useState<SortColumn>('name')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
@@ -248,10 +260,16 @@ export function RosterPage() {
     return { total: allEmployees.length, active, onLeave, unassigned, inToday, perDay, peak }
   }, [allEmployees, todayLabel])
 
-  // Map of duplicate emails → employee ids that share them. We surface a
-  // warning chip on these rows so the office admin can dedupe (typically
-  // after a CSV import that didn't match on email). Empty strings don't
-  // count — plenty of rows legitimately have no email yet.
+  // Map of duplicate emails → *all* employee ids that share them. We
+  // surface a warning chip on those rows so the office admin can dedupe
+  // (typically after a CSV import that didn't match on email). Empty
+  // strings don't count — plenty of rows legitimately have no email yet.
+  //
+  // Carrying the full id list (rather than just a `Set<string>` of the
+  // offending emails) lets the per-row tooltip name the conflict partner,
+  // e.g. "Shares with: Bob" — much more actionable than a generic
+  // "another person shares this email" when you're cleaning up a list of
+  // 200 people.
   const duplicateEmails = useMemo(() => {
     const byEmail = new Map<string, string[]>()
     for (const e of allEmployees) {
@@ -261,12 +279,30 @@ export function RosterPage() {
       if (bucket) bucket.push(e.id)
       else byEmail.set(key, [e.id])
     }
-    const dupes = new Set<string>()
+    const dupes = new Map<string, string[]>()
     for (const [email, ids] of byEmail) {
-      if (ids.length > 1) dupes.add(email)
+      if (ids.length > 1) dupes.set(email, ids)
     }
     return dupes
   }, [allEmployees])
+
+  // Resolve a dupe email to the other people's names, excluding the row
+  // currently being rendered so the tooltip reads naturally ("Also used by:
+  // Bob, Charlie"). Returns null when the email isn't a duplicate so
+  // callers can skip the badge entirely.
+  const describeDuplicate = useCallback(
+    (email: string, selfId: string): string | null => {
+      const ids = duplicateEmails.get(email.trim().toLowerCase())
+      if (!ids) return null
+      const others = ids
+        .filter((id) => id !== selfId)
+        .map((id) => employees[id]?.name)
+        .filter((n): n is string => Boolean(n))
+      if (others.length === 0) return 'Another row shares this email'
+      return `Also used by: ${others.join(', ')}`
+    },
+    [duplicateEmails, employees],
+  )
 
   const sorted = useMemo(() => {
     const dir = sortDir === 'asc' ? 1 : -1
@@ -454,6 +490,7 @@ export function RosterPage() {
       <StatsBar
         stats={stats}
         todayLabel={todayLabel}
+        isWorkday={isWorkday}
         active={{ statusFilter, seatFilter, dayFilter }}
         onSetFilter={setFilter}
         onClearAll={clearAllFilters}
@@ -707,6 +744,52 @@ export function RosterPage() {
       {/* Table OR card grid, based on `view` URL param */}
       {viewMode === 'cards' ? (
         <div className="flex-1 overflow-auto p-5 bg-gray-50/50" data-testid="roster-cards">
+          {/*
+            Card view can't hang sort/select-all off <thead> the way the
+            table does, so it gets a small toolbar. The sort <select>
+            shows the same column set the table header exposes; the
+            toggle mirrors the table's "select all visible" semantics so
+            the two views stay behaviorally equivalent.
+          */}
+          <div className="flex items-center gap-3 mb-3 text-xs">
+            <label className="flex items-center gap-1.5 text-gray-600 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={allVisibleSelected}
+                ref={(el) => {
+                  if (el) el.indeterminate = someVisibleSelected
+                }}
+                onChange={toggleAll}
+                aria-label="Toggle all"
+              />
+              {allVisibleSelected ? 'Unselect all' : 'Select all'}
+            </label>
+            <span className="w-px h-4 bg-gray-200" />
+            <label className="flex items-center gap-1.5 text-gray-600">
+              Sort by
+              <select
+                value={sortColumn}
+                onChange={(e) => setSortColumn(e.target.value as SortColumn)}
+                className="px-1.5 py-1 border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                aria-label="Sort column"
+              >
+                <option value="name">Name</option>
+                <option value="department">Department</option>
+                <option value="title">Title</option>
+                <option value="seat">Seat</option>
+                <option value="status">Status</option>
+              </select>
+            </label>
+            <button
+              onClick={() => setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))}
+              className="px-2 py-1 border border-gray-200 rounded bg-white text-gray-600 hover:bg-gray-50 flex items-center gap-1"
+              aria-label={`Sort direction ${sortDir}`}
+              title={`Sort direction: ${sortDir}ending`}
+            >
+              <ArrowUpDown size={12} />
+              {sortDir === 'asc' ? 'A–Z' : 'Z–A'}
+            </button>
+          </div>
           {sorted.length === 0 ? (
             <div className="text-center text-gray-400 text-sm py-16">
               {hasAnyFilter ? (
@@ -737,8 +820,8 @@ export function RosterPage() {
                   }
                   isSelected={selected.has(emp.id)}
                   todayLabel={todayLabel}
-                  isDuplicateEmail={
-                    !!emp.email && duplicateEmails.has(emp.email.trim().toLowerCase())
+                  duplicateLabel={
+                    emp.email ? describeDuplicate(emp.email, emp.id) : null
                   }
                   onToggleSelect={() => toggleRow(emp.id)}
                   onOpen={() => setDrawerId(emp.id)}
@@ -838,14 +921,17 @@ export function RosterPage() {
                       />
                       {emp.email && (
                         <div className="px-1.5 text-[11px] text-gray-400 truncate flex items-center gap-1" title={emp.email}>
-                          {duplicateEmails.has(emp.email.trim().toLowerCase()) && (
-                            <span
-                              className="inline-flex items-center gap-0.5 text-amber-700 bg-amber-100 px-1 py-0.5 rounded text-[10px] font-medium flex-shrink-0"
-                              title="Another person shares this email — likely a duplicate from CSV import"
-                            >
-                              <AlertCircle size={10} /> dupe
-                            </span>
-                          )}
+                          {(() => {
+                            const dupeLabel = describeDuplicate(emp.email, emp.id)
+                            return dupeLabel ? (
+                              <span
+                                className="inline-flex items-center gap-0.5 text-amber-700 bg-amber-100 px-1 py-0.5 rounded text-[10px] font-medium flex-shrink-0"
+                                title={dupeLabel}
+                              >
+                                <AlertCircle size={10} /> dupe
+                              </span>
+                            ) : null
+                          })()}
                           <span className="truncate">{emp.email}</span>
                         </div>
                       )}
@@ -1065,12 +1151,14 @@ function InlineText({
 function StatsBar({
   stats,
   todayLabel,
+  isWorkday,
   active,
   onSetFilter,
   onClearAll,
 }: {
   stats: { total: number; active: number; onLeave: number; unassigned: number; inToday: number }
   todayLabel: string
+  isWorkday: boolean
   active: { statusFilter: string; seatFilter: string; dayFilter: string }
   onSetFilter: (key: string, value: string) => void
   onClearAll: () => void
@@ -1136,7 +1224,7 @@ function StatsBar({
         'red',
         'People without a seat',
       )}
-      {chip(
+      {isWorkday && chip(
         `In ${todayLabel}`,
         stats.inToday,
         active.dayFilter === todayLabel,
@@ -1383,7 +1471,7 @@ function PersonCard({
   deptColor,
   isSelected,
   todayLabel,
-  isDuplicateEmail,
+  duplicateLabel,
   onToggleSelect,
   onOpen,
   onJumpToSeat,
@@ -1393,7 +1481,7 @@ function PersonCard({
   deptColor: string | null
   isSelected: boolean
   todayLabel: string
-  isDuplicateEmail: boolean
+  duplicateLabel: string | null
   onToggleSelect: () => void
   onOpen: () => void
   onJumpToSeat: () => void
@@ -1421,7 +1509,20 @@ function PersonCard({
         isSelected ? 'border-blue-400 ring-2 ring-blue-200' : 'border-gray-200'
       }`}
     >
-      <label className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100">
+      {/*
+        Checkbox is always visible once a card is selected (so the user can
+        deselect without having to hover-then-find-it again) and visible on
+        hover/focus otherwise. The opacity-0 default keeps unselected cards
+        visually clean without hiding an interactive control that the user
+        has already engaged with.
+      */}
+      <label
+        className={`absolute top-2 right-2 transition-opacity ${
+          isSelected
+            ? 'opacity-100'
+            : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100'
+        }`}
+      >
         <input
           type="checkbox"
           checked={isSelected}
@@ -1441,10 +1542,10 @@ function PersonCard({
             >
               {employee.name}
             </button>
-            {isDuplicateEmail && (
+            {duplicateLabel && (
               <span
                 className="inline-flex items-center gap-0.5 text-amber-700 bg-amber-100 px-1 py-0.5 rounded text-[10px] font-medium flex-shrink-0"
-                title="Another person shares this email"
+                title={duplicateLabel}
               >
                 <AlertCircle size={10} /> dupe
               </span>
