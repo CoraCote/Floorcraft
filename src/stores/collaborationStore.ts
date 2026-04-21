@@ -26,7 +26,7 @@ export const useCollaborationStore = create<CollaborationState>((set) => ({
     set((state) => ({ cursors: { ...state.cursors, [userId]: cursor } })),
   removeCursor: (userId) =>
     set((state) => {
-      const { [userId]: _, ...rest } = state.cursors
+      const { [userId]: _removed, ...rest } = state.cursors
       return { cursors: rest }
     }),
   setComments: (comments) => set({ comments }),
