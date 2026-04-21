@@ -11,18 +11,20 @@ vi.mock('../lib/offices/officeRepository', () => ({
   saveOfficeForce: (...a: unknown[]) => saveOfficeForce(...a),
 }))
 vi.mock('../stores/elementsStore', () => ({
-  useElementsStore: ((sel: any) => (sel ? sel({ elements: {} }) : { elements: {} })) as any,
+  useElementsStore: ((sel: ((s: { elements: Record<string, unknown> }) => unknown) | undefined) =>
+    sel ? sel({ elements: {} }) : { elements: {} }) as ((sel?: ((s: { elements: Record<string, unknown> }) => unknown)) => unknown),
 }))
 vi.mock('../stores/employeeStore', () => ({
-  useEmployeeStore: ((sel: any) =>
-    sel ? sel({ employees: {}, departmentColors: {} }) : { employees: {}, departmentColors: {} }) as any,
+  useEmployeeStore: ((sel: ((s: { employees: Record<string, unknown>; departmentColors: Record<string, unknown> }) => unknown) | undefined) =>
+    sel ? sel({ employees: {}, departmentColors: {} }) : { employees: {}, departmentColors: {} }) as ((sel?: ((s: { employees: Record<string, unknown>; departmentColors: Record<string, unknown> }) => unknown)) => unknown),
 }))
 vi.mock('../stores/floorStore', () => ({
-  useFloorStore: ((sel: any) =>
-    sel ? sel({ floors: [], activeFloorId: null }) : { floors: [], activeFloorId: null }) as any,
+  useFloorStore: ((sel: ((s: { floors: unknown[]; activeFloorId: null }) => unknown) | undefined) =>
+    sel ? sel({ floors: [], activeFloorId: null }) : { floors: [], activeFloorId: null }) as ((sel?: ((s: { floors: unknown[]; activeFloorId: null }) => unknown)) => unknown),
 }))
 vi.mock('../stores/canvasStore', () => ({
-  useCanvasStore: ((sel: any) => (sel ? sel({ settings: {} }) : { settings: {} })) as any,
+  useCanvasStore: ((sel: ((s: { settings: Record<string, unknown> }) => unknown) | undefined) =>
+    sel ? sel({ settings: {} }) : { settings: {} }) as ((sel?: ((s: { settings: Record<string, unknown> }) => unknown)) => unknown),
 }))
 vi.mock('../stores/projectStore', () => {
   const state: Record<string, unknown> = {
@@ -41,9 +43,9 @@ vi.mock('../stores/projectStore', () => {
       state.lastSavedAt = at
     },
   }
-  const hook: any = (sel: any) => (sel ? sel(state) : state)
-  hook.setState = (u: any) => Object.assign(state, typeof u === 'function' ? u(state) : u)
-  hook.getState = () => state
+  const hook = (sel: ((s: Record<string, unknown>) => unknown) | undefined) => (sel ? sel(state) : state)
+  ;(hook as Record<string, unknown>).setState = (u: ((s: Record<string, unknown>) => Record<string, unknown>) | Record<string, unknown>) => Object.assign(state, typeof u === 'function' ? u(state) : u)
+  ;(hook as Record<string, unknown>).getState = () => state
   return { useProjectStore: hook }
 })
 
