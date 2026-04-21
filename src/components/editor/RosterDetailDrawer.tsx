@@ -50,7 +50,9 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
   const drawerRef = useRef<HTMLElement>(null)
   const firstFieldRef = useRef<HTMLInputElement>(null)
   const onCloseRef = useRef(onClose)
-  onCloseRef.current = onClose
+  useEffect(() => {
+    onCloseRef.current = onClose
+  })
 
   // Register as an open modal so `useKeyboardShortcuts` stops reacting to
   // global Escape/hotkeys. We also listen locally for Escape and Tab so the
