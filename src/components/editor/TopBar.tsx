@@ -5,7 +5,7 @@ import { useElementsStore } from '../../stores/elementsStore'
 import { useShallow } from 'zustand/react/shallow'
 import {
   Undo2, Redo2, ZoomIn, ZoomOut, Share2, Download,
-  Maximize2, PanelRightOpen, PanelRightClose,
+  Maximize2, Minimize2, PanelRightOpen, PanelRightClose,
   Cloud, CloudOff, UploadCloud, X as XIcon,
 } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
@@ -20,7 +20,7 @@ export function TopBar() {
   const lastSavedAt = useProjectStore((s) => s.lastSavedAt)
   const { slug } = useParams<{ slug: string }>()
   const { stageScale, zoomIn, zoomOut, resetZoom } = useCanvasStore(useShallow((s) => ({ stageScale: s.stageScale, zoomIn: s.zoomIn, zoomOut: s.zoomOut, resetZoom: s.resetZoom })))
-  const { rightSidebarOpen, setRightSidebarOpen, setShareModalOpen, setExportDialogOpen, setPresentationMode, selectedIds, clearSelection } = useUIStore(useShallow((s) => ({ rightSidebarOpen: s.rightSidebarOpen, setRightSidebarOpen: s.setRightSidebarOpen, setShareModalOpen: s.setShareModalOpen, setExportDialogOpen: s.setExportDialogOpen, setPresentationMode: s.setPresentationMode, selectedIds: s.selectedIds, clearSelection: s.clearSelection })))
+  const { rightSidebarOpen, setRightSidebarOpen, setShareModalOpen, setExportDialogOpen, setPresentationMode, presentationMode, selectedIds, clearSelection } = useUIStore(useShallow((s) => ({ rightSidebarOpen: s.rightSidebarOpen, setRightSidebarOpen: s.setRightSidebarOpen, setShareModalOpen: s.setShareModalOpen, setExportDialogOpen: s.setExportDialogOpen, setPresentationMode: s.setPresentationMode, presentationMode: s.presentationMode, selectedIds: s.selectedIds, clearSelection: s.clearSelection })))
   const undo = useElementsStore.temporal.getState().undo
   const redo = useElementsStore.temporal.getState().redo
   const { canUndo, canRedo } = useTemporalState()
@@ -201,13 +201,34 @@ export function TopBar() {
 
       <SaveIndicator saveState={saveState} lastSavedAt={lastSavedAt} />
 
+      {/*
+        Toggles presentation (fullscreen) mode. Critical: when presentation
+        is ON, this button MUST visibly reflect that and act as an exit.
+        Earlier versions only rendered the "enter" state, so if a user
+        entered from the roster page — which has no fullscreen overlay and
+        no in-page exit button — they were trapped with no visible cue.
+        The MapView has its own big "Exit" button, but it's hidden by the
+        fullscreen overlay on the map only; the TopBar button is the one
+        exit affordance that works from every route.
+      */}
       <button
-        onClick={() => setPresentationMode(true)}
-        className="p-1.5 rounded hover:bg-gray-100 text-gray-600"
-        title="Presentation Mode (P)"
-        aria-label="Enter presentation mode"
+        onClick={() => setPresentationMode(!presentationMode)}
+        className={`p-1.5 rounded flex items-center gap-1 ${
+          presentationMode
+            ? 'bg-gray-900 text-white hover:bg-gray-800'
+            : 'hover:bg-gray-100 text-gray-600'
+        }`}
+        title={
+          presentationMode
+            ? 'Exit presentation mode (P or Esc)'
+            : 'Presentation Mode (P)'
+        }
+        aria-label={
+          presentationMode ? 'Exit presentation mode' : 'Enter presentation mode'
+        }
+        aria-pressed={presentationMode}
       >
-        <Maximize2 size={16} />
+        {presentationMode ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
       </button>
 
       <button
