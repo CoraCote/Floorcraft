@@ -100,6 +100,7 @@ type AnyLibraryElement =
  * share the exact same factory — keep this pure so it can be called from
  * the library tile click handler or from CanvasStage's drop handler.
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function buildLibraryElement(
   item: LibraryItem,
   x: number,
