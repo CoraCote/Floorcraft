@@ -40,7 +40,11 @@ export function PeoplePanel() {
   )
 
   const setCsvImportOpen = useUIStore((s) => s.setCsvImportOpen)
-  const { slug } = useParams<{ slug: string }>()
+  // Post Phase 6: the PeoplePanel only ever mounts inside an office
+  // route, so both params are guaranteed present.
+  const { teamSlug, officeSlug } = useParams<{ teamSlug: string; officeSlug: string }>()
+  const rosterHref =
+    teamSlug && officeSlug ? `/t/${teamSlug}/o/${officeSlug}/roster` : null
 
   const filteredEmployees = getFilteredEmployees()
   const totalCount = Object.keys(employees).length
@@ -94,9 +98,9 @@ export function PeoplePanel() {
         <div className="flex items-center gap-2">
           <Users size={14} className="text-gray-500" />
           <span className="text-sm font-medium text-gray-700">{totalCount} people</span>
-          {slug && (
+          {rosterHref && (
             <Link
-              to={`/project/${slug}/roster`}
+              to={rosterHref}
               className="inline-flex items-center gap-0.5 text-[11px] text-blue-600 hover:text-blue-800 hover:underline"
               title="Open full roster view"
             >

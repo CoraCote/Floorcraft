@@ -1,15 +1,54 @@
+import { useEffect, useState } from 'react'
+import { X as XIcon } from 'lucide-react'
+import { useParams } from 'react-router-dom'
 import { useUIStore } from '../../stores/uiStore'
 import { useProjectStore } from '../../stores/projectStore'
-import { X, Copy, Check } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useSession } from '../../lib/auth/session'
+import { VisibilityRadio, type Visibility } from './Share/VisibilityRadio'
+import { AccessTable } from './Share/AccessTable'
+import {
+  listPermissions,
+  setOfficePrivate,
+  type OfficePermEntry,
+} from '../../lib/offices/permissionsRepository'
 
+/**
+ * ShareModal v2 — account-aware share sheet.
+ *
+ * The previous version wrote a single `sharePermission` string onto the
+ * project store; this version talks directly to the `offices` +
+ * `office_permissions` tables. Visibility is tri-state (team-edit /
+ * team-view / private) and per-user overrides live in `AccessTable`.
+ *
+ * The shareable URL is built from `useParams()` rather than the project
+ * facade because the modal always renders inside a `/t/:teamSlug/o/:officeSlug`
+ * route and the params are the source of truth during navigation.
+ */
 export function ShareModal() {
   const open = useUIStore((s) => s.shareModalOpen)
   const setOpen = useUIStore((s) => s.setShareModalOpen)
-  const project = useProjectStore((s) => s.currentProject)
-  const updatePermission = useProjectStore((s) => s.updateSharePermission)
-  const [copied, setCopied] = useState(false)
+  const officeId = useProjectStore((s) => s.officeId)
+  const project = useProjectStore((s) => s.currentProject) as
+    | (null | { id?: string; slug?: string; isPrivate?: boolean; teamId?: string })
+  const session = useSession()
+  const { teamSlug, officeSlug } = useParams<{ teamSlug: string; officeSlug: string }>()
 
+  const [visibility, setVisibility] = useState<Visibility>(
+    project?.isPrivate ? 'private' : 'team-edit',
+  )
+  const [entries, setEntries] = useState<OfficePermEntry[]>([])
+
+  async function refresh() {
+    if (!officeId || !project?.teamId || session.status !== 'authenticated') return
+    setEntries(await listPermissions(officeId, session.user.id, project.teamId))
+  }
+  useEffect(() => {
+    if (open) void refresh()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, officeId])
+
+  // Escape-to-close matches the previous ShareModal so keyboard users
+  // don't regress.
   useEffect(() => {
     if (!open) return
     const handleKey = (e: KeyboardEvent) => {
@@ -19,76 +58,75 @@ export function ShareModal() {
     return () => window.removeEventListener('keydown', handleKey)
   }, [open, setOpen])
 
-  if (!open || !project) return null
+  if (!open) return null
 
-  const shareUrl = `${window.location.origin}/project/${project.slug}`
-  const embedCode = `<iframe src="${shareUrl}/embed" width="800" height="600" frameborder="0"></iframe>`
-
-  const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+  async function onVisibilityChange(v: Visibility) {
+    setVisibility(v)
+    if (officeId) await setOfficePrivate(officeId, v === 'private')
   }
 
+  const canEdit = entries.some((e) => e.isSelf && e.role === 'owner')
+  const link =
+    teamSlug && officeSlug
+      ? `${window.location.origin}/t/${teamSlug}/o/${officeSlug}/map`
+      : window.location.href
+
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setOpen(false)}>
-      <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Share</h2>
-          <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600" aria-label="Close share dialog"><X size={18} /></button>
-        </div>
-
-        {/* Permission */}
-        <div className="mb-4">
-          <label className="text-sm font-medium text-gray-700 mb-1 block">Anyone with the link can:</label>
-          <select
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-            value={project.sharePermission}
-            onChange={(e) => updatePermission(e.target.value as 'private' | 'view' | 'comment' | 'edit')}
+    <div
+      className="fixed inset-0 z-40 bg-black/40 flex items-center justify-center"
+      role="dialog"
+      aria-modal="true"
+      onClick={() => setOpen(false)}
+    >
+      <div
+        className="bg-white rounded-lg shadow w-full max-w-lg max-h-[80vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <header className="flex justify-between items-center p-4 border-b">
+          <h2 className="font-semibold">Share office</h2>
+          <button
+            aria-label="Close share modal"
+            onClick={() => setOpen(false)}
+            className="text-gray-400 hover:text-gray-600"
           >
-            <option value="private">No access (private)</option>
-            <option value="view">View only</option>
-            <option value="comment">View &amp; comment</option>
-            <option value="edit">Full edit access</option>
-          </select>
-        </div>
-
-        {/* Share link */}
-        <div className="mb-4">
-          <label className="text-sm font-medium text-gray-700 mb-1 block">Share link</label>
-          <div className="flex gap-2">
-            <input
-              className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 text-gray-600"
-              value={shareUrl}
-              readOnly
-            />
-            <button
-              onClick={() => handleCopy(shareUrl)}
-              className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-1"
-            >
-              {copied ? <Check size={14} /> : <Copy size={14} />}
-              <span className="text-sm">{copied ? 'Copied' : 'Copy'}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Embed code */}
-        <div>
-          <label className="text-sm font-medium text-gray-700 mb-1 block">Embed code</label>
-          <div className="flex gap-2">
-            <input
-              className="flex-1 text-xs font-mono border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 text-gray-500"
-              value={embedCode}
-              readOnly
-            />
-            <button
-              onClick={() => handleCopy(embedCode)}
-              className="px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600"
-              aria-label="Copy embed code"
-            >
-              <Copy size={14} />
-            </button>
-          </div>
+            <XIcon size={16} />
+          </button>
+        </header>
+        <div className="p-4 space-y-6">
+          <section>
+            <h3 className="text-sm font-medium mb-2">Visibility</h3>
+            <VisibilityRadio value={visibility} onChange={onVisibilityChange} />
+          </section>
+          <section>
+            <h3 className="text-sm font-medium mb-2">Access</h3>
+            {officeId ? (
+              <AccessTable
+                officeId={officeId}
+                entries={entries}
+                canEdit={canEdit}
+                onChange={() => {
+                  void refresh()
+                }}
+              />
+            ) : null}
+          </section>
+          <section>
+            <h3 className="text-sm font-medium mb-2">Link</h3>
+            <div className="flex gap-2">
+              <input
+                readOnly
+                value={link}
+                className="flex-1 border rounded px-2 py-1.5 text-xs"
+                aria-label="Share link"
+              />
+              <button
+                onClick={() => navigator.clipboard?.writeText(link)}
+                className="px-3 py-1.5 border rounded text-sm hover:bg-gray-50"
+              >
+                Copy
+              </button>
+            </div>
+          </section>
         </div>
       </div>
     </div>

@@ -1,0 +1,63 @@
+import { useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
+import { supabase } from '../../lib/supabase'
+
+export function ForgotPasswordPage() {
+  const [email, setEmail] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [done, setDone] = useState(false)
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault()
+    setBusy(true)
+    setError(null)
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/reset`,
+    })
+    setBusy(false)
+    if (error) {
+      setError(error.message)
+      return
+    }
+    setDone(true)
+  }
+
+  if (done) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+        <div className="bg-white p-6 rounded-lg shadow max-w-sm text-sm space-y-2">
+          <h1 className="text-lg font-semibold">Check your email</h1>
+          <p className="text-gray-600">If an account exists for {email}, a reset link is on its way.</p>
+          <Link to="/login" className="text-blue-600 hover:underline">Back to login</Link>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <form onSubmit={onSubmit} className="bg-white p-6 rounded-lg shadow w-full max-w-sm space-y-4">
+        <h1 className="text-lg font-semibold">Reset your password</h1>
+        <label className="block text-sm">
+          <span className="block mb-1 text-gray-600">Email</span>
+          <input
+            type="email"
+            required
+            className="w-full border rounded px-2 py-1.5"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </label>
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        <button
+          type="submit"
+          disabled={busy}
+          className="w-full bg-blue-600 text-white rounded py-2 text-sm font-medium disabled:opacity-50"
+        >
+          {busy ? 'Sending…' : 'Send reset link'}
+        </button>
+      </form>
+    </div>
+  )
+}

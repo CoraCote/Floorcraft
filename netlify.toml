@@ -4,6 +4,8 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  # Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Netlify UI
+  # → Project settings → Environment variables. Do NOT hardcode here.
 
 [[redirects]]
   from = "/*"

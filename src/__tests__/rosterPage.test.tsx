@@ -11,8 +11,14 @@ function renderAtRoute(path: string) {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
-        <Route path="/project/:slug/roster" element={<RosterPage />} />
-        <Route path="/project/:slug/map" element={<div>Map page</div>} />
+        <Route
+          path="/t/:teamSlug/o/:officeSlug/roster"
+          element={<RosterPage />}
+        />
+        <Route
+          path="/t/:teamSlug/o/:officeSlug/map"
+          element={<div>Map page</div>}
+        />
       </Routes>
     </MemoryRouter>,
   )
@@ -46,7 +52,7 @@ beforeEach(() => {
 
 describe('RosterPage', () => {
   it('renders a row per employee from the store', () => {
-    renderAtRoute('/project/acme/roster')
+    renderAtRoute('/t/acme/o/hq/roster')
     expect(screen.getByText('Alice')).toBeTruthy()
     expect(screen.getByText('Bob')).toBeTruthy()
     // Both departments appear as inline cells.
@@ -55,7 +61,7 @@ describe('RosterPage', () => {
   })
 
   it('commits an inline title edit to the store on blur', () => {
-    renderAtRoute('/project/acme/roster')
+    renderAtRoute('/t/acme/o/hq/roster')
     // Click the title cell for Alice (initial value "IC5") to enter edit mode.
     const titleCell = screen.getByText('IC5')
     act(() => { fireEvent.click(titleCell) })
@@ -68,7 +74,7 @@ describe('RosterPage', () => {
   })
 
   it('changes status through the inline select', () => {
-    renderAtRoute('/project/acme/roster')
+    renderAtRoute('/t/acme/o/hq/roster')
     // Find all status selects; Alice is first in alphabetic order so her
     // select is at index 0 (header has no select).
     const selects = screen
@@ -85,7 +91,7 @@ describe('RosterPage', () => {
   })
 
   it('filters by department via the URL-synced dropdown', () => {
-    renderAtRoute('/project/acme/roster')
+    renderAtRoute('/t/acme/o/hq/roster')
     // Seed departmentColors so the dept dropdown lists both.
     act(() => {
       useEmployeeStore.setState((s) => ({
@@ -103,7 +109,7 @@ describe('RosterPage', () => {
   it('renders status counts in the stats bar', () => {
     // Alice is active, Bob is on-leave (set in beforeEach). Both are
     // seat-unassigned, so the "Unassigned" chip should count 2.
-    renderAtRoute('/project/acme/roster')
+    renderAtRoute('/t/acme/o/hq/roster')
     // `On leave` chip shows the number 1 alongside its label.
     const onLeaveChip = screen.getByRole('button', { name: /1\s+On leave/i })
     expect(onLeaveChip).toBeTruthy()
@@ -113,7 +119,7 @@ describe('RosterPage', () => {
   })
 
   it('clicking the On-leave stats chip narrows to status=on-leave', () => {
-    renderAtRoute('/project/acme/roster')
+    renderAtRoute('/t/acme/o/hq/roster')
     const onLeaveChip = screen.getByRole('button', { name: /1\s+On leave/i })
     act(() => { fireEvent.click(onLeaveChip) })
     // After the click the status chip should be toggled on and Alice
@@ -123,7 +129,7 @@ describe('RosterPage', () => {
   })
 
   it('shows Clear filters button once a filter is active and resets on click', () => {
-    renderAtRoute('/project/acme/roster?status=active')
+    renderAtRoute('/t/acme/o/hq/roster?status=active')
     // Alice is active, Bob is on-leave → only Alice is visible.
     expect(screen.getByText('Alice')).toBeTruthy()
     expect(screen.queryByText('Bob')).toBeNull()
@@ -135,7 +141,7 @@ describe('RosterPage', () => {
   })
 
   it('double-clicking a row opens the detail drawer', () => {
-    renderAtRoute('/project/acme/roster')
+    renderAtRoute('/t/acme/o/hq/roster')
     // Double-click on Alice's row. Target a plain cell (the <tr> double-click
     // handler ignores inputs/selects/buttons).
     const row = screen.getByText('Alice').closest('tr')!
@@ -145,7 +151,7 @@ describe('RosterPage', () => {
   })
 
   it('bulk set-status applies to every selected row', () => {
-    renderAtRoute('/project/acme/roster')
+    renderAtRoute('/t/acme/o/hq/roster')
     // Select both people via the select-all header checkbox.
     const toggleAll = screen.getByLabelText('Toggle all') as HTMLInputElement
     act(() => { fireEvent.click(toggleAll) })
@@ -157,7 +163,7 @@ describe('RosterPage', () => {
   })
 
   it('bulk set-department writes the same dept to every selected row', () => {
-    renderAtRoute('/project/acme/roster')
+    renderAtRoute('/t/acme/o/hq/roster')
     // Seed a dept in the colors map so it shows up in the bulk menu.
     act(() => {
       useEmployeeStore.setState((s) => ({
@@ -182,7 +188,7 @@ describe('RosterPage', () => {
         },
       }))
     })
-    renderAtRoute('/project/acme/roster')
+    renderAtRoute('/t/acme/o/hq/roster')
     // Both rows should render a dupe badge (case-insensitive match).
     const badges = screen.getAllByText('dupe')
     expect(badges.length).toBe(2)
@@ -199,7 +205,7 @@ describe('RosterPage', () => {
   })
 
   it('card view exposes a select-all toggle that marks every visible row', () => {
-    renderAtRoute('/project/acme/roster?view=cards')
+    renderAtRoute('/t/acme/o/hq/roster?view=cards')
     const toggleAll = screen.getByLabelText('Toggle all') as HTMLInputElement
     expect(toggleAll.checked).toBe(false)
     act(() => { fireEvent.click(toggleAll) })
@@ -211,7 +217,7 @@ describe('RosterPage', () => {
   })
 
   it('clearing filters in cards view keeps view=cards', () => {
-    renderAtRoute('/project/acme/roster?view=cards&status=active')
+    renderAtRoute('/t/acme/o/hq/roster?view=cards&status=active')
     // Sanity: we're in cards and the filter narrowed the list to Alice.
     expect(screen.getByTestId('roster-cards')).toBeTruthy()
     expect(screen.queryByText('Bob')).toBeNull()
@@ -234,7 +240,7 @@ describe('RosterPage', () => {
         },
       }))
     })
-    renderAtRoute('/project/acme/roster')
+    renderAtRoute('/t/acme/o/hq/roster')
     const presetSelect = screen.getByLabelText('Preset view') as HTMLSelectElement
     act(() => {
       fireEvent.change(presetSelect, { target: { value: 'missing-email' } })
@@ -252,7 +258,7 @@ describe('RosterPage', () => {
         },
       }))
     })
-    renderAtRoute('/project/acme/roster')
+    renderAtRoute('/t/acme/o/hq/roster')
     // Each row has a "Row actions" button — Alice's row is first. Filter
     // by role because the table header cell also carries aria-label
     // "Row actions" (it labels the column, not a control).
@@ -267,7 +273,7 @@ describe('RosterPage', () => {
   })
 
   it('view toggle swaps between list (table) and card grid', () => {
-    renderAtRoute('/project/acme/roster')
+    renderAtRoute('/t/acme/o/hq/roster')
     // Default: table view. Cards container should be absent.
     expect(screen.queryByTestId('roster-cards')).toBeNull()
     const cardBtn = screen.getByLabelText('Card view')
@@ -288,7 +294,7 @@ describe('RosterPage', () => {
         },
       }))
     })
-    renderAtRoute('/project/acme/roster')
+    renderAtRoute('/t/acme/o/hq/roster')
     const chip = screen.getByRole('button', { name: /1\s+Pending equipment/i })
     act(() => { fireEvent.click(chip) })
     // Alice is pending → visible; Bob is not-needed → hidden.
@@ -297,7 +303,7 @@ describe('RosterPage', () => {
   })
 
   it('search clear button wipes the query and restores all rows', () => {
-    renderAtRoute('/project/acme/roster?q=alice')
+    renderAtRoute('/t/acme/o/hq/roster?q=alice')
     // Only Alice visible thanks to the seeded search query.
     expect(screen.getByText('Alice')).toBeTruthy()
     expect(screen.queryByText('Bob')).toBeNull()
@@ -308,7 +314,7 @@ describe('RosterPage', () => {
   })
 
   it('renders an active-filter pill per applied filter, each independently removable', () => {
-    renderAtRoute('/project/acme/roster?dept=Engineering&status=active')
+    renderAtRoute('/t/acme/o/hq/roster?dept=Engineering&status=active')
     // Seed the dept color map so the dept filter option is present.
     act(() => {
       useEmployeeStore.setState((s) => ({
@@ -326,7 +332,7 @@ describe('RosterPage', () => {
   })
 
   it('? keyboard shortcut toggles the cheat-sheet dialog', () => {
-    renderAtRoute('/project/acme/roster')
+    renderAtRoute('/t/acme/o/hq/roster')
     expect(screen.queryByRole('dialog', { name: /Keyboard shortcuts/i })).toBeNull()
     act(() => {
       fireEvent.keyDown(window, { key: '?' })
@@ -350,7 +356,7 @@ describe('RosterPage', () => {
         },
       }))
     })
-    renderAtRoute('/project/acme/roster')
+    renderAtRoute('/t/acme/o/hq/roster')
     // Click the Mon bar — only Alice should remain visible.
     const monBar = screen.getByLabelText('1 people in office on Mon')
     act(() => { fireEvent.click(monBar) })

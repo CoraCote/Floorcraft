@@ -1,5 +1,5 @@
-import { Outlet, useLocation } from 'react-router-dom'
-import { useEffect } from 'react'
+import { Outlet, useLocation, useParams } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { TopBar } from './TopBar'
 import { ContextMenu } from './ContextMenu'
 import { KeyboardShortcutsOverlay } from './KeyboardShortcutsOverlay'
@@ -8,6 +8,7 @@ import { ExportDialog } from './ExportDialog'
 import { NewProjectModal } from '../dashboard/NewProjectModal'
 import { ShareModal } from './ShareModal'
 import { EmployeeDirectory } from '../reports/EmployeeDirectory'
+import { ConflictModal } from './ConflictModal'
 import { useUIStore } from '../../stores/uiStore'
 import { useProjectStore } from '../../stores/projectStore'
 import { useElementsStore } from '../../stores/elementsStore'
@@ -16,30 +17,41 @@ import { useFloorStore } from '../../stores/floorStore'
 import { useEmployeeStore } from '../../stores/employeeStore'
 import { useInsightsStore } from '../../stores/insightsStore'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
-import { useAutoSave, loadAutoSave } from '../../hooks/useAutoSave'
+import { supabase } from '../../lib/supabase'
+import { loadOffice } from '../../lib/offices/officeRepository'
+import { useOfficeSync } from '../../lib/offices/useOfficeSync'
+import { isEmployeeStatus, type Employee } from '../../types/employee'
+import type { Project } from '../../types/project'
+
+type ShellState = 'loading' | 'not_found' | 'ready'
 
 /**
- * Shared shell for all project views (/project/:slug/*). Owns:
- *  - the top navigation bar (with MAP/ROSTER pills)
- *  - one-time project bootstrap from autosave (so a cold load on the
- *    roster route still works the same as on the map route)
- *  - global modals
- *  - session-level hooks: keyboard shortcuts, autosave
+ * Shared shell for all office views (`/t/:teamSlug/o/:officeSlug/*`).
+ * Owns:
  *
- * Individual views (MapView, RosterPage) render inside the `<Outlet />`
+ *  - Loading the office record from Supabase (team id → office row) and
+ *    hydrating the per-domain stores with its payload.
+ *  - Running `useOfficeSync` for debounced optimistic saves.
+ *  - The conflict modal, fed by `projectStore.conflict`.
+ *  - The TopBar, global modals, and session-level hooks (keyboard
+ *    shortcuts, browser tab title).
+ *
+ * Individual views (`MapView`, `RosterPage`) render inside `<Outlet />`
  * and bring only their own layout concerns.
  */
 export function ProjectShell() {
+  const { teamSlug, officeSlug } = useParams<{ teamSlug: string; officeSlug: string }>()
+  const [shellState, setShellState] = useState<ShellState>('loading')
+
   const employeeDirectoryOpen = useUIStore((s) => s.employeeDirectoryOpen)
   const currentProject = useProjectStore((s) => s.currentProject)
-  const createNewProject = useProjectStore((s) => s.createNewProject)
+  const conflict = useProjectStore((s) => s.conflict)
 
   useKeyboardShortcuts()
-  useAutoSave()
+  const { overwrite } = useOfficeSync()
 
   // Keep the browser tab title in sync with the project + view so users
-  // tabbing between multiple projects / roster vs. map can tell them apart
-  // without clicking. `Floocraft` remains the fallback brand name.
+  // tabbing between offices can tell them apart without clicking.
   const location = useLocation()
   useEffect(() => {
     const name = currentProject?.name?.trim() || 'Untitled Office Plan'
@@ -55,37 +67,106 @@ export function ProjectShell() {
     }
   }, [currentProject?.name, location.pathname])
 
+  // Supabase loader. The team lookup is a single-select by slug and the
+  // office is fetched via `loadOffice` so RLS policies apply uniformly.
+  // Either missing row collapses to a single "not found" state — we
+  // intentionally don't distinguish "team doesn't exist" from "office
+  // doesn't exist within team" in the UI, to avoid leaking team slugs
+  // the viewer has no access to.
   useEffect(() => {
-    if (!currentProject) {
-      const saved = loadAutoSave()
-      let activeProjectId: string | null = null
-      if (saved && saved.project) {
-        useProjectStore.getState().setCurrentProject(saved.project)
-        useElementsStore.getState().setElements(saved.elements || {})
-        if (saved.settings) useCanvasStore.getState().setSettings(saved.settings)
-        if (saved.employees) useEmployeeStore.getState().setEmployees(saved.employees)
-        if (saved.departmentColors) {
-          for (const [dept, color] of Object.entries(saved.departmentColors)) {
-            useEmployeeStore.getState().setDepartmentColor(dept, color)
-          }
-        }
-        if (saved.floors) useFloorStore.getState().setFloors(saved.floors)
-        if (saved.activeFloorId)
-          useFloorStore.getState().setActiveFloor(saved.activeFloorId)
-        activeProjectId = saved.project.id ?? null
-      } else {
-        const project = createNewProject()
-        if (project.floors?.length) {
-          useFloorStore.getState().setFloors(project.floors)
-          useFloorStore.getState().setActiveFloor(project.activeFloorId)
-        }
-        activeProjectId = project.id ?? null
+    let cancelled = false
+    async function load() {
+      if (!teamSlug || !officeSlug) return
+      setShellState('loading')
+      const { data: team } = await supabase.from('teams').select('id').eq('slug', teamSlug).single()
+      if (!team) {
+        if (!cancelled) setShellState('not_found')
+        return
       }
-      // Scope insight dismissals to this project so they don't bleed across
-      // projects that share the same browser localStorage.
-      useInsightsStore.getState().setCurrentProjectId(activeProjectId)
+      const teamId = (team as { id: string }).id
+      const office = await loadOffice(teamId, officeSlug)
+      if (!office) {
+        if (!cancelled) setShellState('not_found')
+        return
+      }
+      if (cancelled) return
+
+      // Hydrate stores. The payload shape mirrors the pre-Supabase
+      // autosave payload (same field names) so migrations stay minimal:
+      // back-fill employee status for legacy rows.
+      const p = office.payload as Record<string, unknown>
+      const rawEmployees = (p.employees ?? {}) as Record<string, Employee>
+      const migratedEmployees: Record<string, Employee> = {}
+      for (const [id, e] of Object.entries(rawEmployees)) {
+        migratedEmployees[id] = {
+          ...e,
+          status: isEmployeeStatus(e.status) ? e.status : 'active',
+        }
+      }
+      useElementsStore.setState({
+        elements: (p.elements ?? {}) as ReturnType<typeof useElementsStore.getState>['elements'],
+      })
+      useEmployeeStore.setState({
+        employees: migratedEmployees,
+        departmentColors: (p.departmentColors ?? {}) as Record<string, string>,
+      })
+      // `activeFloorId` is modelled as a required `string` in the store
+      // even though legacy payloads (and brand-new offices) may legitimately
+      // have nothing selected yet. Keep the store happy by coercing null
+      // or missing values to the empty string — every consumer already
+      // falls back to the first floor when the id doesn't match anything.
+      const rawActiveFloor = p.activeFloorId
+      useFloorStore.setState({
+        floors: (p.floors ?? []) as ReturnType<typeof useFloorStore.getState>['floors'],
+        activeFloorId: typeof rawActiveFloor === 'string' ? rawActiveFloor : '',
+      })
+      if (p.settings) {
+        useCanvasStore.setState({
+          settings: p.settings as ReturnType<typeof useCanvasStore.getState>['settings'],
+        })
+      }
+
+      // Seed the project facade so UI that reads `currentProject` (share
+      // modal link, TopBar name) keeps working. The full `Project` shape
+      // still predates the team/office split; we fill the minimum the UI
+      // actually reads at runtime.
+      //
+      // Critical: `teamId` and `isPrivate` must be present so the
+      // `ShareModal` can resolve permissions and show the correct initial
+      // visibility without a second round-trip. `listPermissions` needs
+      // the team id to enumerate team members; the visibility radio reads
+      // `isPrivate` to select the default option.
+      const projectFacade = {
+        id: office.id,
+        name: office.name,
+        slug: office.slug,
+        teamId: office.team_id,
+        isPrivate: office.is_private,
+      } as unknown as Project
+      useProjectStore.setState({
+        currentProject: projectFacade,
+        officeId: office.id,
+        loadedVersion: office.updated_at,
+        lastSavedAt: office.updated_at,
+        saveState: 'saved',
+        conflict: null,
+      })
+      useInsightsStore.getState().setCurrentProjectId(office.id)
+
+      setShellState('ready')
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [teamSlug, officeSlug])
+
+  if (shellState === 'loading') {
+    return <div className="p-6 text-sm text-gray-500">Loading office…</div>
+  }
+  if (shellState === 'not_found') {
+    return <div className="p-6 text-sm text-red-600">Office not found.</div>
+  }
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-gray-50">
@@ -98,6 +179,13 @@ export function ProjectShell() {
       <NewProjectModal />
       <ShareModal />
       {employeeDirectoryOpen && <EmployeeDirectory />}
+      {conflict && (
+        <ConflictModal
+          onReload={() => window.location.reload()}
+          onOverwrite={() => void overwrite()}
+          onCancel={() => useProjectStore.setState({ conflict: null })}
+        />
+      )}
     </div>
   )
 }

@@ -1,106 +1,37 @@
-import { useEffect, useRef } from 'react'
-import { useElementsStore } from '../stores/elementsStore'
-import { useEmployeeStore } from '../stores/employeeStore'
-import { useProjectStore } from '../stores/projectStore'
-import { useCanvasStore } from '../stores/canvasStore'
-import { useFloorStore } from '../stores/floorStore'
-import { isEmployeeStatus } from '../types/employee'
+import { useElementsStore } from '../../stores/elementsStore'
+import { useEmployeeStore } from '../../stores/employeeStore'
+import { useProjectStore } from '../../stores/projectStore'
+import { useCanvasStore } from '../../stores/canvasStore'
+import { useFloorStore } from '../../stores/floorStore'
+import { isEmployeeStatus } from '../../types/employee'
+
+/**
+ * Legacy-payload migration helpers.
+ *
+ * Before Phase 4 introduced Supabase-backed offices, Floocraft autosaved
+ * the user's current project to `localStorage` under a single key
+ * (`floocraft-autosave`). The autosave loop itself was removed in
+ * Phase 6 — it's a dead-end once every office has a server-side row —
+ * but the *migration* logic (adapting legacy payloads to current store
+ * shapes) lives on because:
+ *
+ *   1. Supabase-stored office payloads use the same shape as the old
+ *      autosave envelope. Any back-fill the old loader had to do also
+ *      applies to old offices that were synced to the server before the
+ *      field was introduced (e.g. `employees[*].status`).
+ *   2. The existing unit tests (`autoSaveSafety`, `wallAutoSave`,
+ *      `employeeMigration`) exercise subtle corner-cases — corrupt
+ *      JSON, arrays-where-objects-expected, back-filled wall bulges —
+ *      that we don't want to lose coverage on.
+ *
+ * So this module keeps `loadAutoSave` as a pure helper over
+ * `localStorage`, exporting it so those tests keep working; `ProjectShell`
+ * no longer calls it but may in the future if we decide to offer a
+ * "recover from last local autosave" escape hatch for users who lost
+ * their account.
+ */
 
 const SAVE_KEY = 'floocraft-autosave'
-const SAVE_DEBOUNCE = 2000
-
-export function useAutoSave() {
-  const elements = useElementsStore((s) => s.elements)
-  const employees = useEmployeeStore((s) => s.employees)
-  const departmentColors = useEmployeeStore((s) => s.departmentColors)
-  const project = useProjectStore((s) => s.currentProject)
-  const settings = useCanvasStore((s) => s.settings)
-  const setLastSavedAt = useProjectStore((s) => s.setLastSavedAt)
-  const setSaveState = useProjectStore((s) => s.setSaveState)
-  const floors = useFloorStore((s) => s.floors)
-  const activeFloorId = useFloorStore((s) => s.activeFloorId)
-
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-  // Skip the very first effect run — on mount, every tracked store is just
-  // its initial value (or the payload we just rehydrated in `loadAutoSave`).
-  // Writing it straight back would flash "Saving…" → "Saved" with no user
-  // change, and would overwrite the freshly-loaded timestamp.
-  //
-  // We compare against a snapshot of the initial dependencies rather than a
-  // "first run" boolean so React 18 StrictMode's mount → cleanup → remount
-  // pass doesn't get treated as a real change: the remount sees identical
-  // deps to the discarded first mount, so `allUnchanged` is true and we
-  // still short-circuit. Once any tracked store identity differs from the
-  // snapshot, the real save pipeline runs.
-  type InitialSnapshot = {
-    project: typeof project
-    elements: typeof elements
-    employees: typeof employees
-    departmentColors: typeof departmentColors
-    floors: typeof floors
-    activeFloorId: typeof activeFloorId
-    settings: typeof settings
-  }
-  const initialSnapshotRef = useRef<InitialSnapshot | null>(null)
-
-  // Save
-  useEffect(() => {
-    if (initialSnapshotRef.current === null) {
-      initialSnapshotRef.current = {
-        project,
-        elements,
-        employees,
-        departmentColors,
-        floors,
-        activeFloorId,
-        settings,
-      }
-      return
-    }
-    const snap = initialSnapshotRef.current
-    const allUnchanged =
-      snap.project === project &&
-      snap.elements === elements &&
-      snap.employees === employees &&
-      snap.departmentColors === departmentColors &&
-      snap.floors === floors &&
-      snap.activeFloorId === activeFloorId &&
-      snap.settings === settings
-    if (allUnchanged) return
-    if (timeoutRef.current) clearTimeout(timeoutRef.current)
-
-    timeoutRef.current = setTimeout(() => {
-      // Flip to 'saving' at the start so the TopBar indicator can show the
-      // in-flight state — even though localStorage is synchronous, this makes
-      // the transition visible to users (and to disk-bound future backends).
-      setSaveState('saving')
-      try {
-        const data = {
-          project,
-          elements,
-          employees,
-          departmentColors,
-          floors,
-          activeFloorId,
-          settings,
-          savedAt: new Date().toISOString(),
-        }
-        localStorage.setItem(SAVE_KEY, JSON.stringify(data))
-        setLastSavedAt(data.savedAt)
-        setSaveState('saved')
-      } catch (err) {
-        // localStorage can throw on quota exceeded or in private-mode Safari.
-        // Surface via saveState so the UI can prompt a manual retry.
-        if (typeof console !== 'undefined') console.error('Autosave failed:', err)
-        setSaveState('error')
-      }
-    }, SAVE_DEBOUNCE)
-
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current)
-    }
-  }, [elements, employees, departmentColors, floors, activeFloorId, project, settings, setLastSavedAt, setSaveState])
-}
 
 type AutoSavePayload = {
   project: ReturnType<typeof useProjectStore.getState>['currentProject']
@@ -215,8 +146,7 @@ export function loadAutoSave(): AutoSavePayload | null {
   // Important: only populate each field when it was *present* in the raw
   // payload. Synthesising `employees: {}` for a payload that legitimately
   // omitted the field (very early autosaves, or hand-crafted fixtures)
-  // would stomp on whatever the consumer has already seeded — the bootstrap
-  // in `ProjectShell` guards with `if (saved.employees)` and relies on
+  // would stomp on whatever the consumer has already seeded — leaving
   // `undefined` to mean "leave the store alone".
   const payload = parsed as AutoSavePayload
   const rawObj = parsed as Record<string, unknown>

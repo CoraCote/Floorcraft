@@ -1,0 +1,99 @@
+import { useState, type FormEvent } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { supabase } from '../../lib/supabase'
+
+export function SignupPage() {
+  const [params] = useSearchParams()
+  const invite = params.get('invite')
+  const presetEmail = params.get('email') ?? ''
+
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState(presetEmail)
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [done, setDone] = useState(false)
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault()
+    setBusy(true)
+    setError(null)
+    // Persist invite on the auth state so `/auth/verify` can consume it post-confirmation.
+    if (invite) sessionStorage.setItem('pending_invite_token', invite)
+
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { name } },
+    })
+    setBusy(false)
+    if (error) {
+      setError(error.message)
+      return
+    }
+    setDone(true)
+  }
+
+  if (done) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+        <div className="bg-white p-6 rounded-lg shadow max-w-sm space-y-3 text-sm">
+          <h1 className="text-lg font-semibold">Check your email</h1>
+          <p className="text-gray-600">
+            We sent a verification link to <b>{email}</b>. Click the link to finish setting up your account.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <form onSubmit={onSubmit} className="bg-white p-6 rounded-lg shadow w-full max-w-sm space-y-4">
+        <h1 className="text-lg font-semibold">Create your Floorcraft account</h1>
+        <label className="block text-sm">
+          <span className="block mb-1 text-gray-600">Name</span>
+          <input
+            required
+            className="w-full border rounded px-2 py-1.5"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </label>
+        <label className="block text-sm">
+          <span className="block mb-1 text-gray-600">Email</span>
+          <input
+            type="email"
+            required
+            readOnly={!!presetEmail}
+            className="w-full border rounded px-2 py-1.5 disabled:bg-gray-50"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </label>
+        <label className="block text-sm">
+          <span className="block mb-1 text-gray-600">Password</span>
+          <input
+            type="password"
+            required
+            minLength={8}
+            className="w-full border rounded px-2 py-1.5"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </label>
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        <button
+          type="submit"
+          disabled={busy}
+          className="w-full bg-blue-600 text-white rounded py-2 text-sm font-medium disabled:opacity-50"
+        >
+          {busy ? 'Creating…' : 'Create account'}
+        </button>
+        <div className="text-xs text-gray-500 text-center">
+          Already have an account? <Link to="/login" className="hover:underline">Log in</Link>
+        </div>
+      </form>
+    </div>
+  )
+}

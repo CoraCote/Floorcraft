@@ -1,62 +1,88 @@
-import { useNavigate } from 'react-router-dom'
-import { TEMPLATES } from '../../data/templates'
-import { useElementsStore } from '../../stores/elementsStore'
-import { useProjectStore } from '../../stores/projectStore'
-import { useCanvasStore } from '../../stores/canvasStore'
+import { Link } from 'react-router-dom'
+import { useSession } from '../../lib/auth/session'
+import { useMyTeams } from '../../lib/teams/useMyTeams'
 
+/**
+ * Public landing page at `/`.
+ *
+ * Phase 6 collapsed the "create an office right here from a template"
+ * flow — pre-auth, there's no server-side team to attach a new office
+ * to, so the CTA now routes into the auth funnel:
+ *
+ *   - Signed out → Sign up / Log in.
+ *   - Signed in, has teams → jump straight to the first team home.
+ *   - Signed in, no teams yet → /dashboard, which itself redirects to
+ *     /onboarding/team (via `DashboardRedirect` + `RequireTeam`).
+ *
+ * Templates are intentionally dropped from the hero for now. The
+ * product direction is to pick a template from the "New office" modal
+ * inside a team, not from a public page; keeping the old template tiles
+ * here would invite users into a flow that no longer exists.
+ */
 export function LandingPage() {
-  const navigate = useNavigate()
-  const setElements = useElementsStore((s) => s.setElements)
-  const createNewProject = useProjectStore((s) => s.createNewProject)
-  const setSettings = useCanvasStore((s) => s.setSettings)
+  const session = useSession()
+  const teams = useMyTeams()
 
-  const handleStart = (templateId: string) => {
-    const template = TEMPLATES.find((t) => t.id === templateId) || TEMPLATES[0]
-    const project = createNewProject(template.name === 'Blank Canvas' ? undefined : template.name)
-    setSettings(template.canvasSettings)
-
-    const elements = template.createElements()
-    const elementMap: Record<string, (typeof elements)[number]> = {}
-    for (const el of elements) elementMap[el.id] = el
-    setElements(elementMap)
-
-    navigate(`/project/${project.slug}`)
-  }
+  const primaryCta =
+    session.status === 'authenticated' ? (
+      <Link
+        to={teams && teams.length > 0 ? `/t/${teams[0].slug}` : '/dashboard'}
+        className="px-8 py-3 bg-blue-600 text-white text-lg font-medium rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all inline-block"
+      >
+        Open dashboard
+      </Link>
+    ) : (
+      <div className="flex gap-3 justify-center">
+        <Link
+          to="/signup"
+          className="px-6 py-3 bg-blue-600 text-white text-lg font-medium rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all"
+        >
+          Sign up
+        </Link>
+        <Link
+          to="/login"
+          className="px-6 py-3 border border-gray-300 rounded-xl font-medium text-gray-700 hover:bg-gray-50 text-lg"
+        >
+          Log in
+        </Link>
+      </div>
+    )
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Hero */}
       <div className="max-w-4xl mx-auto px-6 pt-20 pb-16 text-center">
-        <h1 className="text-5xl font-bold text-gray-900 mb-4">
-          Floocraft
-        </h1>
+        <h1 className="text-5xl font-bold text-gray-900 mb-4">Floocraft</h1>
         <p className="text-xl text-gray-500 mb-8 max-w-2xl mx-auto">
-          Plan your office layout, manage employee seating, and track space utilization.
-          All in one interactive tool.
+          Plan your office layout, manage employee seating, and track space
+          utilization. All in one interactive tool.
         </p>
-        <button
-          onClick={() => handleStart('blank')}
-          className="px-8 py-3 bg-blue-600 text-white text-lg font-medium rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all"
-        >
-          Create an Office Plan
-        </button>
+        {primaryCta}
       </div>
 
-      {/* Templates */}
+      {/* Value props — replaces the old template grid. These surface the
+          three things that differentiate Floocraft from a whiteboard +
+          spreadsheet workflow. */}
       <div className="max-w-4xl mx-auto px-6 pb-20">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">Or start from a template</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {TEMPLATES.filter((t) => t.id !== 'blank').map((template) => (
-            <button
-              key={template.id}
-              onClick={() => handleStart(template.id)}
-              className="flex flex-col p-5 rounded-xl border border-gray-200 hover:border-blue-400 hover:shadow-md transition-all text-left bg-white"
-            >
-              <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">{template.category}</span>
-              <span className="text-base font-semibold text-gray-800 mt-1">{template.name}</span>
-              <span className="text-sm text-gray-500 mt-1">{template.description}</span>
-            </button>
-          ))}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="rounded-xl border border-gray-200 p-5 bg-white">
+            <h2 className="font-semibold text-gray-800">Draw your space</h2>
+            <p className="text-sm text-gray-500 mt-1">
+              Walls, doors, rooms, furniture — snapping + measurements built in.
+            </p>
+          </div>
+          <div className="rounded-xl border border-gray-200 p-5 bg-white">
+            <h2 className="font-semibold text-gray-800">Seat the team</h2>
+            <p className="text-sm text-gray-500 mt-1">
+              Import a roster, assign seats, track who's in on which days.
+            </p>
+          </div>
+          <div className="rounded-xl border border-gray-200 p-5 bg-white">
+            <h2 className="font-semibold text-gray-800">Share with your org</h2>
+            <p className="text-sm text-gray-500 mt-1">
+              Invite teammates, mark views private, keep a live office plan.
+            </p>
+          </div>
         </div>
       </div>
 

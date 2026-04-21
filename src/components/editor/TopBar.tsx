@@ -12,13 +12,19 @@ import { useState, useRef, useEffect } from 'react'
 import { NavLink, useParams } from 'react-router-dom'
 import { useTemporalState } from '../../hooks/useTemporalState'
 import { formatRelative } from '../../lib/time'
+import { TeamSwitcher } from '../team/TeamSwitcher'
+import { UserMenu } from '../team/UserMenu'
 
 export function TopBar() {
   const project = useProjectStore((s) => s.currentProject)
   const updateName = useProjectStore((s) => s.updateProjectName)
   const saveState = useProjectStore((s) => s.saveState)
   const lastSavedAt = useProjectStore((s) => s.lastSavedAt)
-  const { slug } = useParams<{ slug: string }>()
+  // Post Phase 6: the router exclusively mounts the editor at
+  // `/t/:teamSlug/o/:officeSlug/*`, so we read the new params directly.
+  // Any legacy `/project/:slug/*` URL redirects to /dashboard before
+  // hitting this component.
+  const { teamSlug, officeSlug } = useParams<{ teamSlug: string; officeSlug: string }>()
   const { stageScale, zoomIn, zoomOut, resetZoom } = useCanvasStore(useShallow((s) => ({ stageScale: s.stageScale, zoomIn: s.zoomIn, zoomOut: s.zoomOut, resetZoom: s.resetZoom })))
   const { rightSidebarOpen, setRightSidebarOpen, setShareModalOpen, setExportDialogOpen, setPresentationMode, presentationMode, selectedIds, clearSelection } = useUIStore(useShallow((s) => ({ rightSidebarOpen: s.rightSidebarOpen, setRightSidebarOpen: s.setRightSidebarOpen, setShareModalOpen: s.setShareModalOpen, setExportDialogOpen: s.setExportDialogOpen, setPresentationMode: s.setPresentationMode, presentationMode: s.presentationMode, selectedIds: s.selectedIds, clearSelection: s.clearSelection })))
   const undo = useElementsStore.temporal.getState().undo
@@ -83,6 +89,12 @@ export function TopBar() {
 
   return (
     <div className="h-14 bg-white border-b border-gray-200 flex items-center px-4 gap-3 flex-shrink-0">
+      {/* Team switcher sits at the far left so users can jump between
+          offices in different teams without leaving the editor. */}
+      <TeamSwitcher currentSlug={teamSlug} />
+
+      <div className="w-px h-6 bg-gray-200" />
+
       <div className="flex-shrink-0">
         {editing ? (
           <input
@@ -111,13 +123,15 @@ export function TopBar() {
 
       <div className="w-px h-6 bg-gray-200" />
 
-      {/* MAP / ROSTER view toggle — React Router owns the active state so we
-          don't need UI-store bookkeeping. Hidden on routes without a slug
-          (shouldn't happen, but keeps the component resilient). */}
-      {slug && (
+      {/* MAP / ROSTER view toggle. React Router owns the active state so
+          we don't need UI-store bookkeeping. Rendered only when the route
+          has both params (which is always the case under /t/:teamSlug/o/
+          :officeSlug/*, but the guard keeps this component resilient if
+          it's ever mounted elsewhere). */}
+      {teamSlug && officeSlug && (
         <nav aria-label="Project views" className="flex items-center bg-gray-100 rounded-md p-0.5">
           <NavLink
-            to={`/project/${slug}/map`}
+            to={`/t/${teamSlug}/o/${officeSlug}/map`}
             className={({ isActive }) =>
               `px-3 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
                 isActive
@@ -129,7 +143,7 @@ export function TopBar() {
             Map
           </NavLink>
           <NavLink
-            to={`/project/${slug}/roster`}
+            to={`/t/${teamSlug}/o/${officeSlug}/roster`}
             className={({ isActive }) =>
               `px-3 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
                 isActive
@@ -255,6 +269,12 @@ export function TopBar() {
         <Download size={14} />
         Export
       </button>
+
+      <div className="w-px h-6 bg-gray-200" />
+
+      {/* Account dropdown — rightmost so it's the one element users
+          always know where to find. */}
+      <UserMenu />
     </div>
   )
 }
@@ -268,7 +288,7 @@ function SaveIndicator({
 }) {
   if (saveState === 'saving') {
     return (
-      <span className="flex items-center gap-1 text-xs text-gray-500" title="Saving to local storage">
+      <span className="flex items-center gap-1 text-xs text-gray-500" title="Saving to Supabase">
         <UploadCloud size={14} className="animate-pulse" />
         Saving…
       </span>
@@ -278,7 +298,7 @@ function SaveIndicator({
     return (
       <span
         className="flex items-center gap-1 text-xs text-red-600"
-        title="Autosave failed — check browser storage quota"
+        title="Save failed — we'll retry; check your connection if this persists"
       >
         <CloudOff size={14} />
         Save failed
@@ -288,7 +308,7 @@ function SaveIndicator({
   const relative = formatRelative(lastSavedAt)
   if (!relative) return null
   return (
-    <span className="flex items-center gap-1 text-xs text-gray-500" title={`Autosaved at ${lastSavedAt}`}>
+    <span className="flex items-center gap-1 text-xs text-gray-500" title={`Saved at ${lastSavedAt}`}>
       <Cloud size={14} />
       Saved {relative}
     </span>

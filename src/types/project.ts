@@ -12,7 +12,6 @@ export interface Project {
   ownerId: string | null
   name: string
   slug: string
-  sharePermission: 'private' | 'view' | 'comment' | 'edit'
   buildingName: string | null
   floors: Floor[]
   activeFloorId: string

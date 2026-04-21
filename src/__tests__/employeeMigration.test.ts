@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest'
-import { loadAutoSave } from '../hooks/useAutoSave'
+import { loadAutoSave } from '../lib/offices/loadFromLegacyPayload'
 import type { Employee } from '../types/employee'
 
 const SAVE_KEY = 'floocraft-autosave'

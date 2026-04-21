@@ -25,3 +25,15 @@ dist-ssr
 
 # Superpowers
 .superpowers/
+
+# Supabase local
+supabase/.branches
+supabase/.temp
+.env
+.env.local
+
+# Netlify
+.netlify/
+
+# Claude
+.claude/

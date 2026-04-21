@@ -121,7 +121,9 @@ export function RosterPage() {
   const setCsvImportOpen = useUIStore((s) => s.setCsvImportOpen)
 
   const navigate = useNavigate()
-  const { slug } = useParams<{ slug: string }>()
+  // Post Phase 6: the roster always lives under
+  // `/t/:teamSlug/o/:officeSlug/roster`, so both params are present.
+  const { teamSlug, officeSlug } = useParams<{ teamSlug: string; officeSlug: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const q = searchParams.get('q') ?? ''
@@ -455,7 +457,7 @@ export function RosterPage() {
 
   const jumpToSeat = useCallback(
     (emp: Employee) => {
-      if (!slug) return
+      if (!teamSlug || !officeSlug) return
       // Re-read the employee in case the row was edited between click and
       // here (unlikely but cheap). Bail out silently if floor/seat got
       // cleared or the floor has since been deleted.
@@ -465,9 +467,11 @@ export function RosterPage() {
         : null
       if (floor) switchToFloor(floor.id)
       if (fresh.seatId) useUIStore.getState().setSelectedIds([fresh.seatId])
-      navigate(`/project/${slug}/map`)
+      if (teamSlug && officeSlug) {
+        navigate(`/t/${teamSlug}/o/${officeSlug}/map`)
+      }
     },
-    [navigate, slug],
+    [navigate, teamSlug, officeSlug],
   )
 
   const handleBulkDelete = () => {
