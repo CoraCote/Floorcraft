@@ -3,7 +3,10 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   AlertCircle,
   ArrowUpDown,
+  Check,
+  Clipboard,
   Download,
+  Keyboard,
   LayoutGrid,
   List,
   Mail,
@@ -137,12 +140,18 @@ export function RosterPage() {
   // other filters rather than replacing them — so you can still narrow a
   // preset to a specific department.
   const presetFilter = searchParams.get('preset') ?? ''
+  // `equip=pending` narrows to people whose laptop/monitor/etc. still need
+  // provisioning — the single most common "what do I still owe today?"
+  // question for office ops. We don't split each equipment status into its
+  // own axis because provisioned/not-needed are the baseline; pending is
+  // the only one that represents actionable work.
+  const equipFilter = searchParams.get('equip') ?? ''
   // `view` controls layout (list vs. cards) and is deliberately kept out of
   // `hasAnyFilter` — switching to cards doesn't hide people, so the "Clear
   // filters" button shouldn't appear just because the user picked cards.
   const viewMode: ViewMode = searchParams.get('view') === 'cards' ? 'cards' : 'list'
   const hasAnyFilter = Boolean(
-    q || deptFilter || statusFilter || floorFilter || seatFilter || dayFilter || presetFilter,
+    q || deptFilter || statusFilter || floorFilter || seatFilter || dayFilter || presetFilter || equipFilter,
   )
 
   const setFilter = useCallback(
@@ -181,6 +190,7 @@ export function RosterPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [drawerId, setDrawerId] = useState<string | null>(null)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const [helpOpen, setHelpOpen] = useState(false)
 
   const searchInputRef = useRef<HTMLInputElement>(null)
 
@@ -232,8 +242,11 @@ export function RosterPage() {
     if (presetFilter) {
       list = list.filter((e) => matchesPreset(e, presetFilter))
     }
+    if (equipFilter === 'pending') {
+      list = list.filter((e) => e.equipmentStatus === 'pending')
+    }
     return list
-  }, [allEmployees, q, deptFilter, statusFilter, floorFilter, seatFilter, dayFilter, presetFilter])
+  }, [allEmployees, q, deptFilter, statusFilter, floorFilter, seatFilter, dayFilter, presetFilter, equipFilter])
 
   // Aggregate counts for the stats bar — derived from the *unfiltered* set
   // so the chips represent "the whole company" and don't flicker as filters
@@ -243,6 +256,7 @@ export function RosterPage() {
     let active = 0
     let onLeave = 0
     let unassigned = 0
+    let equipmentPending = 0
     // Per-weekday headcount for the mini capacity chart under the stats
     // chips. Stored as an object keyed by the same Mon-Fri labels the
     // drawer persists to, so no mapping gymnastics needed elsewhere.
@@ -251,13 +265,23 @@ export function RosterPage() {
       if (e.status === 'active') active++
       if (e.status === 'on-leave') onLeave++
       if (!e.seatId) unassigned++
+      if (e.equipmentStatus === 'pending') equipmentPending++
       for (const d of e.officeDays) {
         if (d in perDay) perDay[d] += 1
       }
     }
     const inToday = perDay[todayLabel] ?? 0
     const peak = Math.max(1, ...Object.values(perDay))
-    return { total: allEmployees.length, active, onLeave, unassigned, inToday, perDay, peak }
+    return {
+      total: allEmployees.length,
+      active,
+      onLeave,
+      unassigned,
+      equipmentPending,
+      inToday,
+      perDay,
+      peak,
+    }
   }, [allEmployees, todayLabel])
 
   // Map of duplicate emails → *all* employee ids that share them. We
@@ -374,6 +398,15 @@ export function RosterPage() {
       if ((e.key === 'n' || e.key === 'N') && !isEditing && !e.metaKey && !e.ctrlKey && !e.altKey) {
         e.preventDefault()
         handleAdd()
+        return
+      }
+      // `?` toggles the cheat-sheet. `?` is always shift+/ on US layouts,
+      // which is why we don't also gate on Shift — it'll naturally only
+      // fire when the user meant it. Layouts that put `?` elsewhere still
+      // work because we key on the resolved character, not the code.
+      if (e.key === '?' && !isEditing && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault()
+        setHelpOpen((cur) => !cur)
       }
     }
     window.addEventListener('keydown', handler)
@@ -491,7 +524,7 @@ export function RosterPage() {
         stats={stats}
         todayLabel={todayLabel}
         isWorkday={isWorkday}
-        active={{ statusFilter, seatFilter, dayFilter }}
+        active={{ statusFilter, seatFilter, dayFilter, equipFilter }}
         onSetFilter={setFilter}
         onClearAll={clearAllFilters}
       />
@@ -507,24 +540,42 @@ export function RosterPage() {
 
       {/* Filters bar */}
       <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-200 flex-shrink-0">
-        <input
-          ref={searchInputRef}
-          type="text"
-          placeholder="Search name, email, dept, team, title, tag…  (press /)"
-          value={q}
-          onChange={(e) => setFilter('q', e.target.value)}
-          onKeyDown={(e) => {
-            // Escape while in search = clear the query AND return focus to
-            // the page body, so `/` works again without a second press.
-            if (e.key === 'Escape' && q) {
-              e.preventDefault()
-              setFilter('q', '')
-            } else if (e.key === 'Escape') {
-              ;(e.target as HTMLInputElement).blur()
-            }
-          }}
-          className="flex-1 max-w-md px-3 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        <div className="relative flex-1 max-w-md">
+          <input
+            ref={searchInputRef}
+            type="text"
+            placeholder="Search name, email, dept, team, title, tag…  (press /)"
+            value={q}
+            onChange={(e) => setFilter('q', e.target.value)}
+            onKeyDown={(e) => {
+              // Escape while in search = clear the query AND return focus
+              // to the page body, so `/` works again without a second press.
+              if (e.key === 'Escape' && q) {
+                e.preventDefault()
+                setFilter('q', '')
+              } else if (e.key === 'Escape') {
+                ;(e.target as HTMLInputElement).blur()
+              }
+            }}
+            className={`w-full px-3 py-1.5 ${q ? 'pr-8' : ''} text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500`}
+          />
+          {q && (
+            <button
+              type="button"
+              onClick={() => {
+                // Clearing returns focus so `/` keeps working and users can
+                // start typing a new query immediately.
+                setFilter('q', '')
+                searchInputRef.current?.focus()
+              }}
+              className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700"
+              aria-label="Clear search"
+              title="Clear search (Esc)"
+            >
+              <X size={12} />
+            </button>
+          )}
+        </div>
 
         <select
           value={deptFilter}
@@ -658,7 +709,47 @@ export function RosterPage() {
         >
           <Download size={14} /> Export CSV
         </button>
+        <button
+          onClick={() => setHelpOpen(true)}
+          className="flex items-center justify-center p-1.5 text-gray-500 hover:bg-gray-100 border border-gray-200 rounded"
+          aria-label="Show keyboard shortcuts"
+          title="Keyboard shortcuts (?)"
+        >
+          <Keyboard size={14} />
+        </button>
       </div>
+
+      {/*
+        Active-filter pills. When filters are spread across four dropdowns
+        + a stats chip + a preset picker, it's hard to know "why am I only
+        seeing these 3 rows?" at a glance. A single row of removable
+        chips makes the current narrowing explicit and gives one-click
+        removal next to every label.
+      */}
+      <ActiveFilterPills
+        pills={[
+          q ? { key: 'q', label: `Search: ${q}` } : null,
+          deptFilter ? { key: 'dept', label: `Dept: ${deptFilter}` } : null,
+          statusFilter ? { key: 'status', label: `Status: ${statusFilter}` } : null,
+          floorFilter
+            ? {
+                key: 'floor',
+                label: `Floor: ${floorMap[floorFilter] ?? floorFilter}`,
+              }
+            : null,
+          seatFilter ? { key: 'seat', label: `Seat: ${seatFilter}` } : null,
+          dayFilter ? { key: 'day', label: `Day: ${dayFilter}` } : null,
+          equipFilter ? { key: 'equip', label: `Equipment: ${equipFilter}` } : null,
+          presetFilter
+            ? {
+                key: 'preset',
+                label: `Preset: ${ROSTER_PRESETS.find((p) => p.id === presetFilter)?.label ?? presetFilter}`,
+              }
+            : null,
+        ].filter((p): p is { key: string; label: string } => p !== null)}
+        onRemove={(key) => setFilter(key, '')}
+        onClearAll={clearAllFilters}
+      />
 
       {/* Bulk-action bar — only visible with selection */}
       {selected.size > 0 && (
@@ -1070,6 +1161,8 @@ export function RosterPage() {
           onClose={() => setDrawerId(null)}
         />
       )}
+
+      {helpOpen && <ShortcutsCheatSheet onClose={() => setHelpOpen(false)} />}
     </div>
   )
 }
@@ -1139,6 +1232,65 @@ function InlineText({
 }
 
 /**
+ * Removable pills reflecting every currently-applied filter. Only renders
+ * when at least one filter is active so it stays out of the way otherwise.
+ * Each pill maps to a single URL param — clicking × on a pill calls
+ * `onRemove(key)`, which the parent wires to `setFilter(key, '')`.
+ *
+ * Kept deliberately flat (one row, single-line) so the bar reads like a
+ * breadcrumb: the user sees exactly what narrowed the list and can drop
+ * any one condition without hunting for the original control.
+ */
+function ActiveFilterPills({
+  pills,
+  onRemove,
+  onClearAll,
+}: {
+  pills: Array<{ key: string; label: string }>
+  onRemove: (key: string) => void
+  onClearAll: () => void
+}) {
+  if (pills.length === 0) return null
+  return (
+    <div
+      className="flex items-center gap-1.5 px-5 py-1.5 border-b border-gray-100 bg-blue-50/40 flex-shrink-0 overflow-x-auto whitespace-nowrap"
+      aria-label="Active filters"
+    >
+      <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider flex-shrink-0">
+        Filtered by
+      </span>
+      {pills.map((p) => (
+        <span
+          key={p.key}
+          className="inline-flex items-center gap-1 pl-2 pr-0.5 py-0.5 bg-white border border-blue-200 rounded-full text-xs text-blue-800"
+        >
+          {p.label}
+          <button
+            type="button"
+            onClick={() => onRemove(p.key)}
+            className="p-0.5 rounded-full hover:bg-blue-100 text-blue-500 hover:text-blue-900"
+            aria-label={`Remove filter: ${p.label}`}
+            title={`Remove filter: ${p.label}`}
+          >
+            <X size={10} />
+          </button>
+        </span>
+      ))}
+      {pills.length > 1 && (
+        <button
+          type="button"
+          onClick={onClearAll}
+          className="ml-1 text-[11px] text-gray-500 hover:text-gray-800 underline decoration-dotted"
+          title="Clear all filters"
+        >
+          Clear all
+        </button>
+      )}
+    </div>
+  )
+}
+
+/**
  * At-a-glance office-state chips above the filter bar. Each chip is a
  * button — clicking one flips the relevant URL-synced filter on/off so
  * the bar acts like a dashboard + navigation widget together.
@@ -1156,10 +1308,17 @@ function StatsBar({
   onSetFilter,
   onClearAll,
 }: {
-  stats: { total: number; active: number; onLeave: number; unassigned: number; inToday: number }
+  stats: {
+    total: number
+    active: number
+    onLeave: number
+    unassigned: number
+    equipmentPending: number
+    inToday: number
+  }
   todayLabel: string
   isWorkday: boolean
-  active: { statusFilter: string; seatFilter: string; dayFilter: string }
+  active: { statusFilter: string; seatFilter: string; dayFilter: string; equipFilter: string }
   onSetFilter: (key: string, value: string) => void
   onClearAll: () => void
 }) {
@@ -1197,7 +1356,10 @@ function StatsBar({
   }
 
   const noChipFilter =
-    !active.statusFilter && !active.seatFilter && !active.dayFilter
+    !active.statusFilter &&
+    !active.seatFilter &&
+    !active.dayFilter &&
+    !active.equipFilter
 
   return (
     <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-100 bg-gray-50/60 flex-shrink-0 overflow-x-auto whitespace-nowrap">
@@ -1224,6 +1386,21 @@ function StatsBar({
         'red',
         'People without a seat',
       )}
+      {/*
+        Render the equipment-pending chip only when someone actually needs
+        provisioning — zero-count chips clutter the bar and risk reading
+        like false alarms ("0 Pending equipment — is that a bug?").
+      */}
+      {stats.equipmentPending > 0 &&
+        chip(
+          'Pending equipment',
+          stats.equipmentPending,
+          active.equipFilter === 'pending',
+          () =>
+            onSetFilter('equip', active.equipFilter === 'pending' ? '' : 'pending'),
+          'amber',
+          'People whose equipment is marked pending',
+        )}
       {isWorkday && chip(
         `In ${todayLabel}`,
         stats.inToday,
@@ -1605,6 +1782,36 @@ function RowActionMenu({
   // filling in email unlocks the action.
   const hasEmail = Boolean(employee.email?.trim())
   const mailtoHref = hasEmail ? buildInviteMailto(employee) : undefined
+  // Transient "Copied!" state for the copy-email action. We don't reset it
+  // via timer because the menu itself is ephemeral — closes as soon as the
+  // user clicks anywhere else, which unmounts and resets this state.
+  const [copied, setCopied] = useState(false)
+  const handleCopyEmail = async () => {
+    if (!hasEmail) return
+    try {
+      await navigator.clipboard.writeText(employee.email)
+      setCopied(true)
+    } catch {
+      // Clipboard API can fail in insecure contexts (http://) or without
+      // focus. Fall back to a transient textarea + execCommand so the
+      // action still succeeds on a LAN / localhost setup.
+      const ta = document.createElement('textarea')
+      ta.value = employee.email
+      ta.style.position = 'fixed'
+      ta.style.opacity = '0'
+      document.body.appendChild(ta)
+      ta.select()
+      try {
+        document.execCommand('copy')
+        setCopied(true)
+      } catch {
+        // If both paths fail, leave the menu open so the user notices —
+        // but don't throw; the row-action menu has no error surface.
+      } finally {
+        document.body.removeChild(ta)
+      }
+    }
+  }
   return (
     <>
       {/*
@@ -1626,6 +1833,30 @@ function RowActionMenu({
         >
           Edit full details
         </button>
+        {hasEmail ? (
+          <button
+            onClick={handleCopyEmail}
+            className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
+            title={`Copy ${employee.email} to clipboard`}
+          >
+            {copied ? (
+              <>
+                <Check size={12} className="text-emerald-600" /> Copied!
+              </>
+            ) : (
+              <>
+                <Clipboard size={12} /> Copy email
+              </>
+            )}
+          </button>
+        ) : (
+          <button
+            disabled
+            className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-400 cursor-not-allowed"
+          >
+            <Clipboard size={12} /> Copy email
+          </button>
+        )}
         {hasEmail ? (
           <a
             href={mailtoHref}
@@ -1659,6 +1890,69 @@ function RowActionMenu({
         </button>
       </div>
     </>
+  )
+}
+
+/**
+ * Small centered modal listing the page's keyboard shortcuts. We reuse
+ * the drawer-style backdrop trick (backdrop button catches outside
+ * clicks + Escape wires through the window handler below) so no focus
+ * trap is required — this is read-only content.
+ */
+function ShortcutsCheatSheet({ onClose }: { onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+  const shortcuts: Array<[string, string]> = [
+    ['/', 'Focus search'],
+    ['N', 'Add a new person'],
+    ['?', 'Show / hide this cheat sheet'],
+    ['Esc', 'Clear search or close dialog'],
+    ['Double-click a row', 'Open the detail drawer'],
+    ['Shift-click a stats chip', 'Narrow to that axis'],
+  ]
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Keyboard shortcuts"
+    >
+      <button
+        className="absolute inset-0 cursor-default"
+        onClick={onClose}
+        aria-label="Close shortcuts"
+        tabIndex={-1}
+      />
+      <div className="relative w-80 max-w-[90vw] bg-white rounded-lg shadow-xl border border-gray-200 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-gray-800">Keyboard shortcuts</h2>
+          <button
+            onClick={onClose}
+            className="p-1 rounded hover:bg-gray-100 text-gray-500"
+            aria-label="Close"
+          >
+            <X size={14} />
+          </button>
+        </div>
+        <dl className="space-y-1.5 text-xs">
+          {shortcuts.map(([key, desc]) => (
+            <div key={key} className="flex items-center justify-between gap-3">
+              <dt className="text-gray-600">{desc}</dt>
+              <dd>
+                <kbd className="px-1.5 py-0.5 text-[11px] font-mono font-semibold text-gray-700 bg-gray-100 border border-gray-200 rounded">
+                  {key}
+                </kbd>
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </div>
   )
 }
 

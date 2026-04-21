@@ -279,6 +279,66 @@ describe('RosterPage', () => {
     expect(screen.getByText('Bob')).toBeTruthy()
   })
 
+  it('surfaces an equipment-pending chip when someone is pending and filters on click', () => {
+    act(() => {
+      useEmployeeStore.setState((s) => ({
+        employees: {
+          ...s.employees,
+          e1: { ...s.employees.e1, equipmentStatus: 'pending' },
+        },
+      }))
+    })
+    renderAtRoute('/project/acme/roster')
+    const chip = screen.getByRole('button', { name: /1\s+Pending equipment/i })
+    act(() => { fireEvent.click(chip) })
+    // Alice is pending → visible; Bob is not-needed → hidden.
+    expect(screen.getByText('Alice')).toBeTruthy()
+    expect(screen.queryByText('Bob')).toBeNull()
+  })
+
+  it('search clear button wipes the query and restores all rows', () => {
+    renderAtRoute('/project/acme/roster?q=alice')
+    // Only Alice visible thanks to the seeded search query.
+    expect(screen.getByText('Alice')).toBeTruthy()
+    expect(screen.queryByText('Bob')).toBeNull()
+    const clearBtn = screen.getByLabelText('Clear search')
+    act(() => { fireEvent.click(clearBtn) })
+    expect(screen.getByText('Alice')).toBeTruthy()
+    expect(screen.getByText('Bob')).toBeTruthy()
+  })
+
+  it('renders an active-filter pill per applied filter, each independently removable', () => {
+    renderAtRoute('/project/acme/roster?dept=Engineering&status=active')
+    // Seed the dept color map so the dept filter option is present.
+    act(() => {
+      useEmployeeStore.setState((s) => ({
+        departmentColors: { ...s.departmentColors, Engineering: '#000' },
+      }))
+    })
+    const deptPill = screen.getByLabelText(/Remove filter: Dept: Engineering/i)
+    const statusPill = screen.getByLabelText(/Remove filter: Status: active/i)
+    expect(deptPill).toBeTruthy()
+    expect(statusPill).toBeTruthy()
+    // Removing just the status pill should preserve the dept pill.
+    act(() => { fireEvent.click(statusPill) })
+    expect(screen.getByLabelText(/Remove filter: Dept: Engineering/i)).toBeTruthy()
+    expect(screen.queryByLabelText(/Remove filter: Status: active/i)).toBeNull()
+  })
+
+  it('? keyboard shortcut toggles the cheat-sheet dialog', () => {
+    renderAtRoute('/project/acme/roster')
+    expect(screen.queryByRole('dialog', { name: /Keyboard shortcuts/i })).toBeNull()
+    act(() => {
+      fireEvent.keyDown(window, { key: '?' })
+    })
+    expect(screen.getByRole('dialog', { name: /Keyboard shortcuts/i })).toBeTruthy()
+    // Press Escape inside the dialog to close it.
+    act(() => {
+      fireEvent.keyDown(window, { key: 'Escape' })
+    })
+    expect(screen.queryByRole('dialog', { name: /Keyboard shortcuts/i })).toBeNull()
+  })
+
   it('weekly-capacity bar click filters to that day', () => {
     // Put Alice in the office Mon + Tue, Bob only Tue.
     act(() => {
