@@ -45,7 +45,7 @@ interface ProjectState {
   createNewProject: (name?: string) => Project
 }
 
-export const useProjectStore = create<ProjectState>((set, _get) => ({
+export const useProjectStore = create<ProjectState>((set) => ({
   currentProject: null,
   isDirty: false,
   lastSavedAt: null,
