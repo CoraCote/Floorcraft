@@ -12,7 +12,7 @@ vi.mock('../lib/offices/officeRepository', () => ({
   createOffice: (...a: unknown[]) => createOffice(...a),
 }))
 const { fromMock } = vi.hoisted(() => ({
-  fromMock: vi.fn((_table: string) => ({
+  fromMock: vi.fn(() => ({
     select: () => ({
       eq: () => ({
         single: () => Promise.resolve({ data: { id: 't1', slug: 'acme', name: 'Acme' }, error: null }),
