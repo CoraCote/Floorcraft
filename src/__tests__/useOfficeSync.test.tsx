@@ -10,22 +10,31 @@ vi.mock('../lib/offices/officeRepository', () => ({
   saveOffice: (...a: unknown[]) => saveOffice(...a),
   saveOfficeForce: (...a: unknown[]) => saveOfficeForce(...a),
 }))
+
+type ElementsState = { elements: Record<string, unknown> }
 vi.mock('../stores/elementsStore', () => ({
-  useElementsStore: ((sel: ((s: { elements: Record<string, unknown> }) => unknown) | undefined) =>
-    sel ? sel({ elements: {} }) : { elements: {} }) as ((sel?: ((s: { elements: Record<string, unknown> }) => unknown)) => unknown),
+  useElementsStore: (sel?: (s: ElementsState) => unknown) =>
+    sel ? sel({ elements: {} }) : { elements: {} },
 }))
+
+type EmployeeState = { employees: Record<string, unknown>; departmentColors: Record<string, unknown> }
 vi.mock('../stores/employeeStore', () => ({
-  useEmployeeStore: ((sel: ((s: { employees: Record<string, unknown>; departmentColors: Record<string, unknown> }) => unknown) | undefined) =>
-    sel ? sel({ employees: {}, departmentColors: {} }) : { employees: {}, departmentColors: {} }) as ((sel?: ((s: { employees: Record<string, unknown>; departmentColors: Record<string, unknown> }) => unknown)) => unknown),
+  useEmployeeStore: (sel?: (s: EmployeeState) => unknown) =>
+    sel ? sel({ employees: {}, departmentColors: {} }) : { employees: {}, departmentColors: {} },
 }))
+
+type FloorState = { floors: unknown[]; activeFloorId: null }
 vi.mock('../stores/floorStore', () => ({
-  useFloorStore: ((sel: ((s: { floors: unknown[]; activeFloorId: null }) => unknown) | undefined) =>
-    sel ? sel({ floors: [], activeFloorId: null }) : { floors: [], activeFloorId: null }) as ((sel?: ((s: { floors: unknown[]; activeFloorId: null }) => unknown)) => unknown),
+  useFloorStore: (sel?: (s: FloorState) => unknown) =>
+    sel ? sel({ floors: [], activeFloorId: null }) : { floors: [], activeFloorId: null },
 }))
+
+type CanvasState = { settings: Record<string, unknown> }
 vi.mock('../stores/canvasStore', () => ({
-  useCanvasStore: ((sel: ((s: { settings: Record<string, unknown> }) => unknown) | undefined) =>
-    sel ? sel({ settings: {} }) : { settings: {} }) as ((sel?: ((s: { settings: Record<string, unknown> }) => unknown)) => unknown),
+  useCanvasStore: (sel?: (s: CanvasState) => unknown) =>
+    sel ? sel({ settings: {} }) : { settings: {} },
 }))
+
 vi.mock('../stores/projectStore', () => {
   const state: Record<string, unknown> = {
     saveState: 'idle',
@@ -43,9 +52,12 @@ vi.mock('../stores/projectStore', () => {
       state.lastSavedAt = at
     },
   }
-  const hook = (sel: ((s: Record<string, unknown>) => unknown) | undefined) => (sel ? sel(state) : state)
-  ;(hook as Record<string, unknown>).setState = (u: ((s: Record<string, unknown>) => Record<string, unknown>) | Record<string, unknown>) => Object.assign(state, typeof u === 'function' ? u(state) : u)
-  ;(hook as Record<string, unknown>).getState = () => state
+  function hook(sel?: (s: Record<string, unknown>) => unknown) {
+    return sel ? sel(state) : state
+  }
+  hook.setState = (u: ((s: Record<string, unknown>) => Record<string, unknown>) | Record<string, unknown>) =>
+    Object.assign(state, typeof u === 'function' ? u(state) : u)
+  hook.getState = () => state
   return { useProjectStore: hook }
 })
 
