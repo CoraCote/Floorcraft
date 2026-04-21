@@ -42,8 +42,9 @@ serve(async (req) => {
   }
 
   const inviteUrl = `${APP_URL}/invite/${token}`
-  const teamName = (invite as any).teams?.name ?? 'your team'
-  const inviterName = (invite as any).profiles?.name ?? 'A teammate'
+  const inviteWithRelations = invite as unknown as { teams?: { name?: string }; profiles?: { name?: string } }
+  const teamName = inviteWithRelations.teams?.name ?? 'your team'
+  const inviterName = inviteWithRelations.profiles?.name ?? 'A teammate'
 
   const html = `
     <div style="font-family: system-ui, sans-serif; max-width: 480px; margin: 0 auto;">
