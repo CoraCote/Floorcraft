@@ -16,10 +16,10 @@ vi.mock('../lib/offices/permissionsRepository', () => ({
   removePermission: (...a: unknown[]) => removePermission(...a),
 }))
 vi.mock('../stores/uiStore', () => ({
-  useUIStore: (sel: any) => sel({ shareModalOpen: true, setShareModalOpen: () => {} }),
+  useUIStore: (sel: (s: { shareModalOpen: boolean; setShareModalOpen: () => void }) => unknown) => sel({ shareModalOpen: true, setShareModalOpen: () => {} }),
 }))
 vi.mock('../stores/projectStore', () => ({
-  useProjectStore: (sel: any) =>
+  useProjectStore: (sel: (s: { officeId: string; currentProject: { id: string; slug: string; isPrivate: boolean; teamId: string } }) => unknown) =>
     sel({
       officeId: 'o1',
       currentProject: { id: 'o1', slug: 'hq', isPrivate: false, teamId: 't1' },
