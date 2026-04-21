@@ -38,6 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <SessionContext.Provider value={state}>{children}</SessionContext.Provider>
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSession(): SessionState {
   return useContext(SessionContext)
 }
