@@ -12,7 +12,8 @@ vi.mock('../lib/offices/officeRepository', () => ({
   createOffice: (...a: unknown[]) => createOffice(...a),
 }))
 const { fromMock } = vi.hoisted(() => ({
-  fromMock: vi.fn((_table?: string) => ({
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  fromMock: vi.fn((_table: string) => ({
     select: () => ({
       eq: () => ({
         single: () => Promise.resolve({ data: { id: 't1', slug: 'acme', name: 'Acme' }, error: null }),
