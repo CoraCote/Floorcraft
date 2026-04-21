@@ -1,0 +1,44 @@
+name: Feature Request
+description: Suggest a new feature or improvement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: "Thanks for suggesting an improvement!"
+  - type: dropdown
+    id: area
+    attributes:
+      label: Related area
+      options:
+        - Canvas editor
+        - Floor / room management
+        - Seating & employee assignment
+        - Team workspaces
+        - Sharing & permissions
+        - Insights & analytics
+        - Export
+        - Authentication
+        - New feature area
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What are you trying to accomplish?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: dropdown
+    id: contribute
+    attributes:
+      label: Would you like to contribute this?
+      options:
+        - "Yes — I can open a PR"
+        - "Maybe — I could help with guidance"
+        - "No — just a suggestion"
