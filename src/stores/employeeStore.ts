@@ -130,14 +130,14 @@ export const useEmployeeStore = create<EmployeeState>((set, get) => ({
   removeEmployee: (id) =>
     set((state) => {
       const removed = state.employees[id]
-      const { [id]: _, ...rest } = state.employees
+      const { [id]: _removed, ...rest } = state.employees
       // If this was the last employee in their department, drop the
       // orphaned departmentColors entry so the palette stays clean.
       if (removed && removed.department) {
         const dept = removed.department
         const stillUsed = Object.values(rest).some((e) => e.department === dept)
         if (!stillUsed) {
-          const { [dept]: __, ...remainingColors } = state.departmentColors
+          const { [dept]: _removedColor, ...remainingColors } = state.departmentColors
           return { employees: rest, departmentColors: remainingColors }
         }
       }
