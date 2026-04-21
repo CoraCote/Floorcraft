@@ -26,6 +26,7 @@ export const useCollaborationStore = create<CollaborationState>((set) => ({
     set((state) => ({ cursors: { ...state.cursors, [userId]: cursor } })),
   removeCursor: (userId) =>
     set((state) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { [userId]: _removed, ...rest } = state.cursors
       return { cursors: rest }
     }),
