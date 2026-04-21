@@ -63,7 +63,7 @@ export const useElementsStore = create<ElementsState>()(
 
       removeElement: (id) =>
         set((state) => {
-          const { [id]: _, ...rest } = state.elements
+          const { [id]: _removed, ...rest } = state.elements
           return { elements: rest }
         }),
 
