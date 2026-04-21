@@ -99,6 +99,10 @@ type AnyLibraryElement =
  * current viewport) and the drag-to-canvas path (drops at the cursor)
  * share the exact same factory — keep this pure so it can be called from
  * the library tile click handler or from CanvasStage's drop handler.
+ *
+ * Lives next to the component because it's a one-caller helper; the
+ * fast-refresh warning is a non-issue (no hot-reload surface worth
+ * splitting a file for).
  */
 // eslint-disable-next-line react-refresh/only-export-components
 export function buildLibraryElement(

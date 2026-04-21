@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 import { serve } from 'https://deno.land/std@0.208.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -42,9 +41,15 @@ serve(async (req) => {
   }
 
   const inviteUrl = `${APP_URL}/invite/${token}`
-  const inviteWithRelations = invite as unknown as { teams?: { name?: string }; profiles?: { name?: string } }
-  const teamName = inviteWithRelations.teams?.name ?? 'your team'
-  const inviterName = inviteWithRelations.profiles?.name ?? 'A teammate'
+  // supabase-js `.select(... teams(name) ...)` returns the joined row
+  // as `Record<string, unknown>` because we typed the call without a
+  // generated schema type. Narrow locally to keep lint clean.
+  const joined = invite as unknown as {
+    teams?: { name?: string | null } | null
+    profiles?: { name?: string | null } | null
+  }
+  const teamName = joined.teams?.name ?? 'your team'
+  const inviterName = joined.profiles?.name ?? 'A teammate'
 
   const html = `
     <div style="font-family: system-ui, sans-serif; max-width: 480px; margin: 0 auto;">

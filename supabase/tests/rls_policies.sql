@@ -102,4 +102,112 @@ do $$ begin
   end if;
 end $$;
 
+-- -------------------------------------------------------------------
+-- 0006 regression tests — P0 security fixes from the senior-dev review.
+-- -------------------------------------------------------------------
+
+-- TEST 6: Invite emails are normalized to lowercase at insert time
+-- (#1). Even if a caller submits mixed case the row stores lower(),
+-- keeping the unique index consistent with the case-insensitive
+-- compare in accept_invite.
+set local "request.jwt.claim.sub" = '11111111-1111-1111-1111-111111111111';
+insert into invites (team_id, email, invited_by)
+values ('aaaa1111-1111-1111-1111-111111111111','Carol@A.TEST','11111111-1111-1111-1111-111111111111');
+do $$ begin
+  if (select count(*) from invites where email = 'carol@a.test') <> 1 then
+    raise exception 'NORMALIZE: mixed-case insert did not normalize to lowercase';
+  end if;
+end $$;
+-- Clean up so it doesn't interfere with subsequent tests.
+delete from invites where email = 'carol@a.test';
+
+-- TEST 7: invites SELECT no longer leaks to the recipient (#3).
+-- Alice invites Eve (Team B user) into Team A. Eve must NOT be able
+-- to read that row directly — she only gets in via accept_invite.
+set local "request.jwt.claim.sub" = '11111111-1111-1111-1111-111111111111';
+insert into invites (team_id, email, invited_by)
+values ('aaaa1111-1111-1111-1111-111111111111','eve@b.test','11111111-1111-1111-1111-111111111111');
+
+set local "request.jwt.claim.sub" = '33333333-3333-3333-3333-333333333333';
+do $$ begin
+  if (select count(*) from invites where email = 'eve@b.test') > 0 then
+    raise exception 'LEAK: Eve read an invite directly (recipient SELECT should be gone)';
+  end if;
+end $$;
+
+-- TEST 8: accept_invite honors the invite.role column (#4). Alice
+-- creates a second team and invites Bob in as admin. After accept,
+-- Bob must show up as admin in team_members.
+set local "request.jwt.claim.sub" = '11111111-1111-1111-1111-111111111111';
+insert into teams (id, slug, name, created_by)
+  values ('cccc3333-3333-3333-3333-333333333333','gamma','Gamma','11111111-1111-1111-1111-111111111111');
+
+insert into invites (team_id, email, invited_by, role)
+values ('cccc3333-3333-3333-3333-333333333333','bob@a.test','11111111-1111-1111-1111-111111111111','admin');
+
+set local "request.jwt.claim.sub" = '22222222-2222-2222-2222-222222222222';
+select accept_invite((select token from invites
+                        where team_id='cccc3333-3333-3333-3333-333333333333'
+                          and email='bob@a.test'));
+
+do $$ begin
+  if (select role from team_members
+       where team_id='cccc3333-3333-3333-3333-333333333333'
+         and user_id='22222222-2222-2222-2222-222222222222') <> 'admin' then
+    raise exception 'ROLE: Bob should have joined Gamma as admin';
+  end if;
+end $$;
+
+-- TEST 9: accept_invite reads caller identity from auth.users, not
+-- profiles (#2). Simulate the case where profiles.email has drifted
+-- from the authoritative auth.users.email (as happens after an email
+-- change via auth.updateUser). The RPC must still succeed because it
+-- resolves caller_email from auth.users.
+--
+-- Create a fresh user whose profiles row is intentionally desynced.
+insert into auth.users (id, email, encrypted_password, email_confirmed_at)
+values ('44444444-4444-4444-4444-444444444444','dave-new@a.test','x',now());
+
+-- Manually rewrite the profiles row to the OLD email. This is what
+-- the pre-0006 code left behind after auth.updateUser.
+update profiles set email='dave-old@a.test' where id='44444444-4444-4444-4444-444444444444';
+
+set local "request.jwt.claim.sub" = '11111111-1111-1111-1111-111111111111';
+insert into invites (team_id, email, invited_by)
+values ('aaaa1111-1111-1111-1111-111111111111','dave-new@a.test','11111111-1111-1111-1111-111111111111');
+
+set local "request.jwt.claim.sub" = '44444444-4444-4444-4444-444444444444';
+select accept_invite((select token from invites
+                        where team_id='aaaa1111-1111-1111-1111-111111111111'
+                          and email='dave-new@a.test'));
+
+do $$ begin
+  if (select count(*) from team_members
+       where team_id='aaaa1111-1111-1111-1111-111111111111'
+         and user_id='44444444-4444-4444-4444-444444444444') <> 1 then
+    raise exception 'AUTH-USERS: accept_invite should match on auth.users.email';
+  end if;
+end $$;
+
+-- TEST 10: profiles.email stays in sync when auth.users.email changes
+-- (#2, the forward direction). After the trigger fires, a fresh read
+-- from profiles must reflect the new email.
+set local role postgres;
+update auth.users set email='dave-rotated@a.test' where id='44444444-4444-4444-4444-444444444444';
+do $$ begin
+  if (select email from profiles where id='44444444-4444-4444-4444-444444444444') <> 'dave-rotated@a.test' then
+    raise exception 'SYNC: profiles.email should track auth.users.email';
+  end if;
+end $$;
+
+-- TEST 11: handle_new_user is idempotent on conflict (#16). Simulate
+-- the "profile row already exists" case and ensure inserting the
+-- matching auth.users row does not raise.
+set local role postgres;
+insert into profiles (id, email, name)
+values ('55555555-5555-5555-5555-555555555555','preexisting@a.test','Pre');
+insert into auth.users (id, email, encrypted_password, email_confirmed_at)
+values ('55555555-5555-5555-5555-555555555555','preexisting@a.test','x',now());
+-- If we reach this point the trigger swallowed the conflict.
+
 rollback;

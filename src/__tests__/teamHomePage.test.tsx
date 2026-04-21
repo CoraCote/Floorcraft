@@ -11,16 +11,16 @@ vi.mock('../lib/offices/officeRepository', () => ({
   listOffices: (...a: unknown[]) => listOffices(...a),
   createOffice: (...a: unknown[]) => createOffice(...a),
 }))
-const { fromMock } = vi.hoisted(() => ({
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  fromMock: vi.fn((_table: string) => ({
+const { fromMock } = vi.hoisted(() => {
+  const impl = (_table: string) => ({
     select: () => ({
       eq: () => ({
         single: () => Promise.resolve({ data: { id: 't1', slug: 'acme', name: 'Acme' }, error: null }),
       }),
     }),
-  })),
-}))
+  })
+  return { fromMock: vi.fn<typeof impl>(impl) }
+})
 vi.mock('../lib/supabase', () => ({
   supabase: { from: (table: string) => fromMock(table) },
 }))

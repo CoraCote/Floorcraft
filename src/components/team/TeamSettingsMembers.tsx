@@ -32,6 +32,19 @@ export function TeamSettingsMembers({
   const [email, setEmail] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  /**
+   * The last invite we created locally, plus whether the transactional
+   * email went out. We show the shareable link either way — if mail is
+   * available the admin gets "sent + copy link", if the edge function
+   * failed they get "copy the link and share it manually". Keeps the
+   * invite flow unblocked when Resend / the edge function isn't
+   * deployed yet.
+   */
+  const [lastInvite, setLastInvite] = useState<{
+    email: string
+    url: string
+    emailed: boolean
+  } | null>(null)
 
   async function refresh() {
     setMembers(await listTeamMembers(team.id))
@@ -48,14 +61,36 @@ export function TeamSettingsMembers({
     setError(null)
     try {
       const inv = await createInvite(team.id, email.trim().toLowerCase(), selfId)
-      const { error: fnErr } = await supabase.functions.invoke('send-invite-email', { body: { token: inv.token } })
-      if (fnErr) throw new Error(fnErr.message)
+      const url = `${window.location.origin}/invite/${inv.token}`
+      // Invoke the send-email edge function but don't let its failure
+      // tank the flow: the invite row exists, we have a valid token,
+      // the admin can copy the link and share it manually.
+      let emailed = false
+      try {
+        const { error: fnErr } = await supabase.functions.invoke('send-invite-email', {
+          body: { token: inv.token },
+        })
+        emailed = !fnErr
+      } catch {
+        emailed = false
+      }
+      setLastInvite({ email: inv.email, url, emailed })
       setEmail('')
       await refresh()
     } catch (e) {
       setError((e as Error).message)
     }
     setBusy(false)
+  }
+
+  async function copyInviteLink() {
+    if (!lastInvite) return
+    try {
+      await navigator.clipboard.writeText(lastInvite.url)
+    } catch {
+      // Clipboard can fail silently in insecure contexts / tests;
+      // the link text is visible on screen either way.
+    }
   }
 
   return (
@@ -140,6 +175,36 @@ export function TeamSettingsMembers({
             </button>
           </div>
           {error && <p className="text-red-600">{error}</p>}
+          {lastInvite && (
+            <div
+              className="mt-2 p-3 border rounded bg-blue-50 space-y-2"
+              role="status"
+              aria-live="polite"
+            >
+              <p className="text-sm">
+                {lastInvite.emailed
+                  ? `Invite sent to ${lastInvite.email}. You can also copy the link below.`
+                  : `Invite created for ${lastInvite.email}, but the email couldn't be sent. Copy the link below and share it manually.`}
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={lastInvite.url}
+                  onFocus={(e) => e.currentTarget.select()}
+                  aria-label="Invite link"
+                  className="flex-1 border rounded px-2 py-1 text-xs font-mono bg-white"
+                />
+                <button
+                  onClick={copyInviteLink}
+                  className="px-2 py-1 bg-blue-600 text-white rounded text-xs"
+                  type="button"
+                >
+                  Copy
+                </button>
+              </div>
+            </div>
+          )}
           {invites.length > 0 && (
             <div className="mt-3">
               <h3 className="text-xs uppercase tracking-wide text-gray-500 mb-1">Pending invites</h3>

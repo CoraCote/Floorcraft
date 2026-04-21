@@ -38,6 +38,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <SessionContext.Provider value={state}>{children}</SessionContext.Provider>
 }
 
+// Co-located with the provider because callers always import both
+// from the same module and the hook is trivial. Splitting into its
+// own file would just churn imports for no runtime benefit.
 // eslint-disable-next-line react-refresh/only-export-components
 export function useSession(): SessionState {
   return useContext(SessionContext)

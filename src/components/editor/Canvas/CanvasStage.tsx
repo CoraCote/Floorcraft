@@ -256,12 +256,14 @@ export function CanvasStage() {
   }, [ghostCursor])
 
   // Clear the ghost when the tool switches away from door/window. Keeps
-  // state in sync without waiting for the next mousemove.
+  // state in sync without waiting for the next mousemove. The functional
+  // setter is a no-op when the ghost is already null, so this doesn't
+  // cascade-render.
   useEffect(() => {
     if (activeTool !== 'door' && activeTool !== 'window') {
-      setGhostCursor(null)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setGhostCursor((g) => (g ? null : g))
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTool])
 
   const handleMouseUp = useCallback(() => {

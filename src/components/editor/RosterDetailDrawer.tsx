@@ -50,9 +50,13 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
   const drawerRef = useRef<HTMLElement>(null)
   const firstFieldRef = useRef<HTMLInputElement>(null)
   const onCloseRef = useRef(onClose)
+  // Keep the ref in sync with the latest onClose without forcing
+  // consumers to memoize it. Updating inside an effect is the
+  // React-approved pattern; writing during render trips the lint
+  // check because concurrent rendering may discard the render.
   useEffect(() => {
     onCloseRef.current = onClose
-  })
+  }, [onClose])
 
   // Register as an open modal so `useKeyboardShortcuts` stops reacting to
   // global Escape/hotkeys. We also listen locally for Escape and Tab so the

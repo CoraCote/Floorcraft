@@ -10,31 +10,29 @@ vi.mock('../lib/offices/officeRepository', () => ({
   saveOffice: (...a: unknown[]) => saveOffice(...a),
   saveOfficeForce: (...a: unknown[]) => saveOfficeForce(...a),
 }))
+// Zustand-store mocks. Each selector-or-undefined hook is packaged
+// through `unknown` to satisfy `tsc -b`'s stricter cast-checking,
+// which flags the arrow-function-cast-to-Record<string, unknown>
+// pattern that vi.mock's factory return type infers.
+type Selector<S> = ((s: S) => unknown) | undefined
+function makeStoreHook<S>(state: S) {
+  return ((sel: Selector<S>) => (sel ? sel(state) : state)) as unknown as (
+    sel?: Selector<S>,
+  ) => unknown
+}
 
-type ElementsState = { elements: Record<string, unknown> }
 vi.mock('../stores/elementsStore', () => ({
-  useElementsStore: (sel?: (s: ElementsState) => unknown) =>
-    sel ? sel({ elements: {} }) : { elements: {} },
+  useElementsStore: makeStoreHook({ elements: {} }),
 }))
-
-type EmployeeState = { employees: Record<string, unknown>; departmentColors: Record<string, unknown> }
 vi.mock('../stores/employeeStore', () => ({
-  useEmployeeStore: (sel?: (s: EmployeeState) => unknown) =>
-    sel ? sel({ employees: {}, departmentColors: {} }) : { employees: {}, departmentColors: {} },
+  useEmployeeStore: makeStoreHook({ employees: {}, departmentColors: {} }),
 }))
-
-type FloorState = { floors: unknown[]; activeFloorId: null }
 vi.mock('../stores/floorStore', () => ({
-  useFloorStore: (sel?: (s: FloorState) => unknown) =>
-    sel ? sel({ floors: [], activeFloorId: null }) : { floors: [], activeFloorId: null },
+  useFloorStore: makeStoreHook({ floors: [], activeFloorId: null }),
 }))
-
-type CanvasState = { settings: Record<string, unknown> }
 vi.mock('../stores/canvasStore', () => ({
-  useCanvasStore: (sel?: (s: CanvasState) => unknown) =>
-    sel ? sel({ settings: {} }) : { settings: {} },
+  useCanvasStore: makeStoreHook({ settings: {} }),
 }))
-
 vi.mock('../stores/projectStore', () => {
   const state: Record<string, unknown> = {
     saveState: 'idle',
@@ -52,11 +50,13 @@ vi.mock('../stores/projectStore', () => {
       state.lastSavedAt = at
     },
   }
-  function hook(sel?: (s: Record<string, unknown>) => unknown) {
-    return sel ? sel(state) : state
+  const hook = makeStoreHook(state) as unknown as {
+    (sel?: Selector<Record<string, unknown>>): unknown
+    setState: (u: unknown) => void
+    getState: () => Record<string, unknown>
   }
-  hook.setState = (u: ((s: Record<string, unknown>) => Record<string, unknown>) | Record<string, unknown>) =>
-    Object.assign(state, typeof u === 'function' ? u(state) : u)
+  hook.setState = (u: unknown) =>
+    Object.assign(state, typeof u === 'function' ? (u as (s: unknown) => object)(state) : (u as object))
   hook.getState = () => state
   return { useProjectStore: hook }
 })
