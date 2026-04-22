@@ -2,11 +2,11 @@ import { supabase } from '../supabase'
 import { slugFromName } from '../slug'
 import type { Team, TeamMember, Invite } from '../../types/team'
 
-export async function createTeam(name: string, createdBy: string): Promise<Team> {
+export async function createTeam(name: string): Promise<Team> {
   const slug = slugFromName(name)
   const { data, error } = await supabase
     .from('teams')
-    .insert({ name, slug, created_by: createdBy })
+    .insert({ name, slug })
     .select('id, slug, name, created_by, created_at')
     .single()
   if (error) throw error
