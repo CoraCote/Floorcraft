@@ -39,10 +39,10 @@ export async function loadOffice(teamId: string, officeSlug: string): Promise<Of
   return data as OfficeLoaded
 }
 
-export async function createOffice(teamId: string, createdBy: string, name: string): Promise<OfficeListItem> {
+export async function createOffice(teamId: string, name: string): Promise<OfficeListItem> {
   const { data, error } = await supabase
     .from('offices')
-    .insert({ team_id: teamId, created_by: createdBy, name, slug: slugFromName(name), payload: {} })
+    .insert({ team_id: teamId, name, slug: slugFromName(name), payload: {} })
     .select('id, slug, name, updated_at, is_private')
     .single()
   if (error) throw error
