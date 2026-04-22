@@ -306,6 +306,10 @@ export function useWallDrawing() {
         const b = bulges[i]
         normalizedBulges.push(Number.isFinite(b) ? b : 0)
       }
+      // Read the current preset at commit time (not at draw-session start)
+      // so users can flip the preset mid-drawing and the committed wall
+      // uses whatever is selected right now.
+      const wallDrawStyle = useCanvasStore.getState().wallDrawStyle
       const wall: WallElement = {
         id: nanoid(),
         type: 'wall',
@@ -324,6 +328,7 @@ export function useWallDrawing() {
         bulges: normalizedBulges,
         thickness: 6,
         connectedWallIds: [],
+        ...(wallDrawStyle && wallDrawStyle !== 'solid' ? { dashStyle: wallDrawStyle } : {}),
       }
       addElement(wall)
     }

@@ -24,8 +24,21 @@ import { elementsIntersectingRect } from '../../../lib/marquee'
 import { assignEmployee } from '../../../lib/seatAssignment'
 import { findNearestStraightWallHit } from '../../../lib/wallAttachment'
 import { nanoid } from 'nanoid'
-import type { DoorElement, WindowElement } from '../../../types/elements'
+import type { DoorElement, WindowElement, CanvasElement } from '../../../types/elements'
 import { LIBRARY_DRAG_MIME, buildLibraryElement, type LibraryItem } from '../LeftSidebar/ElementLibrary'
+import {
+  buildRectShape,
+  buildEllipse,
+  buildLineShape,
+  buildArrow,
+  buildFreeText,
+  isDragCommit,
+} from '../../../lib/primitives/buildPrimitive'
+import { ShapeDrawingOverlay, type ShapeDrawingPreview } from './primitives/ShapeDrawingOverlay'
+import { FreeTextEditorOverlay } from './primitives/FreeTextEditorOverlay'
+import { useRecentLibraryItems } from '../../../hooks/useRecentLibraryItems'
+
+const PRIMITIVE_TOOLS = new Set(['rect-shape', 'ellipse', 'line-shape', 'arrow', 'free-text'])
 
 /** Max canvas-unit distance a click can be from a wall to still snap to it. */
 const DOOR_WINDOW_SNAP_PX = 24
@@ -108,6 +121,13 @@ export function CanvasStage() {
   // expensive elements-walk in two places.
   const [ghostHasHit, setGhostHasHit] = useState(false)
 
+  // Primitive drawing: a ref for the press-anchor (authoritative) and a
+  // React preview state for the dashed overlay. Following the same
+  // ref + state pattern as wall drawing so state batching can't drop a
+  // mousemove between press and release.
+  const shapeDragRef = useRef<{ startX: number; startY: number } | null>(null)
+  const [shapePreview, setShapePreview] = useState<ShapeDrawingPreview | null>(null)
+
   const handleMouseDown = useCallback(
     (e: Konva.KonvaEventObject<MouseEvent>) => {
       if (e.evt.button === 2) {
@@ -130,6 +150,32 @@ export function CanvasStage() {
         const canvasX = (pointer.x - stageX) / stageScale
         const canvasY = (pointer.y - stageY) / stageScale
         onWallMouseDown(canvasX, canvasY)
+        return
+      }
+
+      // Drawing primitives: click-drag to place. Free-text is special —
+      // it only needs a click; we immediately drop a small text element
+      // and open the inline editor.
+      if (PRIMITIVE_TOOLS.has(activeTool) && e.evt.button === 0) {
+        const stage = stageRef.current
+        if (!stage) return
+        const pointer = stage.getPointerPosition()
+        if (!pointer) return
+        const canvasX = (pointer.x - stageX) / stageScale
+        const canvasY = (pointer.y - stageY) / stageScale
+
+        if (activeTool === 'free-text') {
+          const elementsStore = useElementsStore.getState()
+          const element = buildFreeText(canvasX, canvasY, elementsStore.getMaxZIndex() + 1)
+          elementsStore.addElement(element as unknown as CanvasElement)
+          useUIStore.getState().setSelectedIds([element.id])
+          useUIStore.getState().setEditingLabelId(element.id)
+          useCanvasStore.getState().setActiveTool('select')
+          return
+        }
+
+        shapeDragRef.current = { startX: canvasX, startY: canvasY }
+        setShapePreview({ tool: activeTool, startX: canvasX, startY: canvasY, endX: canvasX, endY: canvasY })
         return
       }
 
@@ -285,6 +331,26 @@ export function CanvasStage() {
         handleCanvasMouseMove(canvasX, canvasY)
       }
 
+      // Primitive drag: update preview rectangle / line every move while
+      // pressed. No anchor ref means the user isn't dragging (press
+      // happened on a non-canvas element or outside the stage) — bail.
+      if (PRIMITIVE_TOOLS.has(activeTool) && shapeDragRef.current) {
+        const stage = stageRef.current
+        if (!stage) return
+        const pointer = stage.getPointerPosition()
+        if (!pointer) return
+        const canvasX = (pointer.x - stageX) / stageScale
+        const canvasY = (pointer.y - stageY) / stageScale
+        const start = shapeDragRef.current
+        setShapePreview({
+          tool: activeTool,
+          startX: start.startX,
+          startY: start.startY,
+          endX: canvasX,
+          endY: canvasY,
+        })
+      }
+
       // Track cursor for the door/window ghost preview. Only work out the
       // canvas coords when the ghost is actually active so we don't pay the
       // cost on every mousemove in select/pan mode.
@@ -313,6 +379,12 @@ export function CanvasStage() {
       marqueeStartRef.current = null
       setMarquee(null)
     }
+    // Same treatment for primitive drag — if the user drags out and up,
+    // we never hear the mouseup, so cancel preview here.
+    if (shapeDragRef.current) {
+      shapeDragRef.current = null
+      setShapePreview(null)
+    }
   }, [ghostCursor])
 
   // Global Escape handling for the marquee: cancel the drag and leave the
@@ -322,9 +394,14 @@ export function CanvasStage() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
-      if (!marqueeStartRef.current) return
-      marqueeStartRef.current = null
-      setMarquee(null)
+      if (marqueeStartRef.current) {
+        marqueeStartRef.current = null
+        setMarquee(null)
+      }
+      if (shapeDragRef.current) {
+        shapeDragRef.current = null
+        setShapePreview(null)
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -379,7 +456,33 @@ export function CanvasStage() {
       const canvasY = (pointer.y - stageY) / stageScale
       onWallMouseUp(canvasX, canvasY)
     }
-  }, [activeTool, stageX, stageY, stageScale, onWallMouseUp, marquee])
+
+    // Primitive commit: if the drag travelled past the threshold, build
+    // the element; otherwise cancel silently (so clicks-by-accident on
+    // an already-active tool don't spawn a zero-sized artifact).
+    if (PRIMITIVE_TOOLS.has(activeTool) && shapeDragRef.current && shapePreview) {
+      const drag = {
+        startX: shapePreview.startX,
+        startY: shapePreview.startY,
+        endX: shapePreview.endX,
+        endY: shapePreview.endY,
+      }
+      shapeDragRef.current = null
+      setShapePreview(null)
+      if (!isDragCommit(drag)) return
+      const elementsStore = useElementsStore.getState()
+      const z = elementsStore.getMaxZIndex() + 1
+      let element: CanvasElement | null = null
+      if (activeTool === 'rect-shape')  element = buildRectShape(drag, z) as unknown as CanvasElement
+      if (activeTool === 'ellipse')     element = buildEllipse(drag, z) as unknown as CanvasElement
+      if (activeTool === 'line-shape')  element = buildLineShape(drag, z) as unknown as CanvasElement
+      if (activeTool === 'arrow')       element = buildArrow(drag, z) as unknown as CanvasElement
+      if (!element) return
+      elementsStore.addElement(element)
+      useUIStore.getState().setSelectedIds([element.id])
+      useCanvasStore.getState().setActiveTool('select')
+    }
+  }, [activeTool, stageX, stageY, stageScale, onWallMouseUp, marquee, shapePreview])
 
   // Base cursor per tool. For door/window we additionally flip to
   // `not-allowed` when the cursor is NOT over a wall in snap range — so the
@@ -390,6 +493,7 @@ export function CanvasStage() {
   if ((activeTool === 'door' || activeTool === 'window') && ghostCursor) {
     cursor = ghostHasHit ? 'crosshair' : 'not-allowed'
   }
+  if (PRIMITIVE_TOOLS.has(activeTool)) cursor = 'crosshair'
 
   // Accept employee drags from PeoplePanel and assign the dropped employee
   // to whatever assignable element is under the cursor.
@@ -436,6 +540,7 @@ export function CanvasStage() {
       const element = buildLibraryElement(item, pos.x, pos.y, elementsStore.getMaxZIndex() + 1)
       elementsStore.addElement(element)
       useUIStore.getState().setSelectedIds([element.id])
+      useRecentLibraryItems.getState().addRecent(item)
       return
     }
 
@@ -516,7 +621,9 @@ export function CanvasStage() {
           onHitChange={setGhostHasHit}
         />
         <MarqueeOverlay rect={marquee} />
+        <ShapeDrawingOverlay preview={shapePreview} />
       </Stage>
+      <FreeTextEditorOverlay containerRef={containerRef} />
     </div>
   )
 }

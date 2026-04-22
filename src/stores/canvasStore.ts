@@ -3,7 +3,20 @@ import { ZOOM_MIN, ZOOM_MAX, ZOOM_STEP } from '../lib/constants'
 import type { CanvasSettings } from '../types/project'
 import { DEFAULT_CANVAS_SETTINGS } from '../types/project'
 
-export type ToolType = 'select' | 'pan' | 'wall' | 'door' | 'window'
+export type ToolType =
+  | 'select'
+  | 'pan'
+  | 'wall'
+  | 'door'
+  | 'window'
+  // Drawing primitives (Feature A)
+  | 'rect-shape'
+  | 'ellipse'
+  | 'line-shape'
+  | 'arrow'
+  | 'free-text'
+
+export type WallDrawStyle = 'solid' | 'dashed' | 'dotted'
 
 interface CanvasState {
   // Viewport
@@ -17,6 +30,12 @@ interface CanvasState {
   // Tool
   activeTool: ToolType
 
+  // Wall drawing style preset (Feature D). Applied to new walls committed
+  // from the wall tool. Persists across tool switches so "draw a few dashed
+  // walls, then switch to select to tweak, then back to wall" doesn't
+  // silently forget the preset.
+  wallDrawStyle: WallDrawStyle
+
   // Actions
   setStagePosition: (x: number, y: number) => void
   setStageScale: (scale: number) => void
@@ -25,6 +44,7 @@ interface CanvasState {
   zoomToFit: (contentBounds: { x: number; y: number; width: number; height: number }, stageWidth: number, stageHeight: number) => void
   resetZoom: () => void
   setActiveTool: (tool: ToolType) => void
+  setWallDrawStyle: (style: WallDrawStyle) => void
   setSettings: (settings: Partial<CanvasSettings>) => void
   toggleGrid: () => void
   toggleDimensions: () => void
@@ -36,6 +56,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   stageScale: 1,
   settings: { ...DEFAULT_CANVAS_SETTINGS },
   activeTool: 'select',
+  wallDrawStyle: 'solid',
 
   setStagePosition: (x, y) => set({ stageX: x, stageY: y }),
 
@@ -66,6 +87,8 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   resetZoom: () => set({ stageScale: 1, stageX: 0, stageY: 0 }),
 
   setActiveTool: (tool) => set({ activeTool: tool }),
+
+  setWallDrawStyle: (style) => set({ wallDrawStyle: style }),
 
   setSettings: (partial) =>
     set((state) => ({ settings: { ...state.settings, ...partial } })),

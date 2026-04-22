@@ -89,6 +89,21 @@ describe('useWallDrawing click-drag', () => {
     expect(w.bulges!.length).toBe(w.points.length / 2 - 1)
   })
 
+  it('applies wallDrawStyle preset to the committed wall', () => {
+    useCanvasStore.setState({ wallDrawStyle: 'dashed' })
+    const { result } = renderHook(() => useWallDrawing())
+    act(() => {
+      result.current.handleCanvasMouseDown(0, 0)
+      result.current.handleCanvasMouseUp(0, 0)
+      result.current.handleCanvasMouseDown(100, 0)
+      result.current.handleCanvasMouseUp(100, 0)
+      result.current.handleCanvasDoubleClick()
+    })
+    expect(walls()[0].dashStyle).toBe('dashed')
+    // Restore so later tests see the default solid preset.
+    useCanvasStore.setState({ wallDrawStyle: 'solid' })
+  })
+
   it('cancel clears points and bulges', () => {
     const { result } = renderHook(() => useWallDrawing())
     act(() => {

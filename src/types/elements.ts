@@ -21,6 +21,14 @@ export type ElementType =
   | 'text-label'
   | 'background-image'
   | 'decor'             // NEW
+  // Drawing primitives (Feature A)
+  | 'rect-shape'
+  | 'ellipse'
+  | 'line-shape'
+  | 'arrow'
+  | 'free-text'
+  // Custom SVG upload (Feature F)
+  | 'custom-svg'
 
 export interface ElementStyle {
   fill: string
@@ -161,6 +169,44 @@ export interface DecorElement extends BaseElement {
   shape: DecorShape
 }
 
+// Drawing primitives ---------------------------------------------------------
+
+export interface RectShapeElement extends BaseElement {
+  type: 'rect-shape'
+}
+
+export interface EllipseElement extends BaseElement {
+  type: 'ellipse'
+}
+
+export interface LineShapeElement extends BaseElement {
+  type: 'line-shape'
+  /** Absolute world coords [x1, y1, x2, y2]. The wrapping Group renders at
+   *  (0,0) and the Line reads these directly so edits to x/y don't silently
+   *  double-offset. x/y on the base are tracked as the midpoint for hit-tests. */
+  points: number[]
+  dashStyle?: 'solid' | 'dashed' | 'dotted'
+}
+
+export interface ArrowElement extends BaseElement {
+  type: 'arrow'
+  points: number[]
+  dashStyle?: 'solid' | 'dashed' | 'dotted'
+}
+
+export interface FreeTextElement extends BaseElement {
+  type: 'free-text'
+  text: string
+  fontSize: number
+}
+
+export interface CustomSvgElement extends BaseElement {
+  type: 'custom-svg'
+  /** Raw sanitized SVG source. Stored inline (no backend) so it survives
+   *  autosave. Capped at 50KB at upload time. */
+  svgSource: string
+}
+
 export type CanvasElement =
   | WallElement
   | DoorElement
@@ -174,6 +220,12 @@ export type CanvasElement =
   | PhoneBoothElement
   | CommonAreaElement
   | DecorElement           // NEW
+  | RectShapeElement
+  | EllipseElement
+  | LineShapeElement
+  | ArrowElement
+  | FreeTextElement
+  | CustomSvgElement
   | BaseElement
 
 export function isWallElement(el: CanvasElement): el is WallElement {
@@ -227,4 +279,28 @@ export function isAssignableElement(el: CanvasElement): el is DeskElement | Work
 
 export function isDecorElement(el: CanvasElement): el is DecorElement {
   return el.type === 'decor'
+}
+
+export function isRectShapeElement(el: CanvasElement): el is RectShapeElement {
+  return el.type === 'rect-shape'
+}
+
+export function isEllipseElement(el: CanvasElement): el is EllipseElement {
+  return el.type === 'ellipse'
+}
+
+export function isLineShapeElement(el: CanvasElement): el is LineShapeElement {
+  return el.type === 'line-shape'
+}
+
+export function isArrowElement(el: CanvasElement): el is ArrowElement {
+  return el.type === 'arrow'
+}
+
+export function isFreeTextElement(el: CanvasElement): el is FreeTextElement {
+  return el.type === 'free-text'
+}
+
+export function isCustomSvgElement(el: CanvasElement): el is CustomSvgElement {
+  return el.type === 'custom-svg'
 }

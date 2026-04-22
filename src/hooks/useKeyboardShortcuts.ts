@@ -154,6 +154,22 @@ export function useKeyboardShortcuts() {
         if (e.key === 'g' || e.key === 'G') { toggleGrid(); return }
         if (e.key === 'd' || e.key === 'D') { toggleDimensions(); return }
         if (e.key === 'p' || e.key === 'P') { setPresentationMode(!presentationMode); return }
+        // Drawing primitives. D and G are already taken (dimensions/grid);
+        // R and M are taken on project routes by roster/map nav (handled
+        // below), so rect gets Shift+R as an editor-scoped alternative when
+        // both params are present. Outside project routes, R is free and
+        // activates rect-shape directly.
+        if (e.shiftKey && (e.key === 'R' || e.key === 'r')) {
+          e.preventDefault()
+          setActiveTool('rect-shape'); return
+        }
+        if (!e.shiftKey && (e.key === 'r' || e.key === 'R') && !(teamSlug && officeSlug)) {
+          setActiveTool('rect-shape'); return
+        }
+        if (e.key === 'e' || e.key === 'E') { setActiveTool('ellipse'); return }
+        if (e.key === 'l' || e.key === 'L') { setActiveTool('line-shape'); return }
+        if (e.key === 'a' || e.key === 'A') { setActiveTool('arrow'); return }
+        if (e.key === 't' || e.key === 'T') { setActiveTool('free-text'); return }
         if (e.key === '?') { setShortcutsOverlayOpen(true); return }
         // M / R jump between the MAP and ROSTER views of the current
         // office. Guarded on both params so the hotkeys are inert outside

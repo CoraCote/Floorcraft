@@ -14,6 +14,12 @@ import {
   isDecorElement,
   isDoorElement,
   isWindowElement,
+  isRectShapeElement,
+  isEllipseElement,
+  isLineShapeElement,
+  isArrowElement,
+  isFreeTextElement,
+  isCustomSvgElement,
   type ConferenceRoomElement,
   type PhoneBoothElement,
   type CommonAreaElement,
@@ -26,6 +32,12 @@ import { DoorRenderer } from './DoorRenderer'
 import { WindowRenderer } from './WindowRenderer'
 import { DeskRenderer } from './DeskRenderer'
 import { RoomRenderer } from './RoomRenderer'
+import { RectShapeRenderer } from './primitives/RectShapeRenderer'
+import { EllipseRenderer } from './primitives/EllipseRenderer'
+import { LineShapeRenderer } from './primitives/LineShapeRenderer'
+import { ArrowRenderer } from './primitives/ArrowRenderer'
+import { FreeTextRenderer } from './primitives/FreeTextRenderer'
+import { CustomSvgRenderer } from './primitives/CustomSvgRenderer'
 import { useCallback } from 'react'
 import type Konva from 'konva'
 import { snapToGrid } from '../../../lib/geometry'
@@ -89,7 +101,10 @@ export function ElementRenderer() {
         // not re-offset them either — we anchor those at (0, 0) too.
         const isWall = isWallElement(el)
         const isAttached = isDoorElement(el) || isWindowElement(el)
-        const ownsPosition = isWall || isAttached
+        // Lines and arrows also position themselves via `points` in world
+        // space, so their wrapping Group sits at (0, 0) like walls.
+        const isPointsPrimitive = isLineShapeElement(el) || isArrowElement(el)
+        const ownsPosition = isWall || isAttached || isPointsPrimitive
         // Doors/windows derive their position from the parent wall; dragging
         // the element directly would desync `positionOnWall` from the real
         // coords, so we disable drag on attached elements. Repositioning is
@@ -123,6 +138,18 @@ export function ElementRenderer() {
                 return <DoorRenderer element={el} />
               if (isWindowElement(el))
                 return <WindowRenderer element={el} />
+              if (isRectShapeElement(el))
+                return <RectShapeRenderer element={el} />
+              if (isEllipseElement(el))
+                return <EllipseRenderer element={el} />
+              if (isLineShapeElement(el))
+                return <LineShapeRenderer element={el} />
+              if (isArrowElement(el))
+                return <ArrowRenderer element={el} />
+              if (isFreeTextElement(el))
+                return <FreeTextRenderer element={el} />
+              if (isCustomSvgElement(el))
+                return <CustomSvgRenderer element={el} />
               if (isDecorElement(el))
                 return <FurnitureRenderer element={el} />
               return <FurnitureRenderer element={el} />
