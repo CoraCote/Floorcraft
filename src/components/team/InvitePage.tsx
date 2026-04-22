@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useSession } from '../../lib/auth/session'
 import { supabase } from '../../lib/supabase'
+import { humanizeError } from '../../lib/errorMessages'
 
 export function InvitePage() {
   const { token } = useParams<{ token: string }>()
@@ -17,7 +18,13 @@ export function InvitePage() {
   }
 
   if (session.status === 'unauthenticated') {
-    return <Navigate to={`/signup?invite=${encodeURIComponent(token)}`} replace />
+    // Stash the token in sessionStorage and redirect to /signup without
+    // it in the URL. Invite tokens are 7-day bearer credentials — they
+    // should not live in the address bar, browser history, or
+    // `document.referrer` (which leaks to analytics and third-party
+    // scripts loaded on /signup).
+    sessionStorage.setItem('pending_invite_token', token)
+    return <Navigate to="/signup" replace />
   }
 
   async function accept() {
@@ -25,7 +32,9 @@ export function InvitePage() {
     setError(null)
     const { data: teamId, error: rpcError } = await supabase.rpc('accept_invite', { invite_token: token })
     if (rpcError) {
-      setError(rpcError.message)
+      // Surface `raise exception 'invite_expired'` etc. as readable
+      // sentences rather than internal token strings.
+      setError(humanizeError(rpcError))
       setBusy(false)
       return
     }

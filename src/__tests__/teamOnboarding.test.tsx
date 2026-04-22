@@ -24,7 +24,9 @@ describe('TeamOnboardingPage', () => {
     )
     fireEvent.change(screen.getByLabelText(/team name/i), { target: { value: 'Acme' } })
     fireEvent.click(screen.getByRole('button', { name: /create team/i }))
-    await waitFor(() => expect(createTeam).toHaveBeenCalledWith('Acme', 'u1'))
+    // `createTeam` now derives the creator from `auth.uid()` inside the
+    // SECURITY DEFINER RPC, so the client no longer passes a user id.
+    await waitFor(() => expect(createTeam).toHaveBeenCalledWith('Acme'))
     expect(await screen.findByText('team-home')).toBeInTheDocument()
   })
 })

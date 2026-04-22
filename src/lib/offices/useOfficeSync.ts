@@ -27,6 +27,30 @@ import { saveOffice, saveOfficeForce } from './officeRepository'
 const DEBOUNCE_MS = 2000
 const RETRY_DELAYS = [2000, 5000, 15000, 30000]
 
+/**
+ * Snapshot every piece of the editor state we serialize into the office
+ * payload. Reading from `.getState()` at call time (rather than closing
+ * over the hook's selector values) keeps retries and the force-overwrite
+ * path fresh: if the user keeps typing during a 15s retry backoff, the
+ * retry ships their *current* edits, not the edits that existed when the
+ * first attempt was queued.
+ */
+function buildCurrentPayload(): Record<string, unknown> {
+  const elements = useElementsStore.getState().elements
+  const { employees, departmentColors } = useEmployeeStore.getState()
+  const { floors, activeFloorId } = useFloorStore.getState()
+  const settings = useCanvasStore.getState().settings
+  return {
+    version: 2,
+    elements,
+    employees,
+    departmentColors,
+    floors,
+    activeFloorId,
+    settings,
+  }
+}
+
 export function useOfficeSync() {
   const elements = useElementsStore((s) => s.elements)
   const employees = useEmployeeStore((s) => s.employees)
@@ -68,15 +92,10 @@ export function useOfficeSync() {
       if (!currentOfficeId || !currentVersion) return
 
       setSaveState('saving')
-      const payload = {
-        version: 2,
-        elements,
-        employees,
-        departmentColors,
-        floors,
-        activeFloorId,
-        settings,
-      } as Record<string, unknown>
+      // Read the latest store contents on every invocation so a retry
+      // fired 15s later ships the edits the user made during the wait,
+      // not a stale closure from the initial attempt.
+      const payload = buildCurrentPayload()
       const res = await saveOffice(currentOfficeId, payload, currentVersion)
       if (res.ok) {
         retryIndex.current = 0
@@ -136,15 +155,9 @@ export function useOfficeSync() {
     const state = useProjectStore.getState()
     if (!state.officeId) return
     setSaveState('saving')
-    const payload = {
-      version: 2,
-      elements,
-      employees,
-      departmentColors,
-      floors,
-      activeFloorId,
-      settings,
-    } as Record<string, unknown>
+    // Same freshness rationale as doSave: if the user kept typing
+    // while the conflict modal was open, their latest edits must go in.
+    const payload = buildCurrentPayload()
     const res = await saveOfficeForce(state.officeId, payload)
     if (res.ok) {
       setLoadedVersion(res.updated_at)

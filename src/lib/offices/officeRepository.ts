@@ -80,16 +80,36 @@ export async function saveOffice(
   return { ok: true, updated_at: (data as { updated_at: string }).updated_at }
 }
 
+/**
+ * Overwrite the server copy unconditionally. Used by the conflict
+ * resolver when the admin accepts their local copy over whatever the
+ * server currently holds.
+ *
+ * Critically, this goes through the `save_office_force` RPC rather
+ * than a plain UPDATE. The RPC runs in a single transaction that:
+ *   1. SELECT … FOR UPDATE the current row (the authoritative base —
+ *      the client's `loadedVersion` may be stale by the time the user
+ *      clicked Overwrite).
+ *   2. INSERT into `offices_history` so the prior payload is
+ *      recoverable if the user later realises they clobbered a
+ *      teammate's work.
+ *   3. UPDATE the row and return the new `updated_at`.
+ *
+ * The RPC also re-checks authorization (RLS is bypassed for
+ * SECURITY DEFINER) so the endpoint can't be called by a
+ * non-editor.
+ */
 export async function saveOfficeForce(
   id: string,
   payload: Record<string, unknown>,
 ): Promise<SaveResult | ErrorResult> {
-  const { data, error } = await supabase
-    .from('offices')
-    .update({ payload })
-    .eq('id', id)
-    .select('updated_at')
-    .single()
+  const { data, error } = await supabase.rpc('save_office_force', {
+    p_office_id: id,
+    p_payload: payload,
+  })
   if (error) return { ok: false, reason: 'error', message: error.message }
-  return { ok: true, updated_at: (data as { updated_at: string }).updated_at }
+  if (typeof data !== 'string') {
+    return { ok: false, reason: 'error', message: 'save_office_force: unexpected response shape' }
+  }
+  return { ok: true, updated_at: data }
 }

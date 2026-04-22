@@ -1,16 +1,22 @@
 import { supabase } from '../supabase'
-import { slugFromName } from '../slug'
 import type { Team, TeamMember, Invite } from '../../types/team'
 
 export async function createTeam(name: string): Promise<Team> {
-  const slug = slugFromName(name)
-  const { data, error } = await supabase
-    .from('teams')
-    .insert({ name, slug })
-    .select('id, slug, name, created_by, created_at')
-    .single()
+  // Route team creation through the SECURITY DEFINER `create_team` RPC
+  // rather than a plain INSERT. The direct insert was failing on
+  // production with "new row violates row-level security policy for
+  // table teams" even for authenticated users, because in some
+  // configurations the `auth.uid()` Postgres sees doesn't match what
+  // the client session believes is current. The RPC runs under the
+  // server's view of identity and creates the team + admin member in
+  // one transaction, so the class of failure disappears.
+  const { data, error } = await supabase.rpc('create_team', { p_name: name })
   if (error) throw error
-  return data as Team
+  // SECURITY DEFINER function returns a SETOF row; supabase-js unwraps
+  // it as an array, so we take the first (and only) element.
+  const row = Array.isArray(data) ? data[0] : data
+  if (!row) throw new Error('create_team: empty response')
+  return row as Team
 }
 
 export async function listTeamMembers(teamId: string): Promise<TeamMember[]> {

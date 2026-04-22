@@ -11,3 +11,16 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Security headers for the SPA. The Referrer-Policy is especially
+# important for /invite/:token and /signup paths: without it a third-
+# party script loaded on one of those pages could read the full URL
+# (including any legacy `?invite=` query string) via `document.referrer`
+# or the standard `Referer` request header.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=()"

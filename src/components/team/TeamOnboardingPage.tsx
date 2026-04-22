@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSession } from '../../lib/auth/session'
 import { createTeam } from '../../lib/teams/teamRepository'
+import { humanizeError } from '../../lib/errorMessages'
 
 export function TeamOnboardingPage() {
   const session = useSession()
@@ -21,7 +22,7 @@ export function TeamOnboardingPage() {
       const team = await createTeam(name)
       navigate(`/t/${team.slug}`, { replace: true })
     } catch (err) {
-      setError((err as Error).message)
+      setError(humanizeError(err))
       setBusy(false)
     }
   }

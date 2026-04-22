@@ -4,7 +4,23 @@ import { supabase } from '../../lib/supabase'
 
 export function SignupPage() {
   const [params] = useSearchParams()
-  const invite = params.get('invite')
+  // Invite tokens used to arrive as `?invite=<token>`, which put a
+  // bearer credential into the browser history and referrer. InvitePage
+  // now stashes the token in sessionStorage before redirecting here, so
+  // the URL stays clean. We still honor the legacy query string in case
+  // an older copy of a link is in someone's inbox — promote it into
+  // sessionStorage and drop it from the URL.
+  const legacyInvite = params.get('invite')
+  if (legacyInvite) {
+    sessionStorage.setItem('pending_invite_token', legacyInvite)
+    const cleanUrl = new URL(window.location.href)
+    cleanUrl.searchParams.delete('invite')
+    window.history.replaceState(
+      window.history.state,
+      '',
+      cleanUrl.pathname + cleanUrl.search + cleanUrl.hash,
+    )
+  }
   const presetEmail = params.get('email') ?? ''
 
   const [name, setName] = useState('')
@@ -18,8 +34,9 @@ export function SignupPage() {
     e.preventDefault()
     setBusy(true)
     setError(null)
-    // Persist invite on the auth state so `/auth/verify` can consume it post-confirmation.
-    if (invite) sessionStorage.setItem('pending_invite_token', invite)
+    // Invite token is already in sessionStorage at this point (see
+    // the top-of-render promotion above). `/auth/verify` will consume
+    // it after email confirmation.
 
     const { error } = await supabase.auth.signUp({
       email,

@@ -1,6 +1,6 @@
 import { useUIStore } from '../../../stores/uiStore'
 import { useEmployeeStore } from '../../../stores/employeeStore'
-import { parseEmployeeCSV } from '../../../lib/csv'
+import { parseEmployeeCSV, CSVTooLargeError } from '../../../lib/csv'
 import { isEmployeeStatus } from '../../../types/employee'
 import { useState, useCallback, useEffect } from 'react'
 
@@ -19,10 +19,24 @@ export function CSVImportDialog() {
 
   const [csvText, setCsvText] = useState('')
   const [preview, setPreview] = useState<ReturnType<typeof parseEmployeeCSV> | null>(null)
+  const [sizeError, setSizeError] = useState<string | null>(null)
 
   const handleParse = useCallback(() => {
-    const result = parseEmployeeCSV(csvText)
-    setPreview(result)
+    setSizeError(null)
+    try {
+      const result = parseEmployeeCSV(csvText)
+      setPreview(result)
+    } catch (err) {
+      // CSVTooLargeError is the only documented throw from parseEmployeeCSV;
+      // everything else is reported via result.errors. If something else
+      // ever throws we want to surface it too rather than silently swallow.
+      if (err instanceof CSVTooLargeError) {
+        setSizeError(err.message)
+      } else {
+        setSizeError(err instanceof Error ? err.message : String(err))
+      }
+      setPreview(null)
+    }
   }, [csvText])
 
   const handleImport = useCallback(() => {
@@ -89,7 +103,6 @@ export function CSVImportDialog() {
       }
     }
     if (warnings.length > 0) {
-      // eslint-disable-next-line no-console
       console.warn('CSV import — unresolved managers:\n' + warnings.join('\n'))
     }
 
@@ -135,6 +148,9 @@ export function CSVImportDialog() {
           />
         </div>
 
+        {sizeError && (
+          <div className="mb-3 p-2 bg-red-50 text-red-700 text-xs rounded">{sizeError}</div>
+        )}
         {!preview ? (
           <button
             onClick={handleParse}
