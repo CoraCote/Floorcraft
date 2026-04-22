@@ -7,6 +7,7 @@ import {
   Undo2, Redo2, ZoomIn, ZoomOut, Share2, Download,
   Maximize2, Minimize2, PanelRightOpen, PanelRightClose,
   Cloud, CloudOff, UploadCloud, X as XIcon,
+  Ruler, Grid3x3,
 } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { NavLink, useParams } from 'react-router-dom'
@@ -25,7 +26,16 @@ export function TopBar() {
   // Any legacy `/project/:slug/*` URL redirects to /dashboard before
   // hitting this component.
   const { teamSlug, officeSlug } = useParams<{ teamSlug: string; officeSlug: string }>()
-  const { stageScale, zoomIn, zoomOut, resetZoom } = useCanvasStore(useShallow((s) => ({ stageScale: s.stageScale, zoomIn: s.zoomIn, zoomOut: s.zoomOut, resetZoom: s.resetZoom })))
+  const { stageScale, zoomIn, zoomOut, resetZoom, settings, setSettings, toggleGrid, toggleDimensions } = useCanvasStore(useShallow((s) => ({
+    stageScale: s.stageScale,
+    zoomIn: s.zoomIn,
+    zoomOut: s.zoomOut,
+    resetZoom: s.resetZoom,
+    settings: s.settings,
+    setSettings: s.setSettings,
+    toggleGrid: s.toggleGrid,
+    toggleDimensions: s.toggleDimensions,
+  })))
   const { rightSidebarOpen, setRightSidebarOpen, setShareModalOpen, setExportDialogOpen, setPresentationMode, presentationMode, selectedIds, clearSelection } = useUIStore(useShallow((s) => ({ rightSidebarOpen: s.rightSidebarOpen, setRightSidebarOpen: s.setRightSidebarOpen, setShareModalOpen: s.setShareModalOpen, setExportDialogOpen: s.setExportDialogOpen, setPresentationMode: s.setPresentationMode, presentationMode: s.presentationMode, selectedIds: s.selectedIds, clearSelection: s.clearSelection })))
   const undo = useElementsStore.temporal.getState().undo
   const redo = useElementsStore.temporal.getState().redo
@@ -195,6 +205,50 @@ export function TopBar() {
         </button>
         <button onClick={zoomIn} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" title="Zoom In" aria-label="Zoom in">
           <ZoomIn size={16} />
+        </button>
+      </div>
+
+      <div className="w-px h-6 bg-gray-200" />
+
+      {/* Grid + dimension controls. Grouped with the viewport controls
+          because they share the "how do I see the canvas" mental model. */}
+      <div className="flex items-center gap-1">
+        <button
+          onClick={toggleGrid}
+          className={`p-1.5 rounded ${
+            settings.showGrid
+              ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+              : 'hover:bg-gray-100 text-gray-600'
+          }`}
+          title="Toggle grid (G)"
+          aria-label="Toggle grid"
+          aria-pressed={settings.showGrid}
+        >
+          <Grid3x3 size={16} />
+        </button>
+        <input
+          type="number"
+          min={4}
+          max={200}
+          step={2}
+          value={settings.gridSize}
+          onChange={(e) => setSettings({ gridSize: Number(e.target.value) })}
+          className="w-[60px] text-xs border border-gray-200 rounded px-1 py-1 focus:outline-none focus:border-blue-400"
+          title="Grid size"
+          aria-label="Grid size"
+        />
+        <button
+          onClick={toggleDimensions}
+          className={`p-1.5 rounded ${
+            settings.showDimensions
+              ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+              : 'hover:bg-gray-100 text-gray-600'
+          }`}
+          title="Show/Hide dimensions (D)"
+          aria-label="Toggle dimensions"
+          aria-pressed={settings.showDimensions}
+        >
+          <Ruler size={16} />
         </button>
       </div>
 

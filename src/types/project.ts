@@ -5,6 +5,12 @@ export interface CanvasSettings {
   scale: number
   scaleUnit: 'ft' | 'm' | 'cm' | 'in'
   showGrid: boolean
+  /**
+   * When true, a label appears at the midpoint of each wall segment showing
+   * its length in `scale * pixels` rounded to 1 decimal + `scaleUnit`. Off by
+   * default so the canvas stays uncluttered for new plans.
+   */
+  showDimensions: boolean
 }
 
 export interface Project {
@@ -26,4 +32,5 @@ export const DEFAULT_CANVAS_SETTINGS: CanvasSettings = {
   scale: 1,
   scaleUnit: 'ft',
   showGrid: true,
+  showDimensions: false,
 }

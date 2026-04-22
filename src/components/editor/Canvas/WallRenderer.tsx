@@ -22,6 +22,17 @@ export function WallRenderer({ element }: WallRendererProps) {
   const stroke = isSelected ? '#3B82F6' : element.style.stroke
   const hitStrokeWidth = Math.max(12, element.thickness + 6)
 
+  // Scale dash patterns by thickness so the rhythm reads well at any wall
+  // weight. 'dotted' uses a very short dash + round line cap (Konva
+  // inherits the cap inside the gap so a 0.1-unit "dash" renders as a
+  // circular dot the width of the stroke).
+  let dash: number[] | undefined
+  if (element.dashStyle === 'dashed') {
+    dash = [element.thickness * 2.5, element.thickness * 1.5]
+  } else if (element.dashStyle === 'dotted') {
+    dash = [0.1, element.thickness * 1.4]
+  }
+
   return (
     <Path
       data={wallPathData(element.points, element.bulges)}
@@ -31,6 +42,7 @@ export function WallRenderer({ element }: WallRendererProps) {
       lineJoin="round"
       hitStrokeWidth={hitStrokeWidth}
       fillEnabled={false}
+      dash={dash}
     />
   )
 }

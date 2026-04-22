@@ -27,6 +27,7 @@ interface CanvasState {
   setActiveTool: (tool: ToolType) => void
   setSettings: (settings: Partial<CanvasSettings>) => void
   toggleGrid: () => void
+  toggleDimensions: () => void
 }
 
 export const useCanvasStore = create<CanvasState>((set, get) => ({
@@ -72,5 +73,10 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   toggleGrid: () =>
     set((state) => ({
       settings: { ...state.settings, showGrid: !state.settings.showGrid },
+    })),
+
+  toggleDimensions: () =>
+    set((state) => ({
+      settings: { ...state.settings, showDimensions: !state.settings.showDimensions },
     })),
 }))

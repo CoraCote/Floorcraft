@@ -59,6 +59,12 @@ export interface WallElement extends BaseElement {
   bulges?: number[]
   thickness: number
   connectedWallIds: string[]
+  /**
+   * Optional stroke pattern. Undefined or 'solid' = no dashes. The renderer
+   * maps 'dashed' → [thickness*2.5, thickness*1.5] and 'dotted' → short
+   * dashes with a round line cap so they render as dots.
+   */
+  dashStyle?: 'solid' | 'dashed' | 'dotted'
 }
 
 export interface DoorElement extends BaseElement {

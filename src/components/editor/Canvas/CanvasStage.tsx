@@ -13,11 +13,14 @@ import { AlignmentGuides } from './AlignmentGuides'
 import { WallDrawingOverlay } from './WallDrawingOverlay'
 import { WallEditOverlay } from './WallEditOverlay'
 import { AttachmentGhost } from './AttachmentGhost'
+import { MarqueeOverlay } from './MarqueeOverlay'
+import { DimensionLayer } from './DimensionLayer'
 import { OrgChartOverlay } from '../../reports/OrgChartOverlay'
 import { SeatMapColorMode } from '../../reports/SeatMapColorMode'
 import { useWallDrawing } from '../../../hooks/useWallDrawing'
 import { ZOOM_MIN, ZOOM_MAX } from '../../../lib/constants'
 import { isAssignableElement } from '../../../types/elements'
+import { elementsIntersectingRect } from '../../../lib/marquee'
 import { assignEmployee } from '../../../lib/seatAssignment'
 import { findNearestStraightWallHit } from '../../../lib/wallAttachment'
 import { nanoid } from 'nanoid'
@@ -34,6 +37,12 @@ export function CanvasStage() {
 
   const { stageX, stageY, stageScale, setStagePosition, setStageScale, activeTool } = useCanvasStore(useShallow((s) => ({ stageX: s.stageX, stageY: s.stageY, stageScale: s.stageScale, setStagePosition: s.setStagePosition, setStageScale: s.setStageScale, activeTool: s.activeTool })))
   const { clearSelection, setContextMenu } = useUIStore(useShallow((s) => ({ clearSelection: s.clearSelection, setContextMenu: s.setContextMenu })))
+  // Marquee (drag-rectangle) selection — only active when the select tool is
+  // active, the user presses on empty stage space, and they start dragging.
+  // `marqueeStartRef` holds the canvas-space anchor + whether shift was held
+  // at press; `marquee` is the live rect that drives the overlay render.
+  const marqueeStartRef = useRef<{ x: number; y: number; shift: boolean } | null>(null)
+  const [marquee, setMarquee] = useState<{ x: number; y: number; w: number; h: number } | null>(null)
   const orgChartOverlayEnabled = useUIStore((s) => s.orgChartOverlayEnabled)
   const seatMapColorMode = useUIStore((s) => s.seatMapColorMode)
   const {
@@ -204,6 +213,31 @@ export function CanvasStage() {
         return
       }
 
+      // Marquee drag-select: only on empty stage, in select tool, left click.
+      // When shift is held we preserve the existing selection so the marquee
+      // augments it. Without shift we clear first so the final selection is
+      // just the newly marqueed set.
+      if (
+        activeTool === 'select' &&
+        e.evt.button === 0 &&
+        e.target === e.target.getStage()
+      ) {
+        const stage = stageRef.current
+        if (!stage) return
+        const pointer = stage.getPointerPosition()
+        if (!pointer) return
+        const canvasX = (pointer.x - stageX) / stageScale
+        const canvasY = (pointer.y - stageY) / stageScale
+        marqueeStartRef.current = {
+          x: canvasX,
+          y: canvasY,
+          shift: e.evt.shiftKey,
+        }
+        if (!e.evt.shiftKey) clearSelection()
+        setContextMenu(null)
+        return
+      }
+
       if (e.target === e.target.getStage()) {
         clearSelection()
         setContextMenu(null)
@@ -219,6 +253,26 @@ export function CanvasStage() {
         const dy = e.evt.clientY - lastPointer.current.y
         lastPointer.current = { x: e.evt.clientX, y: e.evt.clientY }
         setStagePosition(stageX + dx, stageY + dy)
+      }
+
+      // Marquee drag: compute normalized rect from press point to current
+      // pointer. Normalization (always-positive w/h) makes AABB overlap
+      // checks downstream trivial and the <Rect> overlay render correct
+      // regardless of drag direction.
+      if (marqueeStartRef.current) {
+        const stage = stageRef.current
+        if (!stage) return
+        const pointer = stage.getPointerPosition()
+        if (!pointer) return
+        const canvasX = (pointer.x - stageX) / stageScale
+        const canvasY = (pointer.y - stageY) / stageScale
+        const start = marqueeStartRef.current
+        const x = Math.min(start.x, canvasX)
+        const y = Math.min(start.y, canvasY)
+        const w = Math.abs(canvasX - start.x)
+        const h = Math.abs(canvasY - start.y)
+        setMarquee({ x, y, w, h })
+        return
       }
 
       if (activeTool === 'wall') {
@@ -253,7 +307,28 @@ export function CanvasStage() {
   // Clear the ghost when the cursor leaves the canvas so it doesn't linger.
   const handleMouseLeave = useCallback(() => {
     if (ghostCursor) setGhostCursor(null)
+    // Also cancel any in-flight marquee — dragging out of the canvas and
+    // releasing elsewhere would otherwise leave the overlay stuck on.
+    if (marqueeStartRef.current) {
+      marqueeStartRef.current = null
+      setMarquee(null)
+    }
   }, [ghostCursor])
+
+  // Global Escape handling for the marquee: cancel the drag and leave the
+  // selection untouched. The global keyboard shortcut listener owns Escape
+  // for the rest of the editor, but cancelling a drag-in-progress is local
+  // state so we handle it here directly.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      if (!marqueeStartRef.current) return
+      marqueeStartRef.current = null
+      setMarquee(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   // Clear the ghost when the tool switches away from door/window. Keeps
   // state in sync without waiting for the next mousemove. The functional
@@ -268,6 +343,33 @@ export function CanvasStage() {
 
   const handleMouseUp = useCallback(() => {
     isPanning.current = false
+    // Commit the marquee: hit-test every element's AABB against the final
+    // rect and set / append the selection. A zero-area marquee (click without
+    // dragging) is treated as a plain background click — the initial mouse
+    // down already cleared selection, so we just reset and bail.
+    if (marqueeStartRef.current) {
+      const rect = marquee
+      const shift = marqueeStartRef.current.shift
+      marqueeStartRef.current = null
+      setMarquee(null)
+      if (!rect || rect.w < 1 || rect.h < 1) return
+
+      const elements = useElementsStore.getState().elements
+      const hits = elementsIntersectingRect(elements, rect)
+
+      const uiStore = useUIStore.getState()
+      if (shift) {
+        // Union with existing selection, preserving order and deduping.
+        const current = uiStore.selectedIds
+        const set = new Set(current)
+        for (const id of hits) set.add(id)
+        uiStore.setSelectedIds(Array.from(set))
+      } else {
+        uiStore.setSelectedIds(hits)
+      }
+      return
+    }
+
     if (activeTool === 'wall') {
       const stage = stageRef.current
       if (!stage) return
@@ -277,7 +379,7 @@ export function CanvasStage() {
       const canvasY = (pointer.y - stageY) / stageScale
       onWallMouseUp(canvasX, canvasY)
     }
-  }, [activeTool, stageX, stageY, stageScale, onWallMouseUp])
+  }, [activeTool, stageX, stageY, stageScale, onWallMouseUp, marquee])
 
   // Base cursor per tool. For door/window we additionally flip to
   // `not-allowed` when the cursor is NOT over a wall in snap range — so the
@@ -399,6 +501,7 @@ export function CanvasStage() {
       >
         <GridLayer width={size.width} height={size.height} />
         <ElementRenderer />
+        <DimensionLayer />
         <SelectionOverlay />
         <WallEditOverlay />
         {orgChartOverlayEnabled && <OrgChartOverlay />}
@@ -412,6 +515,7 @@ export function CanvasStage() {
           snapPx={DOOR_WINDOW_SNAP_PX}
           onHitChange={setGhostHasHit}
         />
+        <MarqueeOverlay rect={marquee} />
       </Stage>
     </div>
   )
