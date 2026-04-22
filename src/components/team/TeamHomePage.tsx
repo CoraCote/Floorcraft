@@ -28,11 +28,11 @@ export function TeamHomePage() {
   async function onNew() {
     if (!team || session.status !== 'authenticated') return
     setCreating(true)
-    const created = await createOffice(team.id, session.user.id, 'Untitled office')
+    const created = await createOffice(team.id, 'Untitled office')
     navigate(`/t/${team.slug}/o/${created.slug}/map`)
   }
 
-  if (!team) return <div className="p-6 text-sm text-gray-500">Loading…</div>
+  if (!team) return <div className="p-6 text-sm text-gray-500">Loading\u2026</div>
   const visible = offices.filter((o) => o.name.toLowerCase().includes(q.trim().toLowerCase()))
 
   return (
@@ -41,7 +41,7 @@ export function TeamHomePage() {
         <h1 className="text-xl font-semibold">{team.name}</h1>
         <div className="flex items-center gap-2">
           <input
-            placeholder="Search offices…"
+            placeholder="Search offices\u2026"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             className="border rounded px-2 py-1.5 text-sm w-56"
@@ -67,7 +67,7 @@ export function TeamHomePage() {
             'No matches.'
           ) : (
             <>
-              No offices yet —{' '}
+              No offices yet \u2014{' '}
               <button className="text-blue-600 hover:underline" onClick={onNew}>
                 create your first
               </button>
