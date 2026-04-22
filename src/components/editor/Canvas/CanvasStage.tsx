@@ -37,6 +37,7 @@ import {
 import { ShapeDrawingOverlay, type ShapeDrawingPreview } from './primitives/ShapeDrawingOverlay'
 import { FreeTextEditorOverlay } from './primitives/FreeTextEditorOverlay'
 import { useRecentLibraryItems } from '../../../hooks/useRecentLibraryItems'
+import { setActiveStage } from '../../../lib/stageRegistry'
 
 const PRIMITIVE_TOOLS = new Set(['rect-shape', 'ellipse', 'line-shape', 'arrow', 'free-text'])
 
@@ -78,6 +79,18 @@ export function CanvasStage() {
     })
     observer.observe(container)
     return () => observer.disconnect()
+  }, [])
+
+  // Publish the live stage to the module-level registry so non-canvas code
+  // (export dialog, PDF/PNG buttons) can read it without prop-drilling.
+  // Register on mount, unregister on unmount.
+  useEffect(() => {
+    const stage = stageRef.current
+    if (!stage) return
+    setActiveStage(stage)
+    return () => {
+      setActiveStage(null)
+    }
   }, [])
 
   const handleWheel = useCallback(

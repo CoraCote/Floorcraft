@@ -6,8 +6,11 @@ import { useCanvasStore } from '../../stores/canvasStore'
 import { useFloorStore } from '../../stores/floorStore'
 import { exportProjectJson } from '../../lib/exportJson'
 import { exportEmployeeCSV } from '../../lib/csv'
-import { FileText, Table, FileJson, X } from 'lucide-react'
-import { useEffect } from 'react'
+import { exportPdf } from '../../lib/exportPdf'
+import { exportPng } from '../../lib/exportPng'
+import { getActiveStage } from '../../lib/stageRegistry'
+import { FileText, Table, FileJson, Image as ImageIcon, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 export function ExportDialog() {
   const open = useUIStore((s) => s.exportDialogOpen)
@@ -17,15 +20,24 @@ export function ExportDialog() {
   const employees = useEmployeeStore((s) => s.employees)
   const settings = useCanvasStore((s) => s.settings)
   const floors = useFloorStore((s) => s.floors)
+  const [error, setError] = useState<string | null>(null)
+
+  const close = () => {
+    setError(null)
+    setOpen(false)
+  }
 
   useEffect(() => {
     if (!open) return
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false)
+      if (e.key === 'Escape') close()
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
-  }, [open, setOpen])
+    // `close` closes over stable setters, so the effect only needs to
+    // re-subscribe when `open` flips.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
 
   if (!open) return null
 
@@ -33,7 +45,7 @@ export function ExportDialog() {
 
   const handleExportJSON = () => {
     exportProjectJson(projectName, settings, elements, employees, floors)
-    setOpen(false)
+    close()
   }
 
   const handleExportCSV = () => {
@@ -64,22 +76,64 @@ export function ExportDialog() {
     link.click()
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
-    setOpen(false)
+    close()
+  }
+
+  const handleExportPdf = () => {
+    const stage = getActiveStage()
+    if (!stage) {
+      setError('Open a floor plan to export. The canvas isn\u2019t loaded right now.')
+      return
+    }
+    try {
+      exportPdf(stage, {
+        paperSize: 'a4',
+        orientation: 'landscape',
+        dpi: 300,
+        fileName: `${projectName}.pdf`,
+        title: project?.name,
+      })
+      close()
+    } catch (err) {
+      console.error('PDF export failed', err)
+      setError('Could not generate the PDF. Try again, or export PNG instead.')
+    }
+  }
+
+  const handleExportPng = () => {
+    const stage = getActiveStage()
+    if (!stage) {
+      setError('Open a floor plan to export. The canvas isn\u2019t loaded right now.')
+      return
+    }
+    try {
+      exportPng(stage, { pixelRatio: 2, fileName: `${projectName}.png` })
+      close()
+    } catch (err) {
+      console.error('PNG export failed', err)
+      setError('Could not generate the PNG.')
+    }
   }
 
   const exports = [
-    { icon: <FileText size={20} />, label: 'PDF Floor Plan', desc: 'Print-ready floor plan at 300dpi', onClick: () => { setOpen(false) } },
+    { icon: <FileText size={20} />, label: 'PDF Floor Plan', desc: 'Print-ready A4 landscape at 300dpi', onClick: handleExportPdf },
+    { icon: <ImageIcon size={20} />, label: 'PNG Image', desc: 'High-resolution PNG snapshot of the canvas', onClick: handleExportPng },
     { icon: <Table size={20} />, label: 'CSV Employee Roster', desc: 'Spreadsheet with seat assignments', onClick: handleExportCSV },
     { icon: <FileJson size={20} />, label: 'JSON Project Data', desc: 'Full project data including floors and employees', onClick: handleExportJSON },
   ]
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setOpen(false)}>
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={close}>
       <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Export</h2>
-          <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600" aria-label="Close export dialog"><X size={18} /></button>
+          <button onClick={close} className="text-gray-400 hover:text-gray-600" aria-label="Close export dialog"><X size={18} /></button>
         </div>
+        {error && (
+          <div role="alert" className="mb-3 text-xs text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2">
+            {error}
+          </div>
+        )}
         <div className="flex flex-col gap-2">
           {exports.map((exp) => (
             <button
