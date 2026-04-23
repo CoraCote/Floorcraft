@@ -579,7 +579,13 @@ export function CanvasStage() {
         return
       }
       const elementsStore = useElementsStore.getState()
-      const element = buildLibraryElement(item, pos.x, pos.y, elementsStore.getMaxZIndex() + 1)
+      const element = buildLibraryElement(
+        item,
+        pos.x,
+        pos.y,
+        elementsStore.getMaxZIndex() + 1,
+        elementsStore.elements,
+      )
       elementsStore.addElement(element)
       useUIStore.getState().setSelectedIds([element.id])
       useRecentLibraryItems.getState().addRecent(item)

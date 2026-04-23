@@ -23,7 +23,10 @@ function makeDesk(x: number, y: number, index: number, zIndex: number): DeskElem
     label: 'Desk',
     visible: true,
     style: { fill: '#FEF3C7', stroke: '#D97706', strokeWidth: 2, opacity: 1 },
-    deskId: `D-${String(index).padStart(3, '0')}`,
+    // Sequential "1", "2", "3"… — matches the per-floor scheme that
+    // `nextSeatNumber` hands out for manually-added seats. Rendered in
+    // the roster as "Floor 1 / 3".
+    deskId: String(index),
     assignedEmployeeId: null,
     capacity: 1,
   }

@@ -26,6 +26,7 @@ import { useElementsStore } from '../../../stores/elementsStore'
 import { useCanvasStore } from '../../../stores/canvasStore'
 import { nanoid } from 'nanoid'
 import { computeSeatPositions } from '../../../lib/seatLayout'
+import { nextSeatNumber } from '../../../lib/seatNumbering'
 
 export interface LibraryItem {
   type: ElementType
@@ -125,6 +126,12 @@ export function buildLibraryElement(
   x: number,
   y: number,
   zIndex: number,
+  /**
+   * Current floor's elements — passed in so the assignable-element
+   * branches can hand out a sequential `deskId` ("1", "2", "3" …).
+   * Omitting this (callers from tests, etc.) falls back to `"1"`.
+   */
+  existingElements: Record<string, import('../../../types/elements').CanvasElement> = {},
 ): AnyLibraryElement {
   const defaults = getDefaults(item.type, item.shape) || { width: 60, height: 60, fill: '#F3F4F6', stroke: '#6B7280' }
   const id = nanoid()
@@ -158,7 +165,10 @@ export function buildLibraryElement(
   }
 
   if (item.type === 'desk' || item.type === 'hot-desk') {
-    const deskId = `D-${nanoid(6)}`
+    // Sequential "1", "2", "3"… per floor — see `nextSeatNumber` for the
+    // scoping rules. Workstations and private offices use the same
+    // counter so we never hand out "W-4" while a desk is also "4".
+    const deskId = nextSeatNumber(existingElements)
     const element: DeskElement = {
       ...baseProps,
       type: item.type,
@@ -171,7 +181,7 @@ export function buildLibraryElement(
   }
 
   if (item.type === 'workstation') {
-    const deskId = `W-${nanoid(6)}`
+    const deskId = nextSeatNumber(existingElements)
     const element: WorkstationElement = {
       ...baseProps,
       type: 'workstation',
@@ -183,7 +193,7 @@ export function buildLibraryElement(
   }
 
   if (item.type === 'private-office') {
-    const deskId = `PO-${nanoid(6)}`
+    const deskId = nextSeatNumber(existingElements)
     const element: PrivateOfficeElement = {
       ...baseProps,
       type: 'private-office',
@@ -448,7 +458,10 @@ export function ElementLibrary() {
     // viewport (approx 400, 300 screen px from the canvas origin).
     const x = (-stageX + 400) / stageScale
     const y = (-stageY + 300) / stageScale
-    addElement(buildLibraryElement(item, x, y, getMaxZIndex() + 1))
+    // Read elements via getState() so we don't re-subscribe the component
+    // to the whole map just to auto-number a new seat.
+    const existing = useElementsStore.getState().elements
+    addElement(buildLibraryElement(item, x, y, getMaxZIndex() + 1, existing))
     addRecent(item)
   }
 

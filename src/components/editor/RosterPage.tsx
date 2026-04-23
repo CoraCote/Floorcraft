@@ -252,6 +252,26 @@ export function RosterPage() {
     return m
   }, [floors])
 
+  // seatId (canvas element id) → human deskId ("1", "2", …). Flattened
+  // across every floor so the Roster doesn't need to care which floor a
+  // seat lives on — we already know that from `emp.floorId`. Built once
+  // per floors change and reused for the Seat column, sort, and drawer.
+  const seatLabelMap = useMemo(() => {
+    const m: Record<string, string> = {}
+    for (const f of floors) {
+      for (const el of Object.values(f.elements)) {
+        // Keep the check loose — any assignable element type carries
+        // `deskId`. The `getSeatLabel` helper centralises the type
+        // guarding; here we just copy the string when present.
+        const deskId = (el as { deskId?: string }).deskId
+        if (typeof deskId === 'string' && deskId.trim().length > 0) {
+          m[el.id] = deskId
+        }
+      }
+    }
+    return m
+  }, [floors])
+
   const allDepartments = useMemo(
     () => Array.from(new Set(Object.keys(departmentColors))).sort(),
     [departmentColors],
@@ -441,8 +461,12 @@ export function RosterPage() {
         case 'department': av = a.department ?? ''; bv = b.department ?? ''; break
         case 'title': av = a.title ?? ''; bv = b.title ?? ''; break
         case 'seat':
-          av = a.seatId ? `${floorMap[a.floorId ?? ''] ?? ''}/${a.seatId}` : ''
-          bv = b.seatId ? `${floorMap[b.floorId ?? ''] ?? ''}/${b.seatId}` : ''
+          av = a.seatId
+            ? `${floorMap[a.floorId ?? ''] ?? ''}/${seatLabelMap[a.seatId] ?? a.seatId}`
+            : ''
+          bv = b.seatId
+            ? `${floorMap[b.floorId ?? ''] ?? ''}/${seatLabelMap[b.seatId] ?? b.seatId}`
+            : ''
           break
         case 'status': av = a.status; bv = b.status; break
       }
@@ -452,7 +476,7 @@ export function RosterPage() {
       return av.localeCompare(bv, undefined, { sensitivity: 'base', numeric: true }) * dir
     })
     return copy
-  }, [filtered, sortColumn, sortDir, floorMap])
+  }, [filtered, sortColumn, sortDir, floorMap, seatLabelMap])
 
   // Prune `selected` only when an employee is actually *deleted* from the
   // store — not when a filter hides them. The earlier version pruned
@@ -1052,6 +1076,7 @@ export function RosterPage() {
                   key={emp.id}
                   employee={emp}
                   floorName={emp.floorId ? floorMap[emp.floorId] ?? null : null}
+                  seatLabel={emp.seatId ? seatLabelMap[emp.seatId] ?? null : null}
                   deptColor={
                     emp.department
                       ? departmentColors[emp.department] ?? getDepartmentColor(emp.department)
@@ -1228,7 +1253,7 @@ export function RosterPage() {
                       className="text-blue-600 hover:underline text-left"
                       title="Show seat on map"
                     >
-                      {floorMap[emp.floorId] ?? '?'} / {emp.seatId}
+                      {floorMap[emp.floorId] ?? '?'} / {seatLabelMap[emp.seatId] ?? emp.seatId.slice(0, 4)}
                     </button>
                   ) : (
                     <span className="text-gray-400">Unassigned</span>
@@ -1948,6 +1973,7 @@ function EndingSoonBadge({ endDate }: { endDate: string | null }) {
 function PersonCard({
   employee,
   floorName,
+  seatLabel,
   deptColor,
   isSelected,
   todayLabel,
@@ -1959,6 +1985,7 @@ function PersonCard({
 }: {
   employee: Employee
   floorName: string | null
+  seatLabel: string | null
   deptColor: string | null
   isSelected: boolean
   todayLabel: string
@@ -2065,7 +2092,7 @@ function PersonCard({
             className="text-blue-600 hover:underline truncate"
             title="Show seat on map"
           >
-            {floorName ?? '?'} / {employee.seatId}
+            {floorName ?? '?'} / {seatLabel ?? employee.seatId.slice(0, 4)}
           </button>
         ) : (
           <span className="text-gray-400">Unassigned</span>

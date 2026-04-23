@@ -139,6 +139,16 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
 
   const managerCandidates = Object.values(employees).filter((e) => e.id !== employee.id)
   const seatFloor = employee.floorId ? floors.find((f) => f.id === employee.floorId) : null
+  // Resolve the human seat label ("1", "Reception"…) from the canvas
+  // element — `employee.seatId` is the element's nanoid, which the user
+  // doesn't want to see. Look inside the owning floor's elements map and
+  // read `deskId`. Stale references (element deleted but employee not
+  // unassigned) fall back to a short truncation downstream.
+  const seatLabel: string | null =
+    employee.seatId && seatFloor
+      ? ((seatFloor.elements[employee.seatId] as { deskId?: string } | undefined)
+          ?.deskId ?? null)
+      : null
   // `managerId` may point to a now-deleted employee if an older export was
   // re-imported, or if the cascading cleanup in `deleteEmployee` was
   // bypassed. Flag the condition so the user can clear it — a phantom
@@ -448,7 +458,7 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
           <Field label="Seat">
             <div className="text-sm text-gray-600 px-2 py-1.5 bg-gray-50 rounded border border-gray-100">
               {employee.seatId && seatFloor
-                ? `${seatFloor.name} / ${employee.seatId}`
+                ? `${seatFloor.name} / ${seatLabel ?? employee.seatId.slice(0, 4)}`
                 : 'Unassigned'}
             </div>
           </Field>
