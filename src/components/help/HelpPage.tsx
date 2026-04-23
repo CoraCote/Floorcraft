@@ -172,6 +172,26 @@ const sections: Section[] = [
           <li><kbd>Ctrl</kbd>+<kbd>G</kbd> groups selected elements; <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>G</kbd> ungroups.</li>
           <li><kbd>Ctrl</kbd>+<kbd>L</kbd> locks/unlocks selection so it can't be moved accidentally.</li>
         </ul>
+
+        <h3 className="font-semibold text-gray-900 mt-4">Moving &amp; rotating</h3>
+        <p>
+          As you drag an element, <strong>magenta alignment guides</strong>{' '}
+          appear whenever one of its edges or its center lines up with the
+          edges or center of another element on the floor (within 5 pixels).
+          The element snaps to that line so desks, tables, and rooms stay
+          visually coherent without fiddling. Hold <kbd>Shift</kbd> while
+          dragging to bypass the snap — useful when the guide is guessing
+          wrong and you want pixel-exact placement.
+        </p>
+        <p>
+          Grab the rotate handle on the selection border to turn an element.
+          The handle <strong>clicks onto cardinal angles</strong> (0°, 45°,
+          90°, 135°, 180°, 225°, 270°, 315°) when you come within 5° of one,
+          and a floating <strong>angle badge</strong> next to the selection
+          shows the current rotation in real time. Release to commit; the
+          badge disappears. Multi-select works the same — the whole group
+          rotates around its collective center.
+        </p>
       </div>
     ),
   },
@@ -553,6 +573,24 @@ const sections: Section[] = [
           Any employee whose <code>endDate</code> is within the next 30 days.
           Contractors and interns usually populate this; full-time hires leave
           it blank.
+        </FaqItem>
+
+        <FaqItem q="How do I align desks precisely to each other?">
+          Just drag — when the element's edge or center gets within 5 pixels
+          of another element's edge or center, a magenta guide line appears
+          and the element snaps to it. Dragging a new desk next to an
+          existing row is how most alignment gets done. If the snap is
+          fighting you, hold <kbd>Shift</kbd> while dragging to turn it off
+          and drop pixel-exact.
+        </FaqItem>
+
+        <FaqItem q="How do I rotate an element to a specific angle?">
+          Click to select, then grab the rotate handle that hovers above the
+          selection. The handle snaps to cardinal angles (0°, 45°, 90°,
+          135°, 180°, 225°, 270°, 315°) with a 5° tolerance, and a floating
+          badge next to the selection shows the live angle in degrees while
+          you drag. Release when the badge reads what you want. Multi-select
+          rotates the whole group around its collective center.
         </FaqItem>
 
         <FaqItem q="Can I export a floor plan as an image?">
