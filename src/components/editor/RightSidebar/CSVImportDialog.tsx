@@ -1,15 +1,12 @@
 import { useUIStore } from '../../../stores/uiStore'
 import { useEmployeeStore } from '../../../stores/employeeStore'
-import { parseEmployeeCSV, CSVTooLargeError } from '../../../lib/csv'
-import { isEmployeeStatus } from '../../../types/employee'
+import {
+  parseEmployeeCSV,
+  CSVTooLargeError,
+  validateImportRows,
+  importEmployees,
+} from '../../../lib/employeeCsv'
 import { useState, useCallback, useEffect } from 'react'
-
-/** Parse an equipment_status CSV value into our enum, defaulting safely. */
-function parseEquipmentStatus(v: string | undefined): 'pending' | 'provisioned' | 'not-needed' {
-  const lower = v?.trim().toLowerCase()
-  if (lower === 'pending' || lower === 'provisioned' || lower === 'not-needed') return lower
-  return 'not-needed'
-}
 
 export function CSVImportDialog() {
   const open = useUIStore((s) => s.csvImportOpen)
@@ -42,70 +39,31 @@ export function CSVImportDialog() {
   const handleImport = useCallback(() => {
     if (!preview) return
 
-    // Two-pass import so we can resolve `manager` (a name string in the CSV)
-    // to a `managerId` including employees we just added in the first pass.
-    //
-    // Pass 1: create every employee with managerId: null, recording the
-    // (newId → rawManagerName) pairs for rows that had a manager column.
-    const pending: Array<{ empId: string; managerName: string }> = []
-    for (const r of preview.rows) {
-      // Split comma-separated lists; drop empty tokens so `"a,,b"` doesn't
-      // produce a phantom blank entry that would round-trip as a broken tag.
-      const officeDays = r.office_days
-        ? r.office_days.split(',').map((d) => d.trim()).filter(Boolean)
-        : []
-      const tags = r.tags
-        ? r.tags.split(',').map((t) => t.trim()).filter(Boolean)
-        : []
-      const equipmentNeeds = r.equipment_needs
-        ? r.equipment_needs.split(',').map((t) => t.trim()).filter(Boolean)
-        : []
-      const statusLower = r.status?.trim().toLowerCase()
-      const newId = addEmployee({
-        name: r.name,
-        email: r.email || '',
-        department: r.department || null,
-        team: r.team || null,
-        title: r.title || null,
-        managerId: null,
-        employmentType:
-          (r.type as 'full-time' | 'contractor' | 'part-time' | 'intern') || 'full-time',
-        status: isEmployeeStatus(statusLower) ? statusLower : 'active',
-        officeDays,
-        startDate: r.start_date || null,
-        endDate: r.end_date || null,
-        equipmentNeeds,
-        equipmentStatus: parseEquipmentStatus(r.equipment_status),
-        photoUrl: r.photo_url || null,
-        tags,
-        seatId: null,
-        floorId: null,
-      })
-      const rawManager = r.manager?.trim()
-      if (rawManager) {
-        pending.push({ empId: newId, managerName: rawManager })
-      }
+    const existing = useEmployeeStore.getState().employees
+    // Reduce to the shape validateImportRows expects (id, name, email).
+    const existingReduced: Record<
+      string,
+      { id: string; name: string; email: string | null }
+    > = {}
+    for (const [id, e] of Object.entries(existing)) {
+      existingReduced[id] = { id, name: e.name, email: e.email || null }
     }
 
-    // Pass 2: resolve manager names against the full store (new + pre-existing).
-    // Case-insensitive, trimmed equality. Ambiguous matches stay unresolved.
-    const warnings: string[] = []
-    const allEmployees = Object.values(useEmployeeStore.getState().employees)
-    for (const { empId, managerName } of pending) {
-      const needle = managerName.toLowerCase()
-      const matches = allEmployees.filter((e) => e.name.trim().toLowerCase() === needle)
-      if (matches.length === 1) {
-        updateEmployee(empId, { managerId: matches[0].id })
-      } else if (matches.length === 0) {
-        warnings.push(`No employee found matching manager "${managerName}"`)
-      } else {
-        warnings.push(`Ambiguous manager "${managerName}" — ${matches.length} matches`)
-      }
-    }
-    if (warnings.length > 0) {
-      console.warn('CSV import — unresolved managers:\n' + warnings.join('\n'))
-    }
+    const { valid, skipped, warnings } = validateImportRows(preview.rows, existingReduced)
+    const { imported } = importEmployees({
+      valid,
+      existing: existingReduced,
+      addEmployee: addEmployee as never,
+      updateEmployee,
+    })
 
+    // Hand off to the summary modal and close ourselves. The summary modal
+    // is mounted by ProjectShell and reads from uiStore.csvImportSummary.
+    useUIStore.getState().setCsvImportSummary({
+      importedCount: imported.length,
+      skipped,
+      warnings,
+    })
     setOpen(false)
     setCsvText('')
     setPreview(null)

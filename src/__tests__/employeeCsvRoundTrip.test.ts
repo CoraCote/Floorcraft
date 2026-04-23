@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { employeesToCSV } from '../lib/employeeCsv'
-import { parseEmployeeCSV } from '../lib/csv'
+import { parseEmployeeCSV } from '../lib/employeeCsv'
 import type { Employee } from '../types/employee'
 
 /**

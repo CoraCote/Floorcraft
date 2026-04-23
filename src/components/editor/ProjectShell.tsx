@@ -4,6 +4,7 @@ import { TopBar } from './TopBar'
 import { ContextMenu } from './ContextMenu'
 import { KeyboardShortcutsOverlay } from './KeyboardShortcutsOverlay'
 import { CSVImportDialog } from './RightSidebar/CSVImportDialog'
+import { CSVImportSummaryModal } from './CSVImportSummaryModal'
 import { ExportDialog } from './ExportDialog'
 import { NewProjectModal } from '../dashboard/NewProjectModal'
 import { ShareModal } from './ShareModal'
@@ -202,6 +203,7 @@ export function ProjectShell() {
       <ContextMenu />
       <KeyboardShortcutsOverlay />
       <CSVImportDialog />
+      <CSVImportSummaryModal />
       <ExportDialog />
       <NewProjectModal />
       <ShareModal />

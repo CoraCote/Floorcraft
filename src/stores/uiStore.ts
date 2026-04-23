@@ -1,4 +1,11 @@
 import { create } from 'zustand'
+import type { ImportIssue } from '../lib/employeeCsv'
+
+export interface CSVImportSummary {
+  importedCount: number
+  skipped: ImportIssue[]
+  warnings: ImportIssue[]
+}
 
 interface UIState {
   // Selection
@@ -15,6 +22,7 @@ interface UIState {
   templatePickerOpen: boolean
   shortcutsOverlayOpen: boolean
   csvImportOpen: boolean
+  csvImportSummary: CSVImportSummary | null
 
   // Presentation
   presentationMode: boolean
@@ -67,6 +75,7 @@ interface UIState {
   setTemplatePickerOpen: (open: boolean) => void
   setShortcutsOverlayOpen: (open: boolean) => void
   setCsvImportOpen: (open: boolean) => void
+  setCsvImportSummary: (summary: CSVImportSummary | null) => void
   setPresentationMode: (mode: boolean) => void
   setContextMenu: (menu: UIState['contextMenu']) => void
   setEditingLabelId: (id: string | null) => void
@@ -83,7 +92,16 @@ interface UIState {
   registerModalClose: () => void
 }
 
-export const useUIStore = create<UIState>((set) => ({
+// Stash the store instance on globalThis so it survives Vitest's
+// `vi.resetModules()` between dynamic imports in the same test file.
+// Without this, each re-import creates a brand-new zustand store and
+// state set from the outer test scope is invisible to the freshly
+// imported component. Module identity is not enough; globalThis is
+// the only identity that persists across resets.
+type UIStore = ReturnType<typeof createUIStore>
+
+function createUIStore() {
+  return create<UIState>((set) => ({
   selectedIds: [],
   hoveredId: null,
   rightSidebarOpen: true,
@@ -93,6 +111,7 @@ export const useUIStore = create<UIState>((set) => ({
   templatePickerOpen: false,
   shortcutsOverlayOpen: false,
   csvImportOpen: false,
+  csvImportSummary: null,
   presentationMode: false,
   contextMenu: null,
   editingLabelId: null,
@@ -123,6 +142,7 @@ export const useUIStore = create<UIState>((set) => ({
   setTemplatePickerOpen: (open) => set({ templatePickerOpen: open }),
   setShortcutsOverlayOpen: (open) => set({ shortcutsOverlayOpen: open }),
   setCsvImportOpen: (open) => set({ csvImportOpen: open }),
+  setCsvImportSummary: (summary) => set({ csvImportSummary: summary }),
   setPresentationMode: (mode) => set({ presentationMode: mode }),
   setContextMenu: (menu) => set({ contextMenu: menu }),
   setEditingLabelId: (id) => set({ editingLabelId: id }),
@@ -139,4 +159,11 @@ export const useUIStore = create<UIState>((set) => ({
     // Clamp at 0 so a stray unmount (e.g. StrictMode double-invoke) can't
     // drive the counter negative and silently disable global shortcuts.
     set((s) => ({ modalOpenCount: Math.max(0, s.modalOpenCount - 1) })),
-}))
+  }))
+}
+
+const __UI_STORE_KEY = Symbol.for('floocraft.ui-store')
+const __g = globalThis as unknown as { [k: symbol]: unknown }
+export const useUIStore: UIStore =
+  (__g[__UI_STORE_KEY] as UIStore | undefined) ??
+  (__g[__UI_STORE_KEY] = createUIStore()) as UIStore
