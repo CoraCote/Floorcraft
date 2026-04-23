@@ -10,12 +10,12 @@ describe('permissions matrix', () => {
     for (const a of actions) expect(can('owner', a)).toBe(true)
   })
 
-  it('viewer can only view reports', () => {
-    expect(can('viewer', 'viewReports')).toBe(true)
-    expect(can('viewer', 'editRoster')).toBe(false)
-    expect(can('viewer', 'editMap')).toBe(false)
-    expect(can('viewer', 'manageTeam')).toBe(false)
-    expect(can('viewer', 'viewAuditLog')).toBe(false)
+  it('viewer has no permissions (read-only through routes only)', () => {
+    const allActions: Action[] = [
+      'editRoster', 'editMap', 'manageTeam',
+      'viewAuditLog', 'viewReports', 'manageBilling', 'generateShareLink',
+    ]
+    for (const a of allActions) expect(can('viewer', a)).toBe(false)
   })
 
   it('hr-editor can edit roster but not map', () => {
@@ -38,8 +38,8 @@ describe('permissions matrix', () => {
     expect(can('editor', 'viewAuditLog')).toBe(false)
   })
 
-  it('null role fails open on view, closed on everything else', () => {
-    expect(can(null, 'viewReports')).toBe(true)
+  it('null role is closed on everything (transient load)', () => {
+    expect(can(null, 'viewReports')).toBe(false)
     expect(can(null, 'editRoster')).toBe(false)
     expect(can(null, 'editMap')).toBe(false)
     expect(can(null, 'manageTeam')).toBe(false)

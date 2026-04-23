@@ -23,13 +23,13 @@ const MATRIX: Record<Role, Action[]> = {
   editor: ['editRoster', 'editMap', 'viewReports'],
   'hr-editor': ['editRoster', 'viewAuditLog', 'viewReports'],
   'space-planner': ['editMap', 'viewReports'],
-  viewer: ['viewReports'],
+  viewer: [],
 }
 
 export function can(role: Role | null, action: Action): boolean {
   if (role === null) {
-    // Transient load state: fail-open on inert views only.
-    return action === 'viewReports'
+    // Transient load state: fail closed on everything.
+    return false
   }
   const allowed = MATRIX[role]
   if (!allowed) return false

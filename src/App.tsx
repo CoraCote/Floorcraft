@@ -63,6 +63,11 @@ const AuditLogPage = lazy(() =>
     default: m.AuditLogPage,
   })),
 )
+const ReportsPage = lazy(() =>
+  import('./components/reports/ReportsPage').then((m) => ({
+    default: m.ReportsPage,
+  })),
+)
 
 function Loading() {
   return (
@@ -179,6 +184,7 @@ function App() {
               <Route path="map" element={<MapView />} />
               <Route path="roster" element={<RosterPage />} />
               <Route path="audit" element={<AuditLogPage />} />
+              <Route path="reports" element={<ReportsPage />} />
             </Route>
 
             {/* Legacy routes — Phases 0-5 mounted the editor at

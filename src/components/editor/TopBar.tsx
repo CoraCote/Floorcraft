@@ -42,6 +42,7 @@ export function TopBar() {
   const redo = useElementsStore.temporal.getState().redo
   const { canUndo, canRedo } = useTemporalState()
   const canViewAudit = useCan('viewAuditLog')
+  const canViewReports = useCan('viewReports')
 
   const [editing, setEditing] = useState(false)
   const [nameValue, setNameValue] = useState('')
@@ -178,6 +179,20 @@ export function TopBar() {
               }
             >
               Audit
+            </NavLink>
+          )}
+          {canViewReports && (
+            <NavLink
+              to={`/t/${teamSlug}/o/${officeSlug}/reports`}
+              className={({ isActive }) =>
+                `px-3 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
+                  isActive
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-800'
+                }`
+              }
+            >
+              Reports
             </NavLink>
           )}
         </nav>
