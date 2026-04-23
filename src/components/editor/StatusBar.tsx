@@ -76,8 +76,9 @@ export function StatusBar() {
         adjacent status-bar items from shuffling as the digits change.
       */}
       {cursorX !== null && cursorY !== null && (
-        <span className="tabular-nums" title="Cursor position (world units)">
-          X: <strong>{cursorX}</strong> · Y: <strong>{cursorY}</strong>
+        <span className="tabular-nums" title="Cursor position in canvas units (pixels). 1 grid square = 20 units by default.">
+          X: <strong>{cursorX}</strong> · Y: <strong>{cursorY}</strong>{' '}
+          <span className="text-gray-400">px</span>
         </span>
       )}
 

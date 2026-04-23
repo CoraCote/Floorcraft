@@ -14,6 +14,26 @@ import { formatRelative } from '../../lib/time'
 import { ConfirmDialog } from '../editor/ConfirmDialog'
 import type { Team } from '../../types/team'
 
+/**
+ * Suggest the next default name for a new office. First one is simply
+ * "Main office" so an empty team gets a sensible placeholder instead of
+ * "Untitled office 1"; subsequent creations use "New office N" where N
+ * is one past the highest existing "New office K" counter. This lives
+ * inline (not its own file) because it's one-caller and trivial.
+ */
+function nextOfficeName(existing: { name: string }[]): string {
+  if (existing.length === 0) return 'Main office'
+  let max = 0
+  for (const o of existing) {
+    const m = /^New office\s+(\d+)$/i.exec(o.name.trim())
+    if (m) {
+      const n = parseInt(m[1], 10)
+      if (Number.isFinite(n) && n > max) max = n
+    }
+  }
+  return `New office ${max + 1}`
+}
+
 export function TeamHomePage() {
   const { teamSlug } = useParams<{ teamSlug: string }>()
   const [team, setTeam] = useState<Team | null>(null)
@@ -40,9 +60,24 @@ export function TeamHomePage() {
 
   async function onNew() {
     if (!team || session.status !== 'authenticated') return
+    // Prompt for a name up front — the previous "Untitled office" default
+    // led to a wall of identical-looking cards as soon as an operator
+    // created more than one office. `prompt()` is deliberately minimal here:
+    // anything the user types flows through the same rename path they'd
+    // use in the TopBar, so a typo is trivially recoverable. Empty / Esc
+    // cancels the create entirely (contrast: a modal with its own
+    // validation state would be overkill for a single text field).
+    const suggested = nextOfficeName(offices)
+    const input = window.prompt('Name this office:', suggested)
+    if (input === null) return
+    const name = input.trim() || suggested
     setCreating(true)
-    const created = await createOffice(team.id, 'Untitled office')
-    navigate(`/t/${team.slug}/o/${created.slug}/map`)
+    try {
+      const created = await createOffice(team.id, name)
+      navigate(`/t/${team.slug}/o/${created.slug}/map`)
+    } finally {
+      setCreating(false)
+    }
   }
 
   // "Demo office" is a quick-start that seeds a fully populated payload —
@@ -160,13 +195,32 @@ export function TeamHomePage() {
           {q ? (
             'No matches.'
           ) : (
-            <>
-              No offices yet \u2014{' '}
-              <button className="text-blue-600 hover:underline" onClick={onNew}>
-                create your first
-              </button>
-              .
-            </>
+            // First-office state: a fresh team sees a blank page with a
+            // single "create" link, which gives no sense of what the tool
+            // actually does. Surface the demo as an equal-weight CTA here
+            // (it's still tucked into the <details> disclosure above for
+            // subsequent creates) so an operator can pick between "start
+            // blank" and "see a fully-populated example" without hunting.
+            <div className="space-y-3">
+              <div>No offices yet — start blank, or explore a pre-populated example.</div>
+              <div className="flex items-center justify-center gap-2">
+                <button
+                  onClick={onNew}
+                  disabled={creating}
+                  className="px-3 py-1.5 bg-blue-600 text-white rounded text-sm disabled:opacity-50"
+                >
+                  Create your first office
+                </button>
+                <button
+                  onClick={onNewDemo}
+                  disabled={creating}
+                  className="px-3 py-1.5 border rounded text-sm hover:bg-gray-50 disabled:opacity-50"
+                  title="Pre-populated with ~18 demo employees to exercise the roster features"
+                >
+                  Try the sample office
+                </button>
+              </div>
+            </div>
           )}
         </div>
       ) : (

@@ -31,7 +31,7 @@ describe('StatusBar cursor coordinate readout', () => {
   it('renders the cursor coordinates when the cursor is over the canvas', () => {
     useCursorStore.setState({ x: 42, y: 99 })
     render(<StatusBar />)
-    const readout = screen.getByTitle('Cursor position (world units)')
+    const readout = screen.getByTitle('Cursor position in canvas units (pixels). 1 grid square = 20 units by default.')
     expect(readout).toHaveTextContent('X: 42')
     expect(readout).toHaveTextContent('Y: 99')
   })
@@ -39,10 +39,10 @@ describe('StatusBar cursor coordinate readout', () => {
   it('removes the readout when the cursor is cleared (pointer leaves canvas)', () => {
     useCursorStore.setState({ x: 10, y: 20 })
     const { rerender } = render(<StatusBar />)
-    expect(screen.getByTitle('Cursor position (world units)')).toBeInTheDocument()
+    expect(screen.getByTitle('Cursor position in canvas units (pixels). 1 grid square = 20 units by default.')).toBeInTheDocument()
 
     useCursorStore.setState({ x: null, y: null })
     rerender(<StatusBar />)
-    expect(screen.queryByTitle('Cursor position (world units)')).toBeNull()
+    expect(screen.queryByTitle('Cursor position in canvas units (pixels). 1 grid square = 20 units by default.')).toBeNull()
   })
 })

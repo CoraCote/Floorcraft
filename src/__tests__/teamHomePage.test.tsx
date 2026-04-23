@@ -33,7 +33,10 @@ describe('TeamHomePage', () => {
     listOffices.mockResolvedValue([
       { id: 'o1', slug: 'hq', name: 'HQ', updated_at: '2026-04-20T00:00:00Z', is_private: false },
     ])
-    createOffice.mockResolvedValue({ id: 'o2', slug: 'hq-2', name: 'Untitled office' })
+    createOffice.mockResolvedValue({ id: 'o2', slug: 'hq-2', name: 'New office 1' })
+    // onNew prompts for a name; stub `window.prompt` to auto-accept the
+    // suggested default so the test doesn't need to interact with a modal.
+    vi.spyOn(window, 'prompt').mockImplementation((_msg, def) => def ?? '')
     render(
       <MemoryRouter initialEntries={['/t/acme']}>
         <Routes>

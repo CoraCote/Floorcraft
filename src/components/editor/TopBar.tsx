@@ -124,7 +124,8 @@ export function TopBar() {
         ) : (
           <button
             className="text-sm font-semibold text-gray-800 hover:bg-gray-100 px-2 py-1 rounded"
-            onDoubleClick={() => {
+            title="Click to rename"
+            onClick={() => {
               setNameValue(project?.name || '')
               setEditing(true)
             }}

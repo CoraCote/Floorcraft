@@ -17,8 +17,8 @@ const tools: { id: ToolType; label: string; icon: React.ReactNode; shortcut: str
   { id: 'select', label: 'Select', icon: <MousePointer2 size={18} />, shortcut: 'V' },
   { id: 'pan', label: 'Pan', icon: <Hand size={18} />, shortcut: 'Space' },
   { id: 'wall', label: 'Wall', icon: <Minus size={18} />, shortcut: 'W' },
-  { id: 'door', label: 'Door', icon: <DoorOpen size={18} />, shortcut: '' },
-  { id: 'window', label: 'Window', icon: <SquareIcon size={18} />, shortcut: '' },
+  { id: 'door', label: 'Door', icon: <DoorOpen size={18} />, shortcut: '⇧D' },
+  { id: 'window', label: 'Window', icon: <SquareIcon size={18} />, shortcut: '⇧N' },
   // Drawing primitives. Shortcut picks:
   //   R = rect, E = ellipse (C is already taken visually by "Circle" but we
   //   avoid the D/G/M/R conflicts in useKeyboardShortcuts), L = line,

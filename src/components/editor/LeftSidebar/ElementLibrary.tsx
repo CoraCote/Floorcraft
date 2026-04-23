@@ -359,7 +359,12 @@ interface LibrarySectionProps {
 function LibrarySection({
   id, title, items, collapsible = true, onClick, onDragStart, onDelete,
 }: LibrarySectionProps) {
-  const collapsed = useLibraryCollapse((s) => s.collapsed[id] ?? false)
+  // If the user hasn't explicitly toggled this section, fall back to the
+  // per-category default — most sections start collapsed (see the hook)
+  // so the library is scannable on first open instead of a wall of tiles.
+  const defaultCollapsed = useLibraryCollapse((s) => s.defaultCollapsed(id))
+  const stored = useLibraryCollapse((s) => s.collapsed[id])
+  const collapsed = stored ?? defaultCollapsed
   const toggle = useLibraryCollapse((s) => s.toggleCategory)
   const isCollapsed = collapsible && collapsed
 
@@ -413,6 +418,16 @@ export function ElementLibrary() {
   const [query, setQuery] = useState('')
   const [uploadError, setUploadError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  // Running offset for click-to-add placements. When the same spot is used
+  // repeatedly (user click-click-clicks the same tile), each subsequent
+  // placement nudges down-and-right by CLICK_ADD_STEP so elements don't
+  // stack invisibly on top of each other. Resets whenever the viewport
+  // centre changes, so moving the canvas or zooming restarts the cascade.
+  const cascadeRef = useRef<{ cx: number; cy: number; count: number }>({
+    cx: NaN,
+    cy: NaN,
+    count: 0,
+  })
 
   const handleUploadClick = () => {
     setUploadError(null)
@@ -458,8 +473,22 @@ export function ElementLibrary() {
   const handleAddElement = (item: LibraryItem) => {
     // Click-to-add drops the element near the centre of the current
     // viewport (approx 400, 300 screen px from the canvas origin).
-    const x = (-stageX + 400) / stageScale
-    const y = (-stageY + 300) / stageScale
+    const cx = (-stageX + 400) / stageScale
+    const cy = (-stageY + 300) / stageScale
+
+    // Cascade: repeatedly clicking the same tile would otherwise pile
+    // elements on the exact same coordinate and the user thinks nothing
+    // happened. Nudge each successive placement by a constant step until
+    // the viewport centre changes (pan/zoom resets the cascade).
+    const CLICK_ADD_STEP = 16
+    const same =
+      Math.abs(cascadeRef.current.cx - cx) < 0.5 &&
+      Math.abs(cascadeRef.current.cy - cy) < 0.5
+    const count = same ? cascadeRef.current.count + 1 : 0
+    cascadeRef.current = { cx, cy, count }
+    const x = cx + count * CLICK_ADD_STEP
+    const y = cy + count * CLICK_ADD_STEP
+
     // Read elements via getState() so we don't re-subscribe the component
     // to the whole map just to auto-number a new seat.
     const existing = useElementsStore.getState().elements

@@ -163,6 +163,18 @@ export function useKeyboardShortcuts() {
           e.preventDefault()
           setActiveTool('rect-shape'); return
         }
+        // Shift+D and Shift+N for door/window. Plain D is already
+        // "toggle dimensions" and plain W is "wall"; Shift-locking these
+        // keeps them out of the modifier-free hotkey pool while still
+        // being discoverable from the tool-selector label.
+        if (e.shiftKey && (e.key === 'D' || e.key === 'd')) {
+          e.preventDefault()
+          setActiveTool('door'); return
+        }
+        if (e.shiftKey && (e.key === 'N' || e.key === 'n')) {
+          e.preventDefault()
+          setActiveTool('window'); return
+        }
         if (!e.shiftKey && (e.key === 'r' || e.key === 'R') && !(teamSlug && officeSlug)) {
           setActiveTool('rect-shape'); return
         }

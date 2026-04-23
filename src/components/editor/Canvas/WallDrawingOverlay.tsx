@@ -39,7 +39,31 @@ export function WallDrawingOverlay({
 }: WallDrawingOverlayProps) {
   const settings = useCanvasStore((s) => s.settings)
 
-  if (!isDrawing || points.length === 0) return null
+  // Pre-drawing ghost: when the wall tool is armed and the cursor is over
+  // the canvas but the user hasn't clicked yet, render a small dimmed
+  // vertex dot at the snap target. Without this, the wall tool feels like
+  // it "does nothing" on hover — compare with the door/window tools which
+  // already render an AttachmentGhost preview. useWallDrawing updates
+  // `currentPoint` on mousemove regardless of drawing state, so this is
+  // effectively free.
+  if (!isDrawing) {
+    if (!currentPoint) return null
+    return (
+      <Layer listening={false}>
+        <Circle
+          x={currentPoint.x}
+          y={currentPoint.y}
+          radius={4}
+          fill="#3B82F6"
+          stroke="#ffffff"
+          strokeWidth={2}
+          opacity={0.45}
+        />
+      </Layer>
+    )
+  }
+
+  if (points.length === 0) return null
 
   // The preview extends `points` by `currentPoint` and `bulges` by the
   // live preview bulge (or 0 if we're not dragging).
