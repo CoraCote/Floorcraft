@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { X } from 'lucide-react'
+import { AlertCircle, X } from 'lucide-react'
 import { useEmployeeStore } from '../../stores/employeeStore'
 import { useFloorStore } from '../../stores/floorStore'
 import { useUIStore } from '../../stores/uiStore'
@@ -18,6 +18,19 @@ const EQUIPMENT_STATUSES: Array<Employee['equipmentStatus']> = [
 ]
 
 const OFFICE_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
+
+/**
+ * Named office-day presets surfaced as quick-pick buttons under the
+ * Mon-Fri pills. HR typically sets the same few patterns on 80% of new
+ * hires; a one-click preset saves 5 taps per person on bulk onboarding.
+ */
+const OFFICE_DAY_PRESETS: Array<{ id: string; label: string; days: string[] }> = [
+  { id: 'weekdays', label: 'Weekdays', days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
+  { id: 'mwf', label: 'MWF', days: ['Mon', 'Wed', 'Fri'] },
+  { id: 'tth', label: 'TTh', days: ['Tue', 'Thu'] },
+  { id: 'hybrid', label: 'Hybrid (TWTh)', days: ['Tue', 'Wed', 'Thu'] },
+  { id: 'none', label: 'Remote', days: [] },
+]
 
 /**
  * Slide-in detail drawer for the "Edit full details" action. Shows every
@@ -66,11 +79,13 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
     return () => registerModalClose()
   }, [registerModalOpen, registerModalClose])
 
-  // Autofocus the first field on mount so keyboard users land inside the
-  // drawer immediately. Done in an effect (not autoFocus prop) so it runs
-  // after layout and works with the transition.
+  // Autofocus the first field (Name) on mount so keyboard users land
+  // inside the drawer immediately. Also select the current value so the
+  // `+ Add person` flow can just start typing to replace the "New person"
+  // placeholder — no manual backspace.
   useEffect(() => {
     firstFieldRef.current?.focus()
+    firstFieldRef.current?.select()
   }, [])
 
   // Escape closes; Tab/Shift+Tab wrap within the drawer so focus never
@@ -124,6 +139,12 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
 
   const managerCandidates = Object.values(employees).filter((e) => e.id !== employee.id)
   const seatFloor = employee.floorId ? floors.find((f) => f.id === employee.floorId) : null
+  // `managerId` may point to a now-deleted employee if an older export was
+  // re-imported, or if the cascading cleanup in `deleteEmployee` was
+  // bypassed. Flag the condition so the user can clear it — a phantom
+  // dropdown value would otherwise silently propagate into future exports.
+  const danglingManager =
+    !!employee.managerId && !employees[employee.managerId]
 
   const toggleOfficeDay = (day: string) => {
     const has = employee.officeDays.includes(day)
@@ -182,9 +203,35 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
         </header>
 
         <div className="flex-1 px-5 py-4 space-y-4">
-          <Field label="Email">
+          {/*
+            Name is the first — and required — field. The old drawer
+            started at Email, which meant `+ Add person` routed the user
+            past the one thing they actually needed to type first. First
+            render selects the text so typing immediately replaces the
+            placeholder ("New person") without a manual backspace.
+          */}
+          <Field label="Name">
             <input
               ref={firstFieldRef}
+              className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              defaultValue={employee.name}
+              onBlur={(e) => {
+                const trimmed = e.target.value.trim()
+                // Name is required. An empty commit would corrupt sort /
+                // filter indexes (name is a primary sort key); fall back
+                // to the stored value and let the next edit re-try.
+                if (trimmed && trimmed !== employee.name) {
+                  updateEmployee(employee.id, { name: trimmed })
+                } else if (!trimmed) {
+                  e.target.value = employee.name
+                }
+              }}
+              required
+              aria-required="true"
+            />
+          </Field>
+          <Field label="Email">
+            <input
               className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               defaultValue={employee.email}
               onBlur={(e) =>
@@ -224,41 +271,93 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
           </div>
 
           <Field label="Manager">
-            <select
-              className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={employee.managerId ?? ''}
-              onChange={(e) =>
-                updateEmployee(employee.id, { managerId: e.target.value || null })
-              }
-            >
-              <option value="">— none —</option>
-              {managerCandidates.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+            <div className="space-y-1">
+              <select
+                className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={danglingManager ? '' : (employee.managerId ?? '')}
+                onChange={(e) =>
+                  updateEmployee(employee.id, { managerId: e.target.value || null })
+                }
+              >
+                <option value="">— none —</option>
+                {managerCandidates.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              {danglingManager && (
+                <div className="flex items-center justify-between gap-2 text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+                  <span className="inline-flex items-center gap-1">
+                    <AlertCircle size={12} /> Former manager — no longer in roster
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => updateEmployee(employee.id, { managerId: null })}
+                    className="text-amber-900 underline hover:no-underline"
+                  >
+                    Clear
+                  </button>
+                </div>
+              )}
+            </div>
           </Field>
 
           <Field label="Office days">
-            <div className="flex gap-1">
-              {OFFICE_DAYS.map((day) => {
-                const active = employee.officeDays.includes(day)
-                return (
-                  <button
-                    key={day}
-                    type="button"
-                    onClick={() => toggleOfficeDay(day)}
-                    className={`px-2 py-1 text-xs font-medium rounded border transition-colors ${
-                      active
-                        ? 'bg-blue-600 text-white border-blue-600'
-                        : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                    }`}
-                  >
-                    {day}
-                  </button>
-                )
-              })}
+            <div className="space-y-1.5">
+              <div className="flex gap-1">
+                {OFFICE_DAYS.map((day) => {
+                  const active = employee.officeDays.includes(day)
+                  return (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => toggleOfficeDay(day)}
+                      className={`px-2 py-1 text-xs font-medium rounded border transition-colors ${
+                        active
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      {day}
+                    </button>
+                  )
+                })}
+              </div>
+              {/*
+                Preset buttons — one-tap apply of the patterns HR reaches
+                for on 80% of new hires. We compare against the current
+                `officeDays` so the active preset reads as pressed; this is
+                cheap and keeps the two controls from drifting.
+              */}
+              <div className="flex flex-wrap gap-1">
+                {OFFICE_DAY_PRESETS.map((preset) => {
+                  const matches =
+                    preset.days.length === employee.officeDays.length &&
+                    preset.days.every((d) => employee.officeDays.includes(d))
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() =>
+                        updateEmployee(employee.id, { officeDays: preset.days })
+                      }
+                      className={`px-1.5 py-0.5 text-[10px] rounded border transition-colors ${
+                        matches
+                          ? 'bg-blue-100 text-blue-800 border-blue-300'
+                          : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
+                      }`}
+                      title={
+                        preset.days.length === 0
+                          ? 'Clear office days (remote)'
+                          : `Set to ${preset.days.join(', ')}`
+                      }
+                    >
+                      {preset.label}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           </Field>
 

@@ -89,6 +89,10 @@ export function LandingPage() {
       {/* Footer */}
       <div className="border-t border-gray-100 py-6 text-center text-sm text-gray-400">
         Floocraft — Office layout & seat management
+        <span className="mx-2">·</span>
+        <Link to="/help" className="hover:text-blue-600">
+          User guide &amp; FAQ
+        </Link>
       </div>
     </div>
   )

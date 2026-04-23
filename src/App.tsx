@@ -55,6 +55,9 @@ const DashboardRedirect = lazy(() =>
 const AccountPage = lazy(() =>
   import('./components/team/AccountPage').then((m) => ({ default: m.AccountPage })),
 )
+const HelpPage = lazy(() =>
+  import('./components/help/HelpPage').then((m) => ({ default: m.HelpPage })),
+)
 
 function Loading() {
   return (
@@ -96,6 +99,10 @@ function App() {
             <Route path="/auth/verify" element={<AuthVerifyPage />} />
             <Route path="/auth/reset" element={<AuthResetPage />} />
             <Route path="/invite/:token" element={<InvitePage />} />
+            {/* Help is intentionally public — an unauth'd user can read
+                the guide before signing up, and an auth'd one doesn't
+                have to bounce through a team to get to it. */}
+            <Route path="/help" element={<HelpPage />} />
 
             {/* Auth-only (no team required — these are the pages that get
                 you INTO a team) */}

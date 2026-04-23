@@ -326,6 +326,18 @@ export function TopBar() {
 
       <div className="w-px h-6 bg-gray-200" />
 
+      {/* Quick jump to the user guide. Opens in a new tab so the user
+          doesn't lose their canvas state. */}
+      <a
+        href="/help"
+        target="_blank"
+        rel="noreferrer"
+        className="text-xs px-2 py-1 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded"
+        title="Open user guide in a new tab"
+      >
+        Help
+      </a>
+
       {/* Account dropdown — rightmost so it's the one element users
           always know where to find. */}
       <UserMenu />

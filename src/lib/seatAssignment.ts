@@ -106,7 +106,8 @@ export function unassignEmployee(employeeId: string): void {
 /**
  * Fully delete an employee, clearing them from any assigned desk first.
  * Also walks every floor's elements to clear stale `assignedGuestId`
- * references on TableElement seats.
+ * references on TableElement seats, and nulls `managerId` on any direct
+ * reports so the drawer's Manager dropdown doesn't show a dangling pointer.
  */
 export function deleteEmployee(employeeId: string): void {
   unassignEmployee(employeeId)
@@ -135,6 +136,16 @@ export function deleteEmployee(employeeId: string): void {
         const current = floorStore.getFloorElements(floor.id)
         floorStore.setFloorElements(floor.id, { ...current, [el.id]: cleaned })
       }
+    }
+  }
+
+  // Null out managerId on anyone who reported to the deleted person —
+  // otherwise the drawer's Manager dropdown would show a "Former manager —
+  // cleared?" state on every report and exports would carry a dead id.
+  const employeeStore = useEmployeeStore.getState()
+  for (const emp of Object.values(employeeStore.employees)) {
+    if (emp.managerId === employeeId) {
+      employeeStore.updateEmployee(emp.id, { managerId: null })
     }
   }
 

@@ -39,6 +39,21 @@ export async function loadOffice(teamId: string, officeSlug: string): Promise<Of
   return data as OfficeLoaded
 }
 
+/**
+ * Hard-delete an office row. Supabase's row-level policy gates this to
+ * team admins / editors, so the call is safe to invoke directly from
+ * the client — a permissions failure surfaces as an error the caller
+ * can show rather than a silent no-op.
+ *
+ * The `offices.payload` column and any collaborators-related rows are
+ * dropped on the server by foreign-key cascade, so the client doesn't
+ * need to walk the object graph before deleting.
+ */
+export async function deleteOffice(id: string): Promise<void> {
+  const { error } = await supabase.from('offices').delete().eq('id', id)
+  if (error) throw error
+}
+
 export async function createOffice(teamId: string, name: string): Promise<OfficeListItem> {
   const { data, error } = await supabase
     .from('offices')

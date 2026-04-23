@@ -26,6 +26,7 @@ import {
 import type { Employee, EmployeeStatus } from '../../types/employee'
 import { EMPLOYEE_STATUSES } from '../../types/employee'
 import { RosterDetailDrawer } from './RosterDetailDrawer'
+import { ConfirmDialog } from './ConfirmDialog'
 import { downloadCSV, employeesToCSV } from '../../lib/employeeCsv'
 
 type SortColumn = 'name' | 'department' | 'title' | 'seat' | 'status'
@@ -175,6 +176,41 @@ export function RosterPage() {
     setSearchParams(next, { replace: true })
   }, [searchParams, setSearchParams])
 
+  /**
+   * Narrow-clear used by the "Total" stats chip. The chip's contract
+   * (documented below on `StatsBar`) is: clear the axes the chips
+   * themselves control — status, seat, day, equip, preset — while
+   * leaving the deliberate scopes the user picked in the filter
+   * dropdowns (q, dept, floor) alone. Without this the chip silently
+   * fought the filter controls, which the prior docstring warned about
+   * but the handler didn't honor.
+   */
+  const clearChipAxes = useCallback(() => {
+    const next = new URLSearchParams(searchParams)
+    next.delete('status')
+    next.delete('seat')
+    next.delete('day')
+    next.delete('equip')
+    next.delete('preset')
+    setSearchParams(next, { replace: true })
+  }, [searchParams, setSearchParams])
+
+  // Normalize a stale/hand-crafted `day` URL — the predicate silently no-ops
+  // for anything outside Mon-Fri, which produced "why is nothing showing?"
+  // confusion on a URL shared from a weekend. Dropping the param whenever
+  // it isn't a valid workday keeps the visible state aligned with what
+  // actually filters, and lets the active-filter pill disappear too.
+  useEffect(() => {
+    if (
+      dayFilter &&
+      !(OFFICE_DAYS_ORDER as readonly string[]).includes(dayFilter)
+    ) {
+      const next = new URLSearchParams(searchParams)
+      next.delete('day')
+      setSearchParams(next, { replace: true })
+    }
+  }, [dayFilter, searchParams, setSearchParams])
+
   // Everything keyed off the current clock stays stable for the lifetime of
   // a single render (so sort order doesn't skew as midnight rolls over
   // mid-session — a fresh render will just pick up the new date).
@@ -193,6 +229,20 @@ export function RosterPage() {
   const [drawerId, setDrawerId] = useState<string | null>(null)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [helpOpen, setHelpOpen] = useState(false)
+
+  // Confirmation state for destructive deletes. `null` when no dialog is
+  // open. Carrying the id list rather than passing it through a callback
+  // prop lets the dialog render a preview of who will be deleted.
+  const [pendingDelete, setPendingDelete] = useState<string[] | null>(null)
+
+  // Confirmation state for the "set status → departed still holding a
+  // seat" cascade. When the user sets someone to departed via row select
+  // or bulk action and they still occupy a desk, we offer to unassign so
+  // occupancy stats and the map stay honest. Declining keeps the seat held
+  // (a valid choice — notice period, gardening leave, etc.).
+  const [pendingDepartedUnassign, setPendingDepartedUnassign] = useState<
+    string[] | null
+  >(null)
 
   const searchInputRef = useRef<HTMLInputElement>(null)
 
@@ -259,6 +309,7 @@ export function RosterPage() {
     let onLeave = 0
     let unassigned = 0
     let equipmentPending = 0
+    let endingSoon = 0
     // Per-weekday headcount for the mini capacity chart under the stats
     // chips. Stored as an object keyed by the same Mon-Fri labels the
     // drawer persists to, so no mapping gymnastics needed elsewhere.
@@ -268,6 +319,9 @@ export function RosterPage() {
       if (e.status === 'on-leave') onLeave++
       if (!e.seatId) unassigned++
       if (e.equipmentStatus === 'pending') equipmentPending++
+      // "Ending soon" shares its definition with the `ending-soon` preset
+      // so clicking the chip and picking the preset land on the same set.
+      if (withinDays(e.endDate, 30, 'future')) endingSoon++
       for (const d of e.officeDays) {
         if (d in perDay) perDay[d] += 1
       }
@@ -280,6 +334,7 @@ export function RosterPage() {
       onLeave,
       unassigned,
       equipmentPending,
+      endingSoon,
       inToday,
       perDay,
       peak,
@@ -328,6 +383,51 @@ export function RosterPage() {
       return `Also used by: ${others.join(', ')}`
     },
     [duplicateEmails, employees],
+  )
+
+  // Detect likely rehire-typos: same case-insensitive name + department.
+  // Keyed on `<name>|<dept>` so "Alice" in Engineering and "Alice" in
+  // Finance don't collide (they're legitimately different people).
+  // Empty names / empty depts are excluded — those aren't useful signals
+  // and would create noise while the user is still filling rows in.
+  const duplicateNameDept = useMemo(() => {
+    const byKey = new Map<string, string[]>()
+    for (const e of allEmployees) {
+      const n = e.name.trim().toLowerCase()
+      const d = (e.department ?? '').trim().toLowerCase()
+      if (!n || !d) continue
+      const key = `${n}|${d}`
+      const bucket = byKey.get(key)
+      if (bucket) bucket.push(e.id)
+      else byKey.set(key, [e.id])
+    }
+    const dupes = new Map<string, string[]>()
+    for (const [key, ids] of byKey) {
+      if (ids.length > 1) dupes.set(key, ids)
+    }
+    return dupes
+  }, [allEmployees])
+
+  const describeNameDuplicate = useCallback(
+    (emp: Employee): string | null => {
+      const n = emp.name.trim().toLowerCase()
+      const d = (emp.department ?? '').trim().toLowerCase()
+      if (!n || !d) return null
+      const ids = duplicateNameDept.get(`${n}|${d}`)
+      if (!ids) return null
+      const others = ids
+        .filter((id) => id !== emp.id)
+        .map((id) => employees[id])
+        .filter((e): e is Employee => !!e)
+      if (others.length === 0) return null
+      // Disambiguate by email when available so the tooltip stays useful
+      // even if two people really are named the same on the same team.
+      const labels = others.map((o) =>
+        o.email ? `${o.name} (${o.email})` : o.name,
+      )
+      return `Possible duplicate — same name + dept: ${labels.join(', ')}`
+    },
+    [duplicateNameDept, employees],
   )
 
   const sorted = useMemo(() => {
@@ -474,10 +574,26 @@ export function RosterPage() {
     [navigate, teamSlug, officeSlug],
   )
 
-  const handleBulkDelete = () => {
-    for (const id of selected) deleteEmployee(id)
-    setSelected(new Set())
+  // Row Delete — stages the confirmation dialog instead of firing straight
+  // away. The dialog's Confirm calls `performDelete(ids)`.
+  const requestRowDelete = (id: string) => setPendingDelete([id])
+  const requestBulkDelete = () => {
+    if (selected.size === 0) return
+    setPendingDelete(Array.from(selected))
   }
+  // Central deletion path — used by the confirm dialog for both row and
+  // bulk deletes. Also clears `selected` of any id that was in the batch
+  // so the bulk bar collapses immediately.
+  const performDelete = useCallback((ids: string[]) => {
+    for (const id of ids) deleteEmployee(id)
+    setSelected((prev) => {
+      if (prev.size === 0) return prev
+      const next = new Set(prev)
+      for (const id of ids) next.delete(id)
+      return next
+    })
+    setPendingDelete(null)
+  }, [])
 
   const handleBulkUnassign = () => {
     for (const id of selected) unassignEmployee(id)
@@ -499,8 +615,31 @@ export function RosterPage() {
     }
   }
   const handleBulkSetStatus = (status: EmployeeStatus) => {
+    // Apply the status change first — the follow-up unassign prompt only
+    // appears when someone who just became `departed` still holds a seat.
+    // Catching that here means office-ops can't silently leave a departed
+    // person occupying a desk, which was skewing WeeklyCapacity + the
+    // "Assigned" stat chip.
     for (const id of selected) {
       updateEmployee(id, { status })
+    }
+    if (status === 'departed') {
+      const stillSeated: string[] = []
+      for (const id of selected) {
+        const e = useEmployeeStore.getState().employees[id]
+        if (e?.seatId) stillSeated.push(id)
+      }
+      if (stillSeated.length > 0) setPendingDepartedUnassign(stillSeated)
+    }
+  }
+
+  // Same cascade for a single-row Status → `departed` change. Centralized
+  // so the row select and bulk select go through one codepath.
+  const handleRowSetStatus = (employeeId: string, status: EmployeeStatus) => {
+    updateEmployee(employeeId, { status })
+    if (status === 'departed') {
+      const e = useEmployeeStore.getState().employees[employeeId]
+      if (e?.seatId) setPendingDepartedUnassign([employeeId])
     }
   }
 
@@ -517,6 +656,11 @@ export function RosterPage() {
   }
 
   const handleAdd = () => {
+    // Create with a placeholder name so the Employee type's `name: string`
+    // invariant holds on day 0. The drawer autofocuses + text-selects the
+    // Name field so typing immediately replaces "New person" — no manual
+    // backspace required. An exit-without-typing leaves the placeholder,
+    // which is still better than saving an empty-name row.
     const id = addEmployee({ name: 'New person' })
     setDrawerId(id)
   }
@@ -528,9 +672,9 @@ export function RosterPage() {
         stats={stats}
         todayLabel={todayLabel}
         isWorkday={isWorkday}
-        active={{ statusFilter, seatFilter, dayFilter, equipFilter }}
+        active={{ statusFilter, seatFilter, dayFilter, equipFilter, presetFilter }}
         onSetFilter={setFilter}
-        onClearAll={clearAllFilters}
+        onClearChipAxes={clearChipAxes}
       />
 
       {/* Weekly capacity mini-chart — bars are click-to-filter by day */}
@@ -822,7 +966,7 @@ export function RosterPage() {
             Export selection
           </button>
           <button
-            onClick={handleBulkDelete}
+            onClick={requestBulkDelete}
             className="px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-100 rounded"
           >
             Delete
@@ -918,6 +1062,7 @@ export function RosterPage() {
                   duplicateLabel={
                     emp.email ? describeDuplicate(emp.email, emp.id) : null
                   }
+                  nameDuplicateLabel={describeNameDuplicate(emp)}
                   onToggleSelect={() => toggleRow(emp.id)}
                   onOpen={() => setDrawerId(emp.id)}
                   onJumpToSeat={() => jumpToSeat(emp)}
@@ -1003,17 +1148,32 @@ export function RosterPage() {
                   <div className="flex items-center gap-2 min-w-0">
                     <Avatar employee={emp} />
                     <div className="min-w-0 flex-1">
-                      <InlineText
-                        value={emp.name}
-                        // Name is required; silently ignoring an empty commit
-                        // would look like a bug ("I hit Enter on nothing — did
-                        // it save?"). Reject it so the field reverts visibly.
-                        onCommit={(v) => {
-                          if (v) updateEmployee(emp.id, { name: v })
-                        }}
-                        allowEmpty={false}
-                        placeholder="—"
-                      />
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <div className="min-w-0 flex-1">
+                          <InlineText
+                            value={emp.name}
+                            // Name is required; silently ignoring an empty commit
+                            // would look like a bug ("I hit Enter on nothing — did
+                            // it save?"). Reject it so the field reverts visibly.
+                            onCommit={(v) => {
+                              if (v) updateEmployee(emp.id, { name: v })
+                            }}
+                            allowEmpty={false}
+                            placeholder="—"
+                          />
+                        </div>
+                        {(() => {
+                          const nameDupe = describeNameDuplicate(emp)
+                          return nameDupe ? (
+                            <span
+                              className="inline-flex items-center gap-0.5 text-amber-700 bg-amber-100 px-1 py-0.5 rounded text-[10px] font-medium flex-shrink-0"
+                              title={nameDupe}
+                            >
+                              <AlertCircle size={10} /> rehire?
+                            </span>
+                          ) : null
+                        })()}
+                      </div>
                       {emp.email && (
                         <div className="px-1.5 text-[11px] text-gray-400 truncate flex items-center gap-1" title={emp.email}>
                           {(() => {
@@ -1079,7 +1239,7 @@ export function RosterPage() {
                     <select
                       value={emp.status}
                       onChange={(e) =>
-                        updateEmployee(emp.id, { status: e.target.value as EmployeeStatus })
+                        handleRowSetStatus(emp.id, e.target.value as EmployeeStatus)
                       }
                       className="text-xs px-1.5 py-1 border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
                     >
@@ -1110,7 +1270,7 @@ export function RosterPage() {
                         setOpenMenuId(null)
                       }}
                       onDelete={() => {
-                        deleteEmployee(emp.id)
+                        requestRowDelete(emp.id)
                         setOpenMenuId(null)
                       }}
                       onClose={() => setOpenMenuId(null)}
@@ -1167,6 +1327,99 @@ export function RosterPage() {
       )}
 
       {helpOpen && <ShortcutsCheatSheet onClose={() => setHelpOpen(false)} />}
+
+      {/*
+        Destructive-delete confirmation. Renders a preview of the first 5
+        names so the user can verify they selected the right people — 5 is
+        enough to catch an off-by-one without dominating the dialog on a
+        100-row bulk delete. "and N others" is the safe catch-all above.
+      */}
+      {pendingDelete && pendingDelete.length > 0 && (() => {
+        const names = pendingDelete
+          .map((id) => employees[id]?.name)
+          .filter((n): n is string => Boolean(n))
+        const preview = names.slice(0, 5)
+        const extra = names.length - preview.length
+        const isBulk = pendingDelete.length > 1
+        return (
+          <ConfirmDialog
+            title={isBulk ? `Delete ${pendingDelete.length} people?` : 'Delete person?'}
+            body={
+              <div className="space-y-2">
+                <p>
+                  This permanently removes the {isBulk ? 'selected rows' : 'row'} from the
+                  roster, unassigns any seat they hold, and clears their manager
+                  pointer from any direct reports. This cannot be undone.
+                </p>
+                {preview.length > 0 && (
+                  <ul className="pl-4 list-disc text-gray-700 text-xs">
+                    {preview.map((n, i) => (
+                      <li key={i}>{n}</li>
+                    ))}
+                    {extra > 0 && (
+                      <li className="text-gray-500">
+                        …and {extra} other{extra === 1 ? '' : 's'}
+                      </li>
+                    )}
+                  </ul>
+                )}
+              </div>
+            }
+            confirmLabel={isBulk ? `Delete ${pendingDelete.length}` : 'Delete'}
+            tone="danger"
+            onConfirm={() => performDelete(pendingDelete)}
+            onCancel={() => setPendingDelete(null)}
+          />
+        )
+      })()}
+
+      {/*
+        Follow-up prompt when status → `departed` leaves seats occupied.
+        Decline keeps the seat held (notice period, gardening leave); accept
+        unassigns so WeeklyCapacity + occupancy stats stop counting the
+        departed person against desk supply.
+      */}
+      {pendingDepartedUnassign && pendingDepartedUnassign.length > 0 && (() => {
+        const names = pendingDepartedUnassign
+          .map((id) => employees[id]?.name)
+          .filter((n): n is string => Boolean(n))
+        const preview = names.slice(0, 5)
+        const extra = names.length - preview.length
+        const count = pendingDepartedUnassign.length
+        return (
+          <ConfirmDialog
+            title={count === 1 ? 'Also unassign their seat?' : `Also unassign ${count} seats?`}
+            body={
+              <div className="space-y-2">
+                <p>
+                  {count === 1 ? 'This person is' : 'These people are'} now marked as
+                  departed but still hold {count === 1 ? 'a seat' : 'seats'}. Freeing{' '}
+                  {count === 1 ? 'it' : 'them'} keeps occupancy stats accurate.
+                </p>
+                {preview.length > 0 && (
+                  <ul className="pl-4 list-disc text-gray-700 text-xs">
+                    {preview.map((n, i) => (
+                      <li key={i}>{n}</li>
+                    ))}
+                    {extra > 0 && (
+                      <li className="text-gray-500">
+                        …and {extra} other{extra === 1 ? '' : 's'}
+                      </li>
+                    )}
+                  </ul>
+                )}
+              </div>
+            }
+            confirmLabel={count === 1 ? 'Unassign seat' : `Unassign ${count} seats`}
+            cancelLabel="Keep seat"
+            onConfirm={() => {
+              for (const id of pendingDepartedUnassign) unassignEmployee(id)
+              setPendingDepartedUnassign(null)
+            }}
+            onCancel={() => setPendingDepartedUnassign(null)}
+          />
+        )
+      })()}
     </div>
   )
 }
@@ -1196,14 +1449,29 @@ function InlineText({
 }) {
   const [editing, setEditing] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  // After leaving edit mode via commit/Escape, the input unmounts and
+  // focus lands on <body>. That's especially rough for keyboard/AT users
+  // who were mid-row-traversal. This ref tracks when we should snap focus
+  // back to the trigger button on the next render.
+  const restoreFocus = useRef(false)
+
+  useEffect(() => {
+    if (!editing && restoreFocus.current) {
+      restoreFocus.current = false
+      buttonRef.current?.focus()
+    }
+  }, [editing])
 
   const commit = (next: string) => {
     const trimmed = next.trim()
     if (!allowEmpty && trimmed === '') {
+      restoreFocus.current = true
       setEditing(false)
       return
     }
     if (trimmed !== value) onCommit(trimmed)
+    restoreFocus.current = true
     setEditing(false)
   }
 
@@ -1217,7 +1485,10 @@ function InlineText({
         onBlur={(e) => commit(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'Enter') commit((e.target as HTMLInputElement).value)
-          if (e.key === 'Escape') setEditing(false)
+          if (e.key === 'Escape') {
+            restoreFocus.current = true
+            setEditing(false)
+          }
         }}
         className="w-full px-1.5 py-1 text-sm border border-blue-400 rounded bg-white focus:outline-none"
       />
@@ -1226,6 +1497,7 @@ function InlineText({
 
   return (
     <button
+      ref={buttonRef}
       type="button"
       onClick={() => setEditing(true)}
       className="w-full text-left px-1.5 py-1 rounded hover:bg-white group-hover:bg-white truncate"
@@ -1310,7 +1582,7 @@ function StatsBar({
   isWorkday,
   active,
   onSetFilter,
-  onClearAll,
+  onClearChipAxes,
 }: {
   stats: {
     total: number
@@ -1318,13 +1590,20 @@ function StatsBar({
     onLeave: number
     unassigned: number
     equipmentPending: number
+    endingSoon: number
     inToday: number
   }
   todayLabel: string
   isWorkday: boolean
-  active: { statusFilter: string; seatFilter: string; dayFilter: string; equipFilter: string }
+  active: {
+    statusFilter: string
+    seatFilter: string
+    dayFilter: string
+    equipFilter: string
+    presetFilter: string
+  }
   onSetFilter: (key: string, value: string) => void
-  onClearAll: () => void
+  onClearChipAxes: () => void
 }) {
   const chip = (
     label: string,
@@ -1363,11 +1642,12 @@ function StatsBar({
     !active.statusFilter &&
     !active.seatFilter &&
     !active.dayFilter &&
-    !active.equipFilter
+    !active.equipFilter &&
+    !active.presetFilter
 
   return (
     <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-100 bg-gray-50/60 flex-shrink-0 overflow-x-auto whitespace-nowrap">
-      {chip('Total', stats.total, noChipFilter, onClearAll, 'gray', 'All people (clears status/seat/day filters)')}
+      {chip('Total', stats.total, noChipFilter, onClearChipAxes, 'gray', 'All people (clears chip filters; leaves search/dept/floor alone)')}
       {chip(
         'Active',
         stats.active,
@@ -1404,6 +1684,25 @@ function StatsBar({
             onSetFilter('equip', active.equipFilter === 'pending' ? '' : 'pending'),
           'amber',
           'People whose equipment is marked pending',
+        )}
+      {/*
+        "Ending soon" — people whose contract ends in the next 30 days.
+        Hidden at zero count so the bar stays calm. Clicking toggles the
+        `ending-soon` preset (same definition as the preset picker), giving
+        office ops a one-click termination-day view.
+      */}
+      {stats.endingSoon > 0 &&
+        chip(
+          'Ending soon',
+          stats.endingSoon,
+          active.presetFilter === 'ending-soon',
+          () =>
+            onSetFilter(
+              'preset',
+              active.presetFilter === 'ending-soon' ? '' : 'ending-soon',
+            ),
+          'amber',
+          'Contracts ending in the next 30 days',
         )}
       {isWorkday && chip(
         `In ${todayLabel}`,
@@ -1653,6 +1952,7 @@ function PersonCard({
   isSelected,
   todayLabel,
   duplicateLabel,
+  nameDuplicateLabel,
   onToggleSelect,
   onOpen,
   onJumpToSeat,
@@ -1663,6 +1963,7 @@ function PersonCard({
   isSelected: boolean
   todayLabel: string
   duplicateLabel: string | null
+  nameDuplicateLabel: string | null
   onToggleSelect: () => void
   onOpen: () => void
   onJumpToSeat: () => void
@@ -1729,6 +2030,14 @@ function PersonCard({
                 title={duplicateLabel}
               >
                 <AlertCircle size={10} /> dupe
+              </span>
+            )}
+            {nameDuplicateLabel && (
+              <span
+                className="inline-flex items-center gap-0.5 text-amber-700 bg-amber-100 px-1 py-0.5 rounded text-[10px] font-medium flex-shrink-0"
+                title={nameDuplicateLabel}
+              >
+                <AlertCircle size={10} /> rehire?
               </span>
             )}
           </div>
