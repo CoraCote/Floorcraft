@@ -32,14 +32,16 @@ Seven implementation phases, each a separate spec + plan + PR cycle. Phase 1 shi
 2. Floor-delete dialog surfaces assigned-employee count: *"Floor 3 has 12 assigned employees. They will be unassigned. Continue?"*
 3. Desk-rename uniqueness validation per floor. Inline error in `src/components/editor/RightSidebar/PropertiesPanel.tsx`; duplicate name blocks save.
 4. Undo-with-data-loss toast — when zundo restores a deleted assignable element whose assignment was stripped by `partialize` (see `src/stores/elementsStore.ts:225-249`), show: *"Desk restored — Jane Doe's assignment not recovered. Reassign?"* with a "Reassign" button that opens the roster filtered to the affected employee.
-5. New `role: 'admin' | 'viewer'` field on `TeamMember`. `useCanEdit()` hook gates every mutating action. Viewer sees all buttons but they are disabled + tooltip: *"Read-only access. Contact an admin to make changes."*
+5. Enforce the **existing** per-office role model (`OfficeRole = 'owner' | 'editor' | 'viewer'` in `src/lib/offices/permissionsRepository.ts:3`) across editor/roster/map UI. Today only `ShareModal` consumes it; the rest of the app doesn't gate on it.
+   - New `src/hooks/useCanEdit.ts` returns `true` iff the current user's office role is `owner` or `editor` (defaults to `true` if role is unknown/still loading, to avoid a UX flicker where the UI looks read-only on page load).
+   - `useCanEdit()` reads the user's role from a new field on `projectStore` (`currentOfficeRole: OfficeRole | null`), populated by `useOfficeSync` when the office loads.
+   - Every mutating UI call site consults `useCanEdit()`. Buttons for mutating actions are rendered disabled + tooltip: *"Read-only access. Contact an editor to make changes."* when it returns false.
 
-**Data model:**
-- Add `role: 'admin' | 'viewer'` to `TeamMember`. Existing rows default to `'admin'`.
+**Data model:** none — `office_permissions` table and `OfficeRole` already exist.
 
 **Permissions behavior (minimal):**
-- Viewer: hidden/disabled on all editing UI across Map, Roster, TeamSettings.
-- Admin: unchanged behavior.
+- `viewer`: all editing UI disabled on Map, Roster, TeamSettings (map), PeoplePanel; can still view + navigate.
+- `owner` / `editor`: unchanged behavior.
 
 **Testing:**
 - `src/__tests__/floorDeleteConfirm.test.tsx` — dialog renders assigned-count; cancel preserves floor; confirm cascades unassigns.
@@ -260,13 +262,13 @@ Explicitly **not scoped** in this roadmap. Revisit after pilot feedback. Candida
 
 | Phase | Field / Table | Type | Default / Back-fill |
 |---|---|---|---|
-| 1 | `TeamMember.role` | `'admin' \| 'viewer'` | existing → `'admin'` |
+| 1 | (no schema change — uses existing `OfficeRole`) | — | — |
 | 4 | `Employee.leaveType` | enum nullable | null |
 | 4 | `Employee.expectedReturnDate` | ISO date nullable | null |
 | 4 | `Employee.coverageEmployeeId` | FK nullable | null |
 | 4 | `Employee.leaveNotes` | text nullable | null |
 | 4 | `Employee.departureDate` | ISO date nullable | null |
-| 5 | `TeamMember.role` | widened to 4-value enum | `admin` → `Owner` (creator) / `HR Editor` (others); `viewer` → `Viewer` |
+| 5 | `OfficeRole` widened | from `'owner' \| 'editor' \| 'viewer'` → `'Owner' \| 'HR Editor' \| 'Space Planner' \| 'Viewer'` | existing `editor` → `HR Editor` (safest split; `Space Planner` assigned manually per workspace); `owner` → `Owner`; `viewer` → `Viewer` |
 | 5 | `audit_events` | new table | empty at deploy |
 | 7 | `share_tokens` | new table | empty at deploy |
 
