@@ -38,6 +38,7 @@ import { ShapeDrawingOverlay, type ShapeDrawingPreview } from './primitives/Shap
 import { FreeTextEditorOverlay } from './primitives/FreeTextEditorOverlay'
 import { useRecentLibraryItems } from '../../../hooks/useRecentLibraryItems'
 import { setActiveStage } from '../../../lib/stageRegistry'
+import { useCursorStore } from '../../../stores/cursorStore'
 
 const PRIMITIVE_TOOLS = new Set(['rect-shape', 'ellipse', 'line-shape', 'arrow', 'free-text'])
 
@@ -314,6 +315,24 @@ export function CanvasStage() {
         setStagePosition(stageX + dx, stageY + dy)
       }
 
+      // Publish cursor position in world (pre-transform) coordinates so
+      // the status bar — and anyone else interested — can show an
+      // accurate X/Y readout. `cursorStore.setCursor` rounds and
+      // short-circuits when the rounded coords haven't changed, so we
+      // don't spam re-renders when the pointer is effectively still.
+      {
+        const stage = stageRef.current
+        if (stage) {
+          const pointer = stage.getPointerPosition()
+          if (pointer) {
+            useCursorStore.getState().setCursor(
+              (pointer.x - stageX) / stageScale,
+              (pointer.y - stageY) / stageScale,
+            )
+          }
+        }
+      }
+
       // Marquee drag: compute normalized rect from press point to current
       // pointer. Normalization (always-positive w/h) makes AABB overlap
       // checks downstream trivial and the <Rect> overlay render correct
@@ -386,6 +405,10 @@ export function CanvasStage() {
   // Clear the ghost when the cursor leaves the canvas so it doesn't linger.
   const handleMouseLeave = useCallback(() => {
     if (ghostCursor) setGhostCursor(null)
+    // Hide the cursor readout when the pointer isn't over the canvas —
+    // otherwise the status bar shows stale coordinates that don't
+    // correspond to where the user is actually pointing.
+    useCursorStore.getState().clearCursor()
     // Also cancel any in-flight marquee — dragging out of the canvas and
     // releasing elsewhere would otherwise leave the overlay stuck on.
     if (marqueeStartRef.current) {

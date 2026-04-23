@@ -1,6 +1,7 @@
 import { useElementsStore } from '../../stores/elementsStore'
 import { useUIStore } from '../../stores/uiStore'
 import { useCanvasStore } from '../../stores/canvasStore'
+import { useCursorStore } from '../../stores/cursorStore'
 import { useMemo } from 'react'
 import {
   isDeskElement,
@@ -21,6 +22,8 @@ export function StatusBar() {
   const selectedIds = useUIStore((s) => s.selectedIds)
   const activeTool = useCanvasStore((s) => s.activeTool)
   const stageScale = useCanvasStore((s) => s.stageScale)
+  const cursorX = useCursorStore((s) => s.x)
+  const cursorY = useCursorStore((s) => s.y)
 
   const { totalDesks, assignedDesks, openDesks, occupancyPct, elementCount } = useMemo(() => {
     let totalDesks = 0
@@ -64,6 +67,19 @@ export function StatusBar() {
         <span className="text-blue-700">Selected: <strong>{selectedIds.length}</strong></span>
       )}
       <span>Zoom: <strong>{Math.round(stageScale * 100)}%</strong></span>
+
+      {/*
+        Cursor coordinates in world-space units. Only render when the
+        pointer is actually over the canvas — when it's off the stage
+        the readout would otherwise freeze at the last-seen value and
+        lie to the user. Using a fixed-width font for the numbers keeps
+        adjacent status-bar items from shuffling as the digits change.
+      */}
+      {cursorX !== null && cursorY !== null && (
+        <span className="tabular-nums" title="Cursor position (world units)">
+          X: <strong>{cursorX}</strong> · Y: <strong>{cursorY}</strong>
+        </span>
+      )}
 
       {hint && (
         <>
