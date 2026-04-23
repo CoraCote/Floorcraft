@@ -1,3 +1,5 @@
+import { useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { FloorSwitcher } from './FloorSwitcher'
 import { ToolSelector } from './LeftSidebar/ToolSelector'
 import { ElementLibrary } from './LeftSidebar/ElementLibrary'
@@ -7,6 +9,9 @@ import { CanvasStage } from './Canvas/CanvasStage'
 import { KeyboardShortcutsOverlay } from './KeyboardShortcutsOverlay'
 import { Minimap } from './Minimap'
 import { useUIStore } from '../../stores/uiStore'
+import { useFloorStore } from '../../stores/floorStore'
+import { switchToFloor } from '../../lib/seatAssignment'
+import { focusOnElement } from '../../lib/canvasFocus'
 
 /**
  * Map (canvas) view. Rendered inside `ProjectShell`'s `<Outlet />`, so the
@@ -20,6 +25,38 @@ import { useUIStore } from '../../stores/uiStore'
 export function MapView() {
   const rightSidebarOpen = useUIStore((s) => s.rightSidebarOpen)
   const presentationMode = useUIStore((s) => s.presentationMode)
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  useEffect(() => {
+    const floorId = searchParams.get('floor')
+    const seatId = searchParams.get('seat')
+    if (!floorId && !seatId) return
+
+    if (floorId) {
+      switchToFloor(floorId)
+    }
+
+    if (seatId) {
+      const floors = useFloorStore.getState().floors
+      const target = floors.find(
+        (f) => f.id === (floorId ?? useFloorStore.getState().activeFloorId),
+      )
+      const element = target?.elements[seatId]
+      if (element) {
+        useUIStore.getState().setSelectedIds([seatId])
+        focusOnElement(
+          { x: element.x, y: element.y, width: element.width, height: element.height },
+          seatId,
+        )
+      }
+    }
+
+    const next = new URLSearchParams(searchParams)
+    next.delete('floor')
+    next.delete('seat')
+    setSearchParams(next, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   if (presentationMode) {
     return (

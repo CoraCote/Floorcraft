@@ -18,15 +18,13 @@ import {
 import { useEmployeeStore } from '../../stores/employeeStore'
 import { useFloorStore } from '../../stores/floorStore'
 import { useUIStore } from '../../stores/uiStore'
+import { useToastStore } from '../../stores/toastStore'
 import { useCanEdit } from '../../hooks/useCanEdit'
-import {
-  deleteEmployee,
-  switchToFloor,
-  unassignEmployee,
-} from '../../lib/seatAssignment'
+import { deleteEmployee, unassignEmployee } from '../../lib/seatAssignment'
 import type { Employee, EmployeeStatus } from '../../types/employee'
 import { EMPLOYEE_STATUSES } from '../../types/employee'
 import { RosterDetailDrawer } from './RosterDetailDrawer'
+import { RosterBulkEditPopover } from './RosterBulkEditPopover'
 import { ConfirmDialog } from './ConfirmDialog'
 import { downloadCSV, employeesToCSV } from '../../lib/employeeCsv'
 
@@ -228,6 +226,7 @@ export function RosterPage() {
   const [sortColumn, setSortColumn] = useState<SortColumn>('name')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkEditOpen, setBulkEditOpen] = useState(false)
   const [drawerId, setDrawerId] = useState<string | null>(null)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [helpOpen, setHelpOpen] = useState(false)
@@ -499,6 +498,13 @@ export function RosterPage() {
     })
   }, [allEmployeeIds])
 
+  // When the selection is cleared (either by the user or by employees
+  // falling out of view) the bulk-edit popover no longer has a target
+  // set, so close it. Avoids the popover lingering over an empty bar.
+  useEffect(() => {
+    if (selected.size === 0) setBulkEditOpen(false)
+  }, [selected.size])
+
   // Page-scoped keyboard shortcuts. Deliberately attached to `window` in
   // capture phase so the search input's own keydown (Escape clears) and
   // the drawer's keydown (Escape closes) still get their shot — we only
@@ -586,16 +592,13 @@ export function RosterPage() {
       if (!teamSlug || !officeSlug) return
       // Re-read the employee in case the row was edited between click and
       // here (unlikely but cheap). Bail out silently if floor/seat got
-      // cleared or the floor has since been deleted.
+      // cleared. Delegate focus/selection to MapView via URL params so the
+      // stage has a chance to mount before we try to pan it.
       const fresh = useEmployeeStore.getState().employees[emp.id] ?? emp
-      const floor = fresh.floorId
-        ? useFloorStore.getState().floors.find((f) => f.id === fresh.floorId)
-        : null
-      if (floor) switchToFloor(floor.id)
-      if (fresh.seatId) useUIStore.getState().setSelectedIds([fresh.seatId])
-      if (teamSlug && officeSlug) {
-        navigate(`/t/${teamSlug}/o/${officeSlug}/map`)
-      }
+      if (!fresh.seatId || !fresh.floorId) return
+      navigate(
+        `/t/${teamSlug}/o/${officeSlug}/map?floor=${fresh.floorId}&seat=${fresh.seatId}`,
+      )
     },
     [navigate, teamSlug, officeSlug],
   )
@@ -982,6 +985,47 @@ export function RosterPage() {
           </select>
 
           <span className="w-px h-4 bg-blue-200" />
+
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setBulkEditOpen((v) => !v)}
+              className="px-2 py-1 text-xs font-medium text-gray-700 hover:bg-white rounded border border-blue-200"
+            >
+              Edit…
+            </button>
+            {bulkEditOpen && (
+              <RosterBulkEditPopover
+                selectedIds={Array.from(selected)}
+                onClose={() => setBulkEditOpen(false)}
+              />
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              const employees = useEmployeeStore.getState().employees
+              const ordered = Array.from(selected)
+                .map((id) => employees[id])
+                .filter((e): e is Employee => !!e)
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((e) => e.id)
+              if (ordered.length === 0) return
+              useUIStore.getState().setAssignmentQueue(ordered)
+              useToastStore.getState().push({
+                tone: 'info',
+                title: `Click a workstation or desks to assign ${ordered.length}`,
+                body: 'Press Esc to cancel.',
+              })
+              if (teamSlug && officeSlug) {
+                navigate(`/t/${teamSlug}/o/${officeSlug}/map`)
+              }
+            }}
+            className="px-2 py-1 text-xs font-medium text-gray-700 hover:bg-white rounded border border-blue-200"
+          >
+            Assign to…
+          </button>
 
           <button
             onClick={handleBulkUnassign}

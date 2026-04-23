@@ -23,6 +23,8 @@ import { ZOOM_MIN, ZOOM_MAX } from '../../../lib/constants'
 import { isAssignableElement } from '../../../types/elements'
 import { elementsIntersectingRect } from '../../../lib/marquee'
 import { assignEmployee } from '../../../lib/seatAssignment'
+import { consumeQueueAtElement } from '../../../lib/multiSeatAssign'
+import { useToastStore } from '../../../stores/toastStore'
 import { findNearestStraightWallHit } from '../../../lib/wallAttachment'
 import { nanoid } from 'nanoid'
 import type { DoorElement, WindowElement, CanvasElement } from '../../../types/elements'
@@ -97,6 +99,21 @@ export function CanvasStage() {
     }
   }, [])
 
+  // Phase 3: Esc cancels an in-flight multi-seat assignment. Guarded so
+  // we don't steal Escape from dialogs or other features when there's no
+  // queue active — `assignmentQueue.length > 0` is the active-mode signal.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      if (useUIStore.getState().assignmentQueue.length > 0) {
+        useUIStore.getState().clearAssignmentQueue()
+        useToastStore.getState().push({ tone: 'info', title: 'Assignment cancelled' })
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   const handleWheel = useCallback(
     (e: Konva.KonvaEventObject<WheelEvent>) => {
       e.evt.preventDefault()
@@ -157,6 +174,43 @@ export function CanvasStage() {
         isPanning.current = true
         lastPointer.current = { x: e.evt.clientX, y: e.evt.clientY }
         return
+      }
+
+      // Phase 3: multi-seat assign — consume queue on click when active.
+      {
+        const queue = useUIStore.getState().assignmentQueue
+        if (queue.length > 0 && e.evt.button === 0) {
+          const target = e.target
+          // Konva: the clicked node may be a child shape inside the element
+          // group. Resolve to the enclosing element id via the ancestor group.
+          const ancestorGroup = target.findAncestor('Group', true)
+          const groupId = ancestorGroup?.id() || target.id()
+          if (groupId) {
+            const floorId = useFloorStore.getState().activeFloorId
+            if (floorId) {
+              const overflow = consumeQueueAtElement(groupId, floorId)
+              if (overflow >= 0) {
+                // Toast off actual remaining queue (not the return value) so
+                // desk clicks that leave items in the queue still prompt the
+                // user to keep clicking rather than falsely declaring done.
+                const remaining = useUIStore.getState().assignmentQueue.length
+                if (remaining > 0) {
+                  useToastStore.getState().push({
+                    tone: 'warning',
+                    title: `${remaining} ${remaining === 1 ? 'employee' : 'employees'} not yet assigned`,
+                    body: 'Click another workstation or desk, or press Esc to cancel.',
+                  })
+                } else {
+                  useToastStore.getState().push({
+                    tone: 'success',
+                    title: 'All selected employees assigned',
+                  })
+                }
+                return
+              }
+            }
+          }
+        }
       }
 
       // Defense-in-depth: viewers shouldn't be able to create anything even

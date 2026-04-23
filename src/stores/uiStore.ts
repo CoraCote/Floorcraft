@@ -11,6 +11,8 @@ interface UIState {
   // Selection
   selectedIds: string[]
   hoveredId: string | null
+  flashingElementId: string | null
+  setFlashingElementId: (id: string | null) => void
 
   // Panels
   rightSidebarOpen: boolean
@@ -53,6 +55,12 @@ interface UIState {
    * `registerModalClose()` in the same lifecycle (useEffect cleanup).
    */
   modalOpenCount: number
+
+  // Multi-seat assignment queue — ordered list of employee ids awaiting a
+  // click on the map to pop into a seat. Cleared on completion or Esc.
+  assignmentQueue: string[] // employee ids in order
+  setAssignmentQueue: (ids: string[]) => void
+  clearAssignmentQueue: () => void
 
   // Reports & overlays
   activeReport: string | null
@@ -104,6 +112,8 @@ function createUIStore() {
   return create<UIState>((set) => ({
   selectedIds: [],
   hoveredId: null,
+  flashingElementId: null,
+  setFlashingElementId: (id) => set({ flashingElementId: id }),
   rightSidebarOpen: true,
   rightSidebarTab: 'properties',
   shareModalOpen: false,
@@ -122,6 +132,9 @@ function createUIStore() {
   employeeDirectoryOpen: false,
   drawingCancelTick: 0,
   modalOpenCount: 0,
+  assignmentQueue: [],
+  setAssignmentQueue: (ids) => set({ assignmentQueue: ids }),
+  clearAssignmentQueue: () => set({ assignmentQueue: [] }),
 
   setSelectedIds: (ids) => set({ selectedIds: ids }),
   addToSelection: (id) => set((s) => ({ selectedIds: [...s.selectedIds, id] })),
