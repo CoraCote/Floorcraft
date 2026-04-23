@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { ImportIssue } from '../lib/employeeCsv'
+import type { AlignmentGuide } from '../lib/geometry'
 
 export interface CSVImportSummary {
   importedCount: number
@@ -55,6 +56,18 @@ interface UIState {
    * `registerModalClose()` in the same lifecycle (useEffect cleanup).
    */
   modalOpenCount: number
+
+  /**
+   * Live alignment-guide overlay shown while the user is dragging a single
+   * element. Populated by ElementRenderer's onDragMove handler from
+   * `findAlignmentGuides`, consumed by CanvasStage's <AlignmentGuides>.
+   * Cleared on drag end. Kept in the UI store rather than component state
+   * so the guides can live in a dedicated Konva layer instead of being
+   * redrawn in the element layer on every pointer event.
+   */
+  dragAlignmentGuides: AlignmentGuide[]
+  setDragAlignmentGuides: (guides: AlignmentGuide[]) => void
+  clearDragAlignmentGuides: () => void
 
   // Multi-seat assignment queue — ordered list of employee ids awaiting a
   // click on the map to pop into a seat. Cleared on completion or Esc.
@@ -135,6 +148,9 @@ function createUIStore() {
   assignmentQueue: [],
   setAssignmentQueue: (ids) => set({ assignmentQueue: ids }),
   clearAssignmentQueue: () => set({ assignmentQueue: [] }),
+  dragAlignmentGuides: [],
+  setDragAlignmentGuides: (guides) => set({ dragAlignmentGuides: guides }),
+  clearDragAlignmentGuides: () => set({ dragAlignmentGuides: [] }),
 
   setSelectedIds: (ids) => set({ selectedIds: ids }),
   addToSelection: (id) => set((s) => ({ selectedIds: [...s.selectedIds, id] })),

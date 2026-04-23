@@ -65,6 +65,7 @@ export function CanvasStage() {
   const [marquee, setMarquee] = useState<{ x: number; y: number; w: number; h: number } | null>(null)
   const orgChartOverlayEnabled = useUIStore((s) => s.orgChartOverlayEnabled)
   const seatMapColorMode = useUIStore((s) => s.seatMapColorMode)
+  const dragAlignmentGuides = useUIStore((s) => s.dragAlignmentGuides)
   const {
     wallDrawingState,
     handleCanvasMouseDown: onWallMouseDown,
@@ -739,7 +740,7 @@ export function CanvasStage() {
         <WallEditOverlay />
         {orgChartOverlayEnabled && <OrgChartOverlay />}
         {seatMapColorMode && <SeatMapColorMode />}
-        <AlignmentGuides guides={[]} />
+        <AlignmentGuides guides={dragAlignmentGuides} />
         <WallDrawingOverlay {...wallDrawingState} />
         <AttachmentGhost
           tool={activeTool}

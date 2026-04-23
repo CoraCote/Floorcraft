@@ -40,12 +40,30 @@ import { FreeTextRenderer } from './primitives/FreeTextRenderer'
 import { CustomSvgRenderer } from './primitives/CustomSvgRenderer'
 import { useCallback } from 'react'
 import type Konva from 'konva'
-import { snapToGrid } from '../../../lib/geometry'
+import { snapToGrid, getSnappedPosition } from '../../../lib/geometry'
+import { elementBounds } from '../../../lib/elementBounds'
+import { ALIGNMENT_THRESHOLD } from '../../../lib/constants'
 
 export function ElementRenderer() {
   const elements = useElementsStore((s) => s.elements)
   const updateElement = useElementsStore((s) => s.updateElement)
-  const { setSelectedIds, toggleSelection, setContextMenu, setHoveredId } = useUIStore(useShallow((s) => ({ setSelectedIds: s.setSelectedIds, toggleSelection: s.toggleSelection, setContextMenu: s.setContextMenu, setHoveredId: s.setHoveredId })))
+  const {
+    setSelectedIds,
+    toggleSelection,
+    setContextMenu,
+    setHoveredId,
+    setDragAlignmentGuides,
+    clearDragAlignmentGuides,
+  } = useUIStore(
+    useShallow((s) => ({
+      setSelectedIds: s.setSelectedIds,
+      toggleSelection: s.toggleSelection,
+      setContextMenu: s.setContextMenu,
+      setHoveredId: s.setHoveredId,
+      setDragAlignmentGuides: s.setDragAlignmentGuides,
+      clearDragAlignmentGuides: s.clearDragAlignmentGuides,
+    })),
+  )
   const activeTool = useCanvasStore((s) => s.activeTool)
   const gridSize = useCanvasStore((s) => s.settings.gridSize)
   const showGrid = useCanvasStore((s) => s.settings.showGrid)
@@ -53,6 +71,74 @@ export function ElementRenderer() {
   const sorted = Object.values(elements)
     .filter((el) => el.visible)
     .sort((a, b) => a.zIndex - b.zIndex)
+
+  // Snap the dragged element (center-origin) to alignment guides formed by
+  // the edges and centers of OTHER elements on the floor. Walls, doors,
+  // windows, and points-based primitives (lines/arrows) are skipped as
+  // reference rects because their bounds are either handled by a separate
+  // overlay (walls) or their positions are derived rather than owned.
+  // Shift bypasses snap so users can place elements pixel-precise when
+  // the alignment heuristics are in the way.
+  const handleDragMove = useCallback(
+    (id: string, e: Konva.KonvaEventObject<DragEvent>) => {
+      const el = elements[id]
+      if (!el) return
+      // Elements that own their own position (walls, lines, arrows) are
+      // not center-origin, so the snap math below doesn't apply. They also
+      // opt out via isAttached (doors/windows aren't draggable at all).
+      if (
+        isWallElement(el) ||
+        isDoorElement(el) ||
+        isWindowElement(el) ||
+        isLineShapeElement(el) ||
+        isArrowElement(el)
+      ) {
+        return
+      }
+      if (e.evt && (e.evt as DragEvent).shiftKey) {
+        // Escape-hatch: Shift held → no snap, no guides.
+        clearDragAlignmentGuides()
+        return
+      }
+      const w = el.width ?? 0
+      const h = el.height ?? 0
+      if (w <= 0 || h <= 0) return
+
+      // Konva Group's x/y is the element's center (matches ElementRenderer's
+      // render offset). Convert to top-left for the snap helper, then back.
+      const centerX = e.target.x()
+      const centerY = e.target.y()
+      const topLeft = { x: centerX - w / 2, y: centerY - h / 2 }
+
+      // Other elements to snap against — every visible element that is not
+      // the one being dragged, not a wall, and not attached.
+      const others = []
+      for (const other of Object.values(elements)) {
+        if (other.id === id) continue
+        if (!other.visible) continue
+        if (
+          isWallElement(other) ||
+          isDoorElement(other) ||
+          isWindowElement(other)
+        ) {
+          continue
+        }
+        const b = elementBounds(other)
+        if (b) others.push(b)
+      }
+
+      const { snapped, guides } = getSnappedPosition(
+        topLeft,
+        others,
+        { width: w, height: h },
+        ALIGNMENT_THRESHOLD,
+      )
+      if (snapped.x !== topLeft.x) e.target.x(snapped.x + w / 2)
+      if (snapped.y !== topLeft.y) e.target.y(snapped.y + h / 2)
+      setDragAlignmentGuides(guides)
+    },
+    [elements, setDragAlignmentGuides, clearDragAlignmentGuides],
+  )
 
   const handleDragEnd = useCallback(
     (id: string, e: Konva.KonvaEventObject<DragEvent>) => {
@@ -63,8 +149,9 @@ export function ElementRenderer() {
         y = snapToGrid(y, gridSize)
       }
       updateElement(id, { x, y })
+      clearDragAlignmentGuides()
     },
-    [updateElement, gridSize, showGrid]
+    [updateElement, gridSize, showGrid, clearDragAlignmentGuides]
   )
 
   const handleClick = useCallback(
@@ -139,6 +226,7 @@ export function ElementRenderer() {
             x={ownsPosition ? 0 : el.x}
             y={ownsPosition ? 0 : el.y}
             draggable={groupDraggable}
+            onDragMove={(e) => handleDragMove(el.id, e)}
             onDragEnd={(e) => handleDragEnd(el.id, e)}
             onClick={(e) => handleClick(el.id, e)}
             onTap={(e) => handleClick(el.id, e)}
