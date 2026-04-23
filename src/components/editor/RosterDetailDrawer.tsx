@@ -4,8 +4,8 @@ import { useEmployeeStore } from '../../stores/employeeStore'
 import { useFloorStore } from '../../stores/floorStore'
 import { useUIStore } from '../../stores/uiStore'
 import { useCanEdit } from '../../hooks/useCanEdit'
-import type { Employee, EmployeeStatus } from '../../types/employee'
-import { EMPLOYEE_STATUSES, EMPLOYMENT_TYPES } from '../../types/employee'
+import type { Employee, EmployeeStatus, LeaveType } from '../../types/employee'
+import { EMPLOYEE_STATUSES, EMPLOYMENT_TYPES, LEAVE_TYPES } from '../../types/employee'
 
 interface Props {
   employeeId: string
@@ -404,6 +404,17 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
                 disabled={!canEdit}
               />
             </Field>
+            <Field label="Departure date">
+              <input
+                type="date"
+                className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+                defaultValue={employee.departureDate ?? ''}
+                onBlur={(e) =>
+                  updateEmployee(employee.id, { departureDate: e.target.value || null })
+                }
+                disabled={!canEdit}
+              />
+            </Field>
           </div>
 
           <Field label="Tags (comma-separated)">
@@ -471,6 +482,78 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
               ))}
             </select>
           </Field>
+
+          {employee.status === 'on-leave' && (
+            <>
+              <Field label="Leave type">
+                <select
+                  className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+                  value={employee.leaveType ?? ''}
+                  onChange={(e) =>
+                    updateEmployee(employee.id, {
+                      leaveType: (e.target.value || null) as LeaveType | null,
+                    })
+                  }
+                  disabled={!canEdit}
+                >
+                  <option value="">—</option>
+                  {LEAVE_TYPES.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </Field>
+
+              <Field label="Expected return">
+                <input
+                  type="date"
+                  className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+                  defaultValue={employee.expectedReturnDate ?? ''}
+                  onChange={(e) =>
+                    updateEmployee(employee.id, {
+                      expectedReturnDate: e.target.value || null,
+                    })
+                  }
+                  disabled={!canEdit}
+                />
+              </Field>
+
+              <Field label="Coverage">
+                <input
+                  list="coverage-employees"
+                  className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+                  defaultValue={employees[employee.coverageEmployeeId ?? '']?.name ?? ''}
+                  onBlur={(e) => {
+                    const name = e.target.value.trim()
+                    const matched = name
+                      ? Object.values(employees).find((x) => x.id !== employee.id && x.name === name)
+                      : null
+                    updateEmployee(employee.id, { coverageEmployeeId: matched?.id ?? null })
+                  }}
+                  disabled={!canEdit}
+                  placeholder="Search by name"
+                />
+                <datalist id="coverage-employees">
+                  {Object.values(employees)
+                    .filter((e) => e.id !== employee.id)
+                    .map((e) => (
+                      <option key={e.id} value={e.name} />
+                    ))}
+                </datalist>
+              </Field>
+
+              <Field label="Leave notes">
+                <textarea
+                  className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500 resize-y"
+                  defaultValue={employee.leaveNotes ?? ''}
+                  onBlur={(e) =>
+                    updateEmployee(employee.id, { leaveNotes: e.target.value || null })
+                  }
+                  disabled={!canEdit}
+                  rows={3}
+                />
+              </Field>
+            </>
+          )}
 
           <Field label="Seat">
             <div className="text-sm text-gray-600 px-2 py-1.5 bg-gray-50 rounded border border-gray-100">

@@ -3,7 +3,7 @@ import { useEmployeeStore } from '../../stores/employeeStore'
 import { useProjectStore } from '../../stores/projectStore'
 import { useCanvasStore } from '../../stores/canvasStore'
 import { useFloorStore } from '../../stores/floorStore'
-import { isEmployeeStatus } from '../../types/employee'
+import { isEmployeeStatus, LEAVE_TYPES, type LeaveType } from '../../types/employee'
 
 /**
  * Legacy-payload migration helpers.
@@ -81,10 +81,24 @@ function migrateElements(
   return out as ReturnType<typeof useElementsStore.getState>['elements']
 }
 
+function isLeaveType(v: unknown): v is LeaveType {
+  return typeof v === 'string' && (LEAVE_TYPES as readonly string[]).includes(v)
+}
+
+function isNonEmptyString(v: unknown): v is string {
+  return typeof v === 'string' && v.length > 0
+}
+
 /**
  * Migrate a deserialized employees map. Older payloads predate the
  * `status` field; back-fill to `'active'` (and coerce any invalid value
  * to `'active'` too) so consumers can trust the enum unconditionally.
+ *
+ * Phase 4 added five lifecycle fields (`leaveType`, `expectedReturnDate`,
+ * `coverageEmployeeId`, `leaveNotes`, `departureDate`) — back-fill each
+ * to `null` when absent or invalid so downstream UI can rely on the
+ * shape. `leaveType` is validated against the `LEAVE_TYPES` enum; the
+ * date/id/notes fields accept any non-empty string.
  */
 function migrateEmployees(
   employees: Record<string, unknown>,
@@ -96,6 +110,15 @@ function migrateEmployees(
     out[id] = {
       ...e,
       status: isEmployeeStatus(e.status) ? e.status : 'active',
+      leaveType: isLeaveType(e.leaveType) ? e.leaveType : null,
+      expectedReturnDate: isNonEmptyString(e.expectedReturnDate)
+        ? e.expectedReturnDate
+        : null,
+      coverageEmployeeId: isNonEmptyString(e.coverageEmployeeId)
+        ? e.coverageEmployeeId
+        : null,
+      leaveNotes: isNonEmptyString(e.leaveNotes) ? e.leaveNotes : null,
+      departureDate: isNonEmptyString(e.departureDate) ? e.departureDate : null,
     }
   }
   return out as ReturnType<typeof useEmployeeStore.getState>['employees']

@@ -95,6 +95,11 @@ export function buildDemoOfficePayload(
       tags: [],
       seatId: seat ? seat.id : null,
       floorId: seat ? floorId : null,
+      leaveType: null,
+      expectedReturnDate: null,
+      coverageEmployeeId: null,
+      leaveNotes: null,
+      departureDate: null,
       createdAt: now,
     }
     employees[id] = employee

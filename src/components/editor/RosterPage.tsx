@@ -71,6 +71,12 @@ const ROSTER_PRESETS: Array<{
     match: (e) => withinDays(e.endDate, 30, 'future'),
   },
   {
+    id: 'departing-soon',
+    label: 'Departing · next 30 days',
+    hint: 'People with a scheduled departure date in the next 30 days',
+    match: (e) => withinDays(e.departureDate, 30, 'future'),
+  },
+  {
     id: 'unassigned-active',
     label: 'Active · no seat',
     hint: 'Active people who still need a seat assignment',
@@ -331,6 +337,7 @@ export function RosterPage() {
     let unassigned = 0
     let equipmentPending = 0
     let endingSoon = 0
+    let departingSoon = 0
     // Per-weekday headcount for the mini capacity chart under the stats
     // chips. Stored as an object keyed by the same Mon-Fri labels the
     // drawer persists to, so no mapping gymnastics needed elsewhere.
@@ -343,6 +350,9 @@ export function RosterPage() {
       // "Ending soon" shares its definition with the `ending-soon` preset
       // so clicking the chip and picking the preset land on the same set.
       if (withinDays(e.endDate, 30, 'future')) endingSoon++
+      // "Departing soon" mirrors the `departing-soon` preset so the chip and
+      // preset picker always resolve the same set of people.
+      if (withinDays(e.departureDate, 30, 'future')) departingSoon++
       for (const d of e.officeDays) {
         if (d in perDay) perDay[d] += 1
       }
@@ -356,6 +366,7 @@ export function RosterPage() {
       unassigned,
       equipmentPending,
       endingSoon,
+      departingSoon,
       inToday,
       perDay,
       peak,
@@ -1339,6 +1350,7 @@ export function RosterPage() {
                       <span className="text-xs text-gray-600">{emp.status}</span>
                     )}
                     <EndingSoonBadge endDate={emp.endDate} />
+                    <DepartingSoonBadge departureDate={emp.departureDate} />
                   </div>
                 </td>
                 <td className="px-3 py-1.5 align-middle relative">
@@ -1709,6 +1721,7 @@ function StatsBar({
     unassigned: number
     equipmentPending: number
     endingSoon: number
+    departingSoon: number
     inToday: number
   }
   todayLabel: string
@@ -1821,6 +1834,25 @@ function StatsBar({
             ),
           'amber',
           'Contracts ending in the next 30 days',
+        )}
+      {/*
+        "Departing soon" — people with a scheduled departure date in the
+        next 30 days. Hidden at zero count to keep the bar calm. Clicking
+        toggles the `departing-soon` preset (same predicate as the preset
+        picker).
+      */}
+      {stats.departingSoon > 0 &&
+        chip(
+          'Departing soon',
+          stats.departingSoon,
+          active.presetFilter === 'departing-soon',
+          () =>
+            onSetFilter(
+              'preset',
+              active.presetFilter === 'departing-soon' ? '' : 'departing-soon',
+            ),
+          'amber',
+          'Scheduled departures in the next 30 days',
         )}
       {isWorkday && chip(
         `In ${todayLabel}`,
@@ -2058,6 +2090,57 @@ function EndingSoonBadge({ endDate }: { endDate: string | null }) {
 }
 
 /**
+ * Sibling to EndingSoonBadge, keyed on the scheduled `departureDate`
+ * rather than the contract `endDate`. A departure is an orthogonal fact —
+ * a person can be ending their contract without a physical departure
+ * (e.g. staying on as contractor) or vice-versa — so we render it as its
+ * own pill rather than merging with EndingSoonBadge.
+ */
+function DepartingSoonBadge({ departureDate }: { departureDate: string | null }) {
+  if (!departureDate) return null
+  const end = new Date(departureDate)
+  if (Number.isNaN(end.getTime())) return null
+  // Day-from-midnight math so "today" is 0 across timezones (same as
+  // EndingSoonBadge) rather than -1 when the server-encoded ISO is
+  // interpreted as UTC midnight behind the user's local date.
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const endMid = new Date(end.getFullYear(), end.getMonth(), end.getDate())
+  const days = Math.round((endMid.getTime() - today.getTime()) / MS_PER_DAY)
+  if (days < 0) {
+    return (
+      <span
+        className="text-[10px] font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded"
+        title={`Departed ${departureDate}`}
+      >
+        Departed
+      </span>
+    )
+  }
+  if (days > 30) return null
+  let label: string
+  if (days === 0) label = 'Departing today'
+  else if (days === 1) label = 'Departing tomorrow'
+  else if (days <= 7) label = `Departing in ${days}d`
+  else {
+    const fmt = new Intl.DateTimeFormat(undefined, {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    })
+    label = `Departing ${fmt.format(end)}`
+  }
+  return (
+    <span
+      className="text-[10px] font-medium text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded"
+      title={`Departure date: ${departureDate}`}
+    >
+      {label}
+    </span>
+  )
+}
+
+/**
  * Compact card used by the grid view. Shows avatar + name + dept dot +
  * status and a little row of Mon-Fri pills so the density is close to a
  * "who's in the office" board. Clicking the body opens the detail drawer;
@@ -2195,6 +2278,7 @@ function PersonCard({
           <span className="text-gray-400">Unassigned</span>
         )}
         <EndingSoonBadge endDate={employee.endDate} />
+        <DepartingSoonBadge departureDate={employee.departureDate} />
       </div>
     </div>
   )

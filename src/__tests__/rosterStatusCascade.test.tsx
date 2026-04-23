@@ -57,7 +57,9 @@ beforeEach(() => {
         title: null, managerId: null, employmentType: 'full-time', status: 'active',
         officeDays: [], startDate: null, endDate: null,
         equipmentNeeds: [], equipmentStatus: 'not-needed', photoUrl: null, tags: [],
-        seatId: 'seat1', floorId: 'f1', createdAt: new Date().toISOString(),
+        seatId: 'seat1', floorId: 'f1', leaveType: null, expectedReturnDate: null,
+        coverageEmployeeId: null, leaveNotes: null, departureDate: null,
+        createdAt: new Date().toISOString(),
       },
     },
   })

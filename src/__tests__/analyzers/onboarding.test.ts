@@ -11,6 +11,8 @@ function makeEmployee(overrides: Partial<Employee> = {}): Employee {
     startDate: null, endDate: null, equipmentNeeds: [], equipmentStatus: 'not-needed',
     photoUrl: null, tags: [], seatId: null, floorId: null,
     status: 'active',
+    leaveType: null, expectedReturnDate: null, coverageEmployeeId: null,
+    leaveNotes: null, departureDate: null,
     createdAt: new Date().toISOString(),
     ...overrides,
   }

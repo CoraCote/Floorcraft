@@ -30,6 +30,11 @@ function makeEmployee(over: Partial<Employee> = {}): Employee {
     tags: over.tags ?? [],
     seatId: over.seatId ?? null,
     floorId: over.floorId ?? null,
+    leaveType: over.leaveType ?? null,
+    expectedReturnDate: over.expectedReturnDate ?? null,
+    coverageEmployeeId: over.coverageEmployeeId ?? null,
+    leaveNotes: over.leaveNotes ?? null,
+    departureDate: over.departureDate ?? null,
     createdAt: over.createdAt ?? '2024-01-01T00:00:00.000Z',
   }
 }

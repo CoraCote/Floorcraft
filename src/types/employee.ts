@@ -15,6 +15,15 @@ export function isEmployeeStatus(v: unknown): v is EmployeeStatus {
   return typeof v === 'string' && (EMPLOYEE_STATUSES as readonly string[]).includes(v)
 }
 
+export type LeaveType = 'parental' | 'medical' | 'sabbatical' | 'other'
+
+export const LEAVE_TYPES: readonly LeaveType[] = [
+  'parental',
+  'medical',
+  'sabbatical',
+  'other',
+] as const
+
 /**
  * Employment categories. Kept in a single exported const so UI that renders
  * a picker (e.g. `RosterDetailDrawer`) iterates the same source of truth as
@@ -42,6 +51,13 @@ export interface Employee {
   officeDays: string[]
   startDate: string | null
   endDate: string | null
+  // Leave metadata (populated when status = 'on-leave'; always optional).
+  leaveType: LeaveType | null
+  expectedReturnDate: string | null
+  coverageEmployeeId: string | null
+  leaveNotes: string | null
+  // Scheduled departure — independent of status.
+  departureDate: string | null
   equipmentNeeds: string[]
   equipmentStatus: 'pending' | 'provisioned' | 'not-needed'
   photoUrl: string | null
