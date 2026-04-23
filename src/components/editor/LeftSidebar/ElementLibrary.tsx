@@ -24,7 +24,7 @@ import type {
 } from '../../../types/elements'
 import { useElementsStore } from '../../../stores/elementsStore'
 import { useCanvasStore } from '../../../stores/canvasStore'
-import { useCanEdit } from '../../../hooks/useCanEdit'
+import { useCan } from '../../../hooks/useCan'
 import { nanoid } from 'nanoid'
 import { computeSeatPositions } from '../../../lib/seatLayout'
 import { nextSeatNumber } from '../../../lib/seatNumbering'
@@ -398,7 +398,7 @@ function LibrarySection({
 }
 
 export function ElementLibrary() {
-  const canEdit = useCanEdit()
+  const canEdit = useCan('editMap')
   const addElement = useElementsStore((s) => s.addElement)
   const getMaxZIndex = useElementsStore((s) => s.getMaxZIndex)
   const stageScale = useCanvasStore((s) => s.stageScale)

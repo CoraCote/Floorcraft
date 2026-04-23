@@ -5,6 +5,7 @@ import { PropertiesPanel } from '../components/editor/RightSidebar/PropertiesPan
 import { useElementsStore } from '../stores/elementsStore'
 import { useUIStore } from '../stores/uiStore'
 import { useFloorStore } from '../stores/floorStore'
+import { useProjectStore } from '../stores/projectStore'
 import type { DecorElement } from '../types/elements'
 
 function makeDecor(id: string): DecorElement {
@@ -18,6 +19,7 @@ function makeDecor(id: string): DecorElement {
 }
 
 beforeEach(() => {
+  useProjectStore.setState({ currentOfficeRole: 'editor' } as any)
   useElementsStore.setState({ elements: {} })
   useUIStore.setState({ selectedIds: [] } as any)
   // Match actual Floor type — see src/stores/floorStore.ts

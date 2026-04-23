@@ -1,5 +1,5 @@
 import { useCanvasStore, type ToolType, type WallDrawStyle } from '../../../stores/canvasStore'
-import { useCanEdit } from '../../../hooks/useCanEdit'
+import { useCan } from '../../../hooks/useCan'
 import {
   MousePointer2,
   Hand,
@@ -42,7 +42,7 @@ export function ToolSelector() {
   const setActiveTool = useCanvasStore((s) => s.setActiveTool)
   const wallDrawStyle = useCanvasStore((s) => s.wallDrawStyle)
   const setWallDrawStyle = useCanvasStore((s) => s.setWallDrawStyle)
-  const canEdit = useCanEdit()
+  const canEdit = useCan('editMap')
 
   // Viewers only get the navigation tools (select, pan). The creation tools
   // would be silently no-ops against CanvasStage's canEdit guard — hiding

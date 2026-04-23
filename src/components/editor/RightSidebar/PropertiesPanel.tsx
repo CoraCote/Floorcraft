@@ -5,7 +5,7 @@ import { useEmployeeStore } from '../../../stores/employeeStore'
 import { unassignEmployee, deleteElements } from '../../../lib/seatAssignment'
 import { alignElements, distributeElements } from '../../../lib/alignment'
 import { validateDeskId } from '../../../lib/deskIdValidation'
-import { useCanEdit } from '../../../hooks/useCanEdit'
+import { useCan } from '../../../hooks/useCan'
 import {
   AlignHorizontalJustifyStart,
   AlignHorizontalJustifyCenter,
@@ -105,7 +105,7 @@ export function PropertiesPanel() {
   const elements = useElementsStore((s) => s.elements)
   const updateElement = useElementsStore((s) => s.updateElement)
   const employees = useEmployeeStore((s) => s.employees)
-  const canEdit = useCanEdit()
+  const canEdit = useCan('editMap')
   const inputDisabled = !canEdit
 
   if (selectedIds.length === 0) {

@@ -5,6 +5,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { useEmployeeStore } from '../stores/employeeStore'
 import { useFloorStore } from '../stores/floorStore'
 import { useElementsStore } from '../stores/elementsStore'
+import { useProjectStore } from '../stores/projectStore'
 import { RosterPage } from '../components/editor/RosterPage'
 
 /**
@@ -35,6 +36,7 @@ function renderAtRoute(path: string) {
 }
 
 beforeEach(() => {
+  useProjectStore.setState({ currentOfficeRole: 'editor' } as any)
   // Seat element lives on f1 so unassignEmployee can clear it cleanly.
   // Workstation shape — `assignedEmployeeIds` must be an array or the
   // clearEmployeeFromElement reducer crashes on `.filter`.

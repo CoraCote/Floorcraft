@@ -3,7 +3,7 @@ import { AlertCircle, X } from 'lucide-react'
 import { useEmployeeStore } from '../../stores/employeeStore'
 import { useFloorStore } from '../../stores/floorStore'
 import { useUIStore } from '../../stores/uiStore'
-import { useCanEdit } from '../../hooks/useCanEdit'
+import { useCan } from '../../hooks/useCan'
 import type { Employee, EmployeeStatus, LeaveType } from '../../types/employee'
 import { EMPLOYEE_STATUSES, EMPLOYMENT_TYPES, LEAVE_TYPES } from '../../types/employee'
 
@@ -60,7 +60,7 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
   const floors = useFloorStore((s) => s.floors)
   const registerModalOpen = useUIStore((s) => s.registerModalOpen)
   const registerModalClose = useUIStore((s) => s.registerModalClose)
-  const canEdit = useCanEdit()
+  const canEdit = useCan('editRoster')
 
   const drawerRef = useRef<HTMLElement>(null)
   const firstFieldRef = useRef<HTMLInputElement>(null)

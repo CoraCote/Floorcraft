@@ -6,6 +6,7 @@ import {
   validateImportRows,
   importEmployees,
 } from '../../../lib/employeeCsv'
+import { emit } from '../../../lib/audit'
 import { useState, useCallback, useEffect } from 'react'
 
 export function CSVImportDialog() {
@@ -64,6 +65,7 @@ export function CSVImportDialog() {
       skipped,
       warnings,
     })
+    void emit('csv.import', 'csv', null, { count: imported.length })
     setOpen(false)
     setCsvText('')
     setPreview(null)

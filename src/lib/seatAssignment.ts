@@ -1,6 +1,7 @@
 import { useEmployeeStore } from '../stores/employeeStore'
 import { useElementsStore } from '../stores/elementsStore'
 import { useFloorStore } from '../stores/floorStore'
+import { emit } from './audit'
 import type { CanvasElement, DoorElement, WindowElement } from '../types/elements'
 import {
   isDeskElement,
@@ -89,6 +90,8 @@ export function assignEmployee(employeeId: string, targetElementId: string, floo
 
   // 5. Update the employee
   employeeStore.updateEmployee(employeeId, { seatId: targetElementId, floorId })
+
+  void emit('seat.assign', 'employee', employeeId, { seatId: targetElementId })
 }
 
 /**
@@ -101,6 +104,8 @@ export function unassignEmployee(employeeId: string): void {
 
   clearEmployeeFromElement(employee.seatId, employeeId, employee.floorId)
   employeeStore.updateEmployee(employeeId, { seatId: null, floorId: null })
+
+  void emit('seat.unassign', 'employee', employeeId, {})
 }
 
 /**
@@ -371,6 +376,10 @@ export function deleteElements(elementIds: string[]): void {
   // update can be applied separately without affecting the snapshot count.
   useElementsStore.setState({ elements: nextElements })
   useEmployeeStore.setState({ employees: nextEmployees })
+
+  for (const id of toDelete) {
+    void emit('element.delete', 'element', id, {})
+  }
 }
 
 /**

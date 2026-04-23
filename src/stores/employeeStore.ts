@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { nanoid } from 'nanoid'
 import type { Employee } from '../types/employee'
 import { DEPARTMENT_COLORS } from '../lib/constants'
+import { emit } from '../lib/audit'
 
 // Single source of truth for mapping a department name to a palette color.
 // Used by both CSV bulk-import (addEmployees) and the on-demand fallback in
@@ -84,6 +85,7 @@ export const useEmployeeStore = create<EmployeeState>((set, get) => ({
     set((state) => ({
       employees: { ...state.employees, [id]: employee },
     }))
+    void emit('employee.create', 'employee', id, { name: employee.name })
     return id
   },
 
@@ -130,21 +132,30 @@ export const useEmployeeStore = create<EmployeeState>((set, get) => ({
       return { employees: next, departmentColors: nextColors }
     }),
 
-  updateEmployee: (id, updates) =>
+  updateEmployee: (id, updates) => {
+    let didUpdate = false
     set((state) => {
       const employee = state.employees[id]
       if (!employee) return state
+      didUpdate = true
       return { employees: { ...state.employees, [id]: { ...employee, ...updates } } }
-    }),
+    })
+    if (didUpdate) {
+      void emit('employee.update', 'employee', id, { fields: Object.keys(updates) })
+    }
+  },
 
-  removeEmployee: (id) =>
+  removeEmployee: (id) => {
+    let didRemove = false
     set((state) => {
       const removed = state.employees[id]
+      if (!removed) return state
+      didRemove = true
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { [id]: _removed, ...rest } = state.employees
       // If this was the last employee in their department, drop the
       // orphaned departmentColors entry so the palette stays clean.
-      if (removed && removed.department) {
+      if (removed.department) {
         const dept = removed.department
         const stillUsed = Object.values(rest).some((e) => e.department === dept)
         if (!stillUsed) {
@@ -154,14 +165,22 @@ export const useEmployeeStore = create<EmployeeState>((set, get) => ({
         }
       }
       return { employees: rest }
-    }),
+    })
+    if (didRemove) {
+      void emit('employee.delete', 'employee', id, {})
+    }
+  },
 
-  removeEmployees: (ids) =>
+  removeEmployees: (ids) => {
     set((state) => {
       const next = { ...state.employees }
       for (const id of ids) delete next[id]
       return { employees: next }
-    }),
+    })
+    for (const id of ids) {
+      void emit('employee.delete', 'employee', id, {})
+    }
+  },
 
   setEmployees: (employees) => set({ employees }),
 

@@ -38,6 +38,12 @@ interface ProjectState {
   // Consumers treat `null` permissively (same as editor) so transient
   // outages don't lock operators out.
   currentOfficeRole: OfficeRole | null
+  // Team + user context for audit emission. Resolved once per office load
+  // from `ProjectShell`. Both `null` in pre-login / anonymous-link paths —
+  // `audit.emit` treats the missing ids as "skip emission" so callers
+  // don't have to branch.
+  currentTeamId: string | null
+  currentUserId: string | null
 
   setCurrentProject: (project: Project) => void
   updateProjectName: (name: string) => void
@@ -48,6 +54,8 @@ interface ProjectState {
   setLoadedVersion: (v: string | null) => void
   setConflict: (c: ProjectConflict) => void
   setCurrentOfficeRole: (role: OfficeRole | null) => void
+  setCurrentTeamId: (id: string | null) => void
+  setCurrentUserId: (id: string | null) => void
 
   createNewProject: (name?: string) => Project
 }
@@ -61,6 +69,8 @@ export const useProjectStore = create<ProjectState>((set) => ({
   loadedVersion: null,
   conflict: null,
   currentOfficeRole: null,
+  currentTeamId: null,
+  currentUserId: null,
 
   setCurrentProject: (project) => set({ currentProject: project }),
 
@@ -79,6 +89,8 @@ export const useProjectStore = create<ProjectState>((set) => ({
   setLoadedVersion: (v) => set({ loadedVersion: v }),
   setConflict: (c) => set({ conflict: c }),
   setCurrentOfficeRole: (role) => set({ currentOfficeRole: role }),
+  setCurrentTeamId: (id) => set({ currentTeamId: id }),
+  setCurrentUserId: (id) => set({ currentUserId: id }),
 
   createNewProject: (name) => {
     const defaultFloorId = nanoid()

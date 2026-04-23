@@ -13,6 +13,7 @@ import { useState, useRef, useEffect } from 'react'
 import { NavLink, useParams } from 'react-router-dom'
 import { useTemporalState } from '../../hooks/useTemporalState'
 import { formatRelative } from '../../lib/time'
+import { useCan } from '../../hooks/useCan'
 import { TeamSwitcher } from '../team/TeamSwitcher'
 import { UserMenu } from '../team/UserMenu'
 
@@ -40,6 +41,7 @@ export function TopBar() {
   const undo = useElementsStore.temporal.getState().undo
   const redo = useElementsStore.temporal.getState().redo
   const { canUndo, canRedo } = useTemporalState()
+  const canViewAudit = useCan('viewAuditLog')
 
   const [editing, setEditing] = useState(false)
   const [nameValue, setNameValue] = useState('')
@@ -164,6 +166,20 @@ export function TopBar() {
           >
             Roster
           </NavLink>
+          {canViewAudit && (
+            <NavLink
+              to={`/t/${teamSlug}/o/${officeSlug}/audit`}
+              className={({ isActive }) =>
+                `px-3 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
+                  isActive
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-800'
+                }`
+              }
+            >
+              Audit
+            </NavLink>
+          )}
         </nav>
       )}
 

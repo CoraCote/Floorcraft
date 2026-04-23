@@ -5,6 +5,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { useEmployeeStore } from '../stores/employeeStore'
 import { useFloorStore } from '../stores/floorStore'
 import { useElementsStore } from '../stores/elementsStore'
+import { useProjectStore } from '../stores/projectStore'
 import { RosterPage } from '../components/editor/RosterPage'
 
 /**
@@ -31,6 +32,7 @@ function renderAtRoute(path: string) {
 }
 
 beforeEach(() => {
+  useProjectStore.setState({ currentOfficeRole: 'editor' } as any)
   useElementsStore.setState({ elements: {} })
   useFloorStore.setState({
     floors: [{ id: 'f1', name: 'Floor 1', order: 0, elements: {} }],

@@ -1,6 +1,11 @@
 import { supabase } from '../supabase'
 
-export type OfficeRole = 'owner' | 'editor' | 'viewer'
+export type OfficeRole =
+  | 'owner'
+  | 'editor'
+  | 'hr-editor'
+  | 'space-planner'
+  | 'viewer'
 
 export interface OfficePermEntry {
   user_id: string

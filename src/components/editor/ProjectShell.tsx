@@ -159,6 +159,10 @@ export function ProjectShell() {
         conflict: null,
         currentOfficeRole: null,
       })
+      useProjectStore.setState({
+        currentTeamId: office.team_id,
+        currentUserId: session.status === 'authenticated' ? session.user.id : null,
+      })
       useInsightsStore.getState().setCurrentProjectId(office.id)
 
       // Resolve the viewer's role for this office. Fire-and-forget: the

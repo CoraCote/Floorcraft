@@ -58,6 +58,11 @@ const AccountPage = lazy(() =>
 const HelpPage = lazy(() =>
   import('./components/help/HelpPage').then((m) => ({ default: m.HelpPage })),
 )
+const AuditLogPage = lazy(() =>
+  import('./components/admin/AuditLogPage').then((m) => ({
+    default: m.AuditLogPage,
+  })),
+)
 
 function Loading() {
   return (
@@ -173,6 +178,7 @@ function App() {
               <Route index element={<Navigate to="map" replace />} />
               <Route path="map" element={<MapView />} />
               <Route path="roster" element={<RosterPage />} />
+              <Route path="audit" element={<AuditLogPage />} />
             </Route>
 
             {/* Legacy routes — Phases 0-5 mounted the editor at

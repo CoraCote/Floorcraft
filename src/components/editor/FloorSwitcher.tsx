@@ -1,7 +1,8 @@
 import { useFloorStore } from '../../stores/floorStore'
 import { useElementsStore } from '../../stores/elementsStore'
 import { switchToFloor, deleteFloor } from '../../lib/seatAssignment'
-import { useCanEdit } from '../../hooks/useCanEdit'
+import { emit } from '../../lib/audit'
+import { useCan } from '../../hooks/useCan'
 import {
   isAssignableElement,
   isDeskElement,
@@ -40,7 +41,7 @@ export function FloorSwitcher() {
   const getFloorElements = useFloorStore((s) => s.getFloorElements)
 
   const elements = useElementsStore((s) => s.elements)
-  const canEdit = useCanEdit()
+  const canEdit = useCan('editMap')
 
   const [contextMenuFloorId, setContextMenuFloorId] = useState<string | null>(null)
   const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 })
@@ -87,7 +88,9 @@ export function FloorSwitcher() {
     // before loading the new one, so we just need to create the new floor
     // and hand off to the centralized switch.
     const newId = addFloor()
+    const newFloor = useFloorStore.getState().floors.find((f) => f.id === newId)
     switchToFloor(newId)
+    void emit('floor.create', 'floor', newId, { name: newFloor?.name ?? '' })
   }
 
   const handleContextMenu = (e: React.MouseEvent, floorId: string) => {
@@ -132,6 +135,7 @@ export function FloorSwitcher() {
     if (elementCount === 0) {
       // Empty floor — no data to destroy, no need for the dialog.
       deleteFloor(floorId)
+      void emit('floor.delete', 'floor', floorId, {})
       return
     }
     setPendingDelete({ floorId, floorName: floor.name, elementCount, seatedCount })
@@ -139,7 +143,9 @@ export function FloorSwitcher() {
 
   const confirmDelete = () => {
     if (!pendingDelete) return
-    deleteFloor(pendingDelete.floorId)
+    const { floorId } = pendingDelete
+    deleteFloor(floorId)
+    void emit('floor.delete', 'floor', floorId, {})
     setPendingDelete(null)
   }
 

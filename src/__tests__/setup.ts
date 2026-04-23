@@ -1,4 +1,14 @@
 import '@testing-library/jest-dom'
+import { vi } from 'vitest'
+
+// Provide default Supabase env vars for all tests. Several modules touch
+// the supabase client transitively (e.g. audit emission wiring lives in
+// the same stores that unit tests already exercise). Individual tests
+// that specifically want to test the "missing env" path can still
+// vi.stubEnv('VITE_SUPABASE_URL', '') + vi.resetModules() inside their
+// own beforeEach — see supabase.test.ts for the pattern.
+vi.stubEnv('VITE_SUPABASE_URL', 'https://test.supabase.co')
+vi.stubEnv('VITE_SUPABASE_ANON_KEY', 'test-anon')
 
 // jsdom 29 ships a stub localStorage that emits a "--localstorage-file"
 // warning and returns objects missing setItem/getItem when no file is

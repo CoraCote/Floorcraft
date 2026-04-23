@@ -1,6 +1,6 @@
 import { useEmployeeStore } from '../../../stores/employeeStore'
 import { useUIStore } from '../../../stores/uiStore'
-import { useCanEdit } from '../../../hooks/useCanEdit'
+import { useCan } from '../../../hooks/useCan'
 import { useState } from 'react'
 import { Search, Plus, Upload, Users, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
@@ -41,7 +41,7 @@ export function PeoplePanel() {
   )
 
   const setCsvImportOpen = useUIStore((s) => s.setCsvImportOpen)
-  const canEdit = useCanEdit()
+  const canEdit = useCan('editRoster')
   // Post Phase 6: the PeoplePanel only ever mounts inside an office
   // route, so both params are guaranteed present.
   const { teamSlug, officeSlug } = useParams<{ teamSlug: string; officeSlug: string }>()

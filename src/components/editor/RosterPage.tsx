@@ -19,7 +19,7 @@ import { useEmployeeStore } from '../../stores/employeeStore'
 import { useFloorStore } from '../../stores/floorStore'
 import { useUIStore } from '../../stores/uiStore'
 import { useToastStore } from '../../stores/toastStore'
-import { useCanEdit } from '../../hooks/useCanEdit'
+import { useCan } from '../../hooks/useCan'
 import { deleteEmployee, unassignEmployee } from '../../lib/seatAssignment'
 import type { Employee, EmployeeStatus } from '../../types/employee'
 import { EMPLOYEE_STATUSES } from '../../types/employee'
@@ -125,7 +125,7 @@ export function RosterPage() {
   const addEmployee = useEmployeeStore((s) => s.addEmployee)
   const updateEmployee = useEmployeeStore((s) => s.updateEmployee)
   const setCsvImportOpen = useUIStore((s) => s.setCsvImportOpen)
-  const canEdit = useCanEdit()
+  const canEdit = useCan('editRoster')
 
   const navigate = useNavigate()
   // Post Phase 6: the roster always lives under

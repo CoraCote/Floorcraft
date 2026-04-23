@@ -42,7 +42,7 @@ import { FreeTextEditorOverlay } from './primitives/FreeTextEditorOverlay'
 import { useRecentLibraryItems } from '../../../hooks/useRecentLibraryItems'
 import { setActiveStage } from '../../../lib/stageRegistry'
 import { useCursorStore } from '../../../stores/cursorStore'
-import { useCanEdit } from '../../../hooks/useCanEdit'
+import { useCan } from '../../../hooks/useCan'
 
 const PRIMITIVE_TOOLS = new Set(['rect-shape', 'ellipse', 'line-shape', 'arrow', 'free-text'])
 
@@ -56,7 +56,7 @@ export function CanvasStage() {
 
   const { stageX, stageY, stageScale, setStagePosition, setStageScale, activeTool } = useCanvasStore(useShallow((s) => ({ stageX: s.stageX, stageY: s.stageY, stageScale: s.stageScale, setStagePosition: s.setStagePosition, setStageScale: s.setStageScale, activeTool: s.activeTool })))
   const { clearSelection, setContextMenu } = useUIStore(useShallow((s) => ({ clearSelection: s.clearSelection, setContextMenu: s.setContextMenu })))
-  const canEdit = useCanEdit()
+  const canEdit = useCan('editMap')
   // Marquee (drag-rectangle) selection — only active when the select tool is
   // active, the user presses on empty stage space, and they start dragging.
   // `marqueeStartRef` holds the canvas-space anchor + whether shift was held
