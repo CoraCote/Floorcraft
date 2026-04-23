@@ -9,6 +9,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { GridLayer } from './GridLayer'
 import { ElementRenderer } from './ElementRenderer'
 import { SelectionOverlay } from './SelectionOverlay'
+import { HoverOutline } from './HoverOutline'
 import { AlignmentGuides } from './AlignmentGuides'
 import { WallDrawingOverlay } from './WallDrawingOverlay'
 import { WallEditOverlay } from './WallEditOverlay'
@@ -409,6 +410,11 @@ export function CanvasStage() {
     // otherwise the status bar shows stale coordinates that don't
     // correspond to where the user is actually pointing.
     useCursorStore.getState().clearCursor()
+    // And drop any hover outline for the same reason — if the pointer
+    // leaves the canvas while still "inside" an element (e.g. during a
+    // fast swipe to the sidebar), the onMouseLeave on that element may
+    // not fire, leaving the dashed outline stuck.
+    useUIStore.getState().setHoveredId(null)
     // Also cancel any in-flight marquee — dragging out of the canvas and
     // releasing elsewhere would otherwise leave the overlay stuck on.
     if (marqueeStartRef.current) {
@@ -643,6 +649,7 @@ export function CanvasStage() {
         <GridLayer width={size.width} height={size.height} />
         <ElementRenderer />
         <DimensionLayer />
+        <HoverOutline />
         <SelectionOverlay />
         <WallEditOverlay />
         {orgChartOverlayEnabled && <OrgChartOverlay />}

@@ -45,7 +45,7 @@ import { snapToGrid } from '../../../lib/geometry'
 export function ElementRenderer() {
   const elements = useElementsStore((s) => s.elements)
   const updateElement = useElementsStore((s) => s.updateElement)
-  const { setSelectedIds, toggleSelection, setContextMenu } = useUIStore(useShallow((s) => ({ setSelectedIds: s.setSelectedIds, toggleSelection: s.toggleSelection, setContextMenu: s.setContextMenu })))
+  const { setSelectedIds, toggleSelection, setContextMenu, setHoveredId } = useUIStore(useShallow((s) => ({ setSelectedIds: s.setSelectedIds, toggleSelection: s.toggleSelection, setContextMenu: s.setContextMenu, setHoveredId: s.setHoveredId })))
   const activeTool = useCanvasStore((s) => s.activeTool)
   const gridSize = useCanvasStore((s) => s.settings.gridSize)
   const showGrid = useCanvasStore((s) => s.settings.showGrid)
@@ -90,6 +90,28 @@ export function ElementRenderer() {
     [setSelectedIds, setContextMenu]
   )
 
+  // Hover tracking — only meaningful for the select tool, so we gate on
+  // it here rather than in the overlay. Other tools (wall, door, window,
+  // primitives) each have their own preview affordance and would be
+  // noisier with an extra outline.
+  const handleMouseEnter = useCallback(
+    (id: string) => {
+      if (activeTool !== 'select') return
+      setHoveredId(id)
+    },
+    [activeTool, setHoveredId],
+  )
+  const handleMouseLeave = useCallback(
+    (id: string) => {
+      // Only clear if the leaving element is still the hovered one —
+      // otherwise a fast pointer traversal that fires enter(B) before
+      // leave(A) could stomp on B's hover state.
+      const current = useUIStore.getState().hoveredId
+      if (current === id) setHoveredId(null)
+    },
+    [setHoveredId],
+  )
+
   return (
     <Layer>
       {sorted.map((el) => {
@@ -121,6 +143,8 @@ export function ElementRenderer() {
             onClick={(e) => handleClick(el.id, e)}
             onTap={(e) => handleClick(el.id, e)}
             onContextMenu={(e) => handleContextMenu(el.id, e)}
+            onMouseEnter={() => handleMouseEnter(el.id)}
+            onMouseLeave={() => handleMouseLeave(el.id)}
           >
             {(() => {
               const VariantRenderer = getShapeRenderer(el)
