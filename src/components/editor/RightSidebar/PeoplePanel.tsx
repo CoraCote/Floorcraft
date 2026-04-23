@@ -1,5 +1,6 @@
 import { useEmployeeStore } from '../../../stores/employeeStore'
 import { useUIStore } from '../../../stores/uiStore'
+import { useCanEdit } from '../../../hooks/useCanEdit'
 import { useState } from 'react'
 import { Search, Plus, Upload, Users, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
@@ -40,6 +41,7 @@ export function PeoplePanel() {
   )
 
   const setCsvImportOpen = useUIStore((s) => s.setCsvImportOpen)
+  const canEdit = useCanEdit()
   // Post Phase 6: the PeoplePanel only ever mounts inside an office
   // route, so both params are guaranteed present.
   const { teamSlug, officeSlug } = useParams<{ teamSlug: string; officeSlug: string }>()
@@ -247,8 +249,9 @@ export function PeoplePanel() {
                         return (
                           <div
                             key={employee.id}
-                            className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-gray-50 group cursor-grab"
-                            draggable
+                            className={`flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-gray-50 group ${canEdit ? 'cursor-grab' : 'cursor-default'}`}
+                            draggable={canEdit}
+                            title={!canEdit ? 'Read-only access. Contact an editor to make changes.' : undefined}
                             onDragStart={(e) => {
                               e.dataTransfer.setData('application/employee-id', employee.id)
                               e.dataTransfer.effectAllowed = 'move'

@@ -28,9 +28,12 @@ describe('TeamSettingsMembers', () => {
     list.mockReset()
     listInv.mockReset()
     invite.mockReset()
+    removeM.mockReset()
+    roleU.mockReset()
     invokeFn.mockReset()
     list.mockResolvedValue([])
     listInv.mockResolvedValue([])
+    removeM.mockResolvedValue(undefined)
   })
 
   it('invites a teammate by email', async () => {
@@ -88,5 +91,35 @@ describe('TeamSettingsMembers', () => {
     const link = screen.getByLabelText(/invite link/i) as HTMLInputElement
     expect(link.value).toMatch(/\/invite\/tok-throw$/)
     expect(screen.queryByText(/network boom/i)).toBeNull()
+  })
+
+  it('shows a ConfirmDialog before removing a member (no window.confirm)', async () => {
+    list.mockResolvedValue([
+      { user_id: 'u1', role: 'admin', email: 'me@acme.co', name: 'Me' },
+      { user_id: 'u2', role: 'member', email: 'bob@acme.co', name: 'Bob' },
+    ])
+    render(<TeamSettingsMembers team={team} isAdmin selfId="u1" />)
+    await screen.findByText('bob@acme.co')
+    fireEvent.click(screen.getByRole('button', { name: /remove/i }))
+    // ConfirmDialog now owns the confirmation — not window.confirm.
+    const dialog = await screen.findByRole('dialog')
+    expect(dialog.textContent).toMatch(/bob@acme\.co/i)
+    expect(removeM).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: /^remove member$/i }))
+    await waitFor(() => expect(removeM).toHaveBeenCalledWith('t1', 'u2'))
+  })
+
+  it('cancels the remove flow without calling removeMember', async () => {
+    list.mockResolvedValue([
+      { user_id: 'u1', role: 'admin', email: 'me@acme.co', name: 'Me' },
+      { user_id: 'u2', role: 'member', email: 'bob@acme.co', name: 'Bob' },
+    ])
+    render(<TeamSettingsMembers team={team} isAdmin selfId="u1" />)
+    await screen.findByText('bob@acme.co')
+    fireEvent.click(screen.getByRole('button', { name: /remove/i }))
+    await screen.findByRole('dialog')
+    fireEvent.click(screen.getByRole('button', { name: /^cancel$/i }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(removeM).not.toHaveBeenCalled()
   })
 })

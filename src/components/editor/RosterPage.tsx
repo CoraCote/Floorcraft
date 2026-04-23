@@ -18,6 +18,7 @@ import {
 import { useEmployeeStore } from '../../stores/employeeStore'
 import { useFloorStore } from '../../stores/floorStore'
 import { useUIStore } from '../../stores/uiStore'
+import { useCanEdit } from '../../hooks/useCanEdit'
 import {
   deleteEmployee,
   switchToFloor,
@@ -120,6 +121,7 @@ export function RosterPage() {
   const addEmployee = useEmployeeStore((s) => s.addEmployee)
   const updateEmployee = useEmployeeStore((s) => s.updateEmployee)
   const setCsvImportOpen = useUIStore((s) => s.setCsvImportOpen)
+  const canEdit = useCanEdit()
 
   const navigate = useNavigate()
   // Post Phase 6: the roster always lives under
@@ -862,19 +864,23 @@ export function RosterPage() {
           </button>
         </div>
 
-        <button
-          onClick={handleAdd}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded"
-          title="Add person (N)"
-        >
-          <Plus size={14} /> Add person
-        </button>
-        <button
-          onClick={() => setCsvImportOpen(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 border border-gray-200 rounded"
-        >
-          <Upload size={14} /> Import
-        </button>
+        {canEdit && (
+          <button
+            onClick={handleAdd}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded"
+            title="Add person (N)"
+          >
+            <Plus size={14} /> Add person
+          </button>
+        )}
+        {canEdit && (
+          <button
+            onClick={() => setCsvImportOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 border border-gray-200 rounded"
+          >
+            <Upload size={14} /> Import
+          </button>
+        )}
         <button
           onClick={handleExportAll}
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 border border-gray-200 rounded"
@@ -923,8 +929,8 @@ export function RosterPage() {
         onClearAll={clearAllFilters}
       />
 
-      {/* Bulk-action bar — only visible with selection */}
-      {selected.size > 0 && (
+      {/* Bulk-action bar — only visible with selection; hidden for viewers */}
+      {canEdit && selected.size > 0 && (
         <div className="flex items-center gap-3 px-5 py-2 bg-blue-50 border-b border-blue-100 flex-shrink-0 text-sm overflow-x-auto whitespace-nowrap">
           <span className="font-medium text-blue-900 flex-shrink-0">
             {selected.size} selected
@@ -1015,19 +1021,23 @@ export function RosterPage() {
             the two views stay behaviorally equivalent.
           */}
           <div className="flex items-center gap-3 mb-3 text-xs">
-            <label className="flex items-center gap-1.5 text-gray-600 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={allVisibleSelected}
-                ref={(el) => {
-                  if (el) el.indeterminate = someVisibleSelected
-                }}
-                onChange={toggleAll}
-                aria-label="Toggle all"
-              />
-              {allVisibleSelected ? 'Unselect all' : 'Select all'}
-            </label>
-            <span className="w-px h-4 bg-gray-200" />
+            {canEdit && (
+              <>
+                <label className="flex items-center gap-1.5 text-gray-600 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={allVisibleSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = someVisibleSelected
+                    }}
+                    onChange={toggleAll}
+                    aria-label="Toggle all"
+                  />
+                  {allVisibleSelected ? 'Unselect all' : 'Select all'}
+                </label>
+                <span className="w-px h-4 bg-gray-200" />
+              </>
+            )}
             <label className="flex items-center gap-1.5 text-gray-600">
               Sort by
               <select
@@ -1091,6 +1101,7 @@ export function RosterPage() {
                   onToggleSelect={() => toggleRow(emp.id)}
                   onOpen={() => setDrawerId(emp.id)}
                   onJumpToSeat={() => jumpToSeat(emp)}
+                  canEdit={canEdit}
                 />
               ))}
             </div>
@@ -1101,17 +1112,19 @@ export function RosterPage() {
         <table className="w-full text-sm">
           <thead className="sticky top-0 bg-gray-50 border-b border-gray-200 z-10">
             <tr>
-              <th className="px-3 py-2 w-8">
-                <input
-                  type="checkbox"
-                  checked={allVisibleSelected}
-                  ref={(el) => {
-                    if (el) el.indeterminate = someVisibleSelected
-                  }}
-                  onChange={toggleAll}
-                  aria-label="Toggle all"
-                />
-              </th>
+              {canEdit && (
+                <th className="px-3 py-2 w-8">
+                  <input
+                    type="checkbox"
+                    checked={allVisibleSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = someVisibleSelected
+                    }}
+                    onChange={toggleAll}
+                    aria-label="Toggle all"
+                  />
+                </th>
+              )}
               {[
                 { key: 'name' as const, label: 'Name', sortable: true },
                 { key: 'department' as const, label: 'Department', sortable: true },
@@ -1161,14 +1174,16 @@ export function RosterPage() {
                 }}
                 className={`group transition-colors ${selected.has(emp.id) ? 'bg-blue-50/50' : 'hover:bg-gray-50'}`}
               >
-                <td className="px-3 py-1.5 align-middle">
-                  <input
-                    type="checkbox"
-                    checked={selected.has(emp.id)}
-                    onChange={() => toggleRow(emp.id)}
-                    aria-label={`Select ${emp.name}`}
-                  />
-                </td>
+                {canEdit && (
+                  <td className="px-3 py-1.5 align-middle">
+                    <input
+                      type="checkbox"
+                      checked={selected.has(emp.id)}
+                      onChange={() => toggleRow(emp.id)}
+                      aria-label={`Select ${emp.name}`}
+                    />
+                  </td>
+                )}
                 <td className="px-3 py-1.5 align-middle font-medium text-gray-800">
                   <div className="flex items-center gap-2 min-w-0">
                     <Avatar employee={emp} />
@@ -1185,6 +1200,7 @@ export function RosterPage() {
                             }}
                             allowEmpty={false}
                             placeholder="—"
+                            canEdit={canEdit}
                           />
                         </div>
                         {(() => {
@@ -1233,6 +1249,7 @@ export function RosterPage() {
                       onCommit={(v) => updateEmployee(emp.id, { department: v || null })}
                       placeholder="—"
                       listId="roster-dept-list"
+                      canEdit={canEdit}
                     />
                   </div>
                 </td>
@@ -1241,6 +1258,7 @@ export function RosterPage() {
                     value={emp.title ?? ''}
                     onCommit={(v) => updateEmployee(emp.id, { title: v || null })}
                     placeholder="—"
+                    canEdit={canEdit}
                   />
                 </td>
                 <td className="px-3 py-1.5 align-middle">
@@ -1261,52 +1279,68 @@ export function RosterPage() {
                 </td>
                 <td className="px-3 py-1.5 align-middle">
                   <div className="flex items-center gap-1.5">
-                    <select
-                      value={emp.status}
-                      onChange={(e) =>
-                        handleRowSetStatus(emp.id, e.target.value as EmployeeStatus)
-                      }
-                      className="text-xs px-1.5 py-1 border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    >
-                      {EMPLOYEE_STATUSES.map((s) => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
-                    </select>
+                    {canEdit ? (
+                      <select
+                        value={emp.status}
+                        onChange={(e) =>
+                          handleRowSetStatus(emp.id, e.target.value as EmployeeStatus)
+                        }
+                        className="text-xs px-1.5 py-1 border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      >
+                        {EMPLOYEE_STATUSES.map((s) => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className="text-xs text-gray-600">{emp.status}</span>
+                    )}
                     <EndingSoonBadge endDate={emp.endDate} />
                   </div>
                 </td>
                 <td className="px-3 py-1.5 align-middle relative">
-                  <button
-                    onClick={() => setOpenMenuId((cur) => (cur === emp.id ? null : emp.id))}
-                    className="p-1 rounded hover:bg-gray-200 text-gray-500"
-                    aria-label="Row actions"
-                  >
-                    <MoreHorizontal size={14} />
-                  </button>
-                  {openMenuId === emp.id && (
-                    <RowActionMenu
-                      employee={emp}
-                      onEdit={() => {
-                        setDrawerId(emp.id)
-                        setOpenMenuId(null)
-                      }}
-                      onUnassign={() => {
-                        unassignEmployee(emp.id)
-                        setOpenMenuId(null)
-                      }}
-                      onDelete={() => {
-                        requestRowDelete(emp.id)
-                        setOpenMenuId(null)
-                      }}
-                      onClose={() => setOpenMenuId(null)}
-                    />
+                  {/*
+                    For viewers, the row-action menu still has value because
+                    of the read-only "Copy email" / "Send invite" entries,
+                    so we keep the trigger visible as long as the employee
+                    has an email. With no email and no editor permissions
+                    the menu would be empty — hide the trigger entirely.
+                  */}
+                  {(canEdit || Boolean(emp.email?.trim())) && (
+                    <>
+                      <button
+                        onClick={() => setOpenMenuId((cur) => (cur === emp.id ? null : emp.id))}
+                        className="p-1 rounded hover:bg-gray-200 text-gray-500"
+                        aria-label="Row actions"
+                      >
+                        <MoreHorizontal size={14} />
+                      </button>
+                      {openMenuId === emp.id && (
+                        <RowActionMenu
+                          employee={emp}
+                          canEdit={canEdit}
+                          onEdit={() => {
+                            setDrawerId(emp.id)
+                            setOpenMenuId(null)
+                          }}
+                          onUnassign={() => {
+                            unassignEmployee(emp.id)
+                            setOpenMenuId(null)
+                          }}
+                          onDelete={() => {
+                            requestRowDelete(emp.id)
+                            setOpenMenuId(null)
+                          }}
+                          onClose={() => setOpenMenuId(null)}
+                        />
+                      )}
+                    </>
                   )}
                 </td>
               </tr>
             ))}
             {sorted.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-3 py-12 text-center text-gray-400 text-sm">
+                <td colSpan={canEdit ? 8 : 7} className="px-3 py-12 text-center text-gray-400 text-sm">
                   {hasAnyFilter ? (
                     <>
                       No people match these filters.{' '}
@@ -1460,6 +1494,7 @@ function InlineText({
   placeholder,
   listId,
   allowEmpty = true,
+  canEdit = true,
 }: {
   value: string
   onCommit: (v: string) => void
@@ -1471,6 +1506,12 @@ function InlineText({
    * where a blank would look like a silent save failure.
    */
   allowEmpty?: boolean
+  /**
+   * When false (viewer role), the cell renders as plain text — click does
+   * not activate edit mode. No input ever reaches the DOM so assistive
+   * tech isn't misled into announcing an editable field.
+   */
+  canEdit?: boolean
 }) {
   const [editing, setEditing] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -1498,6 +1539,14 @@ function InlineText({
     if (trimmed !== value) onCommit(trimmed)
     restoreFocus.current = true
     setEditing(false)
+  }
+
+  if (!canEdit) {
+    return (
+      <span className="block w-full text-left px-1.5 py-1 truncate">
+        {value || <span className="text-gray-400">{placeholder}</span>}
+      </span>
+    )
   }
 
   if (editing) {
@@ -1982,6 +2031,7 @@ function PersonCard({
   onToggleSelect,
   onOpen,
   onJumpToSeat,
+  canEdit,
 }: {
   employee: Employee
   floorName: string | null
@@ -1994,6 +2044,7 @@ function PersonCard({
   onToggleSelect: () => void
   onOpen: () => void
   onJumpToSeat: () => void
+  canEdit: boolean
 }) {
   const statusTone =
     employee.status === 'active'
@@ -2025,20 +2076,22 @@ function PersonCard({
         visually clean without hiding an interactive control that the user
         has already engaged with.
       */}
-      <label
-        className={`absolute top-2 right-2 transition-opacity ${
-          isSelected
-            ? 'opacity-100'
-            : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100'
-        }`}
-      >
-        <input
-          type="checkbox"
-          checked={isSelected}
-          onChange={onToggleSelect}
-          aria-label={`Select ${employee.name}`}
-        />
-      </label>
+      {canEdit && (
+        <label
+          className={`absolute top-2 right-2 transition-opacity ${
+            isSelected
+              ? 'opacity-100'
+              : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100'
+          }`}
+        >
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={onToggleSelect}
+            aria-label={`Select ${employee.name}`}
+          />
+        </label>
+      )}
       <div className="flex items-start gap-3">
         <Avatar employee={employee} />
         <div className="min-w-0 flex-1">
@@ -2109,12 +2162,14 @@ function RowActionMenu({
   onUnassign,
   onDelete,
   onClose,
+  canEdit,
 }: {
   employee: Employee
   onEdit: () => void
   onUnassign: () => void
   onDelete: () => void
   onClose: () => void
+  canEdit: boolean
 }) {
   // "Send invite" only makes sense when we have an address. We still render
   // the button (disabled) when the field is empty so the menu's layout
@@ -2167,12 +2222,14 @@ function RowActionMenu({
         tabIndex={-1}
       />
       <div className="absolute right-2 top-full mt-1 z-40 w-48 bg-white border border-gray-200 rounded-md shadow-lg py-1">
-        <button
-          onClick={onEdit}
-          className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
-        >
-          Edit full details
-        </button>
+        {canEdit && (
+          <button
+            onClick={onEdit}
+            className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
+          >
+            Edit full details
+          </button>
+        )}
         {hasEmail ? (
           <button
             onClick={handleCopyEmail}
@@ -2215,19 +2272,23 @@ function RowActionMenu({
             <Mail size={12} /> Send invite…
           </button>
         )}
-        <button
-          onClick={onUnassign}
-          className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
-        >
-          Unassign seat
-        </button>
-        <div className="my-1 border-t border-gray-100" />
-        <button
-          onClick={onDelete}
-          className="w-full text-left px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
-        >
-          Delete
-        </button>
+        {canEdit && (
+          <>
+            <button
+              onClick={onUnassign}
+              className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
+            >
+              Unassign seat
+            </button>
+            <div className="my-1 border-t border-gray-100" />
+            <button
+              onClick={onDelete}
+              className="w-full text-left px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
+            >
+              Delete
+            </button>
+          </>
+        )}
       </div>
     </>
   )

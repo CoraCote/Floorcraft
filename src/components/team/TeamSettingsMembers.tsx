@@ -9,6 +9,7 @@ import {
   removeMember,
   updateMemberRole,
 } from '../../lib/teams/teamRepository'
+import { ConfirmDialog } from '../editor/ConfirmDialog'
 
 export function TeamSettingsMembers({
   team,
@@ -45,6 +46,10 @@ export function TeamSettingsMembers({
     url: string
     emailed: boolean
   } | null>(null)
+  // Target of the pending remove confirmation. `null` means no dialog is
+  // open. Storing the full member (not just the id) lets the dialog body
+  // show the email/name without re-querying the list.
+  const [pendingRemove, setPendingRemove] = useState<TeamMember | null>(null)
 
   async function refresh() {
     setMembers(await listTeamMembers(team.id))
@@ -134,12 +139,7 @@ export function TeamSettingsMembers({
                   <td className="p-2 text-right">
                     {isAdmin && m.user_id !== selfId && (
                       <button
-                        onClick={async () => {
-                          if (confirm(`Remove ${m.email}?`)) {
-                            await removeMember(team.id, m.user_id)
-                            refresh()
-                          }
-                        }}
+                        onClick={() => setPendingRemove(m)}
                         className="text-red-600 hover:underline"
                       >
                         Remove
@@ -152,6 +152,35 @@ export function TeamSettingsMembers({
           </table>
         )}
       </section>
+
+      {pendingRemove && (
+        <ConfirmDialog
+          title="Remove team member?"
+          body={
+            <div className="space-y-2">
+              <div>
+                <strong>
+                  {pendingRemove.name ?? pendingRemove.email ?? pendingRemove.user_id}
+                </strong>{' '}
+                ({pendingRemove.email ?? pendingRemove.user_id}) will lose
+                access to every office in this team.
+              </div>
+              <div className="text-gray-500">
+                They'll need a new invite to rejoin.
+              </div>
+            </div>
+          }
+          confirmLabel="Remove member"
+          tone="danger"
+          onConfirm={async () => {
+            const target = pendingRemove
+            setPendingRemove(null)
+            await removeMember(team.id, target.user_id)
+            refresh()
+          }}
+          onCancel={() => setPendingRemove(null)}
+        />
+      )}
 
       {isAdmin && (
         <section className="space-y-2">

@@ -40,6 +40,7 @@ import { FreeTextEditorOverlay } from './primitives/FreeTextEditorOverlay'
 import { useRecentLibraryItems } from '../../../hooks/useRecentLibraryItems'
 import { setActiveStage } from '../../../lib/stageRegistry'
 import { useCursorStore } from '../../../stores/cursorStore'
+import { useCanEdit } from '../../../hooks/useCanEdit'
 
 const PRIMITIVE_TOOLS = new Set(['rect-shape', 'ellipse', 'line-shape', 'arrow', 'free-text'])
 
@@ -53,6 +54,7 @@ export function CanvasStage() {
 
   const { stageX, stageY, stageScale, setStagePosition, setStageScale, activeTool } = useCanvasStore(useShallow((s) => ({ stageX: s.stageX, stageY: s.stageY, stageScale: s.stageScale, setStagePosition: s.setStagePosition, setStageScale: s.setStageScale, activeTool: s.activeTool })))
   const { clearSelection, setContextMenu } = useUIStore(useShallow((s) => ({ clearSelection: s.clearSelection, setContextMenu: s.setContextMenu })))
+  const canEdit = useCanEdit()
   // Marquee (drag-rectangle) selection — only active when the select tool is
   // active, the user presses on empty stage space, and they start dragging.
   // `marqueeStartRef` holds the canvas-space anchor + whether shift was held
@@ -154,6 +156,24 @@ export function CanvasStage() {
       if (e.evt.button === 1 || activeTool === 'pan') {
         isPanning.current = true
         lastPointer.current = { x: e.evt.clientX, y: e.evt.clientY }
+        return
+      }
+
+      // Defense-in-depth: viewers shouldn't be able to create anything even
+      // if a creation tool somehow became the active tool (e.g., by URL
+      // state, a stale session, or future code that forgets to gate).
+      // ToolSelector already filters creation tools out of the picker for
+      // viewers, but we don't rely on that here.
+      const creationTool =
+        activeTool === 'wall' ||
+        activeTool === 'door' ||
+        activeTool === 'window' ||
+        PRIMITIVE_TOOLS.has(activeTool)
+      if (creationTool && !canEdit) {
+        if (e.target === e.target.getStage()) {
+          clearSelection()
+          setContextMenu(null)
+        }
         return
       }
 
@@ -304,7 +324,7 @@ export function CanvasStage() {
         setContextMenu(null)
       }
     },
-    [activeTool, clearSelection, setContextMenu, stageX, stageY, stageScale, onWallMouseDown]
+    [activeTool, canEdit, clearSelection, setContextMenu, stageX, stageY, stageScale, onWallMouseDown]
   )
 
   const handleMouseMove = useCallback(
@@ -540,6 +560,10 @@ export function CanvasStage() {
   // Accept employee drags from PeoplePanel and assign the dropped employee
   // to whatever assignable element is under the cursor.
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    // Viewers can't receive either kind of drop; show the default "no-drop"
+    // cursor by not calling preventDefault. Matches ElementLibrary, which
+    // also hides tiles entirely for viewers.
+    if (!canEdit) return
     if (e.dataTransfer.types.includes('application/employee-id')) {
       e.preventDefault()
       e.dataTransfer.dropEffect = 'move'
@@ -551,9 +575,10 @@ export function CanvasStage() {
       // the user a "+" cursor showing the drop is valid.
       e.dataTransfer.dropEffect = 'copy'
     }
-  }, [])
+  }, [canEdit])
 
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    if (!canEdit) return
     const stage = stageRef.current
     if (!stage) return
 
@@ -626,7 +651,7 @@ export function CanvasStage() {
     if (hitId) {
       assignEmployee(empId, hitId, useFloorStore.getState().activeFloorId)
     }
-  }, [stageX, stageY, stageScale])
+  }, [stageX, stageY, stageScale, canEdit])
 
   return (
     <div

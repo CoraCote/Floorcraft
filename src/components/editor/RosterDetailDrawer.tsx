@@ -3,6 +3,7 @@ import { AlertCircle, X } from 'lucide-react'
 import { useEmployeeStore } from '../../stores/employeeStore'
 import { useFloorStore } from '../../stores/floorStore'
 import { useUIStore } from '../../stores/uiStore'
+import { useCanEdit } from '../../hooks/useCanEdit'
 import type { Employee, EmployeeStatus } from '../../types/employee'
 import { EMPLOYEE_STATUSES, EMPLOYMENT_TYPES } from '../../types/employee'
 
@@ -59,6 +60,7 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
   const floors = useFloorStore((s) => s.floors)
   const registerModalOpen = useUIStore((s) => s.registerModalOpen)
   const registerModalClose = useUIStore((s) => s.registerModalClose)
+  const canEdit = useCanEdit()
 
   const drawerRef = useRef<HTMLElement>(null)
   const firstFieldRef = useRef<HTMLInputElement>(null)
@@ -223,7 +225,7 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
           <Field label="Name">
             <input
               ref={firstFieldRef}
-              className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
               defaultValue={employee.name}
               onBlur={(e) => {
                 const trimmed = e.target.value.trim()
@@ -238,38 +240,42 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
               }}
               required
               aria-required="true"
+              disabled={!canEdit}
             />
           </Field>
           <Field label="Email">
             <input
-              className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
               defaultValue={employee.email}
               onBlur={(e) =>
                 updateEmployee(employee.id, { email: e.target.value.trim() })
               }
               type="email"
+              disabled={!canEdit}
             />
           </Field>
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="Team">
               <input
-                className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
                 defaultValue={employee.team ?? ''}
                 onBlur={(e) =>
                   updateEmployee(employee.id, { team: e.target.value.trim() || null })
                 }
+                disabled={!canEdit}
               />
             </Field>
             <Field label="Type">
               <select
-                className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
                 value={employee.employmentType}
                 onChange={(e) =>
                   updateEmployee(employee.id, {
                     employmentType: e.target.value as Employee['employmentType'],
                   })
                 }
+                disabled={!canEdit}
               >
                 {EMPLOYMENT_TYPES.map((t) => (
                   <option key={t} value={t}>
@@ -283,11 +289,12 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
           <Field label="Manager">
             <div className="space-y-1">
               <select
-                className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
                 value={danglingManager ? '' : (employee.managerId ?? '')}
                 onChange={(e) =>
                   updateEmployee(employee.id, { managerId: e.target.value || null })
                 }
+                disabled={!canEdit}
               >
                 <option value="">— none —</option>
                 {managerCandidates.map((c) => (
@@ -304,7 +311,8 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
                   <button
                     type="button"
                     onClick={() => updateEmployee(employee.id, { managerId: null })}
-                    className="text-amber-900 underline hover:no-underline"
+                    className="text-amber-900 underline hover:no-underline disabled:opacity-40 disabled:no-underline"
+                    disabled={!canEdit}
                   >
                     Clear
                   </button>
@@ -323,7 +331,8 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
                       key={day}
                       type="button"
                       onClick={() => toggleOfficeDay(day)}
-                      className={`px-2 py-1 text-xs font-medium rounded border transition-colors ${
+                      disabled={!canEdit}
+                      className={`px-2 py-1 text-xs font-medium rounded border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                         active
                           ? 'bg-blue-600 text-white border-blue-600'
                           : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
@@ -352,7 +361,8 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
                       onClick={() =>
                         updateEmployee(employee.id, { officeDays: preset.days })
                       }
-                      className={`px-1.5 py-0.5 text-[10px] rounded border transition-colors ${
+                      disabled={!canEdit}
+                      className={`px-1.5 py-0.5 text-[10px] rounded border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                         matches
                           ? 'bg-blue-100 text-blue-800 border-blue-300'
                           : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
@@ -375,50 +385,55 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
             <Field label="Start date">
               <input
                 type="date"
-                className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
                 defaultValue={employee.startDate ?? ''}
                 onBlur={(e) =>
                   updateEmployee(employee.id, { startDate: e.target.value || null })
                 }
+                disabled={!canEdit}
               />
             </Field>
             <Field label="End date">
               <input
                 type="date"
-                className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
                 defaultValue={employee.endDate ?? ''}
                 onBlur={(e) =>
                   updateEmployee(employee.id, { endDate: e.target.value || null })
                 }
+                disabled={!canEdit}
               />
             </Field>
           </div>
 
           <Field label="Tags (comma-separated)">
             <input
-              className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
               defaultValue={employee.tags.join(', ')}
               onBlur={(e) => onTagsBlur(e.target.value)}
+              disabled={!canEdit}
             />
           </Field>
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="Equipment needs">
               <input
-                className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
                 defaultValue={employee.equipmentNeeds.join(', ')}
                 onBlur={(e) => onEquipmentNeedsBlur(e.target.value)}
+                disabled={!canEdit}
               />
             </Field>
             <Field label="Equipment status">
               <select
-                className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
                 value={employee.equipmentStatus}
                 onChange={(e) =>
                   updateEmployee(employee.id, {
                     equipmentStatus: e.target.value as Employee['equipmentStatus'],
                   })
                 }
+                disabled={!canEdit}
               >
                 {EQUIPMENT_STATUSES.map((s) => (
                   <option key={s} value={s}>
@@ -431,21 +446,23 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
 
           <Field label="Photo URL">
             <input
-              className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
               defaultValue={employee.photoUrl ?? ''}
               onBlur={(e) =>
                 updateEmployee(employee.id, { photoUrl: e.target.value.trim() || null })
               }
+              disabled={!canEdit}
             />
           </Field>
 
           <Field label="Status">
             <select
-              className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
               value={employee.status}
               onChange={(e) =>
                 updateEmployee(employee.id, { status: e.target.value as EmployeeStatus })
               }
+              disabled={!canEdit}
             >
               {EMPLOYEE_STATUSES.map((s) => (
                 <option key={s} value={s}>

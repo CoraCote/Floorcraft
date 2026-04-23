@@ -24,6 +24,7 @@ import type {
 } from '../../../types/elements'
 import { useElementsStore } from '../../../stores/elementsStore'
 import { useCanvasStore } from '../../../stores/canvasStore'
+import { useCanEdit } from '../../../hooks/useCanEdit'
 import { nanoid } from 'nanoid'
 import { computeSeatPositions } from '../../../lib/seatLayout'
 import { nextSeatNumber } from '../../../lib/seatNumbering'
@@ -397,6 +398,7 @@ function LibrarySection({
 }
 
 export function ElementLibrary() {
+  const canEdit = useCanEdit()
   const addElement = useElementsStore((s) => s.addElement)
   const getMaxZIndex = useElementsStore((s) => s.getMaxZIndex)
   const stageScale = useCanvasStore((s) => s.stageScale)
@@ -511,6 +513,19 @@ export function ElementLibrary() {
     () => LIBRARY_ITEMS.filter((i) => favoriteSet.has(favoriteKey(i))),
     [favoriteSet],
   )
+
+  // Viewers can't place anything — the library is inert for them. Hiding
+  // the entire tile grid (instead of disabling each tile) keeps the UI
+  // honest: a panel that looks interactive but silently ignores clicks is
+  // worse than an obvious view-only placard.
+  if (!canEdit) {
+    return (
+      <div className="p-4 text-xs text-gray-500 space-y-1">
+        <div className="font-medium text-gray-600">View-only</div>
+        <div>You don't have permission to add elements to this office.</div>
+      </div>
+    )
+  }
 
   return (
     <div className="p-3 flex-1 overflow-y-auto">

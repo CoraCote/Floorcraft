@@ -3,6 +3,7 @@ import { nanoid } from 'nanoid'
 import type { Project } from '../types/project'
 import { DEFAULT_CANVAS_SETTINGS } from '../types/project'
 import { generateSlug } from '../lib/slug'
+import type { OfficeRole } from '../lib/offices/permissionsRepository'
 
 /**
  * Save-cycle state surfaced by `useOfficeSync` so the TopBar can show a
@@ -32,6 +33,11 @@ interface ProjectState {
   officeId: string | null
   loadedVersion: string | null
   conflict: ProjectConflict
+  // Current viewer's effective role for the loaded office. `null` means
+  // "unknown" — either no office is loaded yet, or the role lookup failed.
+  // Consumers treat `null` permissively (same as editor) so transient
+  // outages don't lock operators out.
+  currentOfficeRole: OfficeRole | null
 
   setCurrentProject: (project: Project) => void
   updateProjectName: (name: string) => void
@@ -41,6 +47,7 @@ interface ProjectState {
   setOfficeId: (id: string | null) => void
   setLoadedVersion: (v: string | null) => void
   setConflict: (c: ProjectConflict) => void
+  setCurrentOfficeRole: (role: OfficeRole | null) => void
 
   createNewProject: (name?: string) => Project
 }
@@ -53,6 +60,7 @@ export const useProjectStore = create<ProjectState>((set) => ({
   officeId: null,
   loadedVersion: null,
   conflict: null,
+  currentOfficeRole: null,
 
   setCurrentProject: (project) => set({ currentProject: project }),
 
@@ -70,6 +78,7 @@ export const useProjectStore = create<ProjectState>((set) => ({
   setOfficeId: (id) => set({ officeId: id }),
   setLoadedVersion: (v) => set({ loadedVersion: v }),
   setConflict: (c) => set({ conflict: c }),
+  setCurrentOfficeRole: (role) => set({ currentOfficeRole: role }),
 
   createNewProject: (name) => {
     const defaultFloorId = nanoid()

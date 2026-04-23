@@ -1,4 +1,5 @@
 import { useCanvasStore, type ToolType, type WallDrawStyle } from '../../../stores/canvasStore'
+import { useCanEdit } from '../../../hooks/useCanEdit'
 import {
   MousePointer2,
   Hand,
@@ -41,12 +42,20 @@ export function ToolSelector() {
   const setActiveTool = useCanvasStore((s) => s.setActiveTool)
   const wallDrawStyle = useCanvasStore((s) => s.wallDrawStyle)
   const setWallDrawStyle = useCanvasStore((s) => s.setWallDrawStyle)
+  const canEdit = useCanEdit()
+
+  // Viewers only get the navigation tools (select, pan). The creation tools
+  // would be silently no-ops against CanvasStage's canEdit guard — hiding
+  // them keeps the picker from implying capabilities the role doesn't have.
+  const visibleTools = canEdit
+    ? tools
+    : tools.filter((t) => t.id === 'select' || t.id === 'pan')
 
   return (
     <div className="p-3">
       <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Tools</div>
       <div className="flex flex-col gap-0.5">
-        {tools.map((tool) => (
+        {visibleTools.map((tool) => (
           <div key={tool.id}>
             <button
               onClick={() => setActiveTool(tool.id)}
