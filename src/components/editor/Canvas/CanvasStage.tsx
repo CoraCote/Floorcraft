@@ -121,30 +121,45 @@ export function CanvasStage() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  // Wheel zoom: accumulates deltas into a ref and flushes once per
+  // Wheel handler: accumulates deltas into a ref and flushes once per
   // animation frame. This serves two purposes:
   //
-  //   1. Trackpad pinch-zoom fires at ~60–120 Hz with tiny delta values
+  //   1. Trackpad gestures fire at ~60–120 Hz with tiny delta values
   //      (~1–4 per event). A per-event React commit would thrash
   //      Konva's renderer and feel laggy. Coalescing into one commit
   //      per frame keeps it buttery.
   //
   //   2. A discrete mouse-wheel click is ~100+ delta. Using the same
   //      fixed multiplier for both produced either a jerky wheel or a
-  //      non-responsive trackpad. We now normalise by event magnitude
+  //      non-responsive trackpad. We normalise by event magnitude
   //      via `Math.exp(-delta * ZOOM_WHEEL_SENSITIVITY)` so one big
   //      tick and a stream of tiny trackpad moves both apply
   //      proportional scaling.
+  //
+  // The handler also discriminates pan vs. zoom per-gesture:
+  //
+  //   - `ctrlKey` === true  → macOS trackpad pinch-to-zoom (the browser
+  //                           synthesises a wheel event with ctrlKey set)
+  //   - `shiftKey` || `deltaX !== 0` → pan (explicit shift-scroll, or a
+  //                           two-finger horizontal trackpad swipe)
+  //   - otherwise           → zoom on a plain vertical mouse wheel
   //
   // Anchoring uses the LATEST pointer position seen in the batch — the
   // pointer usually doesn't move much between queued events, and this
   // avoids drift relative to the world point under the cursor.
   const wheelAccumRef = useRef<{
+    deltaX: number
     deltaY: number
     pointerX: number
     pointerY: number
+    ctrlKey: boolean
+    shiftKey: boolean
+    sawHorizontal: boolean
     pending: boolean
-  }>({ deltaY: 0, pointerX: 0, pointerY: 0, pending: false })
+  }>({
+    deltaX: 0, deltaY: 0, pointerX: 0, pointerY: 0,
+    ctrlKey: false, shiftKey: false, sawHorizontal: false, pending: false,
+  })
 
   const handleWheel = useCallback(
     (e: Konva.KonvaEventObject<WheelEvent>) => {
@@ -155,19 +170,59 @@ export function CanvasStage() {
       if (!pointer) return
 
       const acc = wheelAccumRef.current
+      acc.deltaX += e.evt.deltaX
       acc.deltaY += e.evt.deltaY
       acc.pointerX = pointer.x
       acc.pointerY = pointer.y
+      // ctrl/shift can toggle mid-gesture but what matters at flush time
+      // is whether they're CURRENTLY held — store the latest state.
+      acc.ctrlKey = e.evt.ctrlKey
+      acc.shiftKey = e.evt.shiftKey
+      // Remember if ANY queued event produced a horizontal component.
+      // A single vertical event inside an otherwise horizontal gesture
+      // shouldn't flip the batch to zoom.
+      if (e.evt.deltaX !== 0) acc.sawHorizontal = true
       if (acc.pending) return
       acc.pending = true
 
       requestAnimationFrame(() => {
-        const { deltaY, pointerX, pointerY } = wheelAccumRef.current
-        wheelAccumRef.current = { deltaY: 0, pointerX: 0, pointerY: 0, pending: false }
+        const a = wheelAccumRef.current
+        const deltaX = a.deltaX
+        const deltaY = a.deltaY
+        const pointerX = a.pointerX
+        const pointerY = a.pointerY
+        const ctrlKey = a.ctrlKey
+        const shiftKey = a.shiftKey
+        const sawHorizontal = a.sawHorizontal
+        wheelAccumRef.current = {
+          deltaX: 0, deltaY: 0, pointerX: 0, pointerY: 0,
+          ctrlKey: false, shiftKey: false, sawHorizontal: false, pending: false,
+        }
 
-        // Read from the store fresh — queued events could otherwise use
-        // a stale scale captured when the callback's closure was formed.
         const cs = useCanvasStore.getState()
+
+        // Pan branch. `ctrlKey` (macOS pinch) is explicitly excluded — it
+        // always zooms. Shift-scroll and horizontal trackpad swipes pan.
+        // Delta is in screen pixels, subtracted so a rightward/downward
+        // trackpad swipe "scrolls" the viewport toward that direction —
+        // i.e. content appears to move left/up, which is the same
+        // convention as native scrolling.
+        if (!ctrlKey && (shiftKey || sawHorizontal)) {
+          // When the user holds shift with a plain mouse wheel, browsers
+          // typically still report on deltaY only. Route deltaY into the
+          // horizontal axis so shift+wheel reads as "pan horizontally".
+          const panX = shiftKey && !sawHorizontal ? deltaY : deltaX
+          const panY = shiftKey && !sawHorizontal ? 0 : deltaY
+          useCanvasStore.setState({
+            stageX: cs.stageX - panX,
+            stageY: cs.stageY - panY,
+          })
+          return
+        }
+
+        // Zoom branch. Read from the store fresh — queued events could
+        // otherwise use a stale scale captured when the callback's
+        // closure was formed.
         const oldScale = cs.stageScale
         const factor = Math.exp(-deltaY * ZOOM_WHEEL_SENSITIVITY)
         const newScale = Math.min(

@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useElementsStore } from '../stores/elementsStore'
-import { useCanvasStore } from '../stores/canvasStore'
+import { useCanvasStore, type ToolType } from '../stores/canvasStore'
 import { useUIStore } from '../stores/uiStore'
 import { useShallow } from 'zustand/react/shallow'
 import { deleteElements } from '../lib/seatAssignment'
@@ -20,6 +20,14 @@ export function useKeyboardShortcuts() {
   const redo = useElementsStore.temporal.getState().redo
 
   useEffect(() => {
+    // Holds the tool that was active when Space was first pressed, so
+    // keyup can restore it. Figma / Miro convention: hold Space to
+    // temporarily switch to the pan tool, release to go back to what
+    // you were doing. Null when no Space-hold is active. A closure
+    // variable (not a ref) because it only needs to survive between
+    // the keydown and keyup listeners installed in this same effect.
+    let spacePanPrev: ToolType | null = null
+
     const handler = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement
       // Focus guard: don't hijack typing. SELECT is included because its
@@ -64,6 +72,22 @@ export function useKeyboardShortcuts() {
       // entirely when a modal is open so Cmd+A, Cmd+Z, arrow nudges, etc.
       // don't leak behind the drawer and mutate the canvas/selection.
       if (modalsOpen) return
+
+      // Space-hold → temporary pan tool. `e.code === 'Space'` rather than
+      // `e.key === ' '` so international keyboards still trigger it. Guard
+      // on `!e.repeat` so auto-repeat doesn't keep re-saving the previous
+      // tool as 'pan' the second keydown onwards, losing the real previous
+      // tool. preventDefault stops the browser from page-scrolling the
+      // canvas container.
+      if (e.code === 'Space' && !e.repeat && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault()
+        const current = useCanvasStore.getState().activeTool
+        if (current !== 'pan') {
+          spacePanPrev = current
+          setActiveTool('pan')
+        }
+        return
+      }
 
       if (mod && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return }
       if (mod && e.key === 'z' && e.shiftKey) { e.preventDefault(); redo(); return }
@@ -116,8 +140,19 @@ export function useKeyboardShortcuts() {
       }
 
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-        if (selectedIds.length === 0) return
         e.preventDefault()
+        // Empty selection: arrows pan the canvas viewport (Google Maps /
+        // Figma convention — ArrowRight moves the view right, revealing
+        // more content to the right, which means translating the stage
+        // content the opposite direction on screen). Shift accelerates.
+        if (selectedIds.length === 0) {
+          const step = e.shiftKey ? 80 : 20
+          const panX = e.key === 'ArrowLeft' ? step : e.key === 'ArrowRight' ? -step : 0
+          const panY = e.key === 'ArrowUp' ? step : e.key === 'ArrowDown' ? -step : 0
+          const cs = useCanvasStore.getState()
+          cs.setStagePosition(cs.stageX + panX, cs.stageY + panY)
+          return
+        }
         const amount = e.shiftKey ? 10 : 1
         const dx = e.key === 'ArrowLeft' ? -amount : e.key === 'ArrowRight' ? amount : 0
         const dy = e.key === 'ArrowUp' ? -amount : e.key === 'ArrowDown' ? amount : 0
@@ -200,11 +235,45 @@ export function useKeyboardShortcuts() {
       }
     }
 
+    // Release Space → restore whatever tool was active before the hold.
+    // Skipped when typing (focus guard mirrors keydown) so a space typed
+    // into an input doesn't accidentally flip the tool on keyup if the
+    // key transitioned focus mid-press.
+    const keyupHandler = (e: KeyboardEvent) => {
+      if (e.code !== 'Space') return
+      if (spacePanPrev === null) return
+      const t = e.target as HTMLElement
+      if (
+        t.tagName === 'INPUT' ||
+        t.tagName === 'TEXTAREA' ||
+        t.tagName === 'SELECT' ||
+        t.isContentEditable
+      ) return
+      setActiveTool(spacePanPrev)
+      spacePanPrev = null
+    }
+
+    // Alt-Tab / window-switch while holding Space would otherwise leave
+    // the user stuck in pan mode — we never see the keyup. Restore on
+    // blur for the same reason.
+    const blurHandler = () => {
+      if (spacePanPrev !== null) {
+        setActiveTool(spacePanPrev)
+        spacePanPrev = null
+      }
+    }
+
     // Capture phase: runs BEFORE modal/dialog bubble-phase listeners, so
     // Escape reliably exits presentation mode even if a modal happens to be
     // open when presentation mode is toggled.
     window.addEventListener('keydown', handler, { capture: true })
-    return () => window.removeEventListener('keydown', handler, { capture: true } as EventListenerOptions)
+    window.addEventListener('keyup', keyupHandler, { capture: true })
+    window.addEventListener('blur', blurHandler)
+    return () => {
+      window.removeEventListener('keydown', handler, { capture: true } as EventListenerOptions)
+      window.removeEventListener('keyup', keyupHandler, { capture: true } as EventListenerOptions)
+      window.removeEventListener('blur', blurHandler)
+    }
   }, [
     selectedIds, elements, presentationMode,
     clearSelection, duplicateElements, moveElements,

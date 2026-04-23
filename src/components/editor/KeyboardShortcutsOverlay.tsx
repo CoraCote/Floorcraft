@@ -22,6 +22,16 @@ const shortcutGroups: ShortcutGroup[] = [
     ],
   },
   {
+    title: 'Navigation',
+    rows: [
+      { keys: 'Space + Drag', action: 'Pan canvas (hold Space)' },
+      { keys: 'Shift + Wheel', action: 'Pan horizontally' },
+      { keys: 'Two-finger Drag', action: 'Pan (trackpad)' },
+      { keys: 'Arrows', action: 'Pan (with no selection)' },
+      { keys: 'Middle-Click Drag', action: 'Pan' },
+    ],
+  },
+  {
     title: 'Tools',
     rows: [
       { keys: 'V', action: 'Select' },
