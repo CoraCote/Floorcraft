@@ -73,15 +73,21 @@ export function Minimap() {
   const viewportW = (window.innerWidth / stageScale) * minimapScale
   const viewportH = (window.innerHeight / stageScale) * minimapScale
 
-  const handleClick = useCallback(
-    (e: React.MouseEvent) => {
+  // Centre the stage on whatever canvas coordinate the pointer is over
+  // inside the minimap. Shared by the click handler and the drag handler
+  // so "click to jump" and "drag to scrub" stay behaviourally identical
+  // — users frequently start with a click, realise they want somewhere
+  // else, and expect the view to follow their pointer without a second
+  // click. A separate handler also keeps the math in one place.
+  const panToMinimapPoint = useCallback(
+    (clientX: number, clientY: number) => {
       const rect = ref.current?.getBoundingClientRect()
       if (!rect) return
-      const clickX = e.clientX - rect.left
-      const clickY = e.clientY - rect.top
+      const localX = clientX - rect.left
+      const localY = clientY - rect.top
 
-      const canvasX = clickX / minimapScale + bounds.x
-      const canvasY = clickY / minimapScale + bounds.y
+      const canvasX = localX / minimapScale + bounds.x
+      const canvasY = localY / minimapScale + bounds.y
 
       setStagePosition(
         -canvasX * stageScale + window.innerWidth / 2,
@@ -89,6 +95,39 @@ export function Minimap() {
       )
     },
     [minimapScale, bounds, stageScale, setStagePosition]
+  )
+
+  // Pointer-drag scrubbing. We attach the move/up listeners to `window`
+  // rather than the minimap div so the drag keeps tracking even when the
+  // pointer leaves the minimap bounds — otherwise the user sees the
+  // canvas "stick" the moment they overshoot, which feels broken. The
+  // event listeners are cleaned up as soon as pointerup fires OR the
+  // component unmounts (the cleanup returns from the effect keep them
+  // balanced even if React tears us down mid-drag).
+  const draggingRef = useRef(false)
+
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      // Only primary button (left-click / single touch) should drive pans.
+      if (e.button !== 0 && e.pointerType === 'mouse') return
+      draggingRef.current = true
+      panToMinimapPoint(e.clientX, e.clientY)
+
+      const onMove = (moveEvent: PointerEvent) => {
+        if (!draggingRef.current) return
+        panToMinimapPoint(moveEvent.clientX, moveEvent.clientY)
+      }
+      const onUp = () => {
+        draggingRef.current = false
+        window.removeEventListener('pointermove', onMove)
+        window.removeEventListener('pointerup', onUp)
+        window.removeEventListener('pointercancel', onUp)
+      }
+      window.addEventListener('pointermove', onMove)
+      window.addEventListener('pointerup', onUp)
+      window.addEventListener('pointercancel', onUp)
+    },
+    [panToMinimapPoint]
   )
 
   // Selection set for O(1) lookup during the render loop. We split
@@ -102,9 +141,9 @@ export function Minimap() {
   return (
     <div
       ref={ref}
-      className="absolute bottom-10 right-4 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden cursor-pointer"
+      className="absolute bottom-10 right-4 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden cursor-pointer select-none touch-none"
       style={{ width: MINIMAP_WIDTH, height: MINIMAP_HEIGHT }}
-      onClick={handleClick}
+      onPointerDown={handlePointerDown}
       aria-label="Minimap"
     >
       <svg width={MINIMAP_WIDTH} height={MINIMAP_HEIGHT}>
