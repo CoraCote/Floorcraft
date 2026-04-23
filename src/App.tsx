@@ -68,6 +68,11 @@ const ReportsPage = lazy(() =>
     default: m.ReportsPage,
   })),
 )
+const SharedProjectView = lazy(() =>
+  import('./components/shared/SharedProjectView').then((m) => ({
+    default: m.SharedProjectView,
+  })),
+)
 
 function Loading() {
   return (
@@ -109,6 +114,9 @@ function App() {
             <Route path="/auth/verify" element={<AuthVerifyPage />} />
             <Route path="/auth/reset" element={<AuthResetPage />} />
             <Route path="/invite/:token" element={<InvitePage />} />
+            {/* Read-only share links — intentionally unauthenticated.
+                RLS policies on share_tokens + offices are the gate. */}
+            <Route path="/shared/:projectId/:token" element={<SharedProjectView />} />
             {/* Help is intentionally public — an unauth'd user can read
                 the guide before signing up, and an auth'd one doesn't
                 have to bounce through a team to get to it. */}

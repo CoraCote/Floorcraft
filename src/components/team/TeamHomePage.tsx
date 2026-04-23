@@ -112,14 +112,6 @@ export function TeamHomePage() {
             className="border rounded px-2 py-1.5 text-sm w-56"
           />
           <button
-            onClick={onNewDemo}
-            disabled={creating}
-            className="px-3 py-1.5 border border-blue-300 text-blue-700 bg-blue-50 rounded text-sm hover:bg-blue-100 disabled:opacity-50"
-            title="Pre-populated with ~18 demo employees to exercise the roster features"
-          >
-            Demo office
-          </button>
-          <button
             onClick={onNew}
             disabled={creating}
             className="px-3 py-1.5 bg-blue-600 text-white rounded text-sm disabled:opacity-50"
@@ -141,6 +133,28 @@ export function TeamHomePage() {
           </Link>
         </div>
       </header>
+      {/*
+        Demo office moved out of the primary CTA row and into a
+        disclosure. New-to-Floocraft operators usually want a blank
+        workspace to load their own data into — the demo was confusing
+        as a same-weight peer of "New office". Still one click away for
+        anyone who actually wants to explore the feature surface.
+      */}
+      <details className="mb-4 text-xs">
+        <summary className="cursor-pointer text-gray-500 hover:text-gray-700 select-none">
+          Or start from a template
+        </summary>
+        <div className="mt-2 ml-2">
+          <button
+            onClick={onNewDemo}
+            disabled={creating}
+            className="text-blue-600 hover:underline disabled:text-gray-400 disabled:no-underline"
+            title="Pre-populated with ~18 demo employees to exercise the roster features"
+          >
+            Sample office · ~18 employees
+          </button>
+        </div>
+      </details>
       {visible.length === 0 ? (
         <div className="text-center py-16 text-sm text-gray-500">
           {q ? (

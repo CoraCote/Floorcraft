@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useSession } from '../../lib/auth/session'
 import { supabase } from '../../lib/supabase'
 import { humanizeError } from '../../lib/errorMessages'
+import { previewInvite, type InvitePreview } from '../../lib/invitePreview'
 
 export function InvitePage() {
   const { token } = useParams<{ token: string }>()
@@ -10,6 +11,27 @@ export function InvitePage() {
   const navigate = useNavigate()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [preview, setPreview] = useState<InvitePreview | null>(null)
+  const [previewLoaded, setPreviewLoaded] = useState(false)
+
+  // Fire the preview fetch as soon as we have a token, regardless of
+  // auth state. The preview RPC is `security definer` and callable by
+  // anon — the goal is to greet the user with "Sarah invited you to
+  // Acme" before they bounce through /signup, so the previewed name
+  // shows up on their return trip to /invite/:token too.
+  useEffect(() => {
+    if (!token) return
+    let cancelled = false
+    previewInvite(token).then((p) => {
+      if (!cancelled) {
+        setPreview(p)
+        setPreviewLoaded(true)
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [token])
 
   if (!token) return <div className="p-6 text-sm">Invalid invite link.</div>
 
@@ -42,15 +64,37 @@ export function InvitePage() {
     navigate(`/t/${team?.slug ?? ''}`, { replace: true })
   }
 
+  // Once the preview fetch returns null we know the token is invalid —
+  // keep the Accept button disabled to avoid a pointless RPC round-trip
+  // that'll just surface a generic error.
+  const inviteInvalid = previewLoaded && !preview
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="bg-white p-6 rounded-lg shadow max-w-sm space-y-3 text-sm">
-        <h1 className="text-lg font-semibold">Join the team</h1>
-        <p className="text-gray-600">You've been invited to a team on Floorcraft. Click below to accept.</p>
+        {preview ? (
+          <>
+            <h1 className="text-lg font-semibold">
+              {preview.inviterName} invited you to {preview.teamName}
+            </h1>
+            <p className="text-gray-600">Accept to join this workspace on Floorcraft.</p>
+          </>
+        ) : previewLoaded ? (
+          <>
+            <h1 className="text-lg font-semibold">Invite link not valid</h1>
+            <p className="text-gray-600">
+              This invite may be expired or already used. Ask your inviter for a fresh link.
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 className="text-lg font-semibold">Loading invite…</h1>
+          </>
+        )}
         {error && <p className="text-red-600">{error}</p>}
         <button
           onClick={accept}
-          disabled={busy}
+          disabled={busy || inviteInvalid}
           className="w-full bg-blue-600 text-white rounded py-2 font-medium disabled:opacity-50"
         >
           {busy ? 'Joining…' : 'Accept invite'}

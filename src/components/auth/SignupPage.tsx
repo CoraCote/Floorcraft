@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { ResendVerificationButton } from '../team/ResendVerificationButton'
 
 export function SignupPage() {
   const [params] = useSearchParams()
@@ -59,6 +60,8 @@ export function SignupPage() {
           <p className="text-gray-600">
             We sent a verification link to <b>{email}</b>. Click the link to finish setting up your account.
           </p>
+          <p className="text-xs text-gray-500">Didn't get the email? Check your spam folder or resend:</p>
+          <ResendVerificationButton email={email} />
         </div>
       </div>
     )

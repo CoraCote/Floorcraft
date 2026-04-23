@@ -6,6 +6,7 @@ import { useProjectStore } from '../../stores/projectStore'
 import { useSession } from '../../lib/auth/session'
 import { VisibilityRadio, type Visibility } from './Share/VisibilityRadio'
 import { AccessTable } from './Share/AccessTable'
+import { ShareLinkSection } from './Share/ShareLinkSection'
 import {
   listPermissions,
   setOfficePrivate,
@@ -127,6 +128,7 @@ export function ShareModal() {
               </button>
             </div>
           </section>
+          <ShareLinkSection />
         </div>
       </div>
     </div>
