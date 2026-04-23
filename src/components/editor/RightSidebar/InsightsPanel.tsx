@@ -4,10 +4,12 @@ import { useInsightsStore } from '../../../stores/insightsStore'
 import { useEmployeeStore } from '../../../stores/employeeStore'
 import { useAllFloorElements } from '../../../hooks/useActiveFloorElements'
 import type { CanvasElement } from '../../../types/elements'
+import type { Insight, InsightAction } from '../../../types/insights'
 import { useShallow } from 'zustand/react/shallow'
 import { SeveritySummary } from './SeveritySummary'
 import { InsightFilters } from './InsightFilters'
 import { InsightCard } from './InsightCard'
+import { focusElements } from '../../../lib/focusElements'
 
 export function InsightsPanel() {
   const floorsWithElements = useAllFloorElements()
@@ -97,14 +99,44 @@ export function InsightsPanel() {
     return { critical, warning, info }
   }, [insights])
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleAction = useCallback((_insightId: string, _actionIndex: number) => {
-    // Action execution will be wired to canvas navigation/assignment in future tasks
+  // Clicking the card body selects the related elements and pans the
+  // canvas to them. For "highlight" / "navigate" action buttons we do
+  // exactly the same thing — the visual outcome the user wants is the
+  // same ("show me what this is about"). "dismiss" routes through the
+  // dismiss store action, and everything else is a no-op for now.
+  const handleCardClick = useCallback((insight: Insight) => {
+    focusElements(insight.relatedElementIds)
   }, [])
 
-  const handleCardClick = useCallback(() => {
-    // Highlight related elements on canvas — future wire-up
-  }, [])
+  const handleAction = useCallback(
+    (insightId: string, actionIndex: number) => {
+      const insight = useInsightsStore.getState().insights.find((i) => i.id === insightId)
+      if (!insight) return
+      const action: InsightAction | undefined = insight.actions[actionIndex]
+      if (!action) return
+      switch (action.type) {
+        case 'navigate':
+        case 'highlight':
+        case 'assign': {
+          // All three visually converge on "put the user in front of
+          // these elements so they can act on them." More targeted
+          // flows (e.g. opening an assignment drawer for `assign`) are
+          // future work; focusing already unblocks the user.
+          focusElements(insight.relatedElementIds)
+          return
+        }
+        case 'dismiss':
+          dismissInsight(insightId)
+          return
+        case 'external': {
+          const url = typeof action.payload.url === 'string' ? action.payload.url : null
+          if (url) window.open(url, '_blank', 'noopener,noreferrer')
+          return
+        }
+      }
+    },
+    [dismissInsight],
+  )
 
   const lastAnalyzedLabel = useMemo(
     () =>
