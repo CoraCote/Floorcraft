@@ -93,9 +93,27 @@ const sections: Section[] = [
         <h3 className="font-semibold text-gray-900 mt-4">Inviting collaborators</h3>
         <p>
           Open <strong>Team → Settings → Members</strong>. Invite by email;
-          invitees get a link and show up once they accept. Roles are{' '}
-          <strong>Admin</strong> (manage team + delete offices) and{' '}
-          <strong>Member</strong> (edit content).
+          invitees land on a preview screen showing who invited them and which
+          team they're joining, then get a verification link. Couldn't find the
+          email? The signup "Check your email" screen has a{' '}
+          <strong>Resend verification</strong> button with a 30-second cooldown.
+        </p>
+        <h3 className="font-semibold text-gray-900 mt-4">Team vs office roles</h3>
+        <p>
+          Permissions come in two layers. The <strong>team role</strong>{' '}
+          (<strong>Admin</strong> or <strong>Member</strong>) controls team
+          settings, billing, and the ability to delete offices. Each office
+          then has its own <strong>office role</strong>:
+        </p>
+        <ul className="list-disc pl-6 space-y-1.5 text-gray-700">
+          <li><strong>Owner</strong> — full access, including audit log, reports, and share-link generation.</li>
+          <li><strong>HR Editor</strong> — edit the roster + view audit log + view reports. Cannot edit the map.</li>
+          <li><strong>Space Planner</strong> — edit the map + view reports. Cannot edit the roster or see the audit log.</li>
+          <li><strong>Viewer</strong> — read-only. Cannot edit, export, or view reports.</li>
+        </ul>
+        <p className="text-sm text-gray-500">
+          Buttons for actions your role can't perform appear disabled with a
+          tooltip ("Read-only access. Contact an editor to make changes").
         </p>
       </div>
     ),
@@ -134,6 +152,16 @@ const sections: Section[] = [
           The floor switcher lives at the bottom of the map. <strong>+ Add
           floor</strong> spins up an empty floor; each floor has its own
           elements and seat assignments but shares the same roster of people.
+          Deleting a floor that has people assigned to desks on it shows the
+          count in the confirmation dialog ("Floor 3 has 12 assigned employees.
+          They will be unassigned.") and frees those seats automatically.
+        </p>
+
+        <h3 className="font-semibold text-gray-900 mt-4">Safe renames</h3>
+        <p>
+          Desk IDs must be unique within a floor. Renaming a desk to a name
+          already in use shows an inline error in the properties panel and
+          blocks the save — no silent collisions.
         </p>
 
         <h3 className="font-semibold text-gray-900 mt-4">Selection & editing</h3>
@@ -169,22 +197,27 @@ const sections: Section[] = [
           <li><strong>Active / On leave</strong> — filter by status.</li>
           <li><strong>Unassigned</strong> — people without a seat.</li>
           <li><strong>Pending equipment</strong> — anyone whose equipment status is still pending (only shows when &gt; 0).</li>
-          <li><strong>Ending soon</strong> — contracts or internships ending in the next 30 days (only shows when &gt; 0).</li>
+          <li><strong>Ending soon</strong> — contracts or internships whose <code>endDate</code> is within the next 30 days (only shows when &gt; 0).</li>
+          <li><strong>Departing soon</strong> — active employees with a scheduled <code>departureDate</code> inside the next 30 days (only shows when &gt; 0).</li>
           <li><strong>In today</strong> — people whose office-days cover today's weekday (weekdays only).</li>
         </ul>
 
         <h3 className="font-semibold text-gray-900 mt-4">Editing rows</h3>
         <ul className="list-disc pl-6 space-y-1.5 text-gray-700">
           <li><strong>Inline edit</strong> — click or double-click a cell. Enter / blur commits; Escape cancels.</li>
-          <li><strong>Side drawer</strong> — double-click a row. Covers every field, including office-day presets (Weekdays / MWF / TTh / Hybrid / Remote).</li>
-          <li><strong>Status = Departed</strong> — if the person still holds a seat, a prompt asks whether to unassign it too.</li>
+          <li><strong>Side drawer</strong> — double-click a row. Covers every field, including office-day presets (Weekdays / MWF / TTh / Hybrid / Remote), leave metadata (type, expected return, coverage buddy, notes), and scheduled departure date.</li>
+          <li><strong>Status</strong> — <strong>Active</strong>, <strong>On leave</strong>, or <strong>Departed</strong>. On-leave rows surface the leave type and expected-return date in the drawer; departed rows are kept for history.</li>
+          <li><strong>Status = Departed</strong> — if the person still holds a seat, a prompt asks whether to unassign it too. Direct reports get their <code>managerId</code> cleared automatically.</li>
           <li><strong>Delete</strong> — row menu or bulk action. Always shows a confirmation with a name preview.</li>
+          <li><strong>Undo after restore</strong> — if you delete an assigned desk and then <kbd>Ctrl</kbd>+<kbd>Z</kbd>, the desk comes back but the assignment is dropped on purpose. A toast reads <em>"Desk restored — Jane Doe's assignment not recovered. Reassign?"</em> and jumps you to that person on the roster.</li>
         </ul>
 
         <h3 className="font-semibold text-gray-900 mt-4">Badges &amp; warnings</h3>
         <ul className="list-disc pl-6 space-y-1.5 text-gray-700">
           <li><strong>Amber "rehire?"</strong> — two rows share a name and department. Catches duplicate imports.</li>
           <li><strong>End-date pill</strong> — shows "in N days" when within 30 days.</li>
+          <li><strong>Departure pill</strong> — active employees with a scheduled <code>departureDate</code> inside 30 days get a dated "Departing" pill.</li>
+          <li><strong>On-leave ribbon</strong> — rows with status On leave show the leave type + expected return at a glance.</li>
           <li><strong>Manager dangling</strong> — the person's manager no longer exists. The drawer offers a one-click Clear.</li>
         </ul>
 
@@ -198,7 +231,7 @@ const sections: Section[] = [
 
         <h3 className="font-semibold text-gray-900 mt-4">Import & export</h3>
         <ul className="list-disc pl-6 space-y-1.5 text-gray-700">
-          <li><strong>Import CSV</strong> — paste a CSV or upload a file. Preview shows errors and matched columns. Manager references resolve by name.</li>
+          <li><strong>Import CSV</strong> — paste a CSV or upload a file. A preview panel lists each row with a status (New / Update / Error) and surfaces per-row validation before you commit — no more silent drops on malformed data. Manager references resolve by name; duplicates are matched by email (falling back to name + department).</li>
           <li><strong>Export CSV</strong> — export all or just selected. Round-trips cleanly back through import.</li>
         </ul>
       </div>
@@ -231,6 +264,105 @@ const sections: Section[] = [
           Click the Seat column in the roster — it takes you to the map,
           switches to the right floor, and selects the desk. Fast way to
           answer "where does Jamie sit?".
+        </p>
+      </div>
+    ),
+  },
+  {
+    id: 'reports',
+    label: 'Reports',
+    icon: '📊',
+    body: (
+      <div className="space-y-4">
+        <p>
+          The <strong>Reports</strong> tab (top bar, next to Map and Roster) is
+          a lightweight dashboard for pilot-scale utilization questions. It
+          reads straight from the current office — no separate data pipeline.
+        </p>
+        <h3 className="font-semibold text-gray-900">What's in it</h3>
+        <ul className="list-disc pl-6 space-y-1.5 text-gray-700">
+          <li>
+            <strong>Floor utilization</strong> — per-floor occupancy. Capacity
+            counts desks as 1 seat, workstations by their <code>positions</code>,
+            and private offices by the <code>capacity</code> you set on each
+            one. A bar turns red below 50%, yellow below 80%, green otherwise.
+          </li>
+          <li>
+            <strong>Department headcount</strong> — active employees grouped by
+            department, sorted by count (with no-department people bucketed as
+            "(None)").
+          </li>
+          <li>
+            <strong>Unassigned</strong> — active employees who don't yet have a
+            seat. Sorted alphabetically.
+          </li>
+        </ul>
+        <h3 className="font-semibold text-gray-900 mt-4">Exporting</h3>
+        <p>
+          Each section has its own <strong>Export CSV</strong> button so you
+          can hand numbers to someone outside the tool. Exports are a snapshot
+          of the current view; they're not signed or versioned.
+        </p>
+        <p className="text-sm text-gray-500">
+          Who can see it: Owner, HR Editor, and Space Planner. Viewers and
+          unauthenticated visitors cannot.
+        </p>
+      </div>
+    ),
+  },
+  {
+    id: 'audit-log',
+    label: 'Audit log',
+    icon: '📋',
+    body: (
+      <div className="space-y-4">
+        <p>
+          The audit log captures meaningful mutations for compliance-friendly
+          review: employees added/updated/deleted, seat assignments, floor
+          lifecycle events, and CSV imports. Each entry records the actor,
+          action, target, and a small metadata blob.
+        </p>
+        <h3 className="font-semibold text-gray-900">Filters</h3>
+        <ul className="list-disc pl-6 space-y-1.5 text-gray-700">
+          <li><strong>Actor</strong> — filter to a specific user ID.</li>
+          <li><strong>Action</strong> — filter to a specific event type (e.g. <code>employee.delete</code>, <code>csv.import</code>).</li>
+        </ul>
+        <p className="text-sm text-gray-500">
+          Who can see it: Owner and HR Editor. The log is append-only — no one
+          can edit or delete entries from the UI, and the database policies
+          block UPDATE/DELETE as well.
+        </p>
+      </div>
+    ),
+  },
+  {
+    id: 'sharing',
+    label: 'Sharing read-only links',
+    icon: '🔗',
+    body: (
+      <div className="space-y-4">
+        <p>
+          Owners can generate a public read-only link that renders the roster
+          for anyone with the URL — no sign-in required. Useful for sharing a
+          headcount snapshot with a contractor, recruiter, or exec who
+          shouldn't need a seat in the tool.
+        </p>
+        <h3 className="font-semibold text-gray-900">Creating a link</h3>
+        <ol className="list-decimal pl-6 space-y-1.5 text-gray-700">
+          <li>On the map, open <strong>Share</strong> in the top bar.</li>
+          <li>Click <strong>Create share link</strong> under the Read-only link section. The URL is of the form <code>/shared/&lt;office-id&gt;/&lt;token&gt;</code>.</li>
+          <li>Copy the link. Anyone with it sees the current roster as a static table with floor count.</li>
+        </ol>
+        <h3 className="font-semibold text-gray-900 mt-4">Revoking</h3>
+        <p>
+          Hit <strong>Revoke</strong> in the same panel. The token is marked
+          revoked immediately; subsequent visits show "This share link isn't
+          valid."
+        </p>
+        <p className="text-sm text-gray-500">
+          Scope: roster only. The Konva map itself is not shared — we deferred
+          map-in-anon-view as a follow-up. Both create and revoke emit audit
+          events.
         </p>
       </div>
     ),
@@ -361,10 +493,53 @@ const sections: Section[] = [
           if you close the tab while offline, unsaved changes are lost.
         </FaqItem>
 
-        <FaqItem q="How do I share a read-only view of a floor?">
-          Click <strong>Share</strong> in the top bar on the map view. You'll
-          get a link that renders the canvas in presentation mode — no edit
-          tools, no sidebars. Great for all-hands or new-hire orientation.
+        <FaqItem q="How do I share a read-only view with someone who doesn't have an account?">
+          Open <strong>Share</strong> in the top bar (Owner role required),
+          click <strong>Create share link</strong>, and copy the URL. The
+          recipient opens it and sees the roster as a static table — no sign-in
+          needed. Hit <strong>Revoke</strong> in the same panel when the link
+          is no longer needed. See the Sharing section above for details.
+        </FaqItem>
+
+        <FaqItem q="I signed up but never got the verification email.">
+          The "Check your email" screen has a <strong>Resend verification
+          email</strong> button right below the message. It enforces a
+          30-second cooldown to avoid double-sends. If it still doesn't arrive,
+          check spam; otherwise the email service may be misconfigured — file
+          an issue.
+        </FaqItem>
+
+        <FaqItem q="Who gets to see the Reports and Audit log?">
+          Reports: Owner, HR Editor, and Space Planner. Viewers cannot.{' '}
+          Audit log: Owner and HR Editor only. Unauthorized roles see a{' '}
+          "Not authorized" message; the Reports / Audit log nav pills also hide
+          themselves when the action isn't permitted.
+        </FaqItem>
+
+        <FaqItem q="What's the difference between Admin and Owner?">
+          <strong>Admin</strong> and <strong>Member</strong> are{' '}
+          <em>team-level</em> roles — they decide who can manage billing,
+          invite collaborators, and delete offices at the team level.{' '}
+          <strong>Owner</strong>, <strong>HR Editor</strong>,{' '}
+          <strong>Space Planner</strong>, and <strong>Viewer</strong> are{' '}
+          <em>office-level</em> roles that govern what you can do inside a
+          specific office. A team Admin isn't automatically an office Owner —
+          check the office permissions.
+        </FaqItem>
+
+        <FaqItem q="How do I schedule someone's departure without deleting them yet?">
+          Open the side drawer on their row and set <strong>Departure
+          date</strong>. Their status stays Active but they pick up a "Departing
+          in N days" pill and count toward the <em>Departing soon</em> stat
+          chip. On the actual departure date, flip their status to Departed
+          (which prompts to unassign their seat).
+        </FaqItem>
+
+        <FaqItem q="Someone is on parental leave — where do I capture coverage?">
+          Set their status to On leave. The drawer exposes <strong>Leave
+          type</strong>, <strong>Expected return</strong>,{' '}
+          <strong>Coverage employee</strong>, and <strong>Notes</strong>. The
+          row gets an On-leave ribbon showing type + return at a glance.
         </FaqItem>
 
         <FaqItem q="Why do some stat chips disappear?">
