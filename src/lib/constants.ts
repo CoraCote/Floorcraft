@@ -5,7 +5,23 @@ export const SEAT_DROP_THRESHOLD = 20
 
 export const ZOOM_MIN = 0.1
 export const ZOOM_MAX = 4.0
+/** Additive step — kept for any legacy callers. Prefer ZOOM_FACTOR. */
 export const ZOOM_STEP = 0.1
+/**
+ * Multiplicative step for toolbar zoom buttons / Cmd+= / Cmd+-. Using a
+ * factor keeps the perceived step uniform across the zoom range (a +0.1
+ * additive step is 100% at 10% zoom but only 2.5% at 400% zoom). 1.2 is
+ * the sweet spot where each click is visibly different without overshooting.
+ */
+export const ZOOM_FACTOR = 1.2
+/**
+ * Exponential sensitivity for the wheel / trackpad zoom handler. Applied
+ * as `Math.exp(-deltaY * ZOOM_WHEEL_SENSITIVITY)`, which normalises the
+ * step by event magnitude — one big mouse-wheel tick (deltaY ≈ 100) and
+ * a stream of tiny trackpad deltas (~2–4 each) now feel comparable
+ * instead of one being jerky and the other laggy.
+ */
+export const ZOOM_WHEEL_SENSITIVITY = 0.0015
 
 export const UNDO_LIMIT = 50
 

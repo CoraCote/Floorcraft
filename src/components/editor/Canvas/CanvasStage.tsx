@@ -19,7 +19,7 @@ import { DimensionLayer } from './DimensionLayer'
 import { OrgChartOverlay } from '../../reports/OrgChartOverlay'
 import { SeatMapColorMode } from '../../reports/SeatMapColorMode'
 import { useWallDrawing } from '../../../hooks/useWallDrawing'
-import { ZOOM_MIN, ZOOM_MAX } from '../../../lib/constants'
+import { ZOOM_MIN, ZOOM_MAX, ZOOM_WHEEL_SENSITIVITY } from '../../../lib/constants'
 import { isAssignableElement } from '../../../types/elements'
 import { elementsIntersectingRect } from '../../../lib/marquee'
 import { assignEmployee } from '../../../lib/seatAssignment'
@@ -54,7 +54,7 @@ export function CanvasStage() {
   const containerRef = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ width: 800, height: 600 })
 
-  const { stageX, stageY, stageScale, setStagePosition, setStageScale, activeTool } = useCanvasStore(useShallow((s) => ({ stageX: s.stageX, stageY: s.stageY, stageScale: s.stageScale, setStagePosition: s.setStagePosition, setStageScale: s.setStageScale, activeTool: s.activeTool })))
+  const { stageX, stageY, stageScale, setStagePosition, activeTool } = useCanvasStore(useShallow((s) => ({ stageX: s.stageX, stageY: s.stageY, stageScale: s.stageScale, setStagePosition: s.setStagePosition, activeTool: s.activeTool })))
   const { clearSelection, setContextMenu } = useUIStore(useShallow((s) => ({ clearSelection: s.clearSelection, setContextMenu: s.setContextMenu })))
   const canEdit = useCan('editMap')
   // Marquee (drag-rectangle) selection — only active when the select tool is
@@ -81,7 +81,13 @@ export function CanvasStage() {
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0]
       if (entry) {
-        setSize({ width: entry.contentRect.width, height: entry.contentRect.height })
+        const w = entry.contentRect.width
+        const h = entry.contentRect.height
+        setSize({ width: w, height: h })
+        // Publish to the store so non-canvas consumers (minimap viewport
+        // rectangle, zoom-anchoring) can reason about the drawable area
+        // without measuring the DOM themselves.
+        useCanvasStore.getState().setStageSize(w, h)
       }
     })
     observer.observe(container)
@@ -115,33 +121,75 @@ export function CanvasStage() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  // Wheel zoom: accumulates deltas into a ref and flushes once per
+  // animation frame. This serves two purposes:
+  //
+  //   1. Trackpad pinch-zoom fires at ~60–120 Hz with tiny delta values
+  //      (~1–4 per event). A per-event React commit would thrash
+  //      Konva's renderer and feel laggy. Coalescing into one commit
+  //      per frame keeps it buttery.
+  //
+  //   2. A discrete mouse-wheel click is ~100+ delta. Using the same
+  //      fixed multiplier for both produced either a jerky wheel or a
+  //      non-responsive trackpad. We now normalise by event magnitude
+  //      via `Math.exp(-delta * ZOOM_WHEEL_SENSITIVITY)` so one big
+  //      tick and a stream of tiny trackpad moves both apply
+  //      proportional scaling.
+  //
+  // Anchoring uses the LATEST pointer position seen in the batch — the
+  // pointer usually doesn't move much between queued events, and this
+  // avoids drift relative to the world point under the cursor.
+  const wheelAccumRef = useRef<{
+    deltaY: number
+    pointerX: number
+    pointerY: number
+    pending: boolean
+  }>({ deltaY: 0, pointerX: 0, pointerY: 0, pending: false })
+
   const handleWheel = useCallback(
     (e: Konva.KonvaEventObject<WheelEvent>) => {
       e.evt.preventDefault()
       const stage = stageRef.current
       if (!stage) return
-
-      const oldScale = stageScale
       const pointer = stage.getPointerPosition()
       if (!pointer) return
 
-      const scaleBy = 1.08
-      const newScale = e.evt.deltaY < 0
-        ? Math.min(ZOOM_MAX, oldScale * scaleBy)
-        : Math.max(ZOOM_MIN, oldScale / scaleBy)
+      const acc = wheelAccumRef.current
+      acc.deltaY += e.evt.deltaY
+      acc.pointerX = pointer.x
+      acc.pointerY = pointer.y
+      if (acc.pending) return
+      acc.pending = true
 
-      const mousePointTo = {
-        x: (pointer.x - stageX) / oldScale,
-        y: (pointer.y - stageY) / oldScale,
-      }
+      requestAnimationFrame(() => {
+        const { deltaY, pointerX, pointerY } = wheelAccumRef.current
+        wheelAccumRef.current = { deltaY: 0, pointerX: 0, pointerY: 0, pending: false }
 
-      setStageScale(newScale)
-      setStagePosition(
-        pointer.x - mousePointTo.x * newScale,
-        pointer.y - mousePointTo.y * newScale
-      )
+        // Read from the store fresh — queued events could otherwise use
+        // a stale scale captured when the callback's closure was formed.
+        const cs = useCanvasStore.getState()
+        const oldScale = cs.stageScale
+        const factor = Math.exp(-deltaY * ZOOM_WHEEL_SENSITIVITY)
+        const newScale = Math.min(
+          ZOOM_MAX,
+          Math.max(ZOOM_MIN, oldScale * factor),
+        )
+        if (newScale === oldScale) return
+
+        const worldX = (pointerX - cs.stageX) / oldScale
+        const worldY = (pointerY - cs.stageY) / oldScale
+
+        // Single store update for scale + position keeps the two in sync —
+        // if we set them separately, a re-render could land between them
+        // and produce a one-frame visual jump.
+        useCanvasStore.setState({
+          stageScale: newScale,
+          stageX: pointerX - worldX * newScale,
+          stageY: pointerY - worldY * newScale,
+        })
+      })
     },
-    [stageScale, stageX, stageY, setStageScale, setStagePosition]
+    [],
   )
 
   const isPanning = useRef(false)
