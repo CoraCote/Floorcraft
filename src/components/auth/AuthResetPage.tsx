@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { humanizeAuthError } from '../../lib/auth/humanizeAuthError'
 
 export function AuthResetPage() {
   const [password, setPassword] = useState('')
@@ -12,10 +13,16 @@ export function AuthResetPage() {
     e.preventDefault()
     setBusy(true)
     setError(null)
-    const { error } = await supabase.auth.updateUser({ password })
+    let error: unknown = null
+    try {
+      const res = await supabase.auth.updateUser({ password })
+      error = res.error
+    } catch (e) {
+      error = e
+    }
     setBusy(false)
     if (error) {
-      setError(error.message)
+      setError(humanizeAuthError(error))
       return
     }
     navigate('/dashboard', { replace: true })
@@ -31,10 +38,17 @@ export function AuthResetPage() {
             type="password"
             required
             minLength={8}
+            aria-describedby="reset-password-hint"
             className="w-full border rounded px-2 py-1.5"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
+          <span
+            id="reset-password-hint"
+            className="mt-1 block text-xs text-gray-500"
+          >
+            At least 8 characters.
+          </span>
         </label>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button

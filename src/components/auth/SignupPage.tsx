@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { ResendVerificationButton } from '../team/ResendVerificationButton'
+import { humanizeAuthError } from '../../lib/auth/humanizeAuthError'
 
 export function SignupPage() {
   const [params] = useSearchParams()
@@ -39,14 +40,24 @@ export function SignupPage() {
     // the top-of-render promotion above). `/auth/verify` will consume
     // it after email confirmation.
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { name } },
-    })
+    // Wrap in try/catch: `signUp` rejects on raw network failure rather
+    // than returning `{ error }`, and the default exception is
+    // `TypeError: Failed to fetch` — not a message we want pasted into
+    // a user-facing form. humanizeAuthError rewrites that case.
+    let error: unknown = null
+    try {
+      const res = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { name } },
+      })
+      error = res.error
+    } catch (e) {
+      error = e
+    }
     setBusy(false)
     if (error) {
-      setError(error.message)
+      setError(humanizeAuthError(error))
       return
     }
     setDone(true)
@@ -97,10 +108,17 @@ export function SignupPage() {
             type="password"
             required
             minLength={8}
+            aria-describedby="signup-password-hint"
             className="w-full border rounded px-2 py-1.5"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
+          <span
+            id="signup-password-hint"
+            className="mt-1 block text-xs text-gray-500"
+          >
+            At least 8 characters.
+          </span>
         </label>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button

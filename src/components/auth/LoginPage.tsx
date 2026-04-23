@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { humanizeAuthError } from '../../lib/auth/humanizeAuthError'
 
 export function LoginPage() {
   const [email, setEmail] = useState('')
@@ -15,10 +16,20 @@ export function LoginPage() {
     e.preventDefault()
     setBusy(true)
     setError(null)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    // signInWithPassword rejects (rather than returning `{ error }`) when
+    // the network request itself fails, so we catch here as well as
+    // handling the server-side `{ error }` return — otherwise a raw
+    // `TypeError: Failed to fetch` leaks into the form.
+    let error: unknown = null
+    try {
+      const res = await supabase.auth.signInWithPassword({ email, password })
+      error = res.error
+    } catch (e) {
+      error = e
+    }
     setBusy(false)
     if (error) {
-      setError(error.message)
+      setError(humanizeAuthError(error))
       return
     }
     navigate(next, { replace: true })

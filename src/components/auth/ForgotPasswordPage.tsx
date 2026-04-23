@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { humanizeAuthError } from '../../lib/auth/humanizeAuthError'
 
 export function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -12,12 +13,18 @@ export function ForgotPasswordPage() {
     e.preventDefault()
     setBusy(true)
     setError(null)
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/reset`,
-    })
+    let error: unknown = null
+    try {
+      const res = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/reset`,
+      })
+      error = res.error
+    } catch (e) {
+      error = e
+    }
     setBusy(false)
     if (error) {
-      setError(error.message)
+      setError(humanizeAuthError(error))
       return
     }
     setDone(true)

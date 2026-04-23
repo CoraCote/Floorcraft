@@ -68,7 +68,7 @@ export function ProjectShell() {
         ? 'Map'
         : ''
     const prev = document.title
-    document.title = view ? `${view} · ${name} — Floocraft` : `${name} — Floocraft`
+    document.title = view ? `${view} · ${name} — Floorcraft` : `${name} — Floorcraft`
     return () => {
       document.title = prev
     }

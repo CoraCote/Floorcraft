@@ -135,7 +135,7 @@ export function TeamHomePage() {
       </header>
       {/*
         Demo office moved out of the primary CTA row and into a
-        disclosure. New-to-Floocraft operators usually want a blank
+        disclosure. New-to-Floorcraft operators usually want a blank
         workspace to load their own data into — the demo was confusing
         as a same-weight peer of "New office". Still one click away for
         anyone who actually wants to explore the feature surface.

@@ -678,9 +678,42 @@ export function HelpPage() {
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-[220px_1fr] gap-10">
-        {/* Sticky sidebar TOC — collapses to a plain list above md */}
-        <aside className="md:sticky md:top-6 md:self-start">
+      <div className="max-w-6xl mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6 md:gap-10">
+        {/*
+          Narrow viewports (below md): wrap the TOC in a collapsed
+          <details> so the user doesn't have to scroll past 9 nav links
+          to reach the content. Desktop keeps the sticky sidebar layout.
+          We render two nav variants rather than toggling CSS on a single
+          <details>, because <details>' open/closed is stateful DOM — not
+          something a media query can override cleanly.
+        */}
+        <details className="md:hidden -mb-2 rounded border border-gray-200 bg-gray-50 text-sm">
+          <summary className="cursor-pointer select-none px-3 py-2 text-gray-700 font-medium flex items-center justify-between">
+            <span>On this page</span>
+            <span className="text-xs text-gray-500 font-normal">
+              {sections.length} sections
+            </span>
+          </summary>
+          <nav className="space-y-0.5 px-2 pb-2">
+            {sections.map((s) => (
+              <a
+                key={s.id}
+                href={`#${s.id}`}
+                className={`flex items-center gap-2 px-2 py-1.5 rounded transition-colors ${
+                  activeId === s.id
+                    ? 'bg-blue-50 text-blue-700 font-medium'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <span aria-hidden>{s.icon}</span>
+                {s.label}
+              </a>
+            ))}
+          </nav>
+        </details>
+
+        {/* Desktop sticky sidebar TOC */}
+        <aside className="hidden md:block md:sticky md:top-6 md:self-start">
           <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">
             On this page
           </div>

@@ -52,7 +52,7 @@ export function LandingPage() {
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Hero */}
       <div className="max-w-4xl mx-auto px-6 pt-20 pb-16 text-center">
-        <h1 className="text-5xl font-bold text-gray-900 mb-4">Floocraft</h1>
+        <h1 className="text-5xl font-bold text-gray-900 mb-4">Floorcraft</h1>
         <p className="text-xl text-gray-500 mb-8 max-w-2xl mx-auto">
           Plan your office layout, manage employee seating, and track space
           utilization. All in one interactive tool.
@@ -61,7 +61,7 @@ export function LandingPage() {
       </div>
 
       {/* Value props — replaces the old template grid. These surface the
-          three things that differentiate Floocraft from a whiteboard +
+          three things that differentiate Floorcraft from a whiteboard +
           spreadsheet workflow. */}
       <div className="max-w-4xl mx-auto px-6 pb-20">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
@@ -88,7 +88,7 @@ export function LandingPage() {
 
       {/* Footer */}
       <div className="border-t border-gray-100 py-6 text-center text-sm text-gray-400">
-        Floocraft — Office layout & seat management
+        Floorcraft — Office layout & seat management
         <span className="mx-2">·</span>
         <Link to="/help" className="hover:text-blue-600">
           User guide &amp; FAQ
