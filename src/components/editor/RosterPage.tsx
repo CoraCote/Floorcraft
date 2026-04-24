@@ -264,6 +264,20 @@ export function RosterPage() {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [helpOpen, setHelpOpen] = useState(false)
 
+  // Deep-link: `?employee=<id>` opens the detail drawer for that person.
+  // Used by the Cmd+K palette's People section so selecting a person from
+  // the palette lands on the roster with their drawer already open. The
+  // param is consumed (dropped from the URL) on the same tick so we don't
+  // reopen the drawer every time the user closes it.
+  const employeeParam = searchParams.get('employee')
+  useEffect(() => {
+    if (!employeeParam) return
+    setDrawerId(employeeParam)
+    const next = new URLSearchParams(searchParams)
+    next.delete('employee')
+    setSearchParams(next, { replace: true })
+  }, [employeeParam, searchParams, setSearchParams])
+
   // Confirmation state for destructive deletes. `null` when no dialog is
   // open. Carrying the id list rather than passing it through a callback
   // prop lets the dialog render a preview of who will be deleted.

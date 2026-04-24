@@ -90,6 +90,21 @@ export function useKeyboardShortcuts() {
         return
       }
 
+      // Cmd+K / Ctrl+K opens the quick-action palette. Registered BEFORE
+      // the modal guard so a previously-open palette can't swallow its
+      // own reopen (the palette itself handles reopen by re-focusing the
+      // input). `/` is a secondary trigger (GitHub / Linear convention).
+      if (mod && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault()
+        useUIStore.getState().setCommandPaletteOpen(true)
+        return
+      }
+      if (!mod && e.key === '/' && !modalsOpen) {
+        e.preventDefault()
+        useUIStore.getState().setCommandPaletteOpen(true)
+        return
+      }
+
       // Everything below this line is a global editor shortcut — skip
       // entirely when a modal is open so Cmd+A, Cmd+Z, arrow nudges, etc.
       // don't leak behind the drawer and mutate the canvas/selection.

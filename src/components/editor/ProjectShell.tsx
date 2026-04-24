@@ -4,6 +4,7 @@ import { TopBar } from './TopBar'
 import { ImpersonationBanner } from './ImpersonationBanner'
 import { ContextMenu } from './ContextMenu'
 import { KeyboardShortcutsOverlay } from './KeyboardShortcutsOverlay'
+import { CommandPalette } from './CommandPalette'
 import { CSVImportDialog } from './RightSidebar/CSVImportDialog'
 import { CSVImportSummaryModal } from './CSVImportSummaryModal'
 import { ExportDialog } from './ExportDialog'
@@ -249,6 +250,7 @@ export function ProjectShell() {
       <Outlet />
       <ContextMenu />
       <KeyboardShortcutsOverlay />
+      <CommandPalette />
       <CSVImportDialog />
       <CSVImportSummaryModal />
       <ExportDialog />
