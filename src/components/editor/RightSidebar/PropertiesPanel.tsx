@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { History, Armchair, DoorOpen, Square, Minus, Box, Coffee, LayoutGrid } from 'lucide-react'
+import { History, Armchair, DoorOpen, Square, Minus, Box, Coffee, LayoutGrid, MousePointer2 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useUIStore } from '../../../stores/uiStore'
@@ -525,7 +525,17 @@ export function PropertiesPanel() {
   }
 
   if (selectedIds.length === 0) {
-    return <div className="text-sm text-gray-400 dark:text-gray-500 text-center py-8">Select an element to see its properties</div>
+    return (
+      <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+        <div aria-hidden className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3">
+          <MousePointer2 size={20} className="text-gray-400 dark:text-gray-500" />
+        </div>
+        <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Nothing selected</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 max-w-[220px] leading-relaxed">
+          Click an element on the canvas to edit its label, layout, appearance, or seat assignment.
+        </p>
+      </div>
+    )
   }
 
   if (selectedIds.length > 1) {
