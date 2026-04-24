@@ -22,6 +22,7 @@ import { useCan } from '../../hooks/useCan'
 import { TeamSwitcher } from '../team/TeamSwitcher'
 import { UserMenu } from '../team/UserMenu'
 import { ScaleSettingsPopover } from './ScaleSettingsPopover'
+import { ViewAsMenu } from './ViewAsMenu'
 
 export function TopBar() {
   const project = useProjectStore((s) => s.currentProject)
@@ -437,6 +438,12 @@ export function TopBar() {
       >
         Help
       </a>
+
+      {/* Owner-only "View as…" menu. Rendered to the left of the account
+          avatar so it reads as an admin tool rather than part of the user's
+          own session state. The component self-gates on role so non-owners
+          don't see it at all. */}
+      <ViewAsMenu />
 
       {/* Account dropdown — rightmost so it's the one element users
           always know where to find. */}

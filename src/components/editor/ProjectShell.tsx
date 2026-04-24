@@ -1,6 +1,7 @@
 import { Outlet, useLocation, useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { TopBar } from './TopBar'
+import { ImpersonationBanner } from './ImpersonationBanner'
 import { ContextMenu } from './ContextMenu'
 import { KeyboardShortcutsOverlay } from './KeyboardShortcutsOverlay'
 import { CSVImportDialog } from './RightSidebar/CSVImportDialog'
@@ -239,6 +240,10 @@ export function ProjectShell() {
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-gray-50">
+      {/* Impersonation banner sits ABOVE the TopBar so the amber strip is
+          literally the topmost pixel on screen — impossible to miss, and
+          it can't be scrolled or stage-zoomed away. */}
+      <ImpersonationBanner />
       <TopBar />
       <Outlet />
       <ContextMenu />

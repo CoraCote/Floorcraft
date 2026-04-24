@@ -4,6 +4,7 @@ import { useElementsStore } from '../stores/elementsStore'
 import { useNeighborhoodStore } from '../stores/neighborhoodStore'
 import { useCanvasStore, type ToolType } from '../stores/canvasStore'
 import { useUIStore } from '../stores/uiStore'
+import { useProjectStore } from '../stores/projectStore'
 import { useShallow } from 'zustand/react/shallow'
 import { deleteElements } from '../lib/seatAssignment'
 import { isWallElement } from '../types/elements'
@@ -69,6 +70,16 @@ export function useKeyboardShortcuts() {
           e.stopImmediatePropagation()
           setPresentationMode(false)
         } else if (!modalsOpen) {
+          // Exit "View as…" impersonation first if it's active — the owner
+          // is previewing a lower-privileged UI and expects Escape to drop
+          // them back to full permissions before it cancels a drawing or
+          // clears a selection. Skipped when a modal is open so Escape
+          // still closes the modal (consistent with the modal guard above).
+          if (useProjectStore.getState().impersonatedRole !== null) {
+            e.preventDefault()
+            useProjectStore.getState().setImpersonatedRole(null)
+            return
+          }
           // Cancel any in-flight canvas drawing session (walls, shapes).
           // Uses an event-bus counter on uiStore so this hook doesn't need
           // to import the drawing hook directly.
