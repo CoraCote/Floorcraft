@@ -180,6 +180,10 @@ export function Minimap() {
   // Selected-ids is needed for the background tile split, but NOT for
   // the viewport indicator, so we subscribe here and pass down.
   const selectedIds = useUIStore((s) => s.selectedIds)
+  // Toggle from the floating CanvasActionDock. When the operator hides the
+  // minimap, render nothing — the dock keeps its own toggle button visible
+  // so the user can bring it back without hunting through a menu.
+  const minimapVisible = useUIStore((s) => s.minimapVisible)
   const { setStagePosition } = useCanvasStore(
     useShallow((s) => ({ setStagePosition: s.setStagePosition })),
   )
@@ -263,6 +267,8 @@ export function Minimap() {
     },
     [scheduleApply],
   )
+
+  if (!minimapVisible) return null
 
   return (
     <div

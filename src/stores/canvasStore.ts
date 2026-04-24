@@ -2,6 +2,10 @@ import { create } from 'zustand'
 import { ZOOM_MIN, ZOOM_MAX, ZOOM_FACTOR } from '../lib/constants'
 import type { CanvasSettings } from '../types/project'
 import { DEFAULT_CANVAS_SETTINGS } from '../types/project'
+import { useFloorStore } from './floorStore'
+import { useElementsStore } from './elementsStore'
+import { useNeighborhoodStore } from './neighborhoodStore'
+import { elementBounds } from '../lib/elementBounds'
 
 export type ToolType =
   | 'select'
@@ -73,6 +77,13 @@ interface CanvasState {
   zoomIn: () => void
   zoomOut: () => void
   zoomToFit: (contentBounds: { x: number; y: number; width: number; height: number }, stageWidth: number, stageHeight: number) => void
+  /**
+   * Convenience wrapper around `zoomToFit` for the floating action dock.
+   * Computes the AABB of every element + neighborhood on the active floor
+   * and frames the viewport around it. No-ops when the floor is empty or
+   * the stage hasn't been measured yet.
+   */
+  zoomToContent: () => void
   resetZoom: () => void
   setActiveTool: (tool: ToolType) => void
   setWallDrawStyle: (style: WallDrawStyle) => void
@@ -162,6 +173,56 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     const newX = -contentBounds.x * newScale + (stageWidth - contentBounds.width * newScale) / 2
     const newY = -contentBounds.y * newScale + (stageHeight - contentBounds.height * newScale) / 2
     set({ stageScale: newScale, stageX: newX, stageY: newY })
+  },
+
+  zoomToContent: () => {
+    // Frame the viewport around every drawable thing on the active floor.
+    // `elementsStore` mirrors the active floor's elements (the per-floor
+    // map lives in `floorStore`), so we don't need to filter by floorId
+    // here. Neighborhoods do carry `floorId`, so we filter that store
+    // explicitly.
+    const { stageWidth, stageHeight } = get()
+    if (stageWidth <= 0 || stageHeight <= 0) return
+    const activeFloorId = useFloorStore.getState().activeFloorId
+    if (!activeFloorId) return
+
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
+    let hasContent = false
+
+    const elements = useElementsStore.getState().elements
+    for (const id in elements) {
+      const b = elementBounds(elements[id])
+      if (!b) continue
+      if (b.x < minX) minX = b.x
+      if (b.y < minY) minY = b.y
+      if (b.x + b.width > maxX) maxX = b.x + b.width
+      if (b.y + b.height > maxY) maxY = b.y + b.height
+      hasContent = true
+    }
+
+    const neighborhoods = useNeighborhoodStore.getState().neighborhoods
+    for (const id in neighborhoods) {
+      const n = neighborhoods[id]
+      if (n.floorId !== activeFloorId) continue
+      // Neighborhoods store x/y as the centre, like elements do.
+      const left = n.x - n.width / 2
+      const top = n.y - n.height / 2
+      if (left < minX) minX = left
+      if (top < minY) minY = top
+      if (left + n.width > maxX) maxX = left + n.width
+      if (top + n.height > maxY) maxY = top + n.height
+      hasContent = true
+    }
+
+    if (!hasContent) return
+    get().zoomToFit(
+      { x: minX, y: minY, width: maxX - minX, height: maxY - minY },
+      stageWidth,
+      stageHeight,
+    )
   },
 
   resetZoom: () => set({ stageScale: 1, stageX: 0, stageY: 0 }),

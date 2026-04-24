@@ -31,6 +31,9 @@ interface UIState {
   // Presentation
   presentationMode: boolean
 
+  // Minimap
+  minimapVisible: boolean
+
   // Context menu
   contextMenu: { x: number; y: number; elementId: string | null } | null
 
@@ -100,6 +103,8 @@ interface UIState {
   setCsvImportOpen: (open: boolean) => void
   setCsvImportSummary: (summary: CSVImportSummary | null) => void
   setPresentationMode: (mode: boolean) => void
+  setMinimapVisible: (v: boolean) => void
+  toggleMinimap: () => void
   setContextMenu: (menu: UIState['contextMenu']) => void
   setEditingLabelId: (id: string | null) => void
   setActiveReport: (report: string | null) => void
@@ -139,6 +144,7 @@ function createUIStore() {
   csvImportOpen: false,
   csvImportSummary: null,
   presentationMode: false,
+  minimapVisible: true,
   contextMenu: null,
   editingLabelId: null,
   activeReport: null,
@@ -177,6 +183,8 @@ function createUIStore() {
   setCsvImportOpen: (open) => set({ csvImportOpen: open }),
   setCsvImportSummary: (summary) => set({ csvImportSummary: summary }),
   setPresentationMode: (mode) => set({ presentationMode: mode }),
+  setMinimapVisible: (v) => set({ minimapVisible: v }),
+  toggleMinimap: () => set((s) => ({ minimapVisible: !s.minimapVisible })),
   setContextMenu: (menu) => set({ contextMenu: menu }),
   setEditingLabelId: (id) => set({ editingLabelId: id }),
   setActiveReport: (report) => set({ activeReport: report }),
