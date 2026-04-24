@@ -1,6 +1,7 @@
-import { useEffect } from 'react'
+import { useCallback, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useElementsStore } from '../stores/elementsStore'
+import { useNeighborhoodStore } from '../stores/neighborhoodStore'
 import { useCanvasStore, type ToolType } from '../stores/canvasStore'
 import { useUIStore } from '../stores/uiStore'
 import { useShallow } from 'zustand/react/shallow'
@@ -16,8 +17,18 @@ export function useKeyboardShortcuts() {
   const { duplicateElements, moveElements, groupElements, ungroupElements } = useElementsStore(useShallow((s) => ({ duplicateElements: s.duplicateElements, moveElements: s.moveElements, groupElements: s.groupElements, ungroupElements: s.ungroupElements })))
   const elements = useElementsStore((s) => s.elements)
   const { setActiveTool, toggleGrid, toggleDimensions, zoomIn, zoomOut, resetZoom } = useCanvasStore(useShallow((s) => ({ setActiveTool: s.setActiveTool, toggleGrid: s.toggleGrid, toggleDimensions: s.toggleDimensions, zoomIn: s.zoomIn, zoomOut: s.zoomOut, resetZoom: s.resetZoom })))
-  const undo = useElementsStore.temporal.getState().undo
-  const redo = useElementsStore.temporal.getState().redo
+  // Cmd+Z / Cmd+Shift+Z rewinds every temporal-wrapped store in lock-step
+  // so a single undo matches the user's mental model — they just did one
+  // thing on the canvas; one keystroke should walk it back regardless of
+  // which store (elements vs. neighborhoods) caught the mutation.
+  const undo = useCallback(() => {
+    useElementsStore.temporal.getState().undo()
+    useNeighborhoodStore.temporal.getState().undo()
+  }, [])
+  const redo = useCallback(() => {
+    useElementsStore.temporal.getState().redo()
+    useNeighborhoodStore.temporal.getState().redo()
+  }, [])
 
   useEffect(() => {
     // Holds the tool that was active when Space was first pressed, so
@@ -186,6 +197,13 @@ export function useKeyboardShortcuts() {
       if (!mod) {
         if (e.key === 'v' || e.key === 'V') { setActiveTool('select'); return }
         if (e.key === 'w' || e.key === 'W') { setActiveTool('wall'); return }
+        // Shift+G activates the neighborhood tool. Must be checked BEFORE
+        // the plain-G "toggle grid" branch, otherwise Shift+G would fall
+        // through to the grid toggle (Shift+G also matches `e.key === 'G'`).
+        if (e.shiftKey && (e.key === 'G' || e.key === 'g')) {
+          e.preventDefault()
+          setActiveTool('neighborhood'); return
+        }
         if (e.key === 'g' || e.key === 'G') { toggleGrid(); return }
         if (e.key === 'd' || e.key === 'D') { toggleDimensions(); return }
         if (e.key === 'p' || e.key === 'P') { setPresentationMode(!presentationMode); return }

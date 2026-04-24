@@ -12,6 +12,7 @@ import {
   ArrowRight,
   Type,
   Ruler,
+  MapPin,
 } from 'lucide-react'
 
 const tools: { id: ToolType; label: string; icon: React.ReactNode; shortcut: string }[] = [
@@ -34,6 +35,9 @@ const tools: { id: ToolType; label: string; icon: React.ReactNode; shortcut: str
   // it often to check corridor widths and room sizes, so we expose it
   // alongside the primitives. Shift+M because plain M jumps to Map view.
   { id: 'measure', label: 'Measure', icon: <Ruler size={18} />, shortcut: '⇧M' },
+  // Neighborhoods: drag-create a labeled zone that tints a seat region.
+  // Plain G is "toggle grid", so the tool is shift-locked to ⇧G.
+  { id: 'neighborhood', label: 'Neighborhood', icon: <MapPin size={18} />, shortcut: '⇧G' },
 ]
 
 const WALL_STYLES: { id: WallDrawStyle; label: string }[] = [

@@ -42,6 +42,10 @@ import {
 import { ShapeDrawingOverlay, type ShapeDrawingPreview } from './primitives/ShapeDrawingOverlay'
 import { FreeTextEditorOverlay } from './primitives/FreeTextEditorOverlay'
 import { MeasureOverlay, type MeasureSession } from './MeasureOverlay'
+import { NeighborhoodLayer } from './NeighborhoodLayer'
+import { NeighborhoodEditOverlay } from './NeighborhoodEditOverlay'
+import { useNeighborhoodStore } from '../../../stores/neighborhoodStore'
+import { NEIGHBORHOOD_PALETTE } from '../../../types/neighborhood'
 import { useRecentLibraryItems } from '../../../hooks/useRecentLibraryItems'
 import { setActiveStage } from '../../../lib/stageRegistry'
 import { useCursorStore } from '../../../stores/cursorStore'
@@ -269,6 +273,14 @@ export function CanvasStage() {
   const shapeDragRef = useRef<{ startX: number; startY: number } | null>(null)
   const [shapePreview, setShapePreview] = useState<ShapeDrawingPreview | null>(null)
 
+  // Neighborhood drag-create: same ref + state pattern as primitives.
+  // Kept separate from `shapeDragRef` so a mixed-tool fast switch can't
+  // confuse the cleanup logic — each tool owns its own drag lifecycle.
+  const neighborhoodDragRef = useRef<{ startX: number; startY: number } | null>(null)
+  const [neighborhoodPreview, setNeighborhoodPreview] = useState<
+    { startX: number; startY: number; endX: number; endY: number } | null
+  >(null)
+
   // Measure-tool session. Committed vertices live here as a flat array;
   // the active cursor position lives in React state (so the overlay
   // re-renders as the pointer moves). Cleared on Escape, tool switch, or
@@ -416,6 +428,34 @@ export function CanvasStage() {
 
         shapeDragRef.current = { startX: canvasX, startY: canvasY }
         setShapePreview({ tool: activeTool, startX: canvasX, startY: canvasY, endX: canvasX, endY: canvasY })
+        return
+      }
+
+      // Neighborhood tool: click on empty canvas starts a drag-create.
+      // Clicks that land on an existing neighborhood handle are absorbed
+      // by the edit overlay; this branch is only reached when the press
+      // target is the stage itself, mirroring the marquee branch below.
+      if (
+        activeTool === 'neighborhood' &&
+        e.evt.button === 0 &&
+        e.target === e.target.getStage()
+      ) {
+        const stage = stageRef.current
+        if (!stage) return
+        const pointer = stage.getPointerPosition()
+        if (!pointer) return
+        const canvasX = (pointer.x - stageX) / stageScale
+        const canvasY = (pointer.y - stageY) / stageScale
+        neighborhoodDragRef.current = { startX: canvasX, startY: canvasY }
+        setNeighborhoodPreview({
+          startX: canvasX,
+          startY: canvasY,
+          endX: canvasX,
+          endY: canvasY,
+        })
+        // Drop any existing selection so the new neighborhood (or
+        // empty-space click) gets a clean slate.
+        clearSelection()
         return
       }
 
@@ -626,6 +666,26 @@ export function CanvasStage() {
         })
       }
 
+      // Neighborhood drag-create: keep the dashed preview rect in sync
+      // with the pointer. Same normalise-on-render approach as the
+      // marquee overlay — we store raw start/end and compute
+      // min/abs at render time.
+      if (activeTool === 'neighborhood' && neighborhoodDragRef.current) {
+        const stage = stageRef.current
+        if (!stage) return
+        const pointer = stage.getPointerPosition()
+        if (!pointer) return
+        const canvasX = (pointer.x - stageX) / stageScale
+        const canvasY = (pointer.y - stageY) / stageScale
+        const start = neighborhoodDragRef.current
+        setNeighborhoodPreview({
+          startX: start.startX,
+          startY: start.startY,
+          endX: canvasX,
+          endY: canvasY,
+        })
+      }
+
       // Track cursor for the door/window ghost preview. Only work out the
       // canvas coords when the ghost is actually active so we don't pay the
       // cost on every mousemove in select/pan mode.
@@ -669,6 +729,12 @@ export function CanvasStage() {
       shapeDragRef.current = null
       setShapePreview(null)
     }
+    // Neighborhood drag — same pattern: if they leave the canvas mid-drag,
+    // drop the preview so it doesn't ghost-render.
+    if (neighborhoodDragRef.current) {
+      neighborhoodDragRef.current = null
+      setNeighborhoodPreview(null)
+    }
     // Measure-tool: keep committed vertices visible, but drop the cursor
     // trail since its last-known value would be stale the moment the
     // pointer re-enters somewhere else.
@@ -689,6 +755,10 @@ export function CanvasStage() {
       if (shapeDragRef.current) {
         shapeDragRef.current = null
         setShapePreview(null)
+      }
+      if (neighborhoodDragRef.current) {
+        neighborhoodDragRef.current = null
+        setNeighborhoodPreview(null)
       }
       setMeasureSession((prev) =>
         prev.points.length > 0 || prev.cursor || prev.finalised
@@ -795,6 +865,48 @@ export function CanvasStage() {
       onWallMouseUp(canvasX, canvasY)
     }
 
+    // Neighborhood drag commit. Threshold of 8 canvas units so a
+    // stray click doesn't silently paint a tiny zone. Less strict
+    // than primitives because neighborhoods are explicitly meant to
+    // cover multiple seats — a 0-4px rect would almost always be
+    // accidental.
+    if (
+      activeTool === 'neighborhood' &&
+      neighborhoodDragRef.current &&
+      neighborhoodPreview
+    ) {
+      const p = neighborhoodPreview
+      neighborhoodDragRef.current = null
+      setNeighborhoodPreview(null)
+      const w = Math.abs(p.endX - p.startX)
+      const h = Math.abs(p.endY - p.startY)
+      if (w >= 8 && h >= 8) {
+        const nbStore = useNeighborhoodStore.getState()
+        const floorId = useFloorStore.getState().activeFloorId
+        const existingCount = Object.values(nbStore.neighborhoods).filter(
+          (n) => n.floorId === floorId,
+        ).length
+        const paletteIdx = existingCount % NEIGHBORHOOD_PALETTE.length
+        const id = nanoid()
+        nbStore.addNeighborhood({
+          id,
+          name: `Neighborhood ${existingCount + 1}`,
+          color: NEIGHBORHOOD_PALETTE[paletteIdx],
+          x: (p.startX + p.endX) / 2,
+          y: (p.startY + p.endY) / 2,
+          width: w,
+          height: h,
+          floorId,
+          department: null,
+          team: null,
+          notes: null,
+        })
+        useUIStore.getState().setSelectedIds([id])
+        useCanvasStore.getState().setActiveTool('select')
+      }
+      return
+    }
+
     // Primitive commit: if the drag travelled past the threshold, build
     // the element; otherwise cancel silently (so clicks-by-accident on
     // an already-active tool don't spawn a zero-sized artifact).
@@ -820,7 +932,7 @@ export function CanvasStage() {
       useUIStore.getState().setSelectedIds([element.id])
       useCanvasStore.getState().setActiveTool('select')
     }
-  }, [activeTool, stageX, stageY, stageScale, onWallMouseUp, marquee, shapePreview])
+  }, [activeTool, stageX, stageY, stageScale, onWallMouseUp, marquee, shapePreview, neighborhoodPreview])
 
   // Base cursor per tool. For door/window we additionally flip to
   // `not-allowed` when the cursor is NOT over a wall in snap range — so the
@@ -833,6 +945,7 @@ export function CanvasStage() {
   }
   if (PRIMITIVE_TOOLS.has(activeTool)) cursor = 'crosshair'
   if (activeTool === 'measure') cursor = 'crosshair'
+  if (activeTool === 'neighborhood') cursor = 'crosshair'
 
   // Accept employee drags from PeoplePanel and assign the dropped employee
   // to whatever assignable element is under the cursor.
@@ -959,6 +1072,9 @@ export function CanvasStage() {
         onContextMenu={(e) => e.evt.preventDefault()}
       >
         <GridLayer width={size.width} height={size.height} />
+        {/* NeighborhoodLayer sits between the grid and the element layer so
+            seats, walls, and furniture paint on top of the translucent tint. */}
+        <NeighborhoodLayer />
         <ElementRenderer />
         <DimensionLayer />
         <HoverOutline />
@@ -982,6 +1098,7 @@ export function CanvasStage() {
           scale={projectScale}
           scaleUnit={projectScaleUnit}
         />
+        <NeighborhoodEditOverlay preview={neighborhoodPreview} />
       </Stage>
       <FreeTextEditorOverlay containerRef={containerRef} />
     </div>

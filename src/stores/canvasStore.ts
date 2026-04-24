@@ -19,6 +19,9 @@ export type ToolType =
   // vertices, double-click or Enter to finish. The running total is shown
   // live; the final polyline is a persistent overlay until dismissed.
   | 'measure'
+  // Neighborhood tool. Click-drag on empty canvas to paint a labeled
+  // zone; click an existing neighborhood to select it for resize/rename.
+  | 'neighborhood'
 
 export type WallDrawStyle = 'solid' | 'dashed' | 'dotted'
 

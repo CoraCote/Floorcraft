@@ -20,6 +20,8 @@ import { useEmployeeStore } from '../../stores/employeeStore'
 import { useInsightsStore } from '../../stores/insightsStore'
 import { useSeatHistoryStore } from '../../stores/seatHistoryStore'
 import { coerceSeatHistoryEntries } from '../../lib/offices/seatHistoryPersistence'
+import { useNeighborhoodStore } from '../../stores/neighborhoodStore'
+import type { Neighborhood } from '../../types/neighborhood'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 import { useUndoDataLossToast } from '../../hooks/useUndoDataLossToast'
 import { supabase } from '../../lib/supabase'
@@ -158,6 +160,15 @@ export function ProjectShell() {
       // that doesn't look like a `SeatHistoryEntry`, so a partially-saved
       // or hand-edited blob can't crash the drawer. Missing key → `{}`.
       useSeatHistoryStore.setState({ entries: coerceSeatHistoryEntries(p.seatHistory) })
+
+      // Neighborhoods hydrate from a top-level `neighborhoods` key in the
+      // payload. Older offices predate the feature and simply have no such
+      // key — fall back to an empty map so we don't leak state from a
+      // prior office into a freshly-loaded one.
+      useNeighborhoodStore.setState({
+        neighborhoods:
+          (p.neighborhoods as Record<string, Neighborhood> | undefined) ?? {},
+      })
 
       // Seed the project facade so UI that reads `currentProject` (share
       // modal link, TopBar name) keeps working. The full `Project` shape

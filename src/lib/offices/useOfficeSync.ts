@@ -5,6 +5,7 @@ import { useFloorStore } from '../../stores/floorStore'
 import { useCanvasStore } from '../../stores/canvasStore'
 import { useProjectStore } from '../../stores/projectStore'
 import { useSeatHistoryStore } from '../../stores/seatHistoryStore'
+import { useNeighborhoodStore } from '../../stores/neighborhoodStore'
 import { saveOffice, saveOfficeForce } from './officeRepository'
 
 /**
@@ -47,6 +48,7 @@ function buildCurrentPayload(): Record<string, unknown> {
   // without history still round-trip cleanly. Stored as the raw
   // Record<id, entry> so the load path doesn't have to reverse an array.
   const seatHistory = useSeatHistoryStore.getState().entries
+  const neighborhoods = useNeighborhoodStore.getState().neighborhoods
   return {
     version: 2,
     elements,
@@ -56,6 +58,11 @@ function buildCurrentPayload(): Record<string, unknown> {
     activeFloorId,
     settings,
     seatHistory,
+    // Top-level `neighborhoods` key (rather than nesting inside floors) —
+    // neighborhoods already carry `floorId` and the flat shape round-trips
+    // through migration more simply, matching how the element map sits at
+    // the top level beside `floors`.
+    neighborhoods,
   }
 }
 
@@ -66,6 +73,7 @@ export function useOfficeSync() {
   const floors = useFloorStore((s) => s.floors)
   const activeFloorId = useFloorStore((s) => s.activeFloorId)
   const settings = useCanvasStore((s) => s.settings)
+  const neighborhoods = useNeighborhoodStore((s) => s.neighborhoods)
 
   const seatHistory = useSeatHistoryStore((s) => s.entries)
 
@@ -84,7 +92,7 @@ export function useOfficeSync() {
 
   useEffect(() => {
     if (!officeId || !loadedVersion) return
-    const snapshot = { elements, employees, departmentColors, floors, activeFloorId, settings, seatHistory }
+    const snapshot = { elements, employees, departmentColors, floors, activeFloorId, settings, seatHistory, neighborhoods }
 
     if (initialSnapshotRef.current === null) {
       initialSnapshotRef.current = snapshot
@@ -144,6 +152,7 @@ export function useOfficeSync() {
     activeFloorId,
     settings,
     seatHistory,
+    neighborhoods,
     setSaveState,
     setLastSavedAt,
     setLoadedVersion,

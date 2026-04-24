@@ -2,6 +2,7 @@ import { useProjectStore } from '../../stores/projectStore'
 import { useCanvasStore } from '../../stores/canvasStore'
 import { useUIStore } from '../../stores/uiStore'
 import { useElementsStore } from '../../stores/elementsStore'
+import { useNeighborhoodStore } from '../../stores/neighborhoodStore'
 import { useShallow } from 'zustand/react/shallow'
 import {
   Undo2, Redo2, ZoomIn, ZoomOut, Share2, Download,
@@ -39,8 +40,17 @@ export function TopBar() {
     toggleDimensions: s.toggleDimensions,
   })))
   const { rightSidebarOpen, setRightSidebarOpen, setShareModalOpen, setExportDialogOpen, setPresentationMode, presentationMode, selectedIds, clearSelection } = useUIStore(useShallow((s) => ({ rightSidebarOpen: s.rightSidebarOpen, setRightSidebarOpen: s.setRightSidebarOpen, setShareModalOpen: s.setShareModalOpen, setExportDialogOpen: s.setExportDialogOpen, setPresentationMode: s.setPresentationMode, presentationMode: s.presentationMode, selectedIds: s.selectedIds, clearSelection: s.clearSelection })))
-  const undo = useElementsStore.temporal.getState().undo
-  const redo = useElementsStore.temporal.getState().redo
+  // Drive both temporal-wrapped stores on every undo/redo so a single
+  // click rewinds the most recent canvas change regardless of which
+  // store owns it (elements vs. neighborhoods).
+  const undo = () => {
+    useElementsStore.temporal.getState().undo()
+    useNeighborhoodStore.temporal.getState().undo()
+  }
+  const redo = () => {
+    useElementsStore.temporal.getState().redo()
+    useNeighborhoodStore.temporal.getState().redo()
+  }
   const { canUndo, canRedo } = useTemporalState()
   const canViewAudit = useCan('viewAuditLog')
   const canViewReports = useCan('viewReports')

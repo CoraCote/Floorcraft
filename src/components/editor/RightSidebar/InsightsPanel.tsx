@@ -10,6 +10,8 @@ import { SeveritySummary } from './SeveritySummary'
 import { InsightFilters } from './InsightFilters'
 import { InsightCard } from './InsightCard'
 import { UtilizationWidgets } from './UtilizationWidgets'
+import { NeighborhoodMetrics } from './NeighborhoodMetrics'
+import { useNeighborhoodStore } from '../../../stores/neighborhoodStore'
 import { focusElements } from '../../../lib/focusElements'
 
 export function InsightsPanel() {
@@ -27,6 +29,7 @@ export function InsightsPanel() {
     [floorsWithElements]
   )
   const employees = useEmployeeStore((s) => s.employees)
+  const neighborhoods = useNeighborhoodStore((s) => s.neighborhoods)
 
   const {
     lastAnalyzedAt,
@@ -55,8 +58,9 @@ export function InsightsPanel() {
   const triggerAnalysis = useCallback(() => {
     const elementsList = Object.values(elements)
     const employeesList = Object.values(employees)
-    runAnalysis(elementsList, employeesList)
-  }, [elements, employees, runAnalysis])
+    const neighborhoodsList = Object.values(neighborhoods)
+    runAnalysis(elementsList, employeesList, neighborhoodsList)
+  }, [elements, employees, neighborhoods, runAnalysis])
 
   // Debounced reactive analysis
   useEffect(() => {
@@ -153,6 +157,11 @@ export function InsightsPanel() {
           asked for. Sits above the severity summary because "are we sized
           right?" is a bigger question than "any issues to fix?". */}
       <UtilizationWidgets />
+
+      {/* Neighborhood headcount — shows one row per named zone. Renders
+          nothing when no neighborhoods are defined, so empty offices
+          keep the existing insights layout unchanged. */}
+      <NeighborhoodMetrics />
 
       {/* Severity summary */}
       <SeveritySummary

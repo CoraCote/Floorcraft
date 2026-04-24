@@ -3,6 +3,8 @@ import { History } from 'lucide-react'
 import { useUIStore } from '../../../stores/uiStore'
 import { useElementsStore } from '../../../stores/elementsStore'
 import { useEmployeeStore } from '../../../stores/employeeStore'
+import { useNeighborhoodStore } from '../../../stores/neighborhoodStore'
+import { NeighborhoodPropertiesPanel } from './NeighborhoodPropertiesPanel'
 import { unassignEmployee, deleteElements } from '../../../lib/seatAssignment'
 import { alignElements, distributeElements } from '../../../lib/alignment'
 import { validateDeskId } from '../../../lib/deskIdValidation'
@@ -162,12 +164,21 @@ export function PropertiesPanel() {
   const elements = useElementsStore((s) => s.elements)
   const updateElement = useElementsStore((s) => s.updateElement)
   const employees = useEmployeeStore((s) => s.employees)
+  const neighborhoods = useNeighborhoodStore((s) => s.neighborhoods)
   const canEdit = useCan('editMap')
   const canViewHistory = useCan('viewSeatHistory')
   const inputDisabled = !canEdit
   // Locally owned drawer target — the panel unmounts on selection change
   // (key'd by element id higher up), which cleans this up automatically.
   const [historyTargetId, setHistoryTargetId] = useState<string | null>(null)
+
+  // If the single selected id belongs to a neighborhood (not an element),
+  // delegate to the dedicated neighborhood panel. Neighborhoods live in
+  // their own store, so `elements[id]` will be undefined — we can't rely
+  // on the existing fall-through code to render them.
+  if (selectedIds.length === 1 && neighborhoods[selectedIds[0]]) {
+    return <NeighborhoodPropertiesPanel id={selectedIds[0]} />
+  }
 
   if (selectedIds.length === 0) {
     return <div className="text-sm text-gray-400 text-center py-8">Select an element to see its properties</div>

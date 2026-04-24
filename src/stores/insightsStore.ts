@@ -1,8 +1,10 @@
 import { create } from 'zustand'
 import type { Insight, InsightCategory, Severity } from '../types/insights'
-import { runAllAnalyzers } from '../lib/analyzers'
+import { runAllAnalyzers, buildAnalyzerInput } from '../lib/analyzers'
+import { analyzeNeighborhoodDepartments } from '../lib/analyzers/neighborhoods'
 import type { CanvasElement } from '../types/elements'
 import type { Employee } from '../types/employee'
+import type { Neighborhood } from '../types/neighborhood'
 
 interface InsightsState {
   insights: Insight[]
@@ -17,7 +19,11 @@ interface InsightsState {
   isAnalyzing: boolean
 
   // Actions
-  runAnalysis: (elements: CanvasElement[], employees: Employee[]) => void
+  runAnalysis: (
+    elements: CanvasElement[],
+    employees: Employee[],
+    neighborhoods?: Neighborhood[],
+  ) => void
   dismissInsight: (id: string) => void
   restoreInsight: (id: string) => void
   setCurrentProjectId: (id: string | null) => void
@@ -65,9 +71,26 @@ export const useInsightsStore = create<InsightsState>((set, get) => ({
   lastAnalyzedAt: null,
   isAnalyzing: false,
 
-  runAnalysis: (elements, employees) => {
+  runAnalysis: (elements, employees, neighborhoods) => {
     set({ isAnalyzing: true })
     const raw = runAllAnalyzers(elements, employees)
+    // Append the neighborhood-department analyzer if a caller threaded
+    // neighborhoods through. The pipeline itself doesn't know about
+    // neighborhoods (they live in a sibling store); we run this check
+    // here and merge its output into the same insights array so the
+    // panel renders one unified list.
+    if (neighborhoods && neighborhoods.length > 0) {
+      const employeeById = new Map(
+        employees.map((e) => [e.id, { department: e.department }] as const),
+      )
+      const input = buildAnalyzerInput(elements, employees)
+      const nbInsights = analyzeNeighborhoodDepartments(
+        input,
+        neighborhoods,
+        employeeById,
+      )
+      raw.push(...nbInsights)
+    }
     const dismissed = get().dismissedIds
     const insights = raw.map((insight) => ({
       ...insight,
