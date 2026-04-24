@@ -4,6 +4,7 @@ import { useElementsStore } from '../../stores/elementsStore'
 import { useEmployeeStore } from '../../stores/employeeStore'
 import { useCanvasStore } from '../../stores/canvasStore'
 import { useFloorStore } from '../../stores/floorStore'
+import { useToastStore } from '../../stores/toastStore'
 import { exportProjectJson } from '../../lib/exportJson'
 import { exportEmployeeCSV } from '../../lib/employeeCsv'
 import { exportPdf } from '../../lib/exportPdf'
@@ -12,7 +13,7 @@ import { getActiveStage } from '../../lib/stageRegistry'
 import { useCan } from '../../hooks/useCan'
 import { redactEmployeeMap } from '../../lib/redactEmployee'
 import { FileText, Table, FileJson, Image as ImageIcon, X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 
 export function ExportDialog() {
   const open = useUIStore((s) => s.exportDialogOpen)
@@ -29,10 +30,12 @@ export function ExportDialog() {
   // still useful for space planning, so we emit the redacted projection
   // rather than blocking the export entirely.
   const employees = canViewPII ? rawEmployees : redactEmployeeMap(rawEmployees)
-  const [error, setError] = useState<string | null>(null)
+  // Export failures are async outcomes (PDF render blew up, canvas
+  // unmounted) — no single field is at fault — so they surface via the
+  // global Toaster per docs/ERROR_DISPLAY_CONVENTION.md, not inline here.
+  const pushToast = useToastStore((s) => s.push)
 
   const close = () => {
-    setError(null)
     setOpen(false)
   }
 
@@ -91,7 +94,11 @@ export function ExportDialog() {
   const handleExportPdf = () => {
     const stage = getActiveStage()
     if (!stage) {
-      setError('Open a floor plan to export. The canvas isn\u2019t loaded right now.')
+      pushToast({
+        tone: 'error',
+        title: 'Export failed',
+        body: 'Open a floor plan to export. The canvas isn\u2019t loaded right now.',
+      })
       return
     }
     try {
@@ -105,14 +112,22 @@ export function ExportDialog() {
       close()
     } catch (err) {
       console.error('PDF export failed', err)
-      setError('Could not generate the PDF. Try again, or export PNG instead.')
+      pushToast({
+        tone: 'error',
+        title: 'Export failed',
+        body: 'Could not generate the PDF. Try again, or export PNG instead.',
+      })
     }
   }
 
   const handleExportPng = () => {
     const stage = getActiveStage()
     if (!stage) {
-      setError('Open a floor plan to export. The canvas isn\u2019t loaded right now.')
+      pushToast({
+        tone: 'error',
+        title: 'Export failed',
+        body: 'Open a floor plan to export. The canvas isn\u2019t loaded right now.',
+      })
       return
     }
     try {
@@ -120,7 +135,11 @@ export function ExportDialog() {
       close()
     } catch (err) {
       console.error('PNG export failed', err)
-      setError('Could not generate the PNG.')
+      pushToast({
+        tone: 'error',
+        title: 'Export failed',
+        body: 'Could not generate the PNG.',
+      })
     }
   }
 
@@ -138,11 +157,6 @@ export function ExportDialog() {
           <h2 className="text-lg font-semibold">Export</h2>
           <button onClick={close} className="text-gray-400 hover:text-gray-600" aria-label="Close export dialog"><X size={18} /></button>
         </div>
-        {error && (
-          <div role="alert" className="mb-3 text-xs text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2">
-            {error}
-          </div>
-        )}
         <div className="flex flex-col gap-2">
           {exports.map((exp) => (
             <button

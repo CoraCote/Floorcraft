@@ -40,7 +40,10 @@ export function Toaster() {
         <div
           key={item.id}
           className={`border rounded-lg shadow px-3 py-2 text-sm ${toneClasses[item.tone]}`}
-          role="status"
+          // Assertive AT announcement for errors (screen readers interrupt);
+          // polite for everything else so info/success don't clobber what
+          // the user is reading. Both map to ARIA's `role` attribute.
+          role={item.tone === 'error' ? 'alert' : 'status'}
         >
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1">

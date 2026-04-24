@@ -105,11 +105,19 @@ export function CSVImportDialog() {
             placeholder={`name,email,department,team,title,type,office_days,tags\nJane Smith,jane@co.com,Engineering,Frontend,Senior Engineer,full-time,"Mon,Wed,Fri",standing-desk`}
             value={csvText}
             onChange={(e) => { setCsvText(e.target.value); setPreview(null) }}
+            aria-invalid={!!sizeError}
+            aria-describedby={sizeError ? 'csv-size-error' : undefined}
           />
         </div>
 
         {sizeError && (
-          <div className="mb-3 p-2 bg-red-50 text-red-700 text-xs rounded">{sizeError}</div>
+          <p
+            id="csv-size-error"
+            role="alert"
+            className="text-xs text-red-600 mt-1 mb-3"
+          >
+            {sizeError}
+          </p>
         )}
         {!preview ? (
           <button
@@ -122,7 +130,10 @@ export function CSVImportDialog() {
         ) : (
           <>
             {preview.errors.length > 0 && (
-              <div className="mb-3 p-2 bg-red-50 text-red-700 text-xs rounded">
+              <div
+                role="alert"
+                className="mb-3 text-xs text-red-600"
+              >
                 {preview.errors.map((e, i) => <div key={i}>{e}</div>)}
               </div>
             )}

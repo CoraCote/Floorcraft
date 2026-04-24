@@ -89,6 +89,8 @@ export function SignupPage() {
             className="w-full border rounded px-2 py-1.5"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            aria-invalid={!!error}
+            aria-describedby={error ? 'signup-form-error' : undefined}
           />
         </label>
         <label className="block text-sm">
@@ -100,6 +102,8 @@ export function SignupPage() {
             className="w-full border rounded px-2 py-1.5 disabled:bg-gray-50"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            aria-invalid={!!error}
+            aria-describedby={error ? 'signup-form-error' : undefined}
           />
         </label>
         <label className="block text-sm">
@@ -108,7 +112,10 @@ export function SignupPage() {
             type="password"
             required
             minLength={8}
-            aria-describedby="signup-password-hint"
+            aria-describedby={
+              error ? 'signup-form-error signup-password-hint' : 'signup-password-hint'
+            }
+            aria-invalid={!!error}
             className="w-full border rounded px-2 py-1.5"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -120,7 +127,15 @@ export function SignupPage() {
             At least 8 characters.
           </span>
         </label>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && (
+          <p
+            id="signup-form-error"
+            role="alert"
+            className="text-xs text-red-600 mt-1"
+          >
+            {error}
+          </p>
+        )}
         <button
           type="submit"
           disabled={busy}

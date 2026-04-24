@@ -112,6 +112,8 @@ function CalibrateScaleModalBody() {
                   handleApply()
                 }
               }}
+              aria-invalid={!!error}
+              aria-describedby={error ? 'calibrate-distance-error' : undefined}
               className="w-full text-sm border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
             />
           </div>
@@ -135,7 +137,11 @@ function CalibrateScaleModalBody() {
         </div>
 
         {error && (
-          <p className="mt-2 text-xs text-red-600" role="alert">
+          <p
+            id="calibrate-distance-error"
+            className="text-xs text-red-600 mt-1"
+            role="alert"
+          >
             {error}
           </p>
         )}

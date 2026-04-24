@@ -54,9 +54,19 @@ export function ForgotPasswordPage() {
             className="w-full border rounded px-2 py-1.5"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            aria-invalid={!!error}
+            aria-describedby={error ? 'forgot-form-error' : undefined}
           />
         </label>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && (
+          <p
+            id="forgot-form-error"
+            role="alert"
+            className="text-xs text-red-600 mt-1"
+          >
+            {error}
+          </p>
+        )}
         <button
           type="submit"
           disabled={busy}

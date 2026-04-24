@@ -47,6 +47,8 @@ export function LoginPage() {
             className="w-full border rounded px-2 py-1.5"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            aria-invalid={!!error}
+            aria-describedby={error ? 'login-form-error' : undefined}
           />
         </label>
         <label className="block text-sm">
@@ -57,9 +59,19 @@ export function LoginPage() {
             className="w-full border rounded px-2 py-1.5"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            aria-invalid={!!error}
+            aria-describedby={error ? 'login-form-error' : undefined}
           />
         </label>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && (
+          <p
+            id="login-form-error"
+            role="alert"
+            className="text-xs text-red-600 mt-1"
+          >
+            {error}
+          </p>
+        )}
         <button
           type="submit"
           disabled={busy}

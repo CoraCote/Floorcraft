@@ -4,6 +4,7 @@ import type Konva from 'konva'
 import { ExportDialog } from '../components/editor/ExportDialog'
 import { useUIStore } from '../stores/uiStore'
 import { useProjectStore } from '../stores/projectStore'
+import { useToastStore } from '../stores/toastStore'
 import { setActiveStage } from '../lib/stageRegistry'
 import type { Project } from '../types/project'
 
@@ -50,6 +51,7 @@ describe('ExportDialog PDF + PNG wiring', () => {
     exportPngMock.mockReset()
     setActiveStage(null)
     closeDialog()
+    useToastStore.setState({ items: [] })
   })
 
   it('clicking PDF Floor Plan calls exportPdf with stage + project filename', () => {
@@ -84,7 +86,7 @@ describe('ExportDialog PDF + PNG wiring', () => {
     expect(useUIStore.getState().exportDialogOpen).toBe(false)
   })
 
-  it('shows a friendly error and keeps the dialog open when no canvas is mounted', () => {
+  it('pushes an error toast and keeps the dialog open when no canvas is mounted', () => {
     // No setActiveStage — registry returns null.
     openDialog()
     render(<ExportDialog />)
@@ -93,6 +95,11 @@ describe('ExportDialog PDF + PNG wiring', () => {
 
     expect(exportPdfMock).not.toHaveBeenCalled()
     expect(useUIStore.getState().exportDialogOpen).toBe(true)
-    expect(screen.getByRole('alert')).toHaveTextContent(/Open a floor plan/i)
+    // Export failures surface via the global Toaster, not inline in the
+    // dialog (see docs/ERROR_DISPLAY_CONVENTION.md).
+    const toasts = useToastStore.getState().items
+    expect(toasts).toHaveLength(1)
+    expect(toasts[0].tone).toBe('error')
+    expect(toasts[0].body).toMatch(/Open a floor plan/i)
   })
 })
