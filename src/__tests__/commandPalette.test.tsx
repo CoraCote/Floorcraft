@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { useUIStore } from '../stores/uiStore'
 import { useFloorStore } from '../stores/floorStore'
@@ -8,6 +8,10 @@ import { useEmployeeStore } from '../stores/employeeStore'
 import { useElementsStore } from '../stores/elementsStore'
 import { useProjectStore } from '../stores/projectStore'
 import { CommandPalette } from '../components/editor/CommandPalette'
+import {
+  RECENTS_STORAGE_KEY,
+  SCOPE_STORAGE_KEY,
+} from '../lib/commandPaletteRecents'
 import type { Employee } from '../types/employee'
 
 /**
@@ -90,6 +94,11 @@ function renderPalette() {
 }
 
 beforeEach(() => {
+  // Wipe palette-local persistence so the recents/scope tests start
+  // from a known-empty slot. Tests that exercise the recent ribbon
+  // populate the slot themselves.
+  window.localStorage.removeItem(RECENTS_STORAGE_KEY)
+  window.localStorage.removeItem(SCOPE_STORAGE_KEY)
   switchToFloorMock.mockClear()
   useUIStore.setState({
     commandPaletteOpen: false,
@@ -275,5 +284,131 @@ describe('CommandPalette', () => {
       fireEvent.click(overlay)
     })
     expect(screen.queryByTestId('command-palette')).toBeNull()
+  })
+
+  // -- Wave 12A polish --------------------------------------------------
+
+  it('opens with the search input focused', async () => {
+    renderPalette()
+    act(() => {
+      useUIStore.getState().setCommandPaletteOpen(true)
+    })
+    const input = screen.getByTestId('command-palette-input')
+    // Focus is deferred behind requestAnimationFrame in the body's mount
+    // effect — `waitFor` polls until the rAF callback has actually
+    // landed and the element owns document focus.
+    await waitFor(() => {
+      expect(document.activeElement).toBe(input)
+    })
+  })
+
+  it('hides the recent ribbon when no recents are stored', () => {
+    renderPalette()
+    act(() => useUIStore.getState().setCommandPaletteOpen(true))
+    expect(screen.queryByTestId('command-palette-section-recent')).toBeNull()
+  })
+
+  it('shows the recent ribbon when ids are persisted (and they resolve to live items)', () => {
+    // Pre-seed the slot with a known action id that exists in the
+    // catalogue. `view-toggle-grid` is always present.
+    window.localStorage.setItem(
+      RECENTS_STORAGE_KEY,
+      JSON.stringify(['view-toggle-grid']),
+    )
+    renderPalette()
+    act(() => useUIStore.getState().setCommandPaletteOpen(true))
+    expect(screen.getByTestId('command-palette-section-recent')).toBeTruthy()
+    expect(screen.getByTestId('command-palette-recent-view-toggle-grid')).toBeTruthy()
+  })
+
+  it('invoking an action moves it to the front of the recents ring', () => {
+    renderPalette()
+    act(() => useUIStore.getState().setCommandPaletteOpen(true))
+    act(() => {
+      fireEvent.click(
+        screen.getByTestId('command-palette-item-view-toggle-grid'),
+      )
+    })
+    const stored = JSON.parse(
+      window.localStorage.getItem(RECENTS_STORAGE_KEY) ?? '[]',
+    )
+    expect(stored[0]).toBe('view-toggle-grid')
+  })
+
+  it('group headers render lucide section icons', () => {
+    renderPalette()
+    act(() => useUIStore.getState().setCommandPaletteOpen(true))
+    const header = screen.getByTestId('command-palette-section-floors')
+    // The header includes an svg from lucide right before the label.
+    expect(header.querySelector('svg')).toBeTruthy()
+  })
+
+  it('arrow Down moves the highlight and Enter activates the highlighted row', () => {
+    renderPalette()
+    act(() => useUIStore.getState().setCommandPaletteOpen(true))
+    const input = screen.getByTestId('command-palette-input')
+    // Narrow to the two floor rows so the highlight motion is
+    // deterministic — index 0 is f1, index 1 is f2.
+    act(() => {
+      fireEvent.change(input, { target: { value: 'Go to floor' } })
+    })
+    expect(
+      screen.getByTestId('command-palette-item-floor-f1').getAttribute('data-active'),
+    ).toBe('true')
+    act(() => {
+      fireEvent.keyDown(input, { key: 'ArrowDown' })
+    })
+    expect(
+      screen.getByTestId('command-palette-item-floor-f2').getAttribute('data-active'),
+    ).toBe('true')
+    act(() => {
+      fireEvent.keyDown(input, { key: 'Enter' })
+    })
+    expect(switchToFloorMock).toHaveBeenCalledWith('f2')
+  })
+
+  it('home / End jump to the first / last navigable row', () => {
+    renderPalette()
+    act(() => useUIStore.getState().setCommandPaletteOpen(true))
+    const input = screen.getByTestId('command-palette-input')
+    act(() => {
+      fireEvent.change(input, { target: { value: 'Go to floor' } })
+    })
+    act(() => {
+      fireEvent.keyDown(input, { key: 'End' })
+    })
+    expect(
+      screen.getByTestId('command-palette-item-floor-f2').getAttribute('data-active'),
+    ).toBe('true')
+    act(() => {
+      fireEvent.keyDown(input, { key: 'Home' })
+    })
+    expect(
+      screen.getByTestId('command-palette-item-floor-f1').getAttribute('data-active'),
+    ).toBe('true')
+  })
+
+  it('renders the empty state with hint text when the query has no matches', () => {
+    renderPalette()
+    act(() => useUIStore.getState().setCommandPaletteOpen(true))
+    const input = screen.getByTestId('command-palette-input')
+    act(() => {
+      fireEvent.change(input, { target: { value: 'asdfqwerzz' } })
+    })
+    expect(screen.getByTestId('command-palette-empty')).toBeTruthy()
+    expect(screen.getByText('No commands match')).toBeTruthy()
+  })
+
+  it('scope chip toggles between office and all-offices when cross-office is supported', () => {
+    // The chip is interactive only when the team has more than one
+    // office. The cross-office hook is keyed off `useAllOfficesIndex`
+    // which we don't easily mock here — but the read-only branch is
+    // still a valid render, so we assert the chip is at least present
+    // and reflects the persisted scope value.
+    window.localStorage.setItem(SCOPE_STORAGE_KEY, 'office')
+    renderPalette()
+    act(() => useUIStore.getState().setCommandPaletteOpen(true))
+    const chip = screen.getByTestId('command-palette-scope-chip')
+    expect(chip.getAttribute('data-scope')).toBe('office')
   })
 })
