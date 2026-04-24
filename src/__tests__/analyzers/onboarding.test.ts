@@ -9,7 +9,7 @@ function makeEmployee(overrides: Partial<Employee> = {}): Employee {
     email: '', department: null, team: null, title: null,
     managerId: null, employmentType: 'full-time', officeDays: [],
     startDate: null, endDate: null, equipmentNeeds: [], equipmentStatus: 'not-needed',
-    photoUrl: null, tags: [], seatId: null, floorId: null,
+    photoUrl: null, tags: [], accommodations: [], seatId: null, floorId: null,
     status: 'active',
     leaveType: null, expectedReturnDate: null, coverageEmployeeId: null,
     leaveNotes: null, departureDate: null,

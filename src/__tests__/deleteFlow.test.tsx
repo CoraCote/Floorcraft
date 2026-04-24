@@ -33,7 +33,7 @@ describe('integration: delete + undo restores the element', () => {
         e1: {
           id: 'e1', name: 'Jane', email: '', department: null, team: null, title: null,
           managerId: null, employmentType: 'full-time', officeDays: [], startDate: null, endDate: null,
-          equipmentNeeds: [], equipmentStatus: 'not-needed', photoUrl: null, tags: [],
+          equipmentNeeds: [], equipmentStatus: 'not-needed', photoUrl: null, tags: [], accommodations: [],
           seatId: null, floorId: null, createdAt: new Date().toISOString(),
         } as any,
       },

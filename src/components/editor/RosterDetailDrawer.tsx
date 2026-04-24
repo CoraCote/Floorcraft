@@ -1,12 +1,26 @@
 import { useEffect, useRef, useState } from 'react'
 import { AlertCircle, X } from 'lucide-react'
+import { nanoid } from 'nanoid'
 import { useEmployeeStore } from '../../stores/employeeStore'
 import { useFloorStore } from '../../stores/floorStore'
 import { useUIStore } from '../../stores/uiStore'
 import { useToastStore } from '../../stores/toastStore'
 import { useCan } from '../../hooks/useCan'
-import type { Employee, EmployeeStatus, LeaveType } from '../../types/employee'
-import { EMPLOYEE_STATUSES, EMPLOYMENT_TYPES, LEAVE_TYPES } from '../../types/employee'
+import type {
+  Accommodation,
+  AccommodationType,
+  Employee,
+  EmployeeStatus,
+  LeaveType,
+} from '../../types/employee'
+import {
+  ACCOMMODATION_ICONS,
+  ACCOMMODATION_LABELS,
+  ACCOMMODATION_TYPES,
+  EMPLOYEE_STATUSES,
+  EMPLOYMENT_TYPES,
+  LEAVE_TYPES,
+} from '../../types/employee'
 import { findManagerCycle } from '../../lib/managerChain'
 import { SeatHistoryDrawer } from './SeatHistoryDrawer'
 
@@ -576,6 +590,14 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
             </>
           )}
 
+          <AccommodationsField
+            employee={employee}
+            canEdit={canEdit}
+            onChange={(accommodations) =>
+              updateEmployee(employee.id, { accommodations })
+            }
+          />
+
           <Field label="Seat">
             <div className="text-sm text-gray-600 px-2 py-1.5 bg-gray-50 rounded border border-gray-100">
               {employee.seatId && seatFloor
@@ -613,5 +635,121 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       </div>
       {children}
     </label>
+  )
+}
+
+/**
+ * Accommodations editor — the one place where HR sets structured ADA /
+ * dignity-of-work metadata on an employee. Existing entries render as
+ * removable chips (icon + label + × button; notes surface as the chip's
+ * `title` tooltip). New entries are added via a small type picker + notes
+ * input below the list.
+ *
+ * `nanoid` drives the entry id — same generator as desks, employees, and
+ * floors, so we don't introduce a second id convention just for this
+ * field. The `+ Add` button is disabled until a valid type is picked so
+ * an accidental click can't persist a junk row.
+ */
+function AccommodationsField({
+  employee,
+  canEdit,
+  onChange,
+}: {
+  employee: Employee
+  canEdit: boolean
+  onChange: (accommodations: Accommodation[]) => void
+}) {
+  const [type, setType] = useState<AccommodationType | ''>('')
+  const [notes, setNotes] = useState('')
+
+  const existing = employee.accommodations ?? []
+
+  const handleAdd = () => {
+    if (!type) return
+    const entry: Accommodation = {
+      id: nanoid(),
+      type,
+      notes: notes.trim() || null,
+      createdAt: new Date().toISOString(),
+    }
+    onChange([...existing, entry])
+    setType('')
+    setNotes('')
+  }
+
+  const handleRemove = (id: string) => {
+    onChange(existing.filter((a) => a.id !== id))
+  }
+
+  return (
+    <div>
+      <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+        Accommodations
+      </div>
+
+      {existing.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5 mb-2" data-testid="accommodations-list">
+          {existing.map((a) => {
+            const Icon = ACCOMMODATION_ICONS[a.type]
+            return (
+              <span
+                key={a.id}
+                data-testid={`accommodation-chip-${a.type}`}
+                title={a.notes ?? ACCOMMODATION_LABELS[a.type]}
+                className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-indigo-50 text-indigo-800 border border-indigo-200 rounded-full"
+              >
+                <Icon size={12} aria-hidden="true" />
+                <span>{ACCOMMODATION_LABELS[a.type]}</span>
+                {canEdit && (
+                  <button
+                    type="button"
+                    aria-label={`Remove ${ACCOMMODATION_LABELS[a.type]}`}
+                    onClick={() => handleRemove(a.id)}
+                    className="ml-0.5 text-indigo-600 hover:text-indigo-900"
+                  >
+                    <X size={10} />
+                  </button>
+                )}
+              </span>
+            )
+          })}
+        </div>
+      ) : (
+        <div className="text-xs text-gray-400 italic mb-2">None</div>
+      )}
+
+      {canEdit && (
+        <div className="flex items-center gap-1.5">
+          <select
+            aria-label="Accommodation type"
+            className="flex-shrink-0 px-2 py-1 text-xs border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={type}
+            onChange={(e) => setType((e.target.value as AccommodationType) || '')}
+          >
+            <option value="">— choose —</option>
+            {ACCOMMODATION_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {ACCOMMODATION_LABELS[t]}
+              </option>
+            ))}
+          </select>
+          <input
+            aria-label="Accommodation notes"
+            className="flex-1 min-w-0 px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Notes (optional)"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+          />
+          <button
+            type="button"
+            onClick={handleAdd}
+            disabled={!type}
+            className="flex-shrink-0 px-2 py-1 text-xs font-medium rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
+          >
+            Add
+          </button>
+        </div>
+      )}
+    </div>
   )
 }

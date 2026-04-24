@@ -3,7 +3,13 @@ import { useEmployeeStore } from '../../stores/employeeStore'
 import { useProjectStore } from '../../stores/projectStore'
 import { useCanvasStore } from '../../stores/canvasStore'
 import { useFloorStore } from '../../stores/floorStore'
-import { isEmployeeStatus, LEAVE_TYPES, type LeaveType } from '../../types/employee'
+import {
+  isEmployeeStatus,
+  isAccommodationType,
+  LEAVE_TYPES,
+  type Accommodation,
+  type LeaveType,
+} from '../../types/employee'
 import { WALL_TYPES, type WallType } from '../../types/elements'
 
 /**
@@ -112,6 +118,45 @@ function isNonEmptyString(v: unknown): v is string {
  * shape. `leaveType` is validated against the `LEAVE_TYPES` enum; the
  * date/id/notes fields accept any non-empty string.
  */
+/**
+ * Coerce a single unknown value to an `Accommodation` or drop it. An entry
+ * must have a non-empty string `id`, a known `type`, and (optionally) a
+ * string `notes`. Anything else is discarded with a console.warn so an
+ * inbound corrupted payload surfaces during devtools-triage rather than
+ * silently stripping data.
+ */
+function coerceAccommodation(raw: unknown): Accommodation | null {
+  if (!raw || typeof raw !== 'object') return null
+  const a = raw as Record<string, unknown>
+  if (!isNonEmptyString(a.id)) {
+    console.warn('[accommodation migration] dropping entry with missing id', a)
+    return null
+  }
+  if (!isAccommodationType(a.type)) {
+    console.warn(
+      `[accommodation migration] dropping entry with unknown type "${String(a.type)}"`,
+      a,
+    )
+    return null
+  }
+  return {
+    id: a.id,
+    type: a.type,
+    notes: isNonEmptyString(a.notes) ? a.notes : null,
+    createdAt: isNonEmptyString(a.createdAt) ? a.createdAt : new Date(0).toISOString(),
+  }
+}
+
+function migrateAccommodations(raw: unknown): Accommodation[] {
+  if (!Array.isArray(raw)) return []
+  const out: Accommodation[] = []
+  for (const entry of raw) {
+    const coerced = coerceAccommodation(entry)
+    if (coerced) out.push(coerced)
+  }
+  return out
+}
+
 function migrateEmployees(
   employees: Record<string, unknown>,
 ): ReturnType<typeof useEmployeeStore.getState>['employees'] {
@@ -131,6 +176,7 @@ function migrateEmployees(
         : null,
       leaveNotes: isNonEmptyString(e.leaveNotes) ? e.leaveNotes : null,
       departureDate: isNonEmptyString(e.departureDate) ? e.departureDate : null,
+      accommodations: migrateAccommodations(e.accommodations),
     }
   }
   return out as ReturnType<typeof useEmployeeStore.getState>['employees']

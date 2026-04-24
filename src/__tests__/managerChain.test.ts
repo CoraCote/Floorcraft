@@ -25,6 +25,7 @@ function emp(id: string, managerId: string | null = null): Employee {
     equipmentStatus: 'not-needed',
     photoUrl: null,
     tags: [],
+    accommodations: [],
     seatId: null,
     floorId: null,
     createdAt: new Date().toISOString(),

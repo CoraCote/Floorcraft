@@ -1,3 +1,85 @@
+import {
+  Accessibility,
+  Volume2,
+  DoorOpen,
+  Armchair,
+  Monitor,
+  Sun,
+  Sparkles,
+  type LucideIcon,
+} from 'lucide-react'
+
+/**
+ * Workplace-accommodation catalogue. These are ADA / dignity-of-work
+ * factors that constrain which seats are eligible for which employees
+ * (e.g. a wheelchair user can't be routed past a 24"-wide aisle, and a
+ * quiet-zone accommodation rules out seats in the bullpen). Kept as a
+ * closed union so the UI picker, the analyzer, and the badge-renderer
+ * all agree on the vocabulary.
+ */
+export type AccommodationType =
+  | 'wheelchair-access'
+  | 'quiet-zone'
+  | 'proximity-to-exit'
+  | 'ergonomic-chair'
+  | 'standing-desk'
+  | 'natural-light'
+  | 'other'
+
+export const ACCOMMODATION_TYPES: readonly AccommodationType[] = [
+  'wheelchair-access',
+  'quiet-zone',
+  'proximity-to-exit',
+  'ergonomic-chair',
+  'standing-desk',
+  'natural-light',
+  'other',
+] as const
+
+export function isAccommodationType(v: unknown): v is AccommodationType {
+  return (
+    typeof v === 'string' &&
+    (ACCOMMODATION_TYPES as readonly string[]).includes(v)
+  )
+}
+
+/**
+ * Human-readable labels for each accommodation type. Exported so the
+ * roster drawer chip and the analyzer narrative share the same wording.
+ */
+export const ACCOMMODATION_LABELS: Record<AccommodationType, string> = {
+  'wheelchair-access': 'Wheelchair access',
+  'quiet-zone': 'Quiet zone',
+  'proximity-to-exit': 'Near exit',
+  'ergonomic-chair': 'Ergonomic chair',
+  'standing-desk': 'Standing desk',
+  'natural-light': 'Natural light',
+  other: 'Other',
+}
+
+/**
+ * Lucide icon mapping — used by both the drawer chip and (Unicode-free
+ * fallback aside) any HTML-surface that wants to render an accommodation.
+ * The Konva seat badge intentionally uses a simpler Text glyph instead
+ * because wiring lucide SVGs into the canvas layer is painful.
+ */
+export const ACCOMMODATION_ICONS: Record<AccommodationType, LucideIcon> = {
+  'wheelchair-access': Accessibility,
+  'quiet-zone': Volume2,
+  'proximity-to-exit': DoorOpen,
+  'ergonomic-chair': Armchair,
+  'standing-desk': Monitor,
+  'natural-light': Sun,
+  other: Sparkles,
+}
+
+export interface Accommodation {
+  id: string // uuid / nanoid
+  type: AccommodationType
+  notes: string | null // free-form detail, kept short
+  createdAt: string // ISO
+}
+
 /**
  * Orthogonal to seat assignment — a contractor can be `'active'` without a
  * seat, and someone `'on-leave'` may still own one. Persisted payloads
@@ -91,6 +173,13 @@ export interface Employee {
   equipmentStatus: 'pending' | 'provisioned' | 'not-needed'
   photoUrl: string | null
   tags: string[]
+  /**
+   * Workplace accommodations (ADA + dignity-of-work). Always an array —
+   * legacy payloads missing the field are back-filled to `[]` by
+   * `migrateEmployees`, so consumers can `.some(...)` / `.length` without
+   * first nulling-out.
+   */
+  accommodations: Accommodation[]
   seatId: string | null
   floorId: string | null
   createdAt: string

@@ -58,7 +58,7 @@ beforeEach(() => {
         id: 'e1', name: 'Seated Sam', email: '', department: null, team: null,
         title: null, managerId: null, employmentType: 'full-time', status: 'active',
         officeDays: [], startDate: null, endDate: null,
-        equipmentNeeds: [], equipmentStatus: 'not-needed', photoUrl: null, tags: [],
+        equipmentNeeds: [], equipmentStatus: 'not-needed', photoUrl: null, tags: [], accommodations: [],
         seatId: 'seat1', floorId: 'f1', leaveType: null, expectedReturnDate: null,
         coverageEmployeeId: null, leaveNotes: null, departureDate: null,
         createdAt: new Date().toISOString(),

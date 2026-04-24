@@ -93,6 +93,7 @@ export function buildDemoOfficePayload(
       equipmentStatus: seed.equipmentStatus,
       photoUrl: null,
       tags: [],
+      accommodations: [],
       seatId: seat ? seat.id : null,
       floorId: seat ? floorId : null,
       leaveType: null,

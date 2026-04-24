@@ -4,6 +4,96 @@ import { isDeskElement, isWorkstationElement } from '../../../types/elements'
 import { useUIStore } from '../../../stores/uiStore'
 import { useEmployeeStore } from '../../../stores/employeeStore'
 import { deriveSeatStatus } from '../../../lib/seatStatus'
+import type { Accommodation } from '../../../types/employee'
+
+/**
+ * Minimum shape needed to render a seat badge — we deliberately don't
+ * require the full `Employee` record here so the (narrow) typings the
+ * sub-renderers receive can extend this instead of pulling in
+ * `accommodations: undefined` everywhere. If the employee lookup comes
+ * up empty or the array is missing, we render nothing.
+ */
+interface EmployeeBadgeShape {
+  accommodations?: Accommodation[]
+}
+
+/**
+ * Unicode-glyph badge keyed off the employee's accommodations. We pick
+ * a single representative glyph per seat (wheelchair trumps everything
+ * — it's the ADA-load-bearing one), so a user glancing at the layout
+ * can pick out accommodated seats without reading labels.
+ *
+ * Using Text + a Konva Circle was the deliberate trade vs. wiring the
+ * lucide SVG paths into react-konva — the glyph set renders reliably
+ * across platforms and stays small (12px) without import gymnastics.
+ */
+function accommodationGlyph(
+  accommodations: Accommodation[] | undefined,
+): string | null {
+  if (!accommodations || accommodations.length === 0) return null
+  if (accommodations.some((a) => a.type === 'wheelchair-access')) return '\u267F' // ♿
+  const first = accommodations[0]
+  switch (first.type) {
+    case 'quiet-zone':
+      return '\u{1F910}' // 🤐
+    case 'proximity-to-exit':
+      return '\u{1F6AA}' // 🚪
+    case 'ergonomic-chair':
+      return '\u{1FA91}' // 🪑
+    case 'standing-desk':
+      return '\u{1F5A5}' // 🖥
+    case 'natural-light':
+      return '\u2600' // ☀
+    default:
+      return '\u2726' // ✦
+  }
+}
+
+/**
+ * Render a small top-right corner badge on assignable seats when the
+ * assigned employee has at least one accommodation. Non-interactive —
+ * `listening={false}` so it never intercepts clicks / drags.
+ */
+function AccommodationBadge({
+  employee,
+  elementWidth,
+  elementHeight,
+}: {
+  employee: EmployeeBadgeShape | null | undefined
+  elementWidth: number
+  elementHeight: number
+}) {
+  const glyph = accommodationGlyph(employee?.accommodations)
+  if (!glyph) return null
+  // Anchor in the top-right corner (x/y are element-relative since the
+  // parent Group is already translated to the element origin).
+  const cx = elementWidth / 2 - 8
+  const cy = -elementHeight / 2 + 8
+  return (
+    <Group listening={false}>
+      <Rect
+        x={cx - 7}
+        y={cy - 7}
+        width={14}
+        height={14}
+        cornerRadius={7}
+        fill="#4F46E5" /* indigo-600 */
+        opacity={0.95}
+      />
+      <Text
+        text={glyph}
+        x={cx - 7}
+        y={cy - 7}
+        width={14}
+        height={14}
+        align="center"
+        verticalAlign="middle"
+        fontSize={10}
+        fill="#ffffff"
+      />
+    </Group>
+  )
+}
 
 /** Visual tweaks driven off the derived seat status — kept here so each
  *  sub-renderer reads the same source of truth and the policy lives in one
@@ -43,7 +133,7 @@ export function DeskRenderer({ element }: DeskRendererProps) {
 interface DeskElementRendererProps {
   element: DeskElement
   isSelected: boolean
-  employees: Record<string, { id: string; name: string; department: string | null }>
+  employees: Record<string, { id: string; name: string; department: string | null; accommodations?: Accommodation[] }>
   getDepartmentColor: (department: string) => string
 }
 
@@ -124,6 +214,11 @@ function DeskElementRenderer({ element, isSelected, employees, getDepartmentColo
           listening={false}
         />
       )}
+      <AccommodationBadge
+        employee={employee}
+        elementWidth={element.width}
+        elementHeight={element.height}
+      />
     </Group>
   )
 }
@@ -133,7 +228,7 @@ function DeskElementRenderer({ element, isSelected, employees, getDepartmentColo
 interface WorkstationRendererProps {
   element: WorkstationElement
   isSelected: boolean
-  employees: Record<string, { id: string; name: string; department: string | null }>
+  employees: Record<string, { id: string; name: string; department: string | null; accommodations?: Accommodation[] }>
   getDepartmentColor: (department: string) => string
 }
 
@@ -184,6 +279,24 @@ function WorkstationRenderer({ element, isSelected, employees, getDepartmentColo
         )
       })}
 
+      {(() => {
+        // A workstation holds multiple people; surface the first assignee
+        // with any accommodation so the badge still functions as a "this
+        // row has accommodations" cue. Wheelchair priority is handled
+        // inside `accommodationGlyph`.
+        const accommodated = element.assignedEmployeeIds
+          .map((id) => (id ? employees[id] : null))
+          .find((e) => e && e.accommodations && e.accommodations.length > 0)
+        if (!accommodated) return null
+        return (
+          <AccommodationBadge
+            employee={accommodated}
+            elementWidth={element.width}
+            elementHeight={element.height}
+          />
+        )
+      })()}
+
       {/* Position slots */}
       {Array.from({ length: element.positions }, (_, i) => {
         const employeeId = element.assignedEmployeeIds[i] || null
@@ -228,7 +341,7 @@ function WorkstationRenderer({ element, isSelected, employees, getDepartmentColo
 interface PrivateOfficeRendererProps {
   element: PrivateOfficeElement
   isSelected: boolean
-  employees: Record<string, { id: string; name: string; department: string | null }>
+  employees: Record<string, { id: string; name: string; department: string | null; accommodations?: Accommodation[] }>
   getDepartmentColor: (department: string) => string
 }
 
@@ -302,6 +415,19 @@ function PrivateOfficeRenderer({ element, isSelected, employees, getDepartmentCo
           listening={false}
         />
       )}
+      {(() => {
+        const accommodated = assignedEmployees.find(
+          (e) => e?.accommodations && e.accommodations.length > 0,
+        )
+        if (!accommodated) return null
+        return (
+          <AccommodationBadge
+            employee={accommodated}
+            elementWidth={element.width}
+            elementHeight={element.height}
+          />
+        )
+      })()}
     </Group>
   )
 }

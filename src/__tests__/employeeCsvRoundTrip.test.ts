@@ -28,6 +28,7 @@ function makeEmployee(over: Partial<Employee> = {}): Employee {
     equipmentStatus: over.equipmentStatus ?? 'not-needed',
     photoUrl: over.photoUrl ?? null,
     tags: over.tags ?? [],
+    accommodations: over.accommodations ?? [],
     seatId: over.seatId ?? null,
     floorId: over.floorId ?? null,
     leaveType: over.leaveType ?? null,
