@@ -9,6 +9,7 @@ import { RightSidebar } from './RightSidebar/RightSidebar'
 import { StatusBar } from './StatusBar'
 import { CanvasStage } from './Canvas/CanvasStage'
 import { KeyboardShortcutsOverlay } from './KeyboardShortcutsOverlay'
+import { PresentationOverlay } from './PresentationOverlay'
 import { Minimap } from './Minimap'
 import { CanvasActionDock } from './Canvas/CanvasActionDock'
 import { CanvasScaleBar } from './Canvas/CanvasScaleBar'
@@ -136,6 +137,7 @@ export function MapView() {
       <div className="fixed inset-0 z-50 w-screen h-screen bg-white dark:bg-gray-900">
         <CanvasStage />
         <KeyboardShortcutsOverlay />
+        <PresentationOverlay />
         {/* Always-visible exit affordance — Escape/P alone is undiscoverable */}
         <button
           onClick={() => useUIStore.getState().setPresentationMode(false)}
