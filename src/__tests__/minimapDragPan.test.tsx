@@ -60,7 +60,7 @@ describe('Minimap drag-to-pan', () => {
     useCanvasStore.setState({ setStagePosition } as any)
 
     const { container } = render(<Minimap />)
-    const minimap = container.querySelector('[aria-label="Minimap"]') as HTMLElement
+    const minimap = container.querySelector('[aria-label="Canvas overview"]') as HTMLElement
 
     // Fake the bounding rect so local coordinates are predictable. JSDOM
     // gives every element a 0×0 rect by default, which would make every
@@ -82,7 +82,7 @@ describe('Minimap drag-to-pan', () => {
     useCanvasStore.setState({ setStagePosition } as any)
 
     const { container } = render(<Minimap />)
-    const minimap = container.querySelector('[aria-label="Minimap"]') as HTMLElement
+    const minimap = container.querySelector('[aria-label="Canvas overview"]') as HTMLElement
     vi.spyOn(minimap, 'getBoundingClientRect').mockReturnValue({
       left: 0, top: 0, right: 180, bottom: 120, x: 0, y: 0, width: 180, height: 120, toJSON: () => ({}),
     } as DOMRect)
@@ -109,7 +109,7 @@ describe('Minimap drag-to-pan', () => {
     useCanvasStore.setState({ setStagePosition } as any)
 
     const { container } = render(<Minimap />)
-    const minimap = container.querySelector('[aria-label="Minimap"]') as HTMLElement
+    const minimap = container.querySelector('[aria-label="Canvas overview"]') as HTMLElement
     vi.spyOn(minimap, 'getBoundingClientRect').mockReturnValue({
       left: 0, top: 0, right: 180, bottom: 120, x: 0, y: 0, width: 180, height: 120, toJSON: () => ({}),
     } as DOMRect)
@@ -135,7 +135,7 @@ describe('Minimap drag-to-pan', () => {
     useCanvasStore.setState({ setStagePosition } as any)
 
     const { container } = render(<Minimap />)
-    const minimap = container.querySelector('[aria-label="Minimap"]') as HTMLElement
+    const minimap = container.querySelector('[aria-label="Canvas overview"]') as HTMLElement
     vi.spyOn(minimap, 'getBoundingClientRect').mockReturnValue({
       left: 0, top: 0, right: 180, bottom: 120, x: 0, y: 0, width: 180, height: 120, toJSON: () => ({}),
     } as DOMRect)

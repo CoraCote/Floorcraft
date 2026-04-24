@@ -1,12 +1,14 @@
 import { useElementsStore } from '../../stores/elementsStore'
 import { useCanvasStore } from '../../stores/canvasStore'
 import { useUIStore } from '../../stores/uiStore'
-import { useMemo, useCallback, useRef, memo } from 'react'
+import { useMemo, useCallback, useRef, useState, memo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
+import { Minimize2, Maximize2 } from 'lucide-react'
 import { elementBounds } from '../../lib/elementBounds'
 
 const MINIMAP_WIDTH = 180
 const MINIMAP_HEIGHT = 120
+const COLLAPSED_SIZE = 40
 
 /**
  * Lower-right overview panel. Split into three concerns so a pan
@@ -188,6 +190,11 @@ export function Minimap() {
     useShallow((s) => ({ setStagePosition: s.setStagePosition })),
   )
   const ref = useRef<HTMLDivElement>(null)
+  // Local collapse state — kept in-component on purpose. The user already
+  // has a global "hide minimap entirely" toggle in the action dock; this
+  // is the in-between state ("keep it nearby but out of the way").
+  // Session-scoped, intentionally not persisted.
+  const [collapsed, setCollapsed] = useState(false)
 
   const tiles = useTiles()
   const bounds = useBounds(tiles)
@@ -240,6 +247,12 @@ export function Minimap() {
     (e: React.PointerEvent) => {
       // Only primary button / single touch should drive pans.
       if (e.button !== 0 && e.pointerType === 'mouse') return
+      // The collapse-toggle button lives inside the minimap container so
+      // the click would otherwise fall through here and trigger a pan
+      // before/while the toggle fires. Bail out if the press originated
+      // on (or inside) the collapse button.
+      const target = e.target as HTMLElement | null
+      if (target && target.closest('[data-minimap-collapse-button]')) return
       const state = dragStateRef.current
       state.active = true
       state.clientX = e.clientX
@@ -270,13 +283,41 @@ export function Minimap() {
 
   if (!minimapVisible) return null
 
+  // When collapsed we render a tight 40x40 handle that just holds the
+  // expand button — no SVG, no pointer-pan plumbing to worry about. The
+  // user can still toggle the global minimap visibility from the action
+  // dock; this is the interim "park it" affordance.
+  if (collapsed) {
+    return (
+      <div
+        ref={ref}
+        role="region"
+        aria-label="Canvas overview"
+        className="absolute bottom-10 right-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg overflow-hidden flex items-center justify-center"
+        style={{ width: COLLAPSED_SIZE, height: COLLAPSED_SIZE }}
+      >
+        <button
+          type="button"
+          data-minimap-collapse-button
+          onClick={() => setCollapsed(false)}
+          aria-expanded={false}
+          aria-label="Expand overview"
+          className="w-full h-full flex items-center justify-center cursor-pointer text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <Maximize2 size={16} />
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div
       ref={ref}
-      className="absolute bottom-10 right-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg overflow-hidden cursor-pointer select-none touch-none"
+      role="region"
+      aria-label="Canvas overview"
+      className="absolute bottom-10 right-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg overflow-hidden select-none touch-none cursor-grab active:cursor-grabbing"
       style={{ width: MINIMAP_WIDTH, height: MINIMAP_HEIGHT }}
       onPointerDown={handlePointerDown}
-      aria-label="Minimap"
     >
       <svg width={MINIMAP_WIDTH} height={MINIMAP_HEIGHT}>
         <MinimapBackground
@@ -287,6 +328,22 @@ export function Minimap() {
         />
         <MinimapViewport bounds={bounds} minimapScale={minimapScale} />
       </svg>
+      <button
+        type="button"
+        data-minimap-collapse-button
+        onClick={(e) => {
+          // The parent's onPointerDown already bails on this target, but
+          // stopping propagation here is a belt-and-braces guard in case
+          // a future refactor reorders the listeners.
+          e.stopPropagation()
+          setCollapsed(true)
+        }}
+        aria-expanded={true}
+        aria-label="Collapse overview"
+        className="absolute top-1 right-1 w-6 h-6 flex items-center justify-center rounded cursor-pointer text-gray-600 dark:text-gray-300 bg-white/80 dark:bg-gray-900/80 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        <Minimize2 size={12} />
+      </button>
     </div>
   )
 }
