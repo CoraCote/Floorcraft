@@ -2,6 +2,7 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } f
 import { useNavigate, useParams } from 'react-router-dom'
 import { useUIStore } from '../../stores/uiStore'
 import { useFloorStore } from '../../stores/floorStore'
+import { useElementsStore } from '../../stores/elementsStore'
 import { useVisibleEmployees } from '../../hooks/useVisibleEmployees'
 import { useAllOfficesIndex } from '../../hooks/useAllOfficesIndex'
 import { searchAllOffices, type CrossOfficeResult } from '../../lib/crossOfficeSearch'
@@ -14,12 +15,10 @@ import {
   type CommandItem,
   type CommandSection,
 } from '../../lib/commandPaletteFilter'
+import { buildCommandItems } from './commandPaletteActions'
 
 /** Cap on cross-office result rows — keeps the palette from unbounded growth. */
 const MAX_CROSS_OFFICE_RESULTS = 30
-
-/** People section is capped so a 2000-employee roster doesn't flood the DOM. */
-const MAX_PEOPLE_RESULTS = 8
 
 /**
  * Cmd+K / Ctrl+K / "/" quick-action palette.
@@ -52,9 +51,7 @@ function CommandPaletteBody() {
   const setOpen = useUIStore((s) => s.setCommandPaletteOpen)
   const registerModalOpen = useUIStore((s) => s.registerModalOpen)
   const registerModalClose = useUIStore((s) => s.registerModalClose)
-  const setExportDialogOpen = useUIStore((s) => s.setExportDialogOpen)
   const presentationMode = useUIStore((s) => s.presentationMode)
-  const setPresentationMode = useUIStore((s) => s.setPresentationMode)
 
   const navigate = useNavigate()
   const { teamSlug, officeSlug } = useParams<{
@@ -64,7 +61,10 @@ function CommandPaletteBody() {
 
   const employees = useVisibleEmployees()
   const floors = useFloorStore((s) => s.floors)
-  const setActiveFloor = useFloorStore((s) => s.setActiveFloor)
+  // Active-floor elements drive the "Find element" rows. We read from the
+  // live elementsStore rather than the archived floorStore.floors entry
+  // because the former is always current for the visible floor.
+  const activeElements = useElementsStore((s) => s.elements)
 
   const [query, setQuery] = useState('')
   const [highlightIndex, setHighlightIndex] = useState(0)
@@ -114,145 +114,35 @@ function CommandPaletteBody() {
     [teamSlug, navigate, close],
   )
 
-  // Build the full item catalogue. Rebuilt on every render; the
-  // dependency set is small and the cost is dominated by the People
-  // slice which we cap via `MAX_PEOPLE_RESULTS` below.
-  const items = useMemo<CommandItem[]>(() => {
-    const next: CommandItem[] = []
-    const basePath = teamSlug && officeSlug ? `/t/${teamSlug}/o/${officeSlug}` : null
-
-    // --- Navigate -------------------------------------------------------
-    if (basePath) {
-      next.push(
-        {
-          id: 'nav-map',
-          section: 'navigate',
-          label: 'Go to Map',
-          run: () => {
-            navigate(`${basePath}/map`)
-            close()
-          },
-        },
-        {
-          id: 'nav-roster',
-          section: 'navigate',
-          label: 'Go to Roster',
-          run: () => {
-            navigate(`${basePath}/roster`)
-            close()
-          },
-        },
-        {
-          id: 'nav-reports',
-          section: 'navigate',
-          label: 'Go to Reports',
-          run: () => {
-            navigate(`${basePath}/reports`)
-            close()
-          },
-        },
-      )
-    }
-    if (teamSlug) {
-      next.push({
-        id: 'nav-team-settings',
-        section: 'navigate',
-        label: 'Go to Team Settings',
-        run: () => {
-          navigate(`/t/${teamSlug}/settings`)
-          close()
-        },
-      })
-    }
-
-    // --- People (respecting PII redaction) -----------------------------
-    // We read from `useVisibleEmployees`, which returns the redacted
-    // projection when the viewer lacks `viewPII`. Filtering happens AFTER
-    // redaction, so a viewer who types a full name won't accidentally
-    // reveal who exists in the roster.
-    const peopleList = Object.values(employees)
-    // Pre-filter by the current query here so the cap applies to the
-    // matching slice, not the first N of the full roster.
-    const q = query.trim().toLowerCase()
-    const matchingPeople = q
-      ? peopleList.filter((e) => e.name.toLowerCase().includes(q))
-      : peopleList
-    for (const emp of matchingPeople.slice(0, MAX_PEOPLE_RESULTS)) {
-      next.push({
-        id: `person-${emp.id}`,
-        section: 'people',
-        label: emp.name,
-        subtitle: emp.department || emp.title || undefined,
-        run: () => {
-          if (!basePath) return
-          // Opens the roster page with a pre-selected employee. The
-          // roster drawer reads `?employee=<id>` on mount (handled in
-          // RosterPage).
-          navigate(`${basePath}/roster?employee=${emp.id}`)
-          close()
-        },
-      })
-    }
-
-    // --- Floors --------------------------------------------------------
-    const sortedFloors = [...floors].sort((a, b) => a.order - b.order)
-    for (const floor of sortedFloors) {
-      next.push({
-        id: `floor-${floor.id}`,
-        section: 'floors',
-        label: `Switch to ${floor.name}`,
-        run: () => {
-          setActiveFloor(floor.id)
-          close()
-        },
-      })
-    }
-
-    // --- Actions -------------------------------------------------------
-    next.push({
-      id: 'action-export',
-      section: 'actions',
-      label: 'Export PDF',
-      run: () => {
-        setExportDialogOpen(true)
-        close()
-      },
-    })
-    next.push({
-      id: 'action-export-png',
-      section: 'actions',
-      label: 'Export PNG',
-      run: () => {
-        setExportDialogOpen(true)
-        close()
-      },
-    })
-    next.push({
-      id: 'action-presentation',
-      section: 'actions',
-      label: presentationMode
-        ? 'Exit presentation mode'
-        : 'Toggle presentation mode',
-      run: () => {
-        setPresentationMode(!presentationMode)
-        close()
-      },
-    })
-
-    return next
-  }, [
-    teamSlug,
-    officeSlug,
-    employees,
-    floors,
-    navigate,
-    setActiveFloor,
-    setExportDialogOpen,
-    setPresentationMode,
-    presentationMode,
-    query,
-    close,
-  ])
+  // Delegate the full item catalogue to `commandPaletteActions`.
+  // The builder is a pure function over its inputs — rebuilding on every
+  // render is fine because it's capped (People: 8, Elements: 20) and the
+  // heavy lifting (the cross-office search) runs separately above.
+  const items = useMemo<CommandItem[]>(
+    () =>
+      buildCommandItems({
+        floors,
+        employees,
+        activeFloorElements: activeElements,
+        query,
+        navigate,
+        teamSlug,
+        officeSlug,
+        close,
+        presentationMode,
+      }),
+    [
+      floors,
+      employees,
+      activeElements,
+      query,
+      navigate,
+      teamSlug,
+      officeSlug,
+      close,
+      presentationMode,
+    ],
+  )
 
   const filtered = useMemo(() => filterCommandItems(items, query), [items, query])
 
@@ -343,7 +233,7 @@ function CommandPaletteBody() {
       data-testid="command-palette"
     >
       <div
-        className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden"
+        className="bg-white rounded-xl shadow-2xl w-full max-w-[600px] mx-4 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
@@ -386,15 +276,17 @@ function CommandPaletteBody() {
                         data-active={active ? 'true' : 'false'}
                         onMouseEnter={() => setHighlightIndex(flatIndex)}
                         onClick={() => item.run()}
-                        className={`w-full text-left px-4 py-2 text-sm ${
+                        className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 border-l-2 ${
                           active
-                            ? 'bg-blue-50 text-blue-900'
-                            : 'text-gray-800 hover:bg-gray-50'
+                            ? 'bg-blue-50 text-blue-900 border-blue-500'
+                            : 'text-gray-800 hover:bg-gray-50 border-transparent'
                         }`}
                       >
-                        <div>{item.label}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="truncate">{item.label}</div>
+                        </div>
                         {item.subtitle && (
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-gray-400 flex-shrink-0">
                             {item.subtitle}
                           </div>
                         )}

@@ -13,7 +13,14 @@
  * predictable; substring search is the cheapest thing that works.
  */
 
-export type CommandSection = 'navigate' | 'people' | 'floors' | 'actions'
+export type CommandSection =
+  | 'navigate'
+  | 'people'
+  | 'floors'
+  | 'elements'
+  | 'view'
+  | 'tools'
+  | 'actions'
 
 export interface CommandItem {
   /** Stable id — used as the React key and to track the highlight. */
@@ -43,16 +50,22 @@ export function filterCommandItems(
  * filter so the renderer and any test helper agree on the vocabulary.
  */
 export const SECTION_LABELS: Record<CommandSection, string> = {
-  navigate: 'Navigate',
+  navigate: 'Navigation',
   people: 'People',
   floors: 'Floors',
+  elements: 'Elements',
+  view: 'View',
+  tools: 'Tools',
   actions: 'Actions',
 }
 
 /** Render order for sections — matches the product spec. */
 export const SECTION_ORDER: readonly CommandSection[] = [
-  'navigate',
-  'people',
   'floors',
+  'people',
+  'elements',
+  'navigate',
+  'view',
+  'tools',
   'actions',
 ] as const

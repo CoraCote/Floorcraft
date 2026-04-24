@@ -21,6 +21,13 @@ import { focusOnElement } from '../../lib/canvasFocus'
  * Map (canvas) view. Rendered inside `ProjectShell`'s `<Outlet />`, so the
  * TopBar, global modals, and project bootstrap all live in the shell.
  *
+ * The Cmd+K / Ctrl+K command palette (`CommandPalette.tsx` +
+ * `commandPaletteActions.ts`) is mounted at the shell level so it's
+ * reachable from every office route, not just the map. The shortcut is
+ * wired in `useKeyboardShortcuts` — MapView itself consumes the palette's
+ * outputs indirectly via `switchToFloor` + `focusOnElement`, which the
+ * palette's floor/find-seat/find-element actions dispatch to.
+ *
  * Presentation mode is intentionally handled here rather than in the shell:
  * it's a map-only concept (no canvas on the roster page), and rendering it
  * as a `fixed inset-0 z-50` overlay lets it cover the parent TopBar without

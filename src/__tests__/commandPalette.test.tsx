@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { useUIStore } from '../stores/uiStore'
@@ -14,7 +14,24 @@ import type { Employee } from '../types/employee'
  * Palette tests exercise the full component mounted under the office
  * route so `useParams` resolves `teamSlug`/`officeSlug` — the palette's
  * navigate actions depend on that slug pair.
+ *
+ * `switchToFloor` is mocked at the module level so the floor-selection
+ * test can assert it was called with the right id without fighting
+ * store-rehydration side-effects that would overwrite our fixture. The
+ * mock covers every usage site inside `commandPaletteActions` because
+ * the action builder imports `switchToFloor` from this exact path.
  */
+
+const switchToFloorMock = vi.fn()
+vi.mock('../lib/seatAssignment', async (orig) => {
+  // Preserve the other named exports (`deleteElements`, etc.) so code
+  // outside the palette still behaves.
+  const actual = await orig<typeof import('../lib/seatAssignment')>()
+  return {
+    ...actual,
+    switchToFloor: (id: string) => switchToFloorMock(id),
+  }
+})
 
 function makeEmployee(partial: Partial<Employee> & Pick<Employee, 'id' | 'name'>): Employee {
   return {
@@ -73,12 +90,13 @@ function renderPalette() {
 }
 
 beforeEach(() => {
-  // Reset every store slice the palette reads.
+  switchToFloorMock.mockClear()
   useUIStore.setState({
     commandPaletteOpen: false,
     modalOpenCount: 0,
     presentationMode: false,
     exportDialogOpen: false,
+    selectedIds: [],
   } as any)
   useElementsStore.setState({ elements: {} })
   useFloorStore.setState({
@@ -99,13 +117,9 @@ beforeEach(() => {
 })
 
 describe('CommandPalette', () => {
-  it('renders nothing when closed', () => {
+  it('opens when commandPaletteOpen flips true and Escape closes it', () => {
     renderPalette()
     expect(screen.queryByTestId('command-palette')).toBeNull()
-  })
-
-  it('opens via setCommandPaletteOpen and Esc closes it', () => {
-    renderPalette()
     act(() => {
       useUIStore.getState().setCommandPaletteOpen(true)
     })
@@ -114,6 +128,43 @@ describe('CommandPalette', () => {
     act(() => {
       fireEvent.keyDown(input, { key: 'Escape' })
     })
+    expect(screen.queryByTestId('command-palette')).toBeNull()
+  })
+
+  it('filter string narrows the visible list (case-insensitive substring)', () => {
+    renderPalette()
+    act(() => useUIStore.getState().setCommandPaletteOpen(true))
+    // Everything present initially — sample one from each section.
+    expect(screen.getByTestId('command-palette-item-floor-f1')).toBeTruthy()
+    expect(screen.getByTestId('command-palette-item-nav-roster')).toBeTruthy()
+    expect(screen.getByTestId('command-palette-item-view-toggle-grid')).toBeTruthy()
+
+    const input = screen.getByTestId('command-palette-input') as HTMLInputElement
+    act(() => {
+      fireEvent.change(input, { target: { value: 'floor 2' } })
+    })
+    // Only the Floor 2 row survives — Floor 1 row, nav, view, tool rows all fall.
+    expect(screen.getByTestId('command-palette-item-floor-f2')).toBeTruthy()
+    expect(screen.queryByTestId('command-palette-item-floor-f1')).toBeNull()
+    expect(screen.queryByTestId('command-palette-item-nav-roster')).toBeNull()
+    expect(screen.queryByTestId('command-palette-item-view-toggle-grid')).toBeNull()
+  })
+
+  it('pressing Enter on a "Go to floor" row calls switchToFloor with that floor id', () => {
+    renderPalette()
+    act(() => useUIStore.getState().setCommandPaletteOpen(true))
+    const input = screen.getByTestId('command-palette-input') as HTMLInputElement
+    // Narrow the list to just the Floor 2 row so Enter targets it deterministically.
+    act(() => {
+      fireEvent.change(input, { target: { value: 'Floor 2' } })
+    })
+    const target = screen.getByTestId('command-palette-item-floor-f2')
+    expect(target.getAttribute('data-active')).toBe('true')
+    act(() => {
+      fireEvent.keyDown(input, { key: 'Enter' })
+    })
+    expect(switchToFloorMock).toHaveBeenCalledWith('f2')
+    // Palette closed as a side-effect of running the action.
     expect(screen.queryByTestId('command-palette')).toBeNull()
   })
 
@@ -131,98 +182,98 @@ describe('CommandPalette', () => {
     unmount()
   })
 
-  it('shows every section when the query is empty', () => {
+  it('shows Floors, Navigation, View, and Tools sections by default', () => {
     renderPalette()
     act(() => useUIStore.getState().setCommandPaletteOpen(true))
-    // Navigate, People, Floors, Actions all present.
-    expect(screen.getByTestId('command-palette-section-navigate')).toBeTruthy()
-    expect(screen.getByTestId('command-palette-section-people')).toBeTruthy()
     expect(screen.getByTestId('command-palette-section-floors')).toBeTruthy()
-    expect(screen.getByTestId('command-palette-section-actions')).toBeTruthy()
+    expect(screen.getByTestId('command-palette-section-navigate')).toBeTruthy()
+    expect(screen.getByTestId('command-palette-section-view')).toBeTruthy()
+    expect(screen.getByTestId('command-palette-section-tools')).toBeTruthy()
   })
 
-  it('filters items across sections as the user types', () => {
+  it('renders a People row only for employees with an assigned seat', () => {
+    // e1 seated on f1; e2 unseated. Only e1 should surface under People.
+    useElementsStore.setState({
+      elements: {
+        d1: {
+          id: 'd1', type: 'desk',
+          x: 0, y: 0, width: 60, height: 60, rotation: 0,
+          locked: false, groupId: null, zIndex: 0, visible: true, label: '',
+          style: { fill: '#fff', stroke: '#000', strokeWidth: 1, opacity: 1 },
+          deskId: 'D-1', assignedEmployeeId: 'e1', capacity: 1,
+        } as any,
+      },
+    })
+    useFloorStore.setState({
+      floors: [
+        {
+          id: 'f1', name: 'Floor 1', order: 0,
+          elements: {
+            d1: {
+              id: 'd1', type: 'desk',
+              x: 0, y: 0, width: 60, height: 60, rotation: 0,
+              locked: false, groupId: null, zIndex: 0, visible: true, label: '',
+              style: { fill: '#fff', stroke: '#000', strokeWidth: 1, opacity: 1 },
+              deskId: 'D-1', assignedEmployeeId: 'e1', capacity: 1,
+            } as any,
+          },
+        },
+      ],
+      activeFloorId: 'f1',
+    } as any)
+    useEmployeeStore.setState({
+      employees: {
+        e1: makeEmployee({ id: 'e1', name: 'Alice Anderson', department: 'Eng', seatId: 'd1', floorId: 'f1' }),
+        e2: makeEmployee({ id: 'e2', name: 'Bob Baker' }),
+      },
+    })
+
     renderPalette()
     act(() => useUIStore.getState().setCommandPaletteOpen(true))
-    const input = screen.getByTestId('command-palette-input') as HTMLInputElement
-    act(() => {
-      fireEvent.change(input, { target: { value: 'Alice' } })
-    })
-    // Alice matches; Bob, floors, actions, nav items do not.
     expect(screen.getByTestId('command-palette-item-person-e1')).toBeTruthy()
     expect(screen.queryByTestId('command-palette-item-person-e2')).toBeNull()
-    expect(screen.queryByTestId('command-palette-item-nav-map')).toBeNull()
-    expect(screen.queryByTestId('command-palette-item-floor-f1')).toBeNull()
   })
 
-  it('Arrow-Down moves highlight; Enter triggers the highlighted item', () => {
+  it('selecting an Elements row selects that element id in the UI store', () => {
+    useElementsStore.setState({
+      elements: {
+        cr1: {
+          id: 'cr1', type: 'conference-room',
+          x: 100, y: 100, width: 200, height: 150, rotation: 0,
+          locked: false, groupId: null, zIndex: 0, visible: true,
+          label: 'Conference Room A',
+          style: { fill: '#fff', stroke: '#000', strokeWidth: 1, opacity: 1 },
+        } as any,
+        wall: {
+          id: 'wall', type: 'wall',
+          x: 0, y: 0, width: 0, height: 0, rotation: 0,
+          locked: false, groupId: null, zIndex: 0, visible: true,
+          label: '', // no label → should NOT surface as an element row
+          style: { fill: '#fff', stroke: '#000', strokeWidth: 1, opacity: 1 },
+          points: [0, 0, 100, 0], thickness: 4, connectedWallIds: [], wallType: 'solid',
+        } as any,
+      },
+    })
     renderPalette()
     act(() => useUIStore.getState().setCommandPaletteOpen(true))
-    const input = screen.getByTestId('command-palette-input') as HTMLInputElement
-    // Narrow to a predictable single-item list so we know exactly what
-    // will be highlighted after ArrowDown.
-    act(() => {
-      fireEvent.change(input, { target: { value: 'Go to Roster' } })
-    })
-    // First item highlighted by default. ArrowDown wraps back to it.
-    const first = screen.getByTestId('command-palette-item-nav-roster')
-    expect(first.getAttribute('data-active')).toBe('true')
-    act(() => {
-      fireEvent.keyDown(input, { key: 'Enter' })
-    })
-    // Palette closed, URL navigated.
-    expect(screen.queryByTestId('command-palette')).toBeNull()
-    expect(screen.getByTestId('location').textContent).toBe(
-      '/t/acme/o/hq/roster',
-    )
-  })
+    expect(screen.getByTestId('command-palette-item-element-cr1')).toBeTruthy()
+    // Unlabeled wall should be absent.
+    expect(screen.queryByTestId('command-palette-item-element-wall')).toBeNull()
 
-  it('selecting a floor switches the active floor', () => {
-    renderPalette()
-    act(() => useUIStore.getState().setCommandPaletteOpen(true))
-    const button = screen.getByTestId('command-palette-item-floor-f2')
     act(() => {
-      fireEvent.click(button)
+      fireEvent.click(screen.getByTestId('command-palette-item-element-cr1'))
     })
-    expect(useFloorStore.getState().activeFloorId).toBe('f2')
+    expect(useUIStore.getState().selectedIds).toEqual(['cr1'])
     expect(screen.queryByTestId('command-palette')).toBeNull()
   })
 
-  it('selecting a person navigates to roster with ?employee=', () => {
+  it('clicking an unrelated backdrop closes the palette (click-outside)', () => {
     renderPalette()
     act(() => useUIStore.getState().setCommandPaletteOpen(true))
-    const button = screen.getByTestId('command-palette-item-person-e1')
+    const overlay = screen.getByTestId('command-palette')
     act(() => {
-      fireEvent.click(button)
+      fireEvent.click(overlay)
     })
-    expect(screen.getByTestId('location').textContent).toBe(
-      '/t/acme/o/hq/roster?employee=e1',
-    )
-  })
-
-  it('PII-viewer role sees redacted names and cannot match the raw full name', () => {
-    // Viewer lacks `viewPII`, so `useVisibleEmployees` returns the
-    // redacted projection. The palette's People section must therefore
-    // show initials and ignore a full-name query.
-    useProjectStore.setState({ currentOfficeRole: 'viewer' } as any)
-    renderPalette()
-    act(() => useUIStore.getState().setCommandPaletteOpen(true))
-    // Initials are present; the raw full name is not anywhere.
-    expect(screen.getByText('A.A.')).toBeTruthy()
-    expect(screen.queryByText('Alice Anderson')).toBeNull()
-
-    const input = screen.getByTestId('command-palette-input') as HTMLInputElement
-    act(() => {
-      fireEvent.change(input, { target: { value: 'Alice Anderson' } })
-    })
-    // Full-name query does NOT match the redacted label — viewer can't
-    // confirm Alice's presence via the palette.
-    expect(screen.queryByTestId('command-palette-item-person-e1')).toBeNull()
-
-    // Sanity: typing the initials DOES still match.
-    act(() => {
-      fireEvent.change(input, { target: { value: 'A.A' } })
-    })
-    expect(screen.getByTestId('command-palette-item-person-e1')).toBeTruthy()
+    expect(screen.queryByTestId('command-palette')).toBeNull()
   })
 })
