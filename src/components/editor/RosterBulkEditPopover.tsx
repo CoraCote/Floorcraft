@@ -3,6 +3,7 @@ import { applyBulkEdit, type BulkEditPatch } from '../../lib/bulkEditEmployees'
 import { useEmployeeStore } from '../../stores/employeeStore'
 import { useUIStore } from '../../stores/uiStore'
 import type { EmployeeStatus } from '../../types/employee'
+import { EMPLOYEE_STATUSES } from '../../types/employee'
 
 interface Props {
   selectedIds: string[]
@@ -103,9 +104,9 @@ export function RosterBulkEditPopover({ selectedIds, onClose }: Props) {
         className="w-full mb-3 px-2 py-1 border border-gray-300 rounded text-sm bg-white"
       >
         <option value="">Leave unchanged</option>
-        <option value="active">Active</option>
-        <option value="on-leave">On leave</option>
-        <option value="departed">Departed</option>
+        {EMPLOYEE_STATUSES.map((s) => (
+          <option key={s} value={s}>{s}</option>
+        ))}
       </select>
 
       <div className="flex justify-end gap-2">

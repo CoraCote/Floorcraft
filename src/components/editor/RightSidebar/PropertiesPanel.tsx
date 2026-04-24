@@ -26,7 +26,8 @@ import {
   isWallElement,
 } from '../../../types/elements'
 import { computeSeatPositions } from '../../../lib/seatLayout'
-import type { TableElement, WorkstationElement, ConferenceRoomElement, CommonAreaElement, WallElement } from '../../../types/elements'
+import type { TableElement, WorkstationElement, ConferenceRoomElement, CommonAreaElement, WallElement, DeskElement, PrivateOfficeElement } from '../../../types/elements'
+import { SEAT_STATUS_OVERRIDES, type SeatStatus } from '../../../types/seatAssignment'
 
 /**
  * Controlled desk-id editor with on-blur uniqueness validation.
@@ -96,6 +97,52 @@ function DeskIdInput({
         }}
       />
       {error && <div className="text-xs text-red-600 mt-0.5">{error}</div>}
+    </div>
+  )
+}
+
+/**
+ * Opt-in override for a seat's status. The default (`assigned` when someone
+ * is on it, `unassigned` otherwise) is derived from the assignment and
+ * isn't offered here — picking one of those in a dropdown and then
+ * assigning/clearing somebody would desync the two truths. Only the three
+ * real overrides (`reserved`, `hot-desk`, `decommissioned`) plus "none" are
+ * surfaced.
+ */
+function SeatStatusOverridePicker({
+  elementId,
+  value,
+  disabled,
+}: {
+  elementId: string
+  value: SeatStatus | undefined
+  disabled?: boolean
+}) {
+  const updateElement = useElementsStore((s) => s.updateElement)
+  return (
+    <div>
+      <label className="text-xs font-medium text-gray-500 mb-1 block">
+        Seat status override
+      </label>
+      <select
+        className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500 bg-white"
+        value={value ?? ''}
+        disabled={disabled}
+        onChange={(e) => {
+          const v = e.target.value
+          // `undefined` (cleared) removes the key so the derivation kicks
+          // back in. Setting `null` would persist an explicit null through
+          // autosave, which is noisier than absence.
+          updateElement(elementId, {
+            seatStatus: v ? (v as SeatStatus) : undefined,
+          } as Partial<DeskElement | WorkstationElement | PrivateOfficeElement>)
+        }}
+      >
+        <option value="">None (derive from assignment)</option>
+        {SEAT_STATUS_OVERRIDES.map((s) => (
+          <option key={s} value={s}>{s}</option>
+        ))}
+      </select>
     </div>
   )
 }
@@ -428,6 +475,7 @@ export function PropertiesPanel() {
       {isDeskElement(el) && (
         <>
           <DeskIdInput elementId={el.id} value={el.deskId} disabled={inputDisabled} />
+          <SeatStatusOverridePicker elementId={el.id} value={el.seatStatus} disabled={inputDisabled} />
           <div>
             <label className="text-xs font-medium text-gray-500 mb-1 block">Assigned To</label>
             {el.assignedEmployeeId ? (
@@ -459,6 +507,7 @@ export function PropertiesPanel() {
       {isWorkstationElement(el) && (
         <>
           <DeskIdInput elementId={el.id} value={el.deskId} disabled={inputDisabled} />
+          <SeatStatusOverridePicker elementId={el.id} value={el.seatStatus} disabled={inputDisabled} />
           <div>
             <label className="text-xs font-medium text-gray-500 mb-1 block">Positions</label>
             <input
@@ -518,6 +567,7 @@ export function PropertiesPanel() {
       {isPrivateOfficeElement(el) && (
         <>
           <DeskIdInput elementId={el.id} value={el.deskId} disabled={inputDisabled} />
+          <SeatStatusOverridePicker elementId={el.id} value={el.seatStatus} disabled={inputDisabled} />
           <div>
             <label className="text-xs font-medium text-gray-500 mb-1 block">
               Assigned ({el.assignedEmployeeIds.length} / {el.capacity})

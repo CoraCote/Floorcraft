@@ -9,6 +9,7 @@ import {
   isPrivateOfficeElement,
 } from '../../types/elements'
 import { formatLength, toRealLength, LENGTH_UNIT_SUFFIX } from '../../lib/units'
+import { deriveSeatStatus } from '../../lib/seatStatus'
 
 /**
  * Thin status bar pinned to the bottom of the canvas. Surfaces:
@@ -34,6 +35,10 @@ export function StatusBar() {
     const elementCount = Object.keys(elements).length
 
     for (const el of Object.values(elements)) {
+      // Decommissioned seats are treated as "not counted" in occupancy math —
+      // they still render, just dimmed, so the planner can see them without
+      // them skewing the headline utilisation number.
+      if (deriveSeatStatus(el) === 'decommissioned') continue
       if (isDeskElement(el)) {
         totalDesks += 1
         if (el.assignedEmployeeId !== null) {

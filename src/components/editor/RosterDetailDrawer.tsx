@@ -3,9 +3,11 @@ import { AlertCircle, X } from 'lucide-react'
 import { useEmployeeStore } from '../../stores/employeeStore'
 import { useFloorStore } from '../../stores/floorStore'
 import { useUIStore } from '../../stores/uiStore'
+import { useToastStore } from '../../stores/toastStore'
 import { useCan } from '../../hooks/useCan'
 import type { Employee, EmployeeStatus, LeaveType } from '../../types/employee'
 import { EMPLOYEE_STATUSES, EMPLOYMENT_TYPES, LEAVE_TYPES } from '../../types/employee'
+import { findManagerCycle } from '../../lib/managerChain'
 
 interface Props {
   employeeId: string
@@ -291,9 +293,25 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
               <select
                 className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
                 value={danglingManager ? '' : (employee.managerId ?? '')}
-                onChange={(e) =>
-                  updateEmployee(employee.id, { managerId: e.target.value || null })
-                }
+                onChange={(e) => {
+                  const candidate = e.target.value || null
+                  const cycle = findManagerCycle(employees, employee.id, candidate)
+                  if (cycle) {
+                    // Rendering the loop as "A → B → A" (not the raw ids)
+                    // is what makes the toast actionable — the user needs
+                    // the human names to find the right record to fix.
+                    const names = cycle
+                      .map((id) => employees[id]?.name ?? id)
+                      .join(' → ')
+                    useToastStore.getState().push({
+                      tone: 'error',
+                      title: 'Would create a management loop',
+                      body: names,
+                    })
+                    return
+                  }
+                  updateEmployee(employee.id, { managerId: candidate })
+                }}
                 disabled={!canEdit}
               >
                 <option value="">— none —</option>

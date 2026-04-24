@@ -3,6 +3,19 @@ import type { DeskElement, WorkstationElement, PrivateOfficeElement } from '../.
 import { isDeskElement, isWorkstationElement } from '../../../types/elements'
 import { useUIStore } from '../../../stores/uiStore'
 import { useEmployeeStore } from '../../../stores/employeeStore'
+import { deriveSeatStatus } from '../../../lib/seatStatus'
+
+/** Visual tweaks driven off the derived seat status — kept here so each
+ *  sub-renderer reads the same source of truth and the policy lives in one
+ *  place ("decommissioned = 40% opacity; reserved = orange outline"). */
+const RESERVED_STROKE = '#F59E0B' // amber-500
+function seatStatusVisuals(el: DeskElement | WorkstationElement | PrivateOfficeElement) {
+  const status = deriveSeatStatus(el)
+  return {
+    opacityMul: status === 'decommissioned' ? 0.4 : 1,
+    overrideStroke: status === 'reserved' ? RESERVED_STROKE : null,
+  }
+}
 
 interface DeskRendererProps {
   element: DeskElement | WorkstationElement | PrivateOfficeElement
@@ -39,7 +52,10 @@ function DeskElementRenderer({ element, isSelected, employees, getDepartmentColo
   const departmentColor = employee?.department ? getDepartmentColor(employee.department) : null
   const isHotDesk = element.type === 'hot-desk'
   const fillColor = isHotDesk ? '#FEF9C3' : '#FEF3C7'
-  const borderColor = isSelected ? '#3B82F6' : (departmentColor || '#9CA3AF')
+  const { opacityMul, overrideStroke } = seatStatusVisuals(element)
+  const borderColor = isSelected
+    ? '#3B82F6'
+    : (overrideStroke || departmentColor || '#9CA3AF')
   const borderDash = employee ? undefined : [4, 4]
 
   return (
@@ -51,10 +67,10 @@ function DeskElementRenderer({ element, isSelected, employees, getDepartmentColo
         height={element.height}
         fill={fillColor}
         stroke={borderColor}
-        strokeWidth={isSelected ? 2.5 : 1.5}
+        strokeWidth={isSelected ? 2.5 : overrideStroke ? 2.5 : 1.5}
         cornerRadius={4}
         dash={borderDash}
-        opacity={element.style.opacity}
+        opacity={element.style.opacity * opacityMul}
       />
 
       {/* Desk ID */}
@@ -123,7 +139,10 @@ interface WorkstationRendererProps {
 
 function WorkstationRenderer({ element, isSelected, employees, getDepartmentColor }: WorkstationRendererProps) {
   const slotWidth = element.width / element.positions
-  const borderColor = isSelected ? '#3B82F6' : element.style.stroke
+  const { opacityMul, overrideStroke } = seatStatusVisuals(element)
+  const borderColor = isSelected
+    ? '#3B82F6'
+    : (overrideStroke || element.style.stroke)
 
   return (
     <Group rotation={element.rotation} listening={!element.locked}>
@@ -134,9 +153,9 @@ function WorkstationRenderer({ element, isSelected, employees, getDepartmentColo
         height={element.height}
         fill={element.style.fill}
         stroke={borderColor}
-        strokeWidth={isSelected ? 2.5 : element.style.strokeWidth}
+        strokeWidth={isSelected ? 2.5 : overrideStroke ? 2.5 : element.style.strokeWidth}
         cornerRadius={4}
-        opacity={element.style.opacity}
+        opacity={element.style.opacity * opacityMul}
       />
 
       {/* Desk ID */}
@@ -221,6 +240,7 @@ function PrivateOfficeRenderer({ element, isSelected, employees, getDepartmentCo
   const firstDeptColor = assignedEmployees[0]?.department
     ? getDepartmentColor(assignedEmployees[0].department)
     : null
+  const { opacityMul, overrideStroke } = seatStatusVisuals(element)
 
   return (
     <Group rotation={element.rotation} listening={!element.locked}>
@@ -230,10 +250,14 @@ function PrivateOfficeRenderer({ element, isSelected, employees, getDepartmentCo
         width={element.width}
         height={element.height}
         fill="#EFF6FF"
-        stroke={isSelected ? '#3B82F6' : (firstDeptColor || borderColor)}
+        stroke={
+          isSelected
+            ? '#3B82F6'
+            : (overrideStroke || firstDeptColor || borderColor)
+        }
         strokeWidth={isSelected ? 3 : 2}
         cornerRadius={6}
-        opacity={element.style.opacity}
+        opacity={element.style.opacity * opacityMul}
       />
 
       {/* Desk ID */}

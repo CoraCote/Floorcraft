@@ -1,3 +1,5 @@
+import type { SeatStatus } from './seatAssignment'
+
 export type ElementType =
   | 'wall'
   | 'door'
@@ -120,6 +122,12 @@ export interface DeskElement extends BaseElement {
   deskId: string           // e.g., "D-101"
   assignedEmployeeId: string | null
   capacity: 1
+  /**
+   * Optional override layered on top of the derived status. When absent
+   * the seat's status is `assigned` (if someone is on it) or `unassigned`.
+   * See `deriveSeatStatus` in `src/lib/seatStatus.ts`.
+   */
+  seatStatus?: SeatStatus
 }
 
 export interface WorkstationElement extends BaseElement {
@@ -127,6 +135,7 @@ export interface WorkstationElement extends BaseElement {
   deskId: string
   positions: number        // how many positions (N seats)
   assignedEmployeeIds: string[]
+  seatStatus?: SeatStatus
 }
 
 export interface PrivateOfficeElement extends BaseElement {
@@ -135,6 +144,7 @@ export interface PrivateOfficeElement extends BaseElement {
   deskId: string
   capacity: 1 | 2
   assignedEmployeeIds: string[]
+  seatStatus?: SeatStatus
 }
 
 // Non-assignable space elements

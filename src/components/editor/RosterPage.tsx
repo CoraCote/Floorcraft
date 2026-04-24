@@ -22,7 +22,7 @@ import { useToastStore } from '../../stores/toastStore'
 import { useCan } from '../../hooks/useCan'
 import { deleteEmployee, unassignEmployee } from '../../lib/seatAssignment'
 import type { Employee, EmployeeStatus } from '../../types/employee'
-import { EMPLOYEE_STATUSES } from '../../types/employee'
+import { EMPLOYEE_STATUSES, EMPLOYEE_STATUS_PILL_CLASSES } from '../../types/employee'
 import { RosterDetailDrawer } from './RosterDetailDrawer'
 import { RosterBulkEditPopover } from './RosterBulkEditPopover'
 import { ConfirmDialog } from './ConfirmDialog'
@@ -2174,11 +2174,7 @@ function PersonCard({
   canEdit: boolean
 }) {
   const statusTone =
-    employee.status === 'active'
-      ? 'bg-emerald-100 text-emerald-700'
-      : employee.status === 'on-leave'
-        ? 'bg-amber-100 text-amber-700'
-        : 'bg-gray-100 text-gray-500'
+    EMPLOYEE_STATUS_PILL_CLASSES[employee.status] ?? 'bg-gray-100 text-gray-500'
   return (
     <div
       onDoubleClick={(e) => {
