@@ -77,20 +77,29 @@ beforeEach(() => {
   } as any)
 })
 
-describe('TopBar: PNG export button', () => {
-  it('renders the Export PNG button for an editor (has viewReports)', () => {
+describe('TopBar: PNG export menu item', () => {
+  // Opens the Export dropdown. The PDF/PNG quick-export buttons were
+  // collapsed into a menu to reclaim horizontal space in the TopBar —
+  // tests have to open the menu before the items become queryable.
+  function openExportMenu() {
+    fireEvent.click(screen.getByRole('button', { name: /^export/i }))
+  }
+
+  it('renders the Export PNG menu item for an editor (has viewReports)', () => {
     useProjectStore.setState({ currentOfficeRole: 'editor' } as any)
     renderTopBar()
+    openExportMenu()
     expect(
-      screen.getByRole('button', { name: /export png/i }),
+      screen.getByRole('menuitem', { name: /export png/i }),
     ).toBeInTheDocument()
   })
 
-  it('hides the Export PNG button for a viewer (lacks viewReports)', () => {
+  it('hides the Export PNG menu item for a viewer (lacks viewReports)', () => {
     useProjectStore.setState({ currentOfficeRole: 'viewer' } as any)
     renderTopBar()
+    openExportMenu()
     expect(
-      screen.queryByRole('button', { name: /export png/i }),
+      screen.queryByRole('menuitem', { name: /export png/i }),
     ).not.toBeInTheDocument()
   })
 
@@ -100,7 +109,8 @@ describe('TopBar: PNG export button', () => {
     setActiveStage(fakeStage)
     renderTopBar()
 
-    fireEvent.click(screen.getByRole('button', { name: /export png/i }))
+    openExportMenu()
+    fireEvent.click(screen.getByRole('menuitem', { name: /export png/i }))
     expect(exportFloorAsPngMock).toHaveBeenCalledTimes(1)
     const [stageArg, opts] = exportFloorAsPngMock.mock.calls[0] as unknown as [
       Konva.Stage,

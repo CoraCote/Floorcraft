@@ -11,6 +11,7 @@ import {
   Maximize2, Minimize2, PanelRightOpen, PanelRightClose,
   Cloud, CloudOff, UploadCloud, X as XIcon,
   Ruler, Grid3x3, Printer, Image as ImageIcon,
+  ChevronDown, Link2,
 } from 'lucide-react'
 import { buildWayfindingPdf, buildFileName } from '../../lib/pdfExport'
 import { exportFloorAsPng } from '../../lib/pngExport'
@@ -67,6 +68,40 @@ export function TopBar() {
   // somehow lands here) cannot.
   const canShareMap = useCan('editMap')
   const [shareLinkOpen, setShareLinkOpen] = useState(false)
+
+  // Share + Export dropdown menus. Both follow the same lightweight
+  // pattern as ViewAsMenu / UserMenu — a ref on the wrapper, a single
+  // click-outside listener, and Escape to close. Kept inline rather than
+  // extracted because these menus are tightly coupled to TopBar state
+  // (permission gates + the handlers defined below) and abstracting would
+  // add indirection for two call sites.
+  const [shareMenuOpen, setShareMenuOpen] = useState(false)
+  const [exportMenuOpen, setExportMenuOpen] = useState(false)
+  const shareMenuRef = useRef<HTMLDivElement>(null)
+  const exportMenuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function onPointer(e: MouseEvent) {
+      if (shareMenuRef.current && !shareMenuRef.current.contains(e.target as Node)) {
+        setShareMenuOpen(false)
+      }
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setExportMenuOpen(false)
+      }
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setShareMenuOpen(false)
+        setExportMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onPointer)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onPointer)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [])
 
   const [editing, setEditing] = useState(false)
   const [nameValue, setNameValue] = useState('')
@@ -426,78 +461,121 @@ export function TopBar() {
         {rightSidebarOpen ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
       </button>
 
-      <button
-        onClick={() => setShareModalOpen(true)}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded"
-      >
-        <Share2 size={14} />
-        Share
-      </button>
-
-      {/* D6 view-only share link dialog. Separate surface from the existing
-          collaborator Share modal because this is the "anonymous, time-
-          boxed, read-only" flow — conceptually different from "invite a
-          teammate to edit". Gated behind editMap so viewers can't mint
-          links out of their own read-only access. */}
-      {canShareMap && (
+      {/*
+        Share dropdown. Collapses the old "Share" (invite collaborators)
+        and "Share link" (view-only token) buttons into a single menu so
+        the TopBar doesn't bleed horizontal space. Always renders its
+        trigger — "Invite collaborators" is available to every role; the
+        "Create view-only link" item is gated behind editMap so viewers
+        can't mint links from their own read-only access.
+      */}
+      <div className="relative" ref={shareMenuRef}>
         <button
-          onClick={() => setShareLinkOpen(true)}
+          onClick={() => setShareMenuOpen((o) => !o)}
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded"
-          aria-label="Share link"
-          title="Create a view-only share link"
+          aria-haspopup="menu"
+          aria-expanded={shareMenuOpen}
         >
           <Share2 size={14} />
-          Share link
+          Share
+          <ChevronDown size={14} />
         </button>
-      )}
+        {shareMenuOpen && (
+          <div
+            role="menu"
+            className="absolute right-0 mt-1 w-56 bg-white border rounded shadow z-30 py-1"
+          >
+            <button
+              role="menuitem"
+              onClick={() => {
+                setShareMenuOpen(false)
+                setShareModalOpen(true)
+              }}
+              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
+            >
+              <Share2 size={14} /> Invite collaborators
+            </button>
+            {canShareMap && (
+              <button
+                role="menuitem"
+                onClick={() => {
+                  setShareMenuOpen(false)
+                  setShareLinkOpen(true)
+                }}
+                className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
+              >
+                <Link2 size={14} /> Create view-only link
+              </button>
+            )}
+          </div>
+        )}
+      </div>
       <ShareLinkDialog open={shareLinkOpen} onClose={() => setShareLinkOpen(false)} />
 
       {/*
-        Wayfinding PDF — a print-ready handout with a legend. Separate from
-        the multi-format Export modal because facilities managers want
-        one-click-to-print without picking PDF vs PNG vs JSON every time.
-        Gated behind `viewReports`: the same audience (planners, HR
-        admins, owners) that already sees utilization reports is the one
-        that pre-posts floor plans before a move.
+        Export dropdown. Primary action — styled blue to match the old
+        single "Export" CTA. Quick-export items (PDF, PNG) are gated
+        behind viewReports because the same audience (planners, HR
+        admins, owners) that sees utilization reports is the one that
+        pre-posts floor plans before a move. "More formats…" always
+        renders so every user has a path to the multi-format dialog.
       */}
-      {canViewReports && (
+      <div className="relative" ref={exportMenuRef}>
         <button
-          onClick={handleExportWayfindingPdf}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded"
-          title="Download a print-ready PDF of this floor"
-          aria-label="Export PDF"
+          onClick={() => setExportMenuOpen((o) => !o)}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded"
+          aria-haspopup="menu"
+          aria-expanded={exportMenuOpen}
         >
-          <Printer size={14} />
-          Export PDF
+          <Download size={14} />
+          Export
+          <ChevronDown size={14} />
         </button>
-      )}
-
-      {/*
-        PNG raster — same audience as the wayfinding PDF but for lighter
-        handoffs (Slack, email, internal wikis). Sits next to the PDF
-        button because they share the "one-click, download now" mental
-        model; the blue Export button to the right still owns the
-        multi-format dialog for power users.
-      */}
-      {canViewReports && (
-        <button
-          onClick={handleExportPng}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded"
-          title="Download a PNG image of this floor"
-          aria-label="Export PNG"
-        >
-          <ImageIcon size={14} />
-          Export PNG
-        </button>
-      )}
-
-      <button
-        onClick={() => setExportDialogOpen(true)}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded"
-      >
-        <Download size={14} />
-        Export
-      </button>
+        {exportMenuOpen && (
+          <div
+            role="menu"
+            className="absolute right-0 mt-1 w-56 bg-white border rounded shadow z-30 py-1"
+          >
+            {canViewReports && (
+              <button
+                role="menuitem"
+                onClick={() => {
+                  setExportMenuOpen(false)
+                  handleExportWayfindingPdf()
+                }}
+                className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
+                title="Download a print-ready PDF of this floor"
+              >
+                <Printer size={14} /> Export PDF (wayfinding)
+              </button>
+            )}
+            {canViewReports && (
+              <button
+                role="menuitem"
+                onClick={() => {
+                  setExportMenuOpen(false)
+                  handleExportPng()
+                }}
+                className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
+                title="Download a PNG image of this floor"
+              >
+                <ImageIcon size={14} /> Export PNG
+              </button>
+            )}
+            {canViewReports && <div className="my-1 border-t border-gray-100" />}
+            <button
+              role="menuitem"
+              onClick={() => {
+                setExportMenuOpen(false)
+                setExportDialogOpen(true)
+              }}
+              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
+            >
+              <Download size={14} /> More formats…
+            </button>
+          </div>
+        )}
+      </div>
 
       <div className="w-px h-6 bg-gray-200" />
 

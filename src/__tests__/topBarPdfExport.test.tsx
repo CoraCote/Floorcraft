@@ -67,20 +67,29 @@ beforeEach(() => {
   } as any)
 })
 
-describe('TopBar: wayfinding PDF export button', () => {
-  it('renders the Export PDF button for an editor', () => {
+describe('TopBar: wayfinding PDF export menu item', () => {
+  // Opens the Export dropdown. The PDF/PNG quick-export buttons were
+  // collapsed into a menu to reclaim horizontal space in the TopBar —
+  // tests have to open the menu before the items become queryable.
+  function openExportMenu() {
+    fireEvent.click(screen.getByRole('button', { name: /^export/i }))
+  }
+
+  it('renders the Export PDF menu item for an editor', () => {
     useProjectStore.setState({ currentOfficeRole: 'editor' } as any)
     renderTopBar()
+    openExportMenu()
     expect(
-      screen.getByRole('button', { name: /export pdf/i }),
+      screen.getByRole('menuitem', { name: /export pdf/i }),
     ).toBeInTheDocument()
   })
 
-  it('hides the Export PDF button for a viewer', () => {
+  it('hides the Export PDF menu item for a viewer', () => {
     useProjectStore.setState({ currentOfficeRole: 'viewer' } as any)
     renderTopBar()
+    openExportMenu()
     expect(
-      screen.queryByRole('button', { name: /export pdf/i }),
+      screen.queryByRole('menuitem', { name: /export pdf/i }),
     ).not.toBeInTheDocument()
   })
 
@@ -90,7 +99,8 @@ describe('TopBar: wayfinding PDF export button', () => {
     setActiveStage(fakeStage)
     renderTopBar()
 
-    fireEvent.click(screen.getByRole('button', { name: /export pdf/i }))
+    openExportMenu()
+    fireEvent.click(screen.getByRole('menuitem', { name: /export pdf/i }))
     expect(buildWayfindingPdfMock).toHaveBeenCalledTimes(1)
     const arg = (buildWayfindingPdfMock.mock.calls[0] as unknown[])[0] as {
       projectName: string
