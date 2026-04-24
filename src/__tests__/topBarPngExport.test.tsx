@@ -78,11 +78,11 @@ beforeEach(() => {
 })
 
 describe('TopBar: PNG export menu item', () => {
-  // Opens the Export dropdown. The PDF/PNG quick-export buttons were
-  // collapsed into a menu to reclaim horizontal space in the TopBar —
-  // tests have to open the menu before the items become queryable.
+  // Opens the unified File dropdown. Wave 8B collapsed the standalone
+  // Export menu into the File menu, so callers walk through the File
+  // trigger to reach the Export PDF / PNG items.
   function openExportMenu() {
-    fireEvent.click(screen.getByRole('button', { name: /^export/i }))
+    fireEvent.click(screen.getByTestId('file-menu-trigger'))
   }
 
   it('renders the Export PNG menu item for an editor (has viewReports)', () => {
@@ -103,7 +103,7 @@ describe('TopBar: PNG export menu item', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('invokes exportFloorAsPng with the active stage and a project/floor/date filename', () => {
+  it('invokes exportFloorAsPng with the active stage and a project/floor/date filename', async () => {
     useProjectStore.setState({ currentOfficeRole: 'editor' } as any)
     const fakeStage = { toDataURL: () => 'data:image/png;base64,AAAA' } as unknown as Konva.Stage
     setActiveStage(fakeStage)
@@ -111,6 +111,9 @@ describe('TopBar: PNG export menu item', () => {
 
     openExportMenu()
     fireEvent.click(screen.getByRole('menuitem', { name: /export png/i }))
+    // FileMenu defers handler dispatch via queueMicrotask — flush before
+    // asserting the export library was called.
+    await Promise.resolve()
     expect(exportFloorAsPngMock).toHaveBeenCalledTimes(1)
     const [stageArg, opts] = exportFloorAsPngMock.mock.calls[0] as unknown as [
       Konva.Stage,

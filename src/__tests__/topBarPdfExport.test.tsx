@@ -68,11 +68,11 @@ beforeEach(() => {
 })
 
 describe('TopBar: wayfinding PDF export menu item', () => {
-  // Opens the Export dropdown. The PDF/PNG quick-export buttons were
-  // collapsed into a menu to reclaim horizontal space in the TopBar —
-  // tests have to open the menu before the items become queryable.
+  // Opens the unified File dropdown. Wave 8B collapsed the standalone
+  // Export menu into the File menu, so callers walk through the File
+  // trigger to reach the Export PDF / PNG items.
   function openExportMenu() {
-    fireEvent.click(screen.getByRole('button', { name: /^export/i }))
+    fireEvent.click(screen.getByTestId('file-menu-trigger'))
   }
 
   it('renders the Export PDF menu item for an editor', () => {
@@ -93,7 +93,7 @@ describe('TopBar: wayfinding PDF export menu item', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('calls buildWayfindingPdf when clicked and the canvas is mounted', () => {
+  it('calls buildWayfindingPdf when clicked and the canvas is mounted', async () => {
     useProjectStore.setState({ currentOfficeRole: 'editor' } as any)
     const fakeStage = { toDataURL: () => 'data:image/png;base64,AAAA' } as unknown as Konva.Stage
     setActiveStage(fakeStage)
@@ -101,6 +101,10 @@ describe('TopBar: wayfinding PDF export menu item', () => {
 
     openExportMenu()
     fireEvent.click(screen.getByRole('menuitem', { name: /export pdf/i }))
+    // FileMenu defers handler dispatch via queueMicrotask so the menu can
+    // commit-close before the handler runs — flush microtasks before the
+    // assertion.
+    await Promise.resolve()
     expect(buildWayfindingPdfMock).toHaveBeenCalledTimes(1)
     const arg = (buildWayfindingPdfMock.mock.calls[0] as unknown[])[0] as {
       projectName: string

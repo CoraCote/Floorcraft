@@ -7,12 +7,13 @@ import { useFloorStore } from '../../stores/floorStore'
 import { useNeighborhoodStore } from '../../stores/neighborhoodStore'
 import { useShallow } from 'zustand/react/shallow'
 import {
-  Undo2, Redo2, ZoomIn, ZoomOut, Share2, Download,
+  Undo2, Redo2, ZoomIn, ZoomOut,
   Maximize2, Minimize2, PanelRightOpen, PanelRightClose,
   Cloud, CloudOff, UploadCloud, X as XIcon,
   Ruler, Grid3x3, Printer, Image as ImageIcon,
-  ChevronDown, Link2, Eye, Check,
+  ChevronDown, Link2, Eye, Check, Pencil, Share2, Download,
 } from 'lucide-react'
+import { FileMenu, type FileMenuGroup } from './TopBar/FileMenu'
 import { buildWayfindingPdf, buildFileName } from '../../lib/pdfExport'
 import { exportFloorAsPng } from '../../lib/pngExport'
 import { buildExportFilename } from '../../lib/exportFilename'
@@ -71,35 +72,21 @@ export function TopBar() {
   const canShareMap = useCan('editMap')
   const [shareLinkOpen, setShareLinkOpen] = useState(false)
 
-  // Share + Export + View dropdown menus. All three follow the same
-  // lightweight pattern as ViewAsMenu / UserMenu — a ref on the wrapper, a
-  // single click-outside listener, and Escape to close. Kept inline rather
-  // than extracted because these menus are tightly coupled to TopBar state
-  // (permission gates + the handlers defined below) and abstracting would
-  // add indirection for three call sites.
-  const [shareMenuOpen, setShareMenuOpen] = useState(false)
-  const [exportMenuOpen, setExportMenuOpen] = useState(false)
+  // View dropdown stays inline — its items are tightly coupled to the
+  // canvas store (zoom, grid, dimensions). Share + Export moved into the
+  // unified FileMenu below as part of Wave 8B; that component owns its
+  // own click-outside / escape handling.
   const [viewMenuOpen, setViewMenuOpen] = useState(false)
-  const shareMenuRef = useRef<HTMLDivElement>(null)
-  const exportMenuRef = useRef<HTMLDivElement>(null)
   const viewMenuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     function onPointer(e: MouseEvent) {
-      if (shareMenuRef.current && !shareMenuRef.current.contains(e.target as Node)) {
-        setShareMenuOpen(false)
-      }
-      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
-        setExportMenuOpen(false)
-      }
       if (viewMenuRef.current && !viewMenuRef.current.contains(e.target as Node)) {
         setViewMenuOpen(false)
       }
     }
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') {
-        setShareMenuOpen(false)
-        setExportMenuOpen(false)
         setViewMenuOpen(false)
       }
     }
@@ -240,6 +227,75 @@ export function TopBar() {
     URL.revokeObjectURL(url)
   }
 
+  // Build the File-menu groups from the same handlers and permission gates
+  // the standalone Share/Export dropdowns used to consult. Items are
+  // filtered by permission so a viewer never sees an affordance they
+  // cannot act on; the menu component itself stays presentational.
+  const fileMenuGroups: FileMenuGroup[] = [
+    {
+      heading: 'Project',
+      items: [
+        {
+          id: 'rename',
+          label: 'Rename project',
+          icon: Pencil,
+          onSelect: () => {
+            setNameValue(project?.name || '')
+            setEditing(true)
+          },
+        },
+      ],
+    },
+    {
+      heading: 'Export',
+      items: [
+        ...(canViewReports
+          ? [
+              {
+                id: 'export-pdf',
+                label: 'Export PDF (wayfinding)',
+                icon: Printer,
+                onSelect: () => handleExportWayfindingPdf(),
+              },
+              {
+                id: 'export-png',
+                label: 'Export PNG',
+                icon: ImageIcon,
+                onSelect: () => handleExportPng(),
+              },
+            ]
+          : []),
+        {
+          id: 'export-more',
+          label: 'More formats…',
+          icon: Download,
+          onSelect: () => setExportDialogOpen(true),
+        },
+      ],
+    },
+    {
+      heading: 'Share',
+      items: [
+        {
+          id: 'share-invite',
+          label: 'Invite collaborators',
+          icon: Share2,
+          onSelect: () => setShareModalOpen(true),
+        },
+        ...(canShareMap
+          ? [
+              {
+                id: 'share-link',
+                label: 'Create view-only link',
+                icon: Link2,
+                onSelect: () => setShareLinkOpen(true),
+              },
+            ]
+          : []),
+      ],
+    },
+  ]
+
   return (
     <div className="h-14 bg-white border-b border-gray-200 dark:bg-gray-900 dark:border-gray-800 flex items-center px-4 gap-3 flex-shrink-0">
       {/* ───── Identity cluster ─────
@@ -274,6 +330,12 @@ export function TopBar() {
           </button>
         )}
       </div>
+
+      {/* Unified File menu — Wave 8B. Consolidates rename, export, and
+          share into a single Linear/JSON-Crack-style dropdown so the
+          TopBar's right cluster reads as actions on the canvas, not on
+          the file. */}
+      <FileMenu groups={fileMenuGroups} />
 
       <SaveIndicator saveState={saveState} lastSavedAt={lastSavedAt} />
 
@@ -487,121 +549,11 @@ export function TopBar() {
           : <PanelRightOpen size={16} aria-hidden="true" />}
       </button>
 
-      {/*
-        Share dropdown. Collapses the old "Share" (invite collaborators)
-        and "Share link" (view-only token) buttons into a single menu so
-        the TopBar doesn't bleed horizontal space. Always renders its
-        trigger — "Invite collaborators" is available to every role; the
-        "Create view-only link" item is gated behind editMap so viewers
-        can't mint links from their own read-only access.
-      */}
-      <div className="relative" ref={shareMenuRef}>
-        <button
-          onClick={() => setShareMenuOpen((o) => !o)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800 rounded"
-          aria-haspopup="menu"
-          aria-expanded={shareMenuOpen}
-        >
-          <Share2 size={14} aria-hidden="true" />
-          Share
-          <ChevronDown size={14} aria-hidden="true" />
-        </button>
-        {shareMenuOpen && (
-          <div
-            role="menu"
-            className="absolute right-0 mt-1 w-56 bg-white border border-gray-200 rounded shadow dark:bg-gray-900 dark:border-gray-700 dark:shadow-black/40 z-30 py-1"
-          >
-            <button
-              role="menuitem"
-              onClick={() => {
-                setShareMenuOpen(false)
-                setShareModalOpen(true)
-              }}
-              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800/50"
-            >
-              <Share2 size={14} aria-hidden="true" /> Invite collaborators
-            </button>
-            {canShareMap && (
-              <button
-                role="menuitem"
-                onClick={() => {
-                  setShareMenuOpen(false)
-                  setShareLinkOpen(true)
-                }}
-                className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800/50"
-              >
-                <Link2 size={14} aria-hidden="true" /> Create view-only link
-              </button>
-            )}
-          </div>
-        )}
-      </div>
+      {/* Share + Export collapsed into the FileMenu at the left of the
+          TopBar (Wave 8B). The view-only link dialog stays mounted here
+          because it's owned by the share-link button — the FileMenu only
+          flips its open state via setShareLinkOpen. */}
       <ShareLinkDialog open={shareLinkOpen} onClose={() => setShareLinkOpen(false)} />
-
-      {/*
-        Export dropdown. Primary action — styled blue to match the old
-        single "Export" CTA. Quick-export items (PDF, PNG) are gated
-        behind viewReports because the same audience (planners, HR
-        admins, owners) that sees utilization reports is the one that
-        pre-posts floor plans before a move. "More formats…" always
-        renders so every user has a path to the multi-format dialog.
-      */}
-      <div className="relative" ref={exportMenuRef}>
-        <button
-          onClick={() => setExportMenuOpen((o) => !o)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded"
-          aria-haspopup="menu"
-          aria-expanded={exportMenuOpen}
-        >
-          <Download size={14} aria-hidden="true" />
-          Export
-          <ChevronDown size={14} aria-hidden="true" />
-        </button>
-        {exportMenuOpen && (
-          <div
-            role="menu"
-            className="absolute right-0 mt-1 w-56 bg-white border border-gray-200 rounded shadow dark:bg-gray-900 dark:border-gray-700 dark:shadow-black/40 z-30 py-1"
-          >
-            {canViewReports && (
-              <button
-                role="menuitem"
-                onClick={() => {
-                  setExportMenuOpen(false)
-                  handleExportWayfindingPdf()
-                }}
-                className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800/50"
-                title="Download a print-ready PDF of this floor"
-              >
-                <Printer size={14} aria-hidden="true" /> Export PDF (wayfinding)
-              </button>
-            )}
-            {canViewReports && (
-              <button
-                role="menuitem"
-                onClick={() => {
-                  setExportMenuOpen(false)
-                  handleExportPng()
-                }}
-                className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800/50"
-                title="Download a PNG image of this floor"
-              >
-                <ImageIcon size={14} aria-hidden="true" /> Export PNG
-              </button>
-            )}
-            {canViewReports && <div className="my-1 border-t border-gray-100 dark:border-gray-800" />}
-            <button
-              role="menuitem"
-              onClick={() => {
-                setExportMenuOpen(false)
-                setExportDialogOpen(true)
-              }}
-              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800/50"
-            >
-              <Download size={14} aria-hidden="true" /> More formats…
-            </button>
-          </div>
-        )}
-      </div>
 
       {/* MAP / ROSTER view toggle. React Router owns the active state so
           we don't need UI-store bookkeeping. Moved to the action cluster
