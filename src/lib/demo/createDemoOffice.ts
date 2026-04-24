@@ -101,6 +101,7 @@ export function buildDemoOfficePayload(
       coverageEmployeeId: null,
       leaveNotes: null,
       departureDate: null,
+      pendingStatusChanges: [],
       createdAt: now,
     }
     employees[id] = employee

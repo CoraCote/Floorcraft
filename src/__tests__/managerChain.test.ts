@@ -28,6 +28,7 @@ function emp(id: string, managerId: string | null = null): Employee {
     accommodations: [],
     seatId: null,
     floorId: null,
+    pendingStatusChanges: [],
     createdAt: new Date().toISOString(),
   }
 }

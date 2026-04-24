@@ -48,6 +48,7 @@ function seedEmployee(accommodations: Accommodation[] = []) {
         officeDays: [], startDate: null, endDate: null,
         equipmentNeeds: [], equipmentStatus: 'not-needed', photoUrl: null, tags: [],
         accommodations,
+        pendingStatusChanges: [],
         seatId: null, floorId: null, leaveType: null, expectedReturnDate: null,
         coverageEmployeeId: null, leaveNotes: null, departureDate: null,
         createdAt: new Date().toISOString(),

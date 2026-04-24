@@ -31,6 +31,7 @@ function makeEmployee(overrides: Partial<Employee> = {}): Employee {
     managerId: null, employmentType: 'full-time', officeDays: [],
     startDate: null, endDate: null, equipmentNeeds: [], equipmentStatus: 'not-needed',
     photoUrl: null, tags: [], accommodations: [],
+    pendingStatusChanges: [],
     seatId: null, floorId: null,
     status: 'active',
     leaveType: null, expectedReturnDate: null, coverageEmployeeId: null,

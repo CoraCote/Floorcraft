@@ -28,6 +28,10 @@ import { currentUserOfficeRole } from '../../lib/offices/currentUserOfficeRole'
 import { useOfficeSync } from '../../lib/offices/useOfficeSync'
 import { useSession } from '../../lib/auth/session'
 import { isEmployeeStatus, type Employee } from '../../types/employee'
+import { migrateEmployees } from '../../lib/offices/loadFromLegacyPayload'
+import { commitDueStatusChanges } from '../../lib/commitDueStatusChanges'
+import { todayIsoDate } from '../../lib/time'
+import { useEffectiveDateTick } from '../../hooks/useEffectiveDateTick'
 import type { Project } from '../../types/project'
 
 type ShellState = 'loading' | 'not_found' | 'ready'
@@ -57,6 +61,7 @@ export function ProjectShell() {
 
   useKeyboardShortcuts()
   useUndoDataLossToast()
+  useEffectiveDateTick()
   const { overwrite } = useOfficeSync()
 
   // Keep the browser tab title in sync with the project + view so users
@@ -105,18 +110,31 @@ export function ProjectShell() {
       // back-fill employee status for legacy rows.
       const p = office.payload as Record<string, unknown>
       const rawEmployees = (p.employees ?? {}) as Record<string, Employee>
-      const migratedEmployees: Record<string, Employee> = {}
-      for (const [id, e] of Object.entries(rawEmployees)) {
-        migratedEmployees[id] = {
-          ...e,
-          status: isEmployeeStatus(e.status) ? e.status : 'active',
+      // Route through the shared migration helper so the pending-status
+      // queue gets back-filled / scrubbed the same way a legacy autosave
+      // would — then apply any transitions that are already due at load
+      // time, so a project opened on Monday with Friday-effective changes
+      // lands in the right state before the user sees anything.
+      const migratedEmployees = migrateEmployees(
+        rawEmployees as unknown as Record<string, unknown>,
+      ) as Record<string, Employee>
+      const { nextEmployees } = commitDueStatusChanges(
+        migratedEmployees,
+        todayIsoDate(),
+      )
+      // Preserve the explicit status-coercion ProjectShell did historically
+      // — matches the contract `isEmployeeStatus` already guards in the
+      // migration helper, but we keep the fallback cheap and local.
+      for (const [id, e] of Object.entries(nextEmployees)) {
+        if (!isEmployeeStatus(e.status)) {
+          nextEmployees[id] = { ...e, status: 'active' }
         }
       }
       useElementsStore.setState({
         elements: (p.elements ?? {}) as ReturnType<typeof useElementsStore.getState>['elements'],
       })
       useEmployeeStore.setState({
-        employees: migratedEmployees,
+        employees: nextEmployees,
         departmentColors: (p.departmentColors ?? {}) as Record<string, string>,
       })
       // `activeFloorId` is modelled as a required `string` in the store

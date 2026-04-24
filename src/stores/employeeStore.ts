@@ -81,6 +81,7 @@ export const useEmployeeStore = create<EmployeeState>((set, get) => ({
       accommodations: data.accommodations ?? [],
       seatId: data.seatId || null,
       floorId: data.floorId || null,
+      pendingStatusChanges: data.pendingStatusChanges ?? [],
       createdAt: new Date().toISOString(),
     }
     set((state) => ({
@@ -122,6 +123,7 @@ export const useEmployeeStore = create<EmployeeState>((set, get) => ({
           accommodations: e.accommodations ?? [],
           seatId: e.seatId || null,
           floorId: e.floorId || null,
+          pendingStatusChanges: e.pendingStatusChanges ?? [],
           createdAt: new Date().toISOString(),
         }
         // Use the same hash-based derivation as getDepartmentColor so the

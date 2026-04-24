@@ -5,6 +5,7 @@ import {
   ArrowUpDown,
   Check,
   Clipboard,
+  Clock,
   Download,
   Keyboard,
   LayoutGrid,
@@ -1349,6 +1350,7 @@ export function RosterPage() {
                     ) : (
                       <span className="text-xs text-gray-600">{emp.status}</span>
                     )}
+                    <PendingStatusIndicator employee={emp} />
                     <EndingSoonBadge endDate={emp.endDate} />
                     <DepartingSoonBadge departureDate={emp.departureDate} />
                   </div>
@@ -2052,6 +2054,38 @@ function hashHue(s: string): number {
 }
 
 /**
+ * Clock indicator on the status cell for employees with any
+ * `pendingStatusChanges`. Tooltip summarises the very next due
+ * transition so ops can see what's coming without opening the drawer.
+ * Small/unobtrusive — the intent is "peek", not "alert".
+ */
+function PendingStatusIndicator({ employee }: { employee: Employee }) {
+  // Guard defensively — in-memory fixtures and any pre-migration store
+  // state can leave this undefined even though the type declares it
+  // required. Mirrors how EMPLOYEE_STATUS_PILL_CLASSES falls back on
+  // unknown status elsewhere.
+  const queue = employee.pendingStatusChanges ?? []
+  const next = queue[0]
+  if (!next) return null
+  const suffix = queue.length > 1
+    ? ` (+${queue.length - 1} more)`
+    : ''
+  const tooltip = `Scheduled: ${next.effectiveDate} → ${next.status}${
+    next.note ? ` (${next.note})` : ''
+  }${suffix}`
+  return (
+    <span
+      className="inline-flex items-center text-gray-400"
+      title={tooltip}
+      aria-label="Has scheduled status changes"
+      data-testid="pending-status-indicator"
+    >
+      <Clock size={12} />
+    </span>
+  )
+}
+
+/**
  * Small amber pill on the status cell when an `endDate` is within 30 days.
  * Helps office managers see upcoming offboarding without opening each
  * drawer. Past end dates get a muted "Ended" label so the row doesn't
@@ -2257,9 +2291,12 @@ function PersonCard({
       </div>
       <div className="flex items-center justify-between mt-2.5">
         <OfficeDays days={employee.officeDays} todayLabel={todayLabel} />
-        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${statusTone}`}>
-          {employee.status}
-        </span>
+        <div className="flex items-center gap-1">
+          <PendingStatusIndicator employee={employee} />
+          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${statusTone}`}>
+            {employee.status}
+          </span>
+        </div>
       </div>
       <div className="flex items-center justify-between mt-2 text-[11px]">
         {employee.seatId ? (

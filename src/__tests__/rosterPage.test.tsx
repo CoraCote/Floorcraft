@@ -41,6 +41,7 @@ beforeEach(() => {
         equipmentNeeds: [], equipmentStatus: 'not-needed', photoUrl: null, tags: [], accommodations: [],
         seatId: null, floorId: null, leaveType: null, expectedReturnDate: null,
         coverageEmployeeId: null, leaveNotes: null, departureDate: null,
+        pendingStatusChanges: [],
         createdAt: new Date().toISOString(),
       },
       e2: {
@@ -50,6 +51,7 @@ beforeEach(() => {
         equipmentNeeds: [], equipmentStatus: 'not-needed', photoUrl: null, tags: [], accommodations: [],
         seatId: null, floorId: null, leaveType: null, expectedReturnDate: null,
         coverageEmployeeId: null, leaveNotes: null, departureDate: null,
+        pendingStatusChanges: [],
         createdAt: new Date().toISOString(),
       },
     },

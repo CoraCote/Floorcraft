@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { AlertCircle, X } from 'lucide-react'
+import { AlertCircle, X, Trash2 } from 'lucide-react'
 import { nanoid } from 'nanoid'
 import { useEmployeeStore } from '../../stores/employeeStore'
 import { useFloorStore } from '../../stores/floorStore'
@@ -12,6 +12,7 @@ import type {
   Employee,
   EmployeeStatus,
   LeaveType,
+  PendingStatusChange,
 } from '../../types/employee'
 import {
   ACCOMMODATION_ICONS,
@@ -23,6 +24,7 @@ import {
 } from '../../types/employee'
 import { findManagerCycle } from '../../lib/managerChain'
 import { SeatHistoryDrawer } from './SeatHistoryDrawer'
+import { todayIsoDate } from '../../lib/time'
 
 interface Props {
   employeeId: string
@@ -598,6 +600,14 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
             }
           />
 
+          <ScheduledStatusChanges
+            employee={employee}
+            canEdit={canEdit}
+            onChange={(next) =>
+              updateEmployee(employee.id, { pendingStatusChanges: next })
+            }
+          />
+
           <Field label="Seat">
             <div className="text-sm text-gray-600 px-2 py-1.5 bg-gray-50 rounded border border-gray-100">
               {employee.seatId && seatFloor
@@ -751,5 +761,139 @@ function AccommodationsField({
         </div>
       )}
     </div>
+  )
+}
+
+/**
+ * Forward-dated status changes for one employee. Shows the current
+ * queue (sorted ascending), with an inline remove control, and an
+ * "add" row for scheduling a new transition.
+ *
+ * The parent owns persistence — we emit the updated array via
+ * `onChange` and trust the store + autosave loop to flush. Past dates
+ * are rejected in the UI (Schedule disabled + helper text) because the
+ * commit routine would fire it immediately and the user almost always
+ * means "today forward".
+ */
+function ScheduledStatusChanges({
+  employee,
+  canEdit,
+  onChange,
+}: {
+  employee: Employee
+  canEdit: boolean
+  onChange: (next: PendingStatusChange[]) => void
+}) {
+  const [draftDate, setDraftDate] = useState('')
+  const [draftStatus, setDraftStatus] = useState<EmployeeStatus>('on-leave')
+  const [draftNote, setDraftNote] = useState('')
+  const today = todayIsoDate()
+  const isPastDate = draftDate !== '' && draftDate < today
+
+  const changes = employee.pendingStatusChanges ?? []
+
+  const handleAdd = () => {
+    if (!canEdit) return
+    if (!draftDate || isPastDate) return
+    const entry: PendingStatusChange = {
+      id: nanoid(),
+      status: draftStatus,
+      effectiveDate: draftDate,
+      note: draftNote.trim() || null,
+      createdAt: new Date().toISOString(),
+    }
+    const next = [...changes, entry].sort((a, b) =>
+      a.effectiveDate.localeCompare(b.effectiveDate),
+    )
+    onChange(next)
+    setDraftDate('')
+    setDraftNote('')
+  }
+
+  const handleRemove = (id: string) => {
+    if (!canEdit) return
+    onChange(changes.filter((c) => c.id !== id))
+  }
+
+  const addDisabled = !canEdit || !draftDate || isPastDate
+
+  return (
+    <Field label="Scheduled changes">
+      <div className="space-y-1.5">
+        {changes.length === 0 ? (
+          <div className="text-xs text-gray-400 italic">No scheduled changes.</div>
+        ) : (
+          <ul className="space-y-1">
+            {changes.map((c) => (
+              <li
+                key={c.id}
+                className="flex items-center justify-between gap-2 text-xs bg-gray-50 border border-gray-100 rounded px-2 py-1"
+              >
+                <span className="text-gray-700">
+                  <span className="font-mono text-gray-500">[{c.effectiveDate}]</span>{' '}
+                  → <span className="font-medium">{c.status}</span>
+                  {c.note ? (
+                    <span className="text-gray-500"> ({c.note})</span>
+                  ) : null}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleRemove(c.id)}
+                  disabled={!canEdit}
+                  className="p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-40"
+                  aria-label={`Remove scheduled change for ${c.effectiveDate}`}
+                >
+                  <Trash2 size={12} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="flex items-center gap-1.5">
+          <input
+            type="date"
+            value={draftDate}
+            onChange={(e) => setDraftDate(e.target.value)}
+            className="px-1.5 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50"
+            min={today}
+            disabled={!canEdit}
+            aria-label="Effective date"
+          />
+          <select
+            value={draftStatus}
+            onChange={(e) => setDraftStatus(e.target.value as EmployeeStatus)}
+            className="px-1.5 py-1 text-xs border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50"
+            disabled={!canEdit}
+            aria-label="New status"
+          >
+            {EMPLOYEE_STATUSES.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+          <input
+            type="text"
+            value={draftNote}
+            onChange={(e) => setDraftNote(e.target.value)}
+            className="flex-1 min-w-0 px-1.5 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50"
+            placeholder="Note (optional)"
+            disabled={!canEdit}
+            aria-label="Note"
+          />
+          <button
+            type="button"
+            onClick={handleAdd}
+            disabled={addDisabled}
+            className="px-2 py-1 text-xs font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
+          >
+            Schedule
+          </button>
+        </div>
+        {isPastDate && (
+          <div className="text-[11px] text-amber-700">
+            Pick today or a future date.
+          </div>
+        )}
+      </div>
+    </Field>
   )
 }

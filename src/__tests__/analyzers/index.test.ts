@@ -30,6 +30,7 @@ function makeEmployee(overrides: Partial<Employee> = {}): Employee {
     status: 'active',
     leaveType: null, expectedReturnDate: null, coverageEmployeeId: null,
     leaveNotes: null, departureDate: null,
+    pendingStatusChanges: [],
     createdAt: new Date().toISOString(),
     ...overrides,
   }

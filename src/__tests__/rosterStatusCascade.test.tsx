@@ -61,6 +61,7 @@ beforeEach(() => {
         equipmentNeeds: [], equipmentStatus: 'not-needed', photoUrl: null, tags: [], accommodations: [],
         seatId: 'seat1', floorId: 'f1', leaveType: null, expectedReturnDate: null,
         coverageEmployeeId: null, leaveNotes: null, departureDate: null,
+        pendingStatusChanges: [],
         createdAt: new Date().toISOString(),
       },
     },

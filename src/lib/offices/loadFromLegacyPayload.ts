@@ -9,6 +9,7 @@ import {
   LEAVE_TYPES,
   type Accommodation,
   type LeaveType,
+  type PendingStatusChange,
 } from '../../types/employee'
 import { WALL_TYPES, type WallType } from '../../types/elements'
 
@@ -108,6 +109,77 @@ function isNonEmptyString(v: unknown): v is string {
 }
 
 /**
+ * Validate a `yyyy-mm-dd` date string. We accept only that format (not
+ * full ISO timestamps) because the pending-status queue stores day
+ * precision, and Date.parse tolerates too many legacy formats to be a
+ * safe gate on user-visible scheduling.
+ */
+function isIsoDate(v: unknown): v is string {
+  if (typeof v !== 'string') return false
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return false
+  const t = Date.parse(v)
+  return !Number.isNaN(t)
+}
+
+/**
+ * Back-fill and scrub the `pendingStatusChanges` queue on a legacy
+ * employee payload. Invalid entries (missing id, bad date, unknown
+ * status) are dropped with a `console.warn` — the user gets a clean
+ * queue rather than a crash on the next render. Survivors are sorted
+ * ascending by `effectiveDate` to match the invariant documented on
+ * `Employee`.
+ */
+function migratePendingStatusChanges(
+  raw: unknown,
+  employeeId: string,
+): PendingStatusChange[] {
+  if (raw === undefined || raw === null) return []
+  if (!Array.isArray(raw)) {
+    console.warn(
+      `[migrateEmployees] pendingStatusChanges on ${employeeId} is not an array; dropping`,
+    )
+    return []
+  }
+  const out: PendingStatusChange[] = []
+  for (const entry of raw) {
+    if (!entry || typeof entry !== 'object') {
+      console.warn(
+        `[migrateEmployees] invalid pendingStatusChange entry on ${employeeId}; dropping`,
+      )
+      continue
+    }
+    const e = entry as Record<string, unknown>
+    if (!isNonEmptyString(e.id)) {
+      console.warn(
+        `[migrateEmployees] pendingStatusChange missing id on ${employeeId}; dropping`,
+      )
+      continue
+    }
+    if (!isIsoDate(e.effectiveDate)) {
+      console.warn(
+        `[migrateEmployees] pendingStatusChange on ${employeeId} has invalid effectiveDate ${String(e.effectiveDate)}; dropping`,
+      )
+      continue
+    }
+    if (!isEmployeeStatus(e.status)) {
+      console.warn(
+        `[migrateEmployees] pendingStatusChange on ${employeeId} has unknown status ${String(e.status)}; dropping`,
+      )
+      continue
+    }
+    out.push({
+      id: e.id,
+      status: e.status,
+      effectiveDate: e.effectiveDate,
+      note: isNonEmptyString(e.note) ? e.note : null,
+      createdAt: isNonEmptyString(e.createdAt) ? e.createdAt : new Date(0).toISOString(),
+    })
+  }
+  out.sort((a, b) => a.effectiveDate.localeCompare(b.effectiveDate))
+  return out
+}
+
+/**
  * Migrate a deserialized employees map. Older payloads predate the
  * `status` field; back-fill to `'active'` (and coerce any invalid value
  * to `'active'` too) so consumers can trust the enum unconditionally.
@@ -157,7 +229,7 @@ function migrateAccommodations(raw: unknown): Accommodation[] {
   return out
 }
 
-function migrateEmployees(
+export function migrateEmployees(
   employees: Record<string, unknown>,
 ): ReturnType<typeof useEmployeeStore.getState>['employees'] {
   const out: Record<string, unknown> = {}
@@ -177,6 +249,10 @@ function migrateEmployees(
       leaveNotes: isNonEmptyString(e.leaveNotes) ? e.leaveNotes : null,
       departureDate: isNonEmptyString(e.departureDate) ? e.departureDate : null,
       accommodations: migrateAccommodations(e.accommodations),
+      pendingStatusChanges: migratePendingStatusChanges(
+        e.pendingStatusChanges,
+        id,
+      ),
     }
   }
   return out as ReturnType<typeof useEmployeeStore.getState>['employees']

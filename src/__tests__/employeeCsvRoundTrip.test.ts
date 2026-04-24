@@ -36,6 +36,7 @@ function makeEmployee(over: Partial<Employee> = {}): Employee {
     coverageEmployeeId: over.coverageEmployeeId ?? null,
     leaveNotes: over.leaveNotes ?? null,
     departureDate: over.departureDate ?? null,
+    pendingStatusChanges: over.pendingStatusChanges ?? [],
     createdAt: over.createdAt ?? '2024-01-01T00:00:00.000Z',
   }
 }

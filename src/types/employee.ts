@@ -149,6 +149,24 @@ export const EMPLOYMENT_TYPES = [
 ] as const
 export type EmploymentType = (typeof EMPLOYMENT_TYPES)[number]
 
+/**
+ * A forward-dated status change queued on an employee. The auto-commit
+ * routine (`src/lib/commitDueStatusChanges.ts`) applies entries whose
+ * `effectiveDate` has arrived and drops them from the queue; the list is
+ * kept sorted ascending by `effectiveDate` so consumers can peek at the
+ * next-due entry without re-sorting.
+ */
+export interface PendingStatusChange {
+  id: string
+  status: EmployeeStatus
+  /** ISO date, `yyyy-mm-dd` — day precision is enough. */
+  effectiveDate: string
+  /** Optional reason, e.g. "parental leave". */
+  note: string | null
+  /** ISO timestamp of when this plan was made. */
+  createdAt: string
+}
+
 export interface Employee {
   id: string
   name: string
@@ -182,6 +200,12 @@ export interface Employee {
   accommodations: Accommodation[]
   seatId: string | null
   floorId: string | null
+  /**
+   * Forward-dated status transitions that will auto-commit once their
+   * `effectiveDate` arrives. NEVER undefined (default `[]`); always
+   * sorted ascending by `effectiveDate`.
+   */
+  pendingStatusChanges: PendingStatusChange[]
   createdAt: string
 }
 
