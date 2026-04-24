@@ -31,30 +31,3 @@ export const useSeatDragStore = create<SeatDragState>((set) => ({
   setHoveredSeat: (elementId) => set({ hoveredSeatId: elementId }),
   reset: () => set({ draggingEmployeeId: null, hoveredSeatId: null }),
 }))
-
-/**
- * Active "seat detail popover" — opened by clicking an assigned desk on
- * the canvas. Stored in a tiny module store so CanvasStage can set it
- * from its click handler while the popover itself lives as a sibling
- * DOM overlay (same shape as AnnotationPopover). Closed on ESC,
- * background click, or any selection change.
- */
-interface SeatDetailState {
-  activeElementId: string | null
-  /** Stage-space (pre-transform) coords used to position the popover.
-   *  Populated from the click event so the popover anchors near the desk
-   *  the user clicked, not the current stage center. */
-  screenX: number
-  screenY: number
-  open: (elementId: string, screenX: number, screenY: number) => void
-  close: () => void
-}
-
-export const useSeatDetailStore = create<SeatDetailState>((set) => ({
-  activeElementId: null,
-  screenX: 0,
-  screenY: 0,
-  open: (elementId, screenX, screenY) =>
-    set({ activeElementId: elementId, screenX, screenY }),
-  close: () => set({ activeElementId: null }),
-}))

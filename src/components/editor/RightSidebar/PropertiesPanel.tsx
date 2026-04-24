@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { History } from 'lucide-react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useUIStore } from '../../../stores/uiStore'
 import { useElementsStore } from '../../../stores/elementsStore'
+import { useEmployeeStore } from '../../../stores/employeeStore'
 import { useVisibleEmployees } from '../../../hooks/useVisibleEmployees'
 import { useNeighborhoodStore } from '../../../stores/neighborhoodStore'
 import { NeighborhoodPropertiesPanel } from './NeighborhoodPropertiesPanel'
@@ -10,6 +12,11 @@ import { alignElements, distributeElements } from '../../../lib/alignment'
 import { validateDeskId } from '../../../lib/deskIdValidation'
 import { useCan } from '../../../hooks/useCan'
 import { SeatHistoryDrawer } from '../SeatHistoryDrawer'
+import {
+  EMPLOYEE_STATUS_PILL_CLASSES,
+  type Employee,
+  type EmployeeStatus,
+} from '../../../types/employee'
 import {
   AlignHorizontalJustifyStart,
   AlignHorizontalJustifyCenter,
@@ -159,6 +166,186 @@ function SeatStatusOverridePicker({
   )
 }
 
+/**
+ * Short status labels used inside the employee detail card chip. Kept
+ * local so the file has no non-component exports (which would trip the
+ * `react-refresh/only-export-components` lint rule).
+ */
+const EMPLOYEE_STATUS_LABEL: Record<EmployeeStatus, string> = {
+  active: 'Active',
+  'on-leave': 'On leave',
+  departed: 'Departed',
+  'parental-leave': 'Parental leave',
+  sabbatical: 'Sabbatical',
+  contractor: 'Contractor',
+  intern: 'Intern',
+}
+
+/**
+ * Compact employee profile block rendered at the top of the desk /
+ * hot-desk properties branch whenever the selected seat has an assigned
+ * employee. Replaces the earlier canvas-overlay popover — surfacing the
+ * same avatar, chips, and actions inside the 320px sidebar so the canvas
+ * stays clear for editing.
+ *
+ * Redaction: when the viewer lacks `viewPII`, `useVisibleEmployees`
+ * already projects the store through `redactEmployee`, so we can trust
+ * the passed `employee` record. We still show explicit
+ * "— (redacted)" placeholders for the email + manager rows so the viewer
+ * knows the field was withheld (vs. missing).
+ */
+function EmployeeDetailCard({
+  employee,
+  canViewPII,
+  canEditRoster,
+}: {
+  employee: Employee
+  canViewPII: boolean
+  canEditRoster: boolean
+}) {
+  const navigate = useNavigate()
+  const { teamSlug, officeSlug } = useParams<{ teamSlug: string; officeSlug: string }>()
+  const rawEmployees = useEmployeeStore((s) => s.employees)
+  const getDepartmentColor = useEmployeeStore((s) => s.getDepartmentColor)
+
+  const initials = employee.name
+    .split(/\s+/)
+    .map((p) => p[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
+
+  const deptColor = employee.department
+    ? getDepartmentColor(employee.department)
+    : '#9CA3AF'
+
+  // Manager lookup: redaction blanks `managerId`, so when `viewPII=false`
+  // this naturally skips the real manager and we render the redacted
+  // placeholder instead. Under `viewPII=true`, we still need the raw
+  // store (not the redacted projection) to fetch the manager's name.
+  const manager =
+    canViewPII && employee.managerId && rawEmployees[employee.managerId]
+      ? rawEmployees[employee.managerId]
+      : null
+
+  const handleUnassign = () => {
+    unassignEmployee(employee.id)
+  }
+
+  const handleViewProfile = () => {
+    if (teamSlug && officeSlug) {
+      navigate(`/t/${teamSlug}/o/${officeSlug}/roster?focus=${employee.id}`)
+    }
+  }
+
+  return (
+    <div
+      data-testid="employee-detail-card"
+      className="rounded-md border border-gray-200 bg-white p-3 flex flex-col gap-2"
+    >
+      {/* Header: avatar + name + title */}
+      <div className="flex items-center gap-2 min-w-0">
+        {employee.photoUrl ? (
+          <img
+            src={employee.photoUrl}
+            alt=""
+            width={36}
+            height={36}
+            className="w-9 h-9 rounded-full object-cover flex-shrink-0"
+          />
+        ) : (
+          <div
+            aria-hidden
+            className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0"
+            style={{ background: deptColor }}
+          >
+            {initials || '?'}
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <div
+            className="text-sm font-semibold text-gray-900 truncate"
+            title={employee.name}
+          >
+            {employee.name || '—'}
+          </div>
+          {employee.title && (
+            <div
+              className="text-xs text-gray-500 truncate"
+              title={employee.title}
+            >
+              {employee.title}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Chips: department + status */}
+      <div className="flex gap-1.5 flex-wrap">
+        {employee.department && (
+          <span
+            className="px-2 py-0.5 rounded-full text-[11px] font-medium text-white"
+            style={{ background: deptColor }}
+          >
+            {employee.department}
+          </span>
+        )}
+        <span
+          data-testid="status-chip"
+          className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${EMPLOYEE_STATUS_PILL_CLASSES[employee.status]}`}
+        >
+          {EMPLOYEE_STATUS_LABEL[employee.status]}
+        </span>
+      </div>
+
+      {/* Info rows */}
+      <div className="grid grid-cols-[60px_1fr] gap-x-2 gap-y-0.5 text-[12px] text-gray-700">
+        <div className="text-[11px] text-gray-400">Team</div>
+        <div className="truncate" title={employee.team || '—'}>
+          {employee.team || '—'}
+        </div>
+        <div className="text-[11px] text-gray-400">Manager</div>
+        <div
+          className="truncate"
+          title={canViewPII ? manager?.name || '—' : '— (redacted)'}
+        >
+          {canViewPII ? manager?.name || '—' : '— (redacted)'}
+        </div>
+        <div className="text-[11px] text-gray-400">Email</div>
+        <div
+          className="truncate"
+          title={canViewPII ? employee.email || '—' : '— (redacted)'}
+        >
+          {canViewPII ? employee.email || '—' : '— (redacted)'}
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-1.5 justify-end pt-1">
+        {canEditRoster && (
+          <button
+            type="button"
+            onClick={handleUnassign}
+            data-testid="employee-detail-unassign"
+            className="px-2.5 py-1 text-xs text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50"
+          >
+            Unassign
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={handleViewProfile}
+          data-testid="employee-detail-view-profile"
+          className="px-2.5 py-1 text-xs text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50"
+        >
+          View profile
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export function PropertiesPanel() {
   const selectedIds = useUIStore((s) => s.selectedIds)
   const elements = useElementsStore((s) => s.elements)
@@ -169,6 +356,11 @@ export function PropertiesPanel() {
   const neighborhoods = useNeighborhoodStore((s) => s.neighborhoods)
   const canEdit = useCan('editMap')
   const canViewHistory = useCan('viewSeatHistory')
+  // Read these unconditionally at the top so the hook call order is
+  // stable — combining them with `||` would short-circuit the second
+  // call and violate rules-of-hooks on re-render.
+  const canViewPII = useCan('viewPII')
+  const canEditRoster = useCan('editRoster')
   const inputDisabled = !canEdit
   // Locally owned drawer target — the panel unmounts on selection change
   // (key'd by element id higher up), which cleans this up automatically.
@@ -540,32 +732,23 @@ export function PropertiesPanel() {
       {/* Desk / Hot-desk properties */}
       {isDeskElement(el) && (
         <>
+          {el.assignedEmployeeId && employees[el.assignedEmployeeId] ? (
+            <EmployeeDetailCard
+              employee={employees[el.assignedEmployeeId]}
+              canViewPII={canViewPII}
+              canEditRoster={canEditRoster}
+            />
+          ) : null}
           <DeskIdInput elementId={el.id} value={el.deskId} disabled={inputDisabled} />
           <SeatStatusOverridePicker elementId={el.id} value={el.seatStatus} disabled={inputDisabled} />
-          <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Assigned To</label>
-            {el.assignedEmployeeId ? (
-              <div className="flex items-center justify-between gap-2 text-sm border border-gray-200 rounded px-2 py-1.5">
-                <span className="text-gray-800 truncate">
-                  {getAssignedEmployeeName(el.assignedEmployeeId) || el.assignedEmployeeId}
-                </span>
-                {canEdit && (
-                  <button
-                    onClick={() => {
-                      unassignEmployee(el.assignedEmployeeId!)
-                    }}
-                    className="text-xs text-red-500 hover:text-red-700 flex-shrink-0"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-            ) : (
+          {!el.assignedEmployeeId && (
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">Assigned To</label>
               <div className="text-sm text-gray-400 border border-gray-200 rounded px-2 py-1.5">
                 No one assigned
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </>
       )}
 

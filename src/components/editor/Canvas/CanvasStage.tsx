@@ -25,9 +25,8 @@ import { elementsIntersectingRect } from '../../../lib/marquee'
 import { useLayerVisibilityStore } from '../../../stores/layerVisibilityStore'
 import { categoryForElement } from '../../../lib/layerCategory'
 import { assignEmployee, swapEmployees } from '../../../lib/seatAssignment'
-import { useSeatDragStore, useSeatDetailStore } from '../../../stores/seatDragStore'
+import { useSeatDragStore } from '../../../stores/seatDragStore'
 import { useEmployeeStore } from '../../../stores/employeeStore'
-import { SeatDetailPopover } from './SeatDetailPopover'
 import { consumeQueueAtElement } from '../../../lib/multiSeatAssign'
 import { useToastStore } from '../../../stores/toastStore'
 import { findNearestStraightWallHit } from '../../../lib/wallAttachment'
@@ -136,56 +135,6 @@ export function CanvasStage() {
     setActiveStage(stage)
     return () => {
       setActiveStage(null)
-    }
-  }, [])
-
-  // Seat-detail popover: react to selection changes. When exactly one
-  // element is selected AND it's an assigned single-desk, open the
-  // popover anchored at the desk's current stage-space position. Any
-  // other selection state (multi-select, empty, non-desk, unassigned
-  // desk) closes an open popover. Uses `subscribe` instead of a hook
-  // selector so we can read multiple stores in one place and avoid the
-  // re-render churn of a derived selector. Keep the listener cheap —
-  // it's invoked on every UI store update.
-  useEffect(() => {
-    const tryOpen = () => {
-      const ui = useUIStore.getState()
-      if (ui.selectedIds.length !== 1) {
-        useSeatDetailStore.getState().close()
-        return
-      }
-      const id = ui.selectedIds[0]
-      const el = useElementsStore.getState().elements[id]
-      if (!el) {
-        useSeatDetailStore.getState().close()
-        return
-      }
-      const isSingleDesk = el.type === 'desk' || el.type === 'hot-desk'
-      const assignedId =
-        isSingleDesk && 'assignedEmployeeId' in el
-          ? (el as unknown as { assignedEmployeeId: string | null }).assignedEmployeeId
-          : null
-      if (!isSingleDesk || !assignedId) {
-        useSeatDetailStore.getState().close()
-        return
-      }
-      // Compute screen-space coords from stage transform. `el.x/el.y` are
-      // canvas coords (center), so apply the current stage transform.
-      const cs = useCanvasStore.getState()
-      const sx = el.x * cs.stageScale + cs.stageX
-      const sy = el.y * cs.stageScale + cs.stageY
-      useSeatDetailStore.getState().open(id, sx, sy)
-    }
-    tryOpen()
-    const unsubUI = useUIStore.subscribe((state, prev) => {
-      if (state.selectedIds !== prev.selectedIds) tryOpen()
-    })
-    const unsubEls = useElementsStore.subscribe((state, prev) => {
-      if (state.elements !== prev.elements) tryOpen()
-    })
-    return () => {
-      unsubUI()
-      unsubEls()
     }
   }, [])
 
@@ -1375,7 +1324,6 @@ export function CanvasStage() {
       </Stage>
       <FreeTextEditorOverlay containerRef={containerRef} />
       <AnnotationPopover containerRef={containerRef} />
-      <SeatDetailPopover containerRef={containerRef} />
     </div>
   )
 }
