@@ -11,6 +11,7 @@ import { KeyboardShortcutsOverlay } from './KeyboardShortcutsOverlay'
 import { Minimap } from './Minimap'
 import { useUIStore } from '../../stores/uiStore'
 import { useFloorStore } from '../../stores/floorStore'
+import { useNeighborhoodStore } from '../../stores/neighborhoodStore'
 import { switchToFloor } from '../../lib/seatAssignment'
 import { focusOnElement } from '../../lib/canvasFocus'
 
@@ -31,7 +32,8 @@ export function MapView() {
   useEffect(() => {
     const floorId = searchParams.get('floor')
     const seatId = searchParams.get('seat')
-    if (!floorId && !seatId) return
+    const focusId = searchParams.get('focus')
+    if (!floorId && !seatId && !focusId) return
 
     if (floorId) {
       switchToFloor(floorId)
@@ -52,9 +54,44 @@ export function MapView() {
       }
     }
 
+    // `?focus=<id>` — cross-office search landing. Walk every floor for
+    // an element or a neighborhood with this id; whichever hits first
+    // wins. We switch to the owning floor and pan/zoom to it so the
+    // operator doesn't have to hunt. Done in a single effect after the
+    // store-hydration in ProjectShell has completed (the palette
+    // navigates to this route, and by the time the effect fires the
+    // stores have rehydrated the destination office).
+    if (focusId) {
+      const floors = useFloorStore.getState().floors
+      let foundOn: string | null = null
+      let bounds: { x: number; y: number; width: number; height: number } | null = null
+      for (const f of floors) {
+        const el = f.elements[focusId]
+        if (el) {
+          foundOn = f.id
+          bounds = { x: el.x, y: el.y, width: el.width, height: el.height }
+          break
+        }
+      }
+      if (!bounds) {
+        const neighborhoods = useNeighborhoodStore.getState().neighborhoods
+        const n = neighborhoods[focusId]
+        if (n) {
+          foundOn = n.floorId
+          bounds = { x: n.x, y: n.y, width: n.width, height: n.height }
+        }
+      }
+      if (foundOn && bounds) {
+        switchToFloor(foundOn)
+        useUIStore.getState().setSelectedIds([focusId])
+        focusOnElement(bounds, focusId)
+      }
+    }
+
     const next = new URLSearchParams(searchParams)
     next.delete('floor')
     next.delete('seat')
+    next.delete('focus')
     setSearchParams(next, { replace: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

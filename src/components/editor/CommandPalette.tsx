@@ -1,8 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useUIStore } from '../../stores/uiStore'
 import { useFloorStore } from '../../stores/floorStore'
 import { useVisibleEmployees } from '../../hooks/useVisibleEmployees'
+import { useAllOfficesIndex } from '../../hooks/useAllOfficesIndex'
+import { searchAllOffices, type CrossOfficeResult } from '../../lib/crossOfficeSearch'
+import { crossOfficeNavPath, crossOfficeRowKey } from '../../lib/crossOfficePaletteNav'
+import { CrossOfficeResultsGroup } from './CommandPalette/CrossOfficeResultsGroup'
 import {
   filterCommandItems,
   SECTION_LABELS,
@@ -10,6 +14,9 @@ import {
   type CommandItem,
   type CommandSection,
 } from '../../lib/commandPaletteFilter'
+
+/** Cap on cross-office result rows — keeps the palette from unbounded growth. */
+const MAX_CROSS_OFFICE_RESULTS = 30
 
 /** People section is capped so a 2000-employee roster doesn't flood the DOM. */
 const MAX_PEOPLE_RESULTS = 8
@@ -62,6 +69,23 @@ function CommandPaletteBody() {
   const [query, setQuery] = useState('')
   const [highlightIndex, setHighlightIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement | null>(null)
+  const [crossHighlightKey, setCrossHighlightKey] = useState<string | null>(null)
+
+  // Deferred query drives the cross-office search. `useDeferredValue`
+  // lets React schedule the heavier cross-office scan at a lower priority
+  // than the input's visual update, so sustained typing bursts never
+  // block the keystroke — matches the spec's "keydown-debounced" perf
+  // guardrail without the setState-in-effect dance.
+  const deferredQuery = useDeferredValue(query)
+
+  const allOfficesIndex = useAllOfficesIndex(teamSlug)
+  const crossResults = useMemo<CrossOfficeResult[]>(() => {
+    if (deferredQuery.length < 2) return []
+    return searchAllOffices(deferredQuery, allOfficesIndex).slice(
+      0,
+      MAX_CROSS_OFFICE_RESULTS,
+    )
+  }, [deferredQuery, allOfficesIndex])
 
   // Bump the modal ref-count so other global hotkeys (arrow nudges,
   // Cmd+A, etc) stand down while the palette owns the keyboard. Mirrors
@@ -80,6 +104,15 @@ function CommandPaletteBody() {
   }, [])
 
   const close = useCallback(() => setOpen(false), [setOpen])
+
+  const onCrossPick = useCallback(
+    (result: CrossOfficeResult) => {
+      if (!teamSlug) return
+      navigate(crossOfficeNavPath(teamSlug, result))
+      close()
+    },
+    [teamSlug, navigate, close],
+  )
 
   // Build the full item catalogue. Rebuilt on every render; the
   // dependency set is small and the cost is dominated by the People
@@ -242,7 +275,14 @@ function CommandPaletteBody() {
     if (e.key === 'Enter') {
       e.preventDefault()
       const item = filtered[effectiveHighlight]
-      if (item) item.run()
+      if (item) {
+        item.run()
+        return
+      }
+      // No in-office match — fall through to the top cross-office result
+      // (if any) so typing-then-enter still does something sensible.
+      const crossPick = crossResults.find((r) => crossOfficeRowKey(r) === crossHighlightKey) ?? crossResults[0]
+      if (crossPick) onCrossPick(crossPick)
       return
     }
     if (e.key === 'ArrowDown') {
@@ -321,7 +361,7 @@ function CommandPaletteBody() {
           className="max-h-[60vh] overflow-y-auto py-1"
           data-testid="command-palette-list"
         >
-          {grouped.length === 0 && (
+          {grouped.length === 0 && crossResults.length === 0 && (
             <li className="px-4 py-6 text-center text-sm text-gray-500">
               No matches.
             </li>
@@ -365,6 +405,12 @@ function CommandPaletteBody() {
               </ul>
             </li>
           ))}
+          <CrossOfficeResultsGroup
+            results={crossResults}
+            highlightedId={crossHighlightKey}
+            onHover={(key) => setCrossHighlightKey(key)}
+            onPick={onCrossPick}
+          />
         </ul>
       </div>
     </div>
