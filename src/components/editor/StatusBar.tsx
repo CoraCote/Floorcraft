@@ -23,6 +23,7 @@ export function StatusBar() {
   const elements = useElementsStore((s) => s.elements)
   const selectedIds = useUIStore((s) => s.selectedIds)
   const activeTool = useCanvasStore((s) => s.activeTool)
+  const setActiveTool = useCanvasStore((s) => s.setActiveTool)
   const stageScale = useCanvasStore((s) => s.stageScale)
   const scale = useCanvasStore((s) => s.settings.scale)
   const scaleUnit = useCanvasStore((s) => s.settings.scaleUnit)
@@ -77,6 +78,30 @@ export function StatusBar() {
       <span>Zoom: <strong>{Math.round(stageScale * 100)}%</strong></span>
 
       {/*
+        Calibrate-scale trigger. The status bar is the least visually
+        invasive spot for this — it already surfaces scale-related
+        context (cursor coords in real units) so a "Set scale" affordance
+        is discoverable here without adding yet another toolbar icon.
+        We toggle the tool on/off from the same button so a second click
+        exits without the user hunting for a cancel.
+      */}
+      <button
+        type="button"
+        onClick={() =>
+          setActiveTool(activeTool === 'calibrate-scale' ? 'select' : 'calibrate-scale')
+        }
+        className={`text-[11px] px-2 py-0.5 rounded border ${
+          activeTool === 'calibrate-scale'
+            ? 'bg-blue-50 border-blue-200 text-blue-700'
+            : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+        }`}
+        title="Set canvas scale by clicking two points of a known distance"
+        aria-pressed={activeTool === 'calibrate-scale'}
+      >
+        Set scale
+      </button>
+
+      {/*
         Cursor coordinates in world-space units. Only render when the
         pointer is actually over the canvas — when it's off the stage
         the readout would otherwise freeze at the last-seen value and
@@ -121,6 +146,8 @@ function toolHint(tool: string): string | null {
       return 'Drag to pan the canvas'
     case 'measure':
       return 'Click to add ruler points, double-click to finish — Esc to clear'
+    case 'calibrate-scale':
+      return 'Click two points of a known distance, then enter the real length — Esc to cancel'
     default:
       return null
   }

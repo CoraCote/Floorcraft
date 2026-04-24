@@ -42,6 +42,8 @@ import {
 import { ShapeDrawingOverlay, type ShapeDrawingPreview } from './primitives/ShapeDrawingOverlay'
 import { FreeTextEditorOverlay } from './primitives/FreeTextEditorOverlay'
 import { MeasureOverlay, type MeasureSession } from './MeasureOverlay'
+import { CalibrateOverlay } from './CalibrateOverlay'
+import { useCalibrateScaleStore } from '../../../stores/calibrateScaleStore'
 import { NeighborhoodLayer } from './NeighborhoodLayer'
 import { NeighborhoodEditOverlay } from './NeighborhoodEditOverlay'
 import { useNeighborhoodStore } from '../../../stores/neighborhoodStore'
@@ -405,6 +407,26 @@ export function CanvasStage() {
         return
       }
 
+      // Calibrate-scale tool: each left-click records a point. Second
+      // click opens the distance modal (rendered at the project-shell
+      // level). Tool sits outside the `creationTool` viewer-guard above
+      // — like `measure`, this is effectively read-only from the
+      // element-store's perspective (it only writes to canvasSettings).
+      if (activeTool === 'calibrate-scale' && e.evt.button === 0) {
+        const stage = stageRef.current
+        if (!stage) return
+        const pointer = stage.getPointerPosition()
+        if (!pointer) return
+        const canvasX = (pointer.x - stageX) / stageScale
+        const canvasY = (pointer.y - stageY) / stageScale
+        const cs = useCalibrateScaleStore.getState()
+        // Auto-arm so a fresh click on the tool's first use still works
+        // without relying on a separate "begin()" call site.
+        if (cs.status === 'idle') cs.begin()
+        cs.clickAt(canvasX, canvasY)
+        return
+      }
+
       // Drawing primitives: click-drag to place. Free-text is special —
       // it only needs a click; we immediately drop a small text element
       // and open the inline editor.
@@ -629,6 +651,23 @@ export function CanvasStage() {
         handleCanvasMouseMove(canvasX, canvasY)
       }
 
+      // Calibrate-scale live tracking: feed the cursor into the store so
+      // the overlay's rubberband + live distance readout follows the
+      // pointer. Only track while the tool is actually active; the
+      // overlay already bails on status === 'idle'.
+      if (activeTool === 'calibrate-scale') {
+        const stage = stageRef.current
+        if (stage) {
+          const pointer = stage.getPointerPosition()
+          if (pointer) {
+            useCalibrateScaleStore.getState().setCursor(
+              (pointer.x - stageX) / stageScale,
+              (pointer.y - stageY) / stageScale,
+            )
+          }
+        }
+      }
+
       // Measure-tool live tracking. Only commit the cursor position
       // after the first vertex exists — before that there's nothing to
       // measure TO, so the overlay stays hidden.
@@ -739,6 +778,9 @@ export function CanvasStage() {
     // trail since its last-known value would be stale the moment the
     // pointer re-enters somewhere else.
     setMeasureSession((prev) => (prev.cursor ? { ...prev, cursor: null } : prev))
+    // Calibrate tool: same reasoning — committed endpoints stay, but
+    // the live rubberband anchor is stale the moment the pointer leaves.
+    useCalibrateScaleStore.getState().clearCursor()
   }, [ghostCursor])
 
   // Global Escape handling for the marquee: cancel the drag and leave the
@@ -765,10 +807,34 @@ export function CanvasStage() {
           ? { points: [], cursor: null, finalised: false }
           : prev,
       )
+      // Calibrate tool: Escape always aborts the session regardless of
+      // which status it's in. Safe to call unconditionally — reset is a
+      // no-op when already idle.
+      if (useCalibrateScaleStore.getState().status !== 'idle') {
+        useCalibrateScaleStore.getState().reset()
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
+
+  // Tool-switch cleanup for the calibrate session. Leaving the tool
+  // cancels any in-flight calibration so a forgotten session doesn't
+  // pop its modal later when the user has moved on. `reset()` no-ops
+  // if already idle.
+  useEffect(() => {
+    if (activeTool !== 'calibrate-scale') {
+      if (useCalibrateScaleStore.getState().status !== 'idle') {
+        useCalibrateScaleStore.getState().reset()
+      }
+    } else {
+      // Arm the tool on first activation so the first click records the
+      // first point (rather than the "auto-arm on click" fallback).
+      if (useCalibrateScaleStore.getState().status === 'idle') {
+        useCalibrateScaleStore.getState().begin()
+      }
+    }
+  }, [activeTool])
 
   // Tool-switch cleanup for the measure session — leaving the tool should
   // dismiss any lingering overlay. (Points alone survive an accidental
@@ -945,6 +1011,7 @@ export function CanvasStage() {
   }
   if (PRIMITIVE_TOOLS.has(activeTool)) cursor = 'crosshair'
   if (activeTool === 'measure') cursor = 'crosshair'
+  if (activeTool === 'calibrate-scale') cursor = 'crosshair'
   if (activeTool === 'neighborhood') cursor = 'crosshair'
 
   // Accept employee drags from PeoplePanel and assign the dropped employee
@@ -1098,6 +1165,7 @@ export function CanvasStage() {
           scale={projectScale}
           scaleUnit={projectScaleUnit}
         />
+        <CalibrateOverlay />
         <NeighborhoodEditOverlay preview={neighborhoodPreview} />
       </Stage>
       <FreeTextEditorOverlay containerRef={containerRef} />

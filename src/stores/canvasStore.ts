@@ -19,6 +19,13 @@ export type ToolType =
   // vertices, double-click or Enter to finish. The running total is shown
   // live; the final polyline is a persistent overlay until dismissed.
   | 'measure'
+  // Two-click "set scale" calibrator. User clicks two points on a
+  // known-length feature (e.g. a hallway), types the real distance, and
+  // the app derives the project's pixels-per-unit scale. Distinct from
+  // `measure` (which is read-only ruler) because this one WRITES the
+  // project scale on commit; coexisting tools keeps each behaviour
+  // unambiguous to the user.
+  | 'calibrate-scale'
   // Neighborhood tool. Click-drag on empty canvas to paint a labeled
   // zone; click an existing neighborhood to select it for resize/rename.
   | 'neighborhood'
