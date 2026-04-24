@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { HelpSearchPalette } from './HelpSearchPalette'
+import { HELP_SECTIONS } from './helpSections'
 
 /**
  * Single-page user guide + FAQ. Deliberately kept in one file with
@@ -629,6 +631,20 @@ function FaqItem({ q, children }: { q: string; children: React.ReactNode }) {
 export function HelpPage() {
   const [activeId, setActiveId] = useState(sections[0].id)
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({})
+  const [paletteOpen, setPaletteOpen] = useState(false)
+
+  // cmd-K / ctrl-K opens the section search palette. Scoped to this
+  // page; the listener is unmounted when you navigate away.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setPaletteOpen(true)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   // Scroll-spy: highlight whichever section's top is closest to the
   // viewport top. Runs on scroll, cheap — just a bounding-box read per
@@ -717,6 +733,13 @@ export function HelpPage() {
           <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">
             On this page
           </div>
+          <div className="text-xs text-gray-400 mb-3">
+            Press{' '}
+            <kbd className="px-1 py-0.5 rounded border border-gray-200 bg-white text-gray-600">
+              ⌘K
+            </kbd>{' '}
+            to search
+          </div>
           <nav className="space-y-0.5 text-sm">
             {sections.map((s) => (
               <a
@@ -778,6 +801,12 @@ export function HelpPage() {
           </footer>
         </main>
       </div>
+
+      <HelpSearchPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        sections={HELP_SECTIONS}
+      />
     </div>
   )
 }

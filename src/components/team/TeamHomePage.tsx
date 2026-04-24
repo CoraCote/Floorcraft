@@ -12,7 +12,49 @@ import {
 import { buildDemoOfficePayload } from '../../lib/demo/createDemoOffice'
 import { formatRelative } from '../../lib/time'
 import { ConfirmDialog } from '../editor/ConfirmDialog'
+import { OfficeThumbnail, type ThumbnailElement } from './OfficeThumbnail'
 import type { Team } from '../../types/team'
+
+/**
+ * Pull a flat list of thumbnail-ready rects from an office payload. Uses
+ * only the FIRST floor's elements — the team-home page shows one
+ * thumbnail per office, and iterating every floor would bloat the DOM
+ * on teams with dozens of multi-floor offices for minimal visual
+ * payoff. Returns `[]` for any malformed / empty payload; the thumbnail
+ * component handles the empty case with a placeholder.
+ */
+function extractThumbnailElements(
+  payload: Record<string, unknown> | null | undefined,
+): ThumbnailElement[] {
+  if (!payload) return []
+  const floors = (payload.floors ?? []) as Array<{
+    elements?: Record<string, { x?: number; y?: number; width?: number; height?: number; type?: string }>
+  }>
+  if (!Array.isArray(floors) || floors.length === 0) return []
+  const first = floors[0]
+  const elementMap = (first.elements ?? {}) as Record<
+    string,
+    { x?: number; y?: number; width?: number; height?: number; type?: string }
+  >
+  const out: ThumbnailElement[] = []
+  for (const el of Object.values(elementMap)) {
+    if (
+      typeof el.x !== 'number' ||
+      typeof el.y !== 'number' ||
+      typeof el.width !== 'number' ||
+      typeof el.height !== 'number'
+    )
+      continue
+    out.push({
+      x: el.x,
+      y: el.y,
+      width: el.width,
+      height: el.height,
+      type: typeof el.type === 'string' ? el.type : 'unknown',
+    })
+  }
+  return out
+}
 
 /**
  * Suggest the next default name for a new office. First one is simply
@@ -237,11 +279,20 @@ export function TeamHomePage() {
               */}
               <Link
                 to={`/t/${team.slug}/o/${o.slug}/map`}
-                className="block border rounded-lg p-4 pr-10 hover:shadow hover:border-blue-300 bg-white"
+                className="block border rounded-lg overflow-hidden hover:shadow hover:border-blue-300 bg-white"
               >
-                <div className="font-medium">{o.name}</div>
-                <div className="text-xs text-gray-500 mt-1">Updated {formatRelative(o.updated_at)}</div>
-                {o.is_private && <div className="text-xs mt-2 text-amber-700">Private</div>}
+                <div className="w-full h-[120px] bg-gray-50 border-b border-gray-100">
+                  <OfficeThumbnail
+                    elements={extractThumbnailElements(o.payload)}
+                    width="100%"
+                    height="100%"
+                  />
+                </div>
+                <div className="p-4 pr-10">
+                  <div className="font-medium">{o.name}</div>
+                  <div className="text-xs text-gray-500 mt-1">Updated {formatRelative(o.updated_at)}</div>
+                  {o.is_private && <div className="text-xs mt-2 text-amber-700">Private</div>}
+                </div>
               </Link>
               <button
                 type="button"

@@ -7,6 +7,14 @@ export interface OfficeListItem {
   name: string
   updated_at: string
   is_private: boolean
+  /**
+   * Office payload. Present on entries returned by `listOffices` (which
+   * selects it so the team-home thumbnails can render without a second
+   * round-trip per card); optional on the type so call sites that
+   * construct an `OfficeListItem` locally (tests, `createOffice`) don't
+   * need to mint an empty payload.
+   */
+  payload?: Record<string, unknown> | null
 }
 
 export interface OfficeLoaded extends OfficeListItem {
@@ -16,9 +24,15 @@ export interface OfficeLoaded extends OfficeListItem {
 }
 
 export async function listOffices(teamId: string): Promise<OfficeListItem[]> {
+  // `payload` is pulled here so the team-home page can render a
+  // floor-plan thumbnail per office card in a single query. The payload
+  // size grows with office complexity but is bounded by the same RLS
+  // and UI the editor already loads — if this ever becomes a hot path
+  // for teams with hundreds of offices, the thumbnail can be moved to
+  // a derived `thumbnail_elements` column or a dedicated RPC.
   const { data, error } = await supabase
     .from('offices')
-    .select('id, slug, name, updated_at, is_private')
+    .select('id, slug, name, updated_at, is_private, payload')
     .eq('team_id', teamId)
     .order('updated_at', { ascending: false })
   if (error) throw error

@@ -14,7 +14,11 @@
 import { listOffices, loadOffice, type OfficeListItem, type OfficeLoaded } from './officeRepository'
 
 export interface AllOfficePayload extends OfficeListItem {
-  payload: OfficeLoaded['payload'] | null
+  // `OfficeListItem.payload` is already optional (the team-home thumbnail
+  // pulls it in); the cache additionally allows `null` to distinguish
+  // "we tried and the row had no payload / failed to load" from "we
+  // haven't tried yet". Widen here without re-declaring the parent type.
+  payload: OfficeLoaded['payload'] | null | undefined
 }
 
 const cache = new Map<string, AllOfficePayload[]>()
