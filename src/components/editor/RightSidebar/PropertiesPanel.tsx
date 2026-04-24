@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { History } from 'lucide-react'
+import { History, Armchair, DoorOpen, Square, Minus, Box, Coffee, LayoutGrid } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useUIStore } from '../../../stores/uiStore'
 import { useElementsStore } from '../../../stores/elementsStore'
@@ -38,7 +39,7 @@ import {
   WALL_TYPES,
 } from '../../../types/elements'
 import { computeSeatPositions } from '../../../lib/seatLayout'
-import type { TableElement, WorkstationElement, ConferenceRoomElement, CommonAreaElement, WallElement, DeskElement, PrivateOfficeElement, WallType } from '../../../types/elements'
+import type { CanvasElement, TableElement, WorkstationElement, ConferenceRoomElement, CommonAreaElement, WallElement, DeskElement, PrivateOfficeElement, WallType } from '../../../types/elements'
 import { SEAT_STATUS_OVERRIDES, type SeatStatus } from '../../../types/seatAssignment'
 
 const WALL_TYPE_LABELS: Record<WallType, string> = {
@@ -46,6 +47,116 @@ const WALL_TYPE_LABELS: Record<WallType, string> = {
   glass: 'Glass partition',
   'half-height': 'Half-height',
   demountable: 'Demountable',
+}
+
+/**
+ * Shared input + label class strings. Defined once so the desk / wall / table
+ * etc. sections can't drift in spacing or focus styling.
+ */
+const LABEL_CLASS = 'text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block'
+const INPUT_CLASS =
+  'w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500 bg-white dark:bg-gray-900'
+
+/**
+ * Section helper — wraps a labeled group of fields with an uppercase tracking
+ * heading. Sections inside the panel use `gap-2` between heading and content
+ * and the parent stacks them with `gap-5` for clear visual separation.
+ */
+function Section({
+  title,
+  children,
+  ...rest
+}: { title: string; children: React.ReactNode } & React.HTMLAttributes<HTMLElement>) {
+  return (
+    <section {...rest} className={`flex flex-col gap-3 ${rest.className ?? ''}`}>
+      <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+        {title}
+      </h3>
+      <div className="flex flex-col gap-4">{children}</div>
+    </section>
+  )
+}
+
+/**
+ * Compute initials + a department-derived color for an employee. Pulled out so
+ * `EmployeeDetailCard` and the workstation/private-office assignee rows share
+ * the same avatar derivation rather than duplicating the slice/uppercase logic.
+ */
+function useEmployeeAvatar(employee: Pick<Employee, 'name' | 'department'> | undefined) {
+  const getDepartmentColor = useEmployeeStore((s) => s.getDepartmentColor)
+  if (!employee) return { initials: '?', deptColor: '#9CA3AF' }
+  const initials = employee.name
+    .split(/\s+/)
+    .map((p) => p[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
+  const deptColor = employee.department
+    ? getDepartmentColor(employee.department)
+    : '#9CA3AF'
+  return { initials: initials || '?', deptColor }
+}
+
+/**
+ * Header rendered at the top of the single-select branch. Sticks to the top
+ * of the scrolling sidebar so the user always knows what they're editing.
+ *
+ * The icon mapping intentionally lives in this component rather than a
+ * top-level constant: keeping it inline keeps the file lint-clean (no
+ * non-component module exports) and the `LucideIcon` type local.
+ */
+function ElementHeader({ el }: { el: CanvasElement }) {
+  let Icon: LucideIcon = LayoutGrid
+  let label = 'Element'
+  let subtitle: string | null = el.label || null
+
+  if (isDeskElement(el)) {
+    Icon = Armchair
+    label = 'Desk'
+    subtitle = el.deskId || el.label || null
+  } else if (isWorkstationElement(el)) {
+    Icon = Armchair
+    label = 'Workstation'
+    subtitle = el.deskId || el.label || null
+  } else if (isPrivateOfficeElement(el)) {
+    Icon = DoorOpen
+    label = 'Private office'
+    subtitle = el.deskId || el.label || null
+  } else if (isTableElement(el)) {
+    Icon = Square
+    label = 'Table'
+  } else if (isWallElement(el)) {
+    Icon = Minus
+    label = 'Wall'
+  } else if (isConferenceRoomElement(el)) {
+    Icon = Box
+    label = 'Conference room'
+    subtitle = el.roomName || el.label || null
+  } else if (isCommonAreaElement(el)) {
+    Icon = Coffee
+    label = 'Common area'
+    subtitle = el.areaName || el.label || null
+  }
+
+  return (
+    <div
+      data-testid="properties-panel-header"
+      className="sticky top-0 z-10 -mx-3 px-3 py-2.5 bg-white/95 dark:bg-gray-950/95 backdrop-blur border-b border-gray-100 dark:border-gray-800 mb-1 flex items-center gap-2.5"
+    >
+      <div className="w-8 h-8 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 flex items-center justify-center flex-shrink-0">
+        <Icon size={16} aria-hidden="true" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{label}</div>
+        {subtitle ? (
+          <div className="text-xs text-gray-500 dark:text-gray-400 truncate" title={subtitle}>
+            {subtitle}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  )
 }
 
 /**
@@ -87,11 +198,9 @@ function DeskIdInput({
 
   return (
     <div>
-      <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Desk ID</label>
+      <label className={LABEL_CLASS}>Desk ID</label>
       <input
-        className={`w-full text-sm border rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 ${
-          error ? 'border-red-300' : 'border-gray-200 dark:border-gray-800'
-        } disabled:bg-gray-50 disabled:text-gray-500`}
+        className={`${INPUT_CLASS} ${error ? 'border-red-300 dark:border-red-700' : ''}`}
         value={draft}
         disabled={disabled}
         onChange={(e) => {
@@ -140,11 +249,9 @@ function SeatStatusOverridePicker({
   const updateElement = useElementsStore((s) => s.updateElement)
   return (
     <div>
-      <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">
-        Seat status override
-      </label>
+      <label className={LABEL_CLASS}>Seat status override</label>
       <select
-        className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500 bg-white dark:bg-gray-900"
+        className={INPUT_CLASS}
         value={value ?? ''}
         disabled={disabled}
         onChange={(e) => {
@@ -206,19 +313,7 @@ function EmployeeDetailCard({
   const navigate = useNavigate()
   const { teamSlug, officeSlug } = useParams<{ teamSlug: string; officeSlug: string }>()
   const rawEmployees = useEmployeeStore((s) => s.employees)
-  const getDepartmentColor = useEmployeeStore((s) => s.getDepartmentColor)
-
-  const initials = employee.name
-    .split(/\s+/)
-    .map((p) => p[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join('')
-    .toUpperCase()
-
-  const deptColor = employee.department
-    ? getDepartmentColor(employee.department)
-    : '#9CA3AF'
+  const { initials, deptColor } = useEmployeeAvatar(employee)
 
   // Manager lookup: redaction blanks `managerId`, so when `viewPII=false`
   // this naturally skips the real manager and we render the redacted
@@ -239,28 +334,42 @@ function EmployeeDetailCard({
     }
   }
 
+  const infoRow = (label: string, value: string, title: string) => (
+    <div className="flex justify-between items-center gap-3 text-xs">
+      <span className="text-[10px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 flex-shrink-0">
+        {label}
+      </span>
+      <span
+        className="text-gray-800 dark:text-gray-100 truncate text-right"
+        title={title}
+      >
+        {value}
+      </span>
+    </div>
+  )
+
   return (
     <div
       data-testid="employee-detail-card"
-      className="rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3 flex flex-col gap-2"
+      className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4"
     >
       {/* Header: avatar + name + title */}
-      <div className="flex items-center gap-2 min-w-0">
+      <div className="flex items-center gap-3 min-w-0">
         {employee.photoUrl ? (
           <img
             src={employee.photoUrl}
             alt=""
-            width={36}
-            height={36}
-            className="w-9 h-9 rounded-full object-cover flex-shrink-0"
+            width={44}
+            height={44}
+            className="w-11 h-11 rounded-full object-cover flex-shrink-0"
           />
         ) : (
           <div
             aria-hidden
-            className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0"
+            className="w-11 h-11 rounded-full flex items-center justify-center text-white text-sm font-semibold flex-shrink-0"
             style={{ background: deptColor }}
           >
-            {initials || '?'}
+            {initials}
           </div>
         )}
         <div className="flex-1 min-w-0">
@@ -282,7 +391,7 @@ function EmployeeDetailCard({
       </div>
 
       {/* Chips: department + status */}
-      <div className="flex gap-1.5 flex-wrap">
+      <div className="flex gap-2 flex-wrap mt-3">
         {employee.department && (
           <span
             className="px-2 py-0.5 rounded-full text-[11px] font-medium text-white"
@@ -299,49 +408,90 @@ function EmployeeDetailCard({
         </span>
       </div>
 
-      {/* Info rows */}
-      <div className="grid grid-cols-[60px_1fr] gap-x-2 gap-y-0.5 text-[12px] text-gray-700 dark:text-gray-200">
-        <div className="text-[11px] text-gray-400 dark:text-gray-500">Team</div>
-        <div className="truncate" title={employee.team || '—'}>
-          {employee.team || '—'}
-        </div>
-        <div className="text-[11px] text-gray-400 dark:text-gray-500">Manager</div>
-        <div
-          className="truncate"
-          title={canViewPII ? manager?.name || '—' : '— (redacted)'}
-        >
-          {canViewPII ? manager?.name || '—' : '— (redacted)'}
-        </div>
-        <div className="text-[11px] text-gray-400 dark:text-gray-500">Email</div>
-        <div
-          className="truncate"
-          title={canViewPII ? employee.email || '—' : '— (redacted)'}
-        >
-          {canViewPII ? employee.email || '—' : '— (redacted)'}
-        </div>
+      {/* Info rows — definition list, label/value per row, separator above */}
+      <div className="border-t border-gray-100 dark:border-gray-800 pt-2.5 mt-3 flex flex-col gap-1.5">
+        {infoRow('Team', employee.team || '—', employee.team || '—')}
+        {infoRow(
+          'Manager',
+          canViewPII ? manager?.name || '—' : '— (redacted)',
+          canViewPII ? manager?.name || '—' : '— (redacted)',
+        )}
+        {infoRow(
+          'Email',
+          canViewPII ? employee.email || '—' : '— (redacted)',
+          canViewPII ? employee.email || '—' : '— (redacted)',
+        )}
       </div>
 
-      {/* Actions */}
-      <div className="flex gap-1.5 justify-end pt-1">
-        {canEditRoster && (
+      {/* Actions — full-width 2-column grid, danger styling on Unassign */}
+      <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+        {canEditRoster ? (
           <button
             type="button"
             onClick={handleUnassign}
             data-testid="employee-detail-unassign"
-            className="px-2.5 py-1 text-xs text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50"
+            className="px-2.5 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 bg-white dark:bg-gray-900 border border-red-200 dark:border-red-900/50 rounded hover:bg-red-50 dark:hover:bg-red-950/40"
           >
             Unassign
           </button>
+        ) : (
+          // Spacer so the View profile button still spans the right column
+          // when the viewer lacks edit-roster permission.
+          <div />
         )}
         <button
           type="button"
           onClick={handleViewProfile}
           data-testid="employee-detail-view-profile"
-          className="px-2.5 py-1 text-xs text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50"
+          className="px-2.5 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50"
         >
           View profile
         </button>
       </div>
+    </div>
+  )
+}
+
+/**
+ * Single-line assignee row used inside workstation + private-office Seat
+ * sections. Pulled out so both call sites share the avatar + truncate +
+ * Clear-button layout.
+ */
+function AssigneeRow({
+  employee,
+  fallbackId,
+  canEdit,
+  onClear,
+}: {
+  employee: Employee | undefined
+  fallbackId: string
+  canEdit: boolean
+  onClear: () => void
+}) {
+  const { initials, deptColor } = useEmployeeAvatar(employee)
+  const name = employee?.name || fallbackId
+  return (
+    <div className="flex items-center justify-between gap-2 text-sm border border-gray-200 dark:border-gray-800 rounded-md px-2.5 py-1.5 bg-white dark:bg-gray-900">
+      <div className="flex items-center gap-2 min-w-0 flex-1">
+        <div
+          aria-hidden
+          className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-semibold flex-shrink-0"
+          style={{ background: deptColor }}
+        >
+          {initials}
+        </div>
+        <span className="text-gray-800 dark:text-gray-100 truncate" title={name}>
+          {name}
+        </span>
+      </div>
+      {canEdit && (
+        <button
+          onClick={onClear}
+          className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-300 flex-shrink-0"
+        >
+          Clear
+        </button>
+      )}
     </div>
   )
 }
@@ -450,13 +600,13 @@ export function PropertiesPanel() {
         {allWalls && firstWall && (
           <>
             <div>
-              <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Thickness</label>
+              <label className={LABEL_CLASS}>Thickness</label>
               <input
                 type="number"
                 min={2}
                 max={20}
                 step={1}
-                className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+                className={INPUT_CLASS}
                 value={firstWall.thickness}
                 disabled={inputDisabled}
                 onChange={(e) => {
@@ -466,10 +616,10 @@ export function PropertiesPanel() {
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Line style</label>
+              <label className={LABEL_CLASS}>Line style</label>
               <select
                 aria-label="Line style"
-                className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+                className={INPUT_CLASS}
                 value={firstWall.dashStyle ?? 'solid'}
                 disabled={inputDisabled}
                 onChange={(e) => {
@@ -483,10 +633,10 @@ export function PropertiesPanel() {
               </select>
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Wall type</label>
+              <label className={LABEL_CLASS}>Wall type</label>
               <select
                 aria-label="Wall type"
-                className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+                className={INPUT_CLASS}
                 value={firstWall.wallType ?? 'solid'}
                 disabled={inputDisabled}
                 onChange={(e) => {
@@ -502,7 +652,7 @@ export function PropertiesPanel() {
               </select>
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Stroke</label>
+              <label className={LABEL_CLASS}>Stroke</label>
               <input
                 type="color"
                 className="w-full h-8 border border-gray-200 dark:border-gray-800 rounded cursor-pointer disabled:opacity-50"
@@ -541,111 +691,94 @@ export function PropertiesPanel() {
 
   const update = (updates: Record<string, unknown>) => updateElement(el.id, updates)
 
-  // Helper to find assigned employee name for desk/private-office
-  const getAssignedEmployeeName = (employeeId: string | null): string | null => {
-    if (!employeeId) return null
-    const emp = employees[employeeId]
-    return emp ? emp.name : null
-  }
+  // Derive which "details" section to render after Appearance based on type.
+  // Walls / tables / conference rooms / common areas have their own custom
+  // controls; desk / workstation / private office share the Seat section.
+  const isSeatHolder = isDeskElement(el) || isWorkstationElement(el) || isPrivateOfficeElement(el)
 
   return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Label</label>
-        <input
-          className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
-          value={el.label}
-          disabled={inputDisabled}
-          onChange={(e) => update({ label: e.target.value })}
-        />
-      </div>
+    <div className="flex flex-col gap-5">
+      <ElementHeader el={el} />
 
-      <div className="grid grid-cols-2 gap-2">
+      <Section title="Identity">
         <div>
-          <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">X</label>
+          <label className={LABEL_CLASS}>Label</label>
           <input
-            type="number"
-            className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
-            value={Math.round(el.x)}
+            className={INPUT_CLASS}
+            value={el.label}
             disabled={inputDisabled}
-            onChange={(e) => update({ x: Number(e.target.value) })}
+            onChange={(e) => update({ label: e.target.value })}
           />
         </div>
-        <div>
-          <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Y</label>
-          <input
-            type="number"
-            className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
-            value={Math.round(el.y)}
-            disabled={inputDisabled}
-            onChange={(e) => update({ y: Number(e.target.value) })}
-          />
-        </div>
-      </div>
+      </Section>
 
-      <div className="grid grid-cols-2 gap-2">
-        <div>
-          <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Width</label>
-          <input
-            type="number"
-            className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
-            value={Math.round(el.width)}
-            disabled={inputDisabled}
-            onChange={(e) => update({ width: Number(e.target.value) })}
-          />
-        </div>
-        <div>
-          <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Height</label>
-          <input
-            type="number"
-            className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
-            value={Math.round(el.height)}
-            disabled={inputDisabled}
-            onChange={(e) => update({ height: Number(e.target.value) })}
-          />
-        </div>
-      </div>
-
-      <div>
-        <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Rotation</label>
-        <input
-          type="number"
-          className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
-          value={Math.round(el.rotation)}
-          disabled={inputDisabled}
-          onChange={(e) => update({ rotation: Number(e.target.value) % 360 })}
-          min={0}
-          max={359}
-        />
-      </div>
-
-      {isWallElement(el) ? (
-        // Walls don't fill — only the stroke is meaningful. Hiding Fill
-        // prevents users from setting a value with no visual effect.
-        <div>
-          <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Stroke</label>
-          <input
-            type="color"
-            className="w-full h-8 border border-gray-200 dark:border-gray-800 rounded cursor-pointer disabled:opacity-50"
-            value={el.style.stroke}
-            disabled={inputDisabled}
-            onChange={(e) => update({ style: { ...el.style, stroke: e.target.value } })}
-          />
-        </div>
-      ) : (
+      <Section title="Layout">
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Fill</label>
+            <label className={LABEL_CLASS}>X</label>
             <input
-              type="color"
-              className="w-full h-8 border border-gray-200 dark:border-gray-800 rounded cursor-pointer disabled:opacity-50"
-              value={el.style.fill}
+              type="number"
+              className={INPUT_CLASS}
+              value={Math.round(el.x)}
               disabled={inputDisabled}
-              onChange={(e) => update({ style: { ...el.style, fill: e.target.value } })}
+              onChange={(e) => update({ x: Number(e.target.value) })}
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Stroke</label>
+            <label className={LABEL_CLASS}>Y</label>
+            <input
+              type="number"
+              className={INPUT_CLASS}
+              value={Math.round(el.y)}
+              disabled={inputDisabled}
+              onChange={(e) => update({ y: Number(e.target.value) })}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className={LABEL_CLASS}>Width</label>
+            <input
+              type="number"
+              className={INPUT_CLASS}
+              value={Math.round(el.width)}
+              disabled={inputDisabled}
+              onChange={(e) => update({ width: Number(e.target.value) })}
+            />
+          </div>
+          <div>
+            <label className={LABEL_CLASS}>Height</label>
+            <input
+              type="number"
+              className={INPUT_CLASS}
+              value={Math.round(el.height)}
+              disabled={inputDisabled}
+              onChange={(e) => update({ height: Number(e.target.value) })}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className={LABEL_CLASS}>Rotation</label>
+          <input
+            type="number"
+            className={INPUT_CLASS}
+            value={Math.round(el.rotation)}
+            disabled={inputDisabled}
+            onChange={(e) => update({ rotation: Number(e.target.value) % 360 })}
+            min={0}
+            max={359}
+          />
+        </div>
+      </Section>
+
+      <Section title="Appearance">
+        {isWallElement(el) ? (
+          // Walls don't fill — only the stroke is meaningful. Hiding Fill
+          // prevents users from setting a value with no visual effect.
+          <div>
+            <label className={LABEL_CLASS}>Stroke</label>
             <input
               type="color"
               className="w-full h-8 border border-gray-200 dark:border-gray-800 rounded cursor-pointer disabled:opacity-50"
@@ -654,30 +787,53 @@ export function PropertiesPanel() {
               onChange={(e) => update({ style: { ...el.style, stroke: e.target.value } })}
             />
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className={LABEL_CLASS}>Fill</label>
+              <input
+                type="color"
+                className="w-full h-8 border border-gray-200 dark:border-gray-800 rounded cursor-pointer disabled:opacity-50"
+                value={el.style.fill}
+                disabled={inputDisabled}
+                onChange={(e) => update({ style: { ...el.style, fill: e.target.value } })}
+              />
+            </div>
+            <div>
+              <label className={LABEL_CLASS}>Stroke</label>
+              <input
+                type="color"
+                className="w-full h-8 border border-gray-200 dark:border-gray-800 rounded cursor-pointer disabled:opacity-50"
+                value={el.style.stroke}
+                disabled={inputDisabled}
+                onChange={(e) => update({ style: { ...el.style, stroke: e.target.value } })}
+              />
+            </div>
+          </div>
+        )}
+      </Section>
 
       {/* Wall-specific controls: thickness + dash pattern. */}
       {isWallElement(el) && (
-        <>
+        <Section title="Wall details">
           <div>
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Thickness</label>
+            <label className={LABEL_CLASS}>Thickness</label>
             <input
               type="number"
               min={2}
               max={20}
               step={1}
-              className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+              className={INPUT_CLASS}
               value={el.thickness}
               disabled={inputDisabled}
               onChange={(e) => update({ thickness: Number(e.target.value) } as Partial<WallElement>)}
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Line style</label>
+            <label className={LABEL_CLASS}>Line style</label>
             <select
               aria-label="Line style"
-              className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+              className={INPUT_CLASS}
               value={el.dashStyle ?? 'solid'}
               disabled={inputDisabled}
               onChange={(e) =>
@@ -690,10 +846,10 @@ export function PropertiesPanel() {
             </select>
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Wall type</label>
+            <label className={LABEL_CLASS}>Wall type</label>
             <select
               aria-label="Wall type"
-              className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+              className={INPUT_CLASS}
               value={el.wallType ?? 'solid'}
               disabled={inputDisabled}
               onChange={(e) =>
@@ -707,166 +863,125 @@ export function PropertiesPanel() {
               ))}
             </select>
           </div>
-        </>
+        </Section>
       )}
 
       {isTableElement(el) && (
-        <div>
-          <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Seats</label>
-          <input
-            type="number"
-            className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
-            value={el.seatCount}
-            min={1}
-            max={30}
-            disabled={inputDisabled}
-            onChange={(e) => {
-              const count = Number(e.target.value)
-              const seats = computeSeatPositions(el.type, count, el.seatLayout, el.width, el.height)
-              update({ seatCount: count, seats } as Partial<TableElement>)
-            }}
-          />
-        </div>
+        <Section title="Table seats">
+          <div>
+            <label className={LABEL_CLASS}>Seats</label>
+            <input
+              type="number"
+              className={INPUT_CLASS}
+              value={el.seatCount}
+              min={1}
+              max={30}
+              disabled={inputDisabled}
+              onChange={(e) => {
+                const count = Number(e.target.value)
+                const seats = computeSeatPositions(el.type, count, el.seatLayout, el.width, el.height)
+                update({ seatCount: count, seats } as Partial<TableElement>)
+              }}
+            />
+          </div>
+        </Section>
       )}
 
-      {/* Desk / Hot-desk properties */}
-      {isDeskElement(el) && (
-        <>
-          {el.assignedEmployeeId && employees[el.assignedEmployeeId] ? (
+      {/* Seat: shared section for desk / workstation / private-office.
+          All seat metadata (assignee block, deskId, status override,
+          empty-state hint) lives here so the user reads it as one group. */}
+      {isSeatHolder && (
+        <Section title="Seat">
+          {isDeskElement(el) && el.assignedEmployeeId && employees[el.assignedEmployeeId] ? (
             <EmployeeDetailCard
               employee={employees[el.assignedEmployeeId]}
               canViewPII={canViewPII}
               canEditRoster={canEditRoster}
             />
           ) : null}
+
+          {isWorkstationElement(el) && (
+            <div>
+              <label className={LABEL_CLASS}>Positions</label>
+              <input
+                type="number"
+                className={INPUT_CLASS}
+                value={el.positions}
+                min={1}
+                max={20}
+                disabled={inputDisabled}
+                onChange={(e) => {
+                  const newCount = Number(e.target.value)
+                  // If shrinking below the number of current assignees, unassign
+                  // the tail employees so they aren't stranded claiming this
+                  // workstation with no visible seat.
+                  if (newCount < el.assignedEmployeeIds.length) {
+                    const toRemove = el.assignedEmployeeIds.slice(newCount)
+                    toRemove.forEach((empId) => unassignEmployee(empId))
+                  }
+                  update({ positions: newCount } as Partial<WorkstationElement>)
+                }}
+              />
+            </div>
+          )}
+
+          {(isWorkstationElement(el) || isPrivateOfficeElement(el)) && (
+            <div>
+              <label className={LABEL_CLASS}>
+                Assigned ({el.assignedEmployeeIds.length} /{' '}
+                {isWorkstationElement(el) ? el.positions : el.capacity})
+              </label>
+              {el.assignedEmployeeIds.length > 0 ? (
+                <div className="flex flex-col gap-1.5">
+                  {el.assignedEmployeeIds.map((empId) => (
+                    <AssigneeRow
+                      key={empId}
+                      employee={employees[empId]}
+                      fallbackId={empId}
+                      canEdit={canEdit}
+                      onClear={() => unassignEmployee(empId)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5">
+                  No one assigned
+                </div>
+              )}
+            </div>
+          )}
+
           <DeskIdInput elementId={el.id} value={el.deskId} disabled={inputDisabled} />
           <SeatStatusOverridePicker elementId={el.id} value={el.seatStatus} disabled={inputDisabled} />
-          {!el.assignedEmployeeId && (
+
+          {isDeskElement(el) && !el.assignedEmployeeId && (
             <div>
-              <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Assigned To</label>
+              <label className={LABEL_CLASS}>Assigned To</label>
               <div className="text-sm text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5">
                 No one assigned
               </div>
             </div>
           )}
-        </>
-      )}
-
-      {/* Workstation properties */}
-      {isWorkstationElement(el) && (
-        <>
-          <DeskIdInput elementId={el.id} value={el.deskId} disabled={inputDisabled} />
-          <SeatStatusOverridePicker elementId={el.id} value={el.seatStatus} disabled={inputDisabled} />
-          <div>
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Positions</label>
-            <input
-              type="number"
-              className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
-              value={el.positions}
-              min={1}
-              max={20}
-              disabled={inputDisabled}
-              onChange={(e) => {
-                const newCount = Number(e.target.value)
-                // If shrinking below the number of current assignees, unassign
-                // the tail employees so they aren't stranded claiming this
-                // workstation with no visible seat.
-                if (newCount < el.assignedEmployeeIds.length) {
-                  const toRemove = el.assignedEmployeeIds.slice(newCount)
-                  toRemove.forEach((empId) => unassignEmployee(empId))
-                }
-                update({ positions: newCount } as Partial<WorkstationElement>)
-              }}
-            />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">
-              Assigned ({el.assignedEmployeeIds.length} / {el.positions})
-            </label>
-            {el.assignedEmployeeIds.length > 0 ? (
-              <div className="flex flex-col gap-1">
-                {el.assignedEmployeeIds.map((empId) => (
-                  <div key={empId} className="flex items-center justify-between gap-2 text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1">
-                    <span className="text-gray-800 dark:text-gray-100 truncate">
-                      {getAssignedEmployeeName(empId) || empId}
-                    </span>
-                    {canEdit && (
-                      <button
-                        onClick={() => {
-                          unassignEmployee(empId)
-                        }}
-                        className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-300 flex-shrink-0"
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-sm text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5">
-                No one assigned
-              </div>
-            )}
-          </div>
-        </>
-      )}
-
-      {/* Private office properties */}
-      {isPrivateOfficeElement(el) && (
-        <>
-          <DeskIdInput elementId={el.id} value={el.deskId} disabled={inputDisabled} />
-          <SeatStatusOverridePicker elementId={el.id} value={el.seatStatus} disabled={inputDisabled} />
-          <div>
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">
-              Assigned ({el.assignedEmployeeIds.length} / {el.capacity})
-            </label>
-            {el.assignedEmployeeIds.length > 0 ? (
-              <div className="flex flex-col gap-1">
-                {el.assignedEmployeeIds.map((empId) => (
-                  <div key={empId} className="flex items-center justify-between gap-2 text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1">
-                    <span className="text-gray-800 dark:text-gray-100 truncate">
-                      {getAssignedEmployeeName(empId) || empId}
-                    </span>
-                    {canEdit && (
-                      <button
-                        onClick={() => {
-                          unassignEmployee(empId)
-                        }}
-                        className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-300 flex-shrink-0"
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-sm text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5">
-                No one assigned
-              </div>
-            )}
-          </div>
-        </>
+        </Section>
       )}
 
       {/* Conference room properties */}
       {isConferenceRoomElement(el) && (
-        <>
+        <Section title="Room">
           <div>
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Room Name</label>
+            <label className={LABEL_CLASS}>Room Name</label>
             <input
-              className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+              className={INPUT_CLASS}
               value={el.roomName}
               disabled={inputDisabled}
               onChange={(e) => update({ roomName: e.target.value } as Partial<ConferenceRoomElement>)}
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Capacity</label>
+            <label className={LABEL_CLASS}>Capacity</label>
             <input
               type="number"
-              className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+              className={INPUT_CLASS}
               value={el.capacity}
               min={1}
               max={100}
@@ -874,57 +989,61 @@ export function PropertiesPanel() {
               onChange={(e) => update({ capacity: Number(e.target.value) } as Partial<ConferenceRoomElement>)}
             />
           </div>
-        </>
+        </Section>
       )}
 
       {/* Common area properties */}
       {isCommonAreaElement(el) && (
-        <div>
-          <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Area Name</label>
-          <input
-            className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
-            value={el.areaName}
-            disabled={inputDisabled}
-            onChange={(e) => update({ areaName: e.target.value } as Partial<CommonAreaElement>)}
-          />
-        </div>
+        <Section title="Area">
+          <div>
+            <label className={LABEL_CLASS}>Area Name</label>
+            <input
+              className={INPUT_CLASS}
+              value={el.areaName}
+              disabled={inputDisabled}
+              onChange={(e) => update({ areaName: e.target.value } as Partial<CommonAreaElement>)}
+            />
+          </div>
+        </Section>
       )}
 
-      <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={el.locked}
-          disabled={inputDisabled}
-          onChange={(e) => update({ locked: e.target.checked })}
-          className="rounded"
-        />
-        Locked
-      </label>
+      <Section title="More">
+        <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={el.locked}
+            disabled={inputDisabled}
+            onChange={(e) => update({ locked: e.target.checked })}
+            className="rounded"
+          />
+          Locked
+        </label>
 
-      {canViewHistory &&
-        (isDeskElement(el) || isWorkstationElement(el) || isPrivateOfficeElement(el)) && (
+        {canViewHistory &&
+          (isDeskElement(el) || isWorkstationElement(el) || isPrivateOfficeElement(el)) && (
+            <button
+              type="button"
+              onClick={() => setHistoryTargetId(el.id)}
+              className="w-full px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors inline-flex items-center justify-center gap-1.5"
+              data-testid="properties-history-button"
+            >
+              <History size={14} aria-hidden="true" /> History
+            </button>
+          )}
+
+        {canEdit && selectedIds.length >= 1 && (
           <button
             type="button"
-            onClick={() => setHistoryTargetId(el.id)}
-            className="mt-2 w-full px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors inline-flex items-center justify-center gap-1.5"
-            data-testid="properties-history-button"
+            onClick={() => {
+              deleteElements(selectedIds)
+              useUIStore.getState().clearSelection()
+            }}
+            className="w-full px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 border border-red-300 rounded hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
           >
-            <History size={14} aria-hidden="true" /> History
+            {selectedIds.length === 1 ? 'Delete element' : `Delete ${selectedIds.length} elements`}
           </button>
         )}
-
-      {canEdit && selectedIds.length >= 1 && (
-        <button
-          type="button"
-          onClick={() => {
-            deleteElements(selectedIds)
-            useUIStore.getState().clearSelection()
-          }}
-          className="mt-2 w-full px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 border border-red-300 rounded hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
-        >
-          {selectedIds.length === 1 ? 'Delete element' : `Delete ${selectedIds.length} elements`}
-        </button>
-      )}
+      </Section>
 
       {historyTargetId && (
         <SeatHistoryDrawer
