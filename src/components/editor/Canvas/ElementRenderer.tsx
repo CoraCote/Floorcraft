@@ -225,13 +225,14 @@ export function ElementRenderer() {
     [setSelectedIds, setContextMenu]
   )
 
-  // Hover tracking — only meaningful for the select tool, so we gate on
-  // it here rather than in the overlay. Other tools (wall, door, window,
-  // primitives) each have their own preview affordance and would be
-  // noisier with an extra outline.
+  // Hover tracking — meaningful for select + pan (the two non-creating
+  // tools). Other tools (wall, door, window, primitives) each have their
+  // own preview affordance and would be noisier with an extra outline.
+  // The pan tool reads `hoveredId` so the Wave 10B hover card surfaces
+  // element details without disengaging pan.
   const handleMouseEnter = useCallback(
     (id: string) => {
-      if (activeTool !== 'select') return
+      if (activeTool !== 'select' && activeTool !== 'pan') return
       setHoveredId(id)
     },
     [activeTool, setHoveredId],
