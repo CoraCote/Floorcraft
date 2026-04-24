@@ -70,14 +70,14 @@ export function NeighborhoodPropertiesPanel({ id }: { id: string }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+      <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
         Neighborhood
       </div>
 
       <div>
-        <label className="text-xs font-medium text-gray-500 mb-1 block">Name</label>
+        <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Name</label>
         <input
-          className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+          className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
           value={nameDraft}
           disabled={inputDisabled}
           onChange={(e) => setNameDraft(e.target.value)}
@@ -96,12 +96,12 @@ export function NeighborhoodPropertiesPanel({ id }: { id: string }) {
       </div>
 
       <div>
-        <label className="text-xs font-medium text-gray-500 mb-1 block">Color</label>
+        <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Color</label>
         <div className="flex items-center gap-2">
           <input
             type="color"
             aria-label="Color"
-            className="w-10 h-8 border border-gray-200 rounded cursor-pointer disabled:opacity-50"
+            className="w-10 h-8 border border-gray-200 dark:border-gray-800 rounded cursor-pointer disabled:opacity-50"
             value={n.color}
             disabled={inputDisabled}
             onChange={(e) => updateNeighborhood(id, { color: e.target.value })}
@@ -118,7 +118,7 @@ export function NeighborhoodPropertiesPanel({ id }: { id: string }) {
                 className={`w-5 h-5 rounded border ${
                   n.color.toLowerCase() === c.toLowerCase()
                     ? 'border-gray-800 ring-2 ring-offset-1 ring-gray-400'
-                    : 'border-gray-200'
+                    : 'border-gray-200 dark:border-gray-800'
                 }`}
                 style={{ backgroundColor: c }}
               />
@@ -128,12 +128,12 @@ export function NeighborhoodPropertiesPanel({ id }: { id: string }) {
       </div>
 
       <div>
-        <label className="text-xs font-medium text-gray-500 mb-1 block">
+        <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">
           Department
         </label>
         <input
           list="neighborhood-department-list"
-          className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+          className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
           value={deptDraft}
           disabled={inputDisabled}
           onChange={(e) => setDeptDraft(e.target.value)}
@@ -152,9 +152,9 @@ export function NeighborhoodPropertiesPanel({ id }: { id: string }) {
       </div>
 
       <div>
-        <label className="text-xs font-medium text-gray-500 mb-1 block">Team</label>
+        <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Team</label>
         <input
-          className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+          className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
           value={teamDraft}
           disabled={inputDisabled}
           onChange={(e) => setTeamDraft(e.target.value)}
@@ -168,10 +168,10 @@ export function NeighborhoodPropertiesPanel({ id }: { id: string }) {
       </div>
 
       <div>
-        <label className="text-xs font-medium text-gray-500 mb-1 block">Notes</label>
+        <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Notes</label>
         <textarea
           rows={3}
-          className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+          className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
           value={notesDraft}
           disabled={inputDisabled}
           onChange={(e) => setNotesDraft(e.target.value)}
@@ -186,20 +186,20 @@ export function NeighborhoodPropertiesPanel({ id }: { id: string }) {
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="text-xs font-medium text-gray-500 mb-1 block">X</label>
+          <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">X</label>
           <input
             type="number"
-            className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+            className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
             value={Math.round(n.x)}
             disabled={inputDisabled}
             onChange={(e) => updateNeighborhood(id, { x: Number(e.target.value) })}
           />
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-500 mb-1 block">Y</label>
+          <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Y</label>
           <input
             type="number"
-            className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+            className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
             value={Math.round(n.y)}
             disabled={inputDisabled}
             onChange={(e) => updateNeighborhood(id, { y: Number(e.target.value) })}
@@ -209,22 +209,22 @@ export function NeighborhoodPropertiesPanel({ id }: { id: string }) {
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="text-xs font-medium text-gray-500 mb-1 block">Width</label>
+          <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Width</label>
           <input
             type="number"
             min={1}
-            className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+            className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
             value={Math.round(n.width)}
             disabled={inputDisabled}
             onChange={(e) => updateNeighborhood(id, { width: Math.max(1, Number(e.target.value)) })}
           />
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-500 mb-1 block">Height</label>
+          <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Height</label>
           <input
             type="number"
             min={1}
-            className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+            className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
             value={Math.round(n.height)}
             disabled={inputDisabled}
             onChange={(e) => updateNeighborhood(id, { height: Math.max(1, Number(e.target.value)) })}
@@ -239,7 +239,7 @@ export function NeighborhoodPropertiesPanel({ id }: { id: string }) {
             deleteNeighborhood(id)
             useUIStore.getState().clearSelection()
           }}
-          className="mt-2 w-full px-3 py-1.5 text-sm font-medium text-red-600 border border-red-300 rounded hover:bg-red-50 transition-colors"
+          className="mt-2 w-full px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 border border-red-300 rounded hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
         >
           Delete neighborhood
         </button>

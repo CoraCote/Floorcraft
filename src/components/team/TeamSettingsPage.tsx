@@ -28,7 +28,7 @@ export function TeamSettingsPage() {
     load()
   }, [teamSlug, session])
 
-  if (!team) return <div className="p-6 text-sm text-gray-500">Loading team…</div>
+  if (!team) return <div className="p-6 text-sm text-gray-500 dark:text-gray-400">Loading team…</div>
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
@@ -40,7 +40,7 @@ export function TeamSettingsPage() {
           end
           to="."
           className={({ isActive }) =>
-            `pb-2 ${isActive ? 'border-b-2 border-blue-600 font-medium' : 'text-gray-500'}`
+            `pb-2 ${isActive ? 'border-b-2 border-blue-600 font-medium' : 'text-gray-500 dark:text-gray-400'}`
           }
         >
           General
@@ -48,7 +48,7 @@ export function TeamSettingsPage() {
         <NavLink
           to="members"
           className={({ isActive }) =>
-            `pb-2 ${isActive ? 'border-b-2 border-blue-600 font-medium' : 'text-gray-500'}`
+            `pb-2 ${isActive ? 'border-b-2 border-blue-600 font-medium' : 'text-gray-500 dark:text-gray-400'}`
           }
         >
           Members

@@ -12,9 +12,9 @@ const CATEGORY_LABELS: Record<InsightCategory, string> = {
 }
 
 const SEVERITY_COLORS: Record<Severity, { bg: string; text: string; ring: string }> = {
-  critical: { bg: 'bg-red-100', text: 'text-red-700', ring: 'ring-red-300' },
-  warning: { bg: 'bg-yellow-100', text: 'text-yellow-700', ring: 'ring-yellow-300' },
-  info: { bg: 'bg-blue-100', text: 'text-blue-700', ring: 'ring-blue-300' },
+  critical: { bg: 'bg-red-100 dark:bg-red-900/40', text: 'text-red-700 dark:text-red-300', ring: 'ring-red-300' },
+  warning: { bg: 'bg-yellow-100 dark:bg-yellow-900/40', text: 'text-yellow-700', ring: 'ring-yellow-300' },
+  info: { bg: 'bg-blue-100 dark:bg-blue-900/40', text: 'text-blue-700 dark:text-blue-300', ring: 'ring-blue-300' },
 }
 
 interface InsightFiltersProps {
@@ -44,7 +44,7 @@ export function InsightFilters({
               className={`px-2.5 py-1 text-xs rounded-full font-medium transition-colors ${
                 active
                   ? `${colors.bg} ${colors.text} ring-1 ${colors.ring}`
-                  : 'bg-gray-100 text-gray-400'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500'
               }`}
             >
               {sev.charAt(0).toUpperCase() + sev.slice(1)}
@@ -64,8 +64,8 @@ export function InsightFilters({
                 onClick={() => onToggleCategory(cat)}
                 className={`px-2 py-0.5 text-[10px] rounded-full transition-colors ${
                   active
-                    ? 'bg-gray-200 text-gray-700'
-                    : 'bg-gray-50 text-gray-400'
+                    ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
+                    : 'bg-gray-50 dark:bg-gray-800/50 text-gray-400 dark:text-gray-500'
                 }`}
               >
                 {label}

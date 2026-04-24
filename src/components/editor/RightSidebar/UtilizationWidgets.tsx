@@ -117,7 +117,7 @@ function Tile({
   const tone = HEALTH_TONES[health]
   return (
     <div
-      className={`relative rounded-md border border-gray-200 bg-white p-2 ${className}`}
+      className={`relative rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-2 ${className}`}
       title={title}
     >
       <div className={`absolute left-0 top-0 bottom-0 w-0.5 rounded-l ${tone.bar}`} />
@@ -125,16 +125,16 @@ function Tile({
         <div className={`text-[10px] font-semibold uppercase tracking-wide ${tone.label}`}>
           {label}
         </div>
-        <div className="text-lg font-bold text-gray-900 leading-tight">{value}</div>
-        <div className="text-[10px] text-gray-500 leading-tight">{sub}</div>
+        <div className="text-lg font-bold text-gray-900 dark:text-gray-100 leading-tight">{value}</div>
+        <div className="text-[10px] text-gray-500 dark:text-gray-400 leading-tight">{sub}</div>
       </div>
     </div>
   )
 }
 
 const HEALTH_TONES: Record<MetricHealth, { bar: string; label: string }> = {
-  healthy: { bar: 'bg-green-400', label: 'text-green-700' },
-  warn: { bar: 'bg-amber-400', label: 'text-amber-700' },
-  critical: { bar: 'bg-red-400', label: 'text-red-700' },
-  unknown: { bar: 'bg-gray-200', label: 'text-gray-500' },
+  healthy: { bar: 'bg-green-400', label: 'text-green-700 dark:text-green-300' },
+  warn: { bar: 'bg-amber-400', label: 'text-amber-700 dark:text-amber-300' },
+  critical: { bar: 'bg-red-400', label: 'text-red-700 dark:text-red-300' },
+  unknown: { bar: 'bg-gray-200 dark:bg-gray-700', label: 'text-gray-500 dark:text-gray-400' },
 }

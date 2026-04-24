@@ -28,7 +28,7 @@ export function ReportsPage() {
   const unassignedRows = useMemo(() => unassignedEmployees(employees), [employees])
 
   if (!canView) {
-    return <div className="p-6 text-gray-600">Not authorized to view reports.</div>
+    return <div className="p-6 text-gray-600 dark:text-gray-300">Not authorized to view reports.</div>
   }
 
   const floorCompareHref =
@@ -47,14 +47,14 @@ export function ReportsPage() {
         <nav aria-label="Reports navigation" className="flex flex-wrap items-center gap-2 text-sm">
           <Link
             to={`/t/${teamSlug}/o/${officeSlug}/reports/scenarios`}
-            className="px-3 py-1.5 border border-gray-200 rounded bg-white hover:bg-gray-50"
+            className="px-3 py-1.5 border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50"
           >
             Capacity scenarios →
           </Link>
           {floorCompareHref && (
             <Link
               to={floorCompareHref}
-              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 border border-gray-200 rounded bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-300"
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:border-gray-300"
             >
               <BarChart2 size={14} />
               Floor compare
@@ -68,7 +68,7 @@ export function ReportsPage() {
       >
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left border-b border-gray-200">
+            <tr className="text-left border-b border-gray-200 dark:border-gray-800">
               <th className="py-2">Floor</th>
               <th>Assigned</th>
               <th>Capacity</th>
@@ -77,14 +77,14 @@ export function ReportsPage() {
           </thead>
           <tbody>
             {utilRows.map((r) => (
-              <tr key={r.floorId} className="border-b border-gray-100">
+              <tr key={r.floorId} className="border-b border-gray-100 dark:border-gray-800">
                 <td className="py-2">{r.floorName}</td>
                 <td>{r.assigned}</td>
                 <td>{r.capacity}</td>
                 <td>
                   <div className="flex items-center gap-2">
                     <UtilizationBar percent={r.percent} />
-                    <span className="text-xs text-gray-500 tabular-nums w-12 text-right">
+                    <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums w-12 text-right">
                       {r.percent.toFixed(1)}%
                     </span>
                   </div>
@@ -101,7 +101,7 @@ export function ReportsPage() {
       >
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left border-b border-gray-200">
+            <tr className="text-left border-b border-gray-200 dark:border-gray-800">
               <th className="py-2">Department</th>
               <th>Count</th>
               <th>Assigned</th>
@@ -110,7 +110,7 @@ export function ReportsPage() {
           </thead>
           <tbody>
             {deptRows.map((r) => (
-              <tr key={r.department} className="border-b border-gray-100">
+              <tr key={r.department} className="border-b border-gray-100 dark:border-gray-800">
                 <td className="py-2">{r.department}</td>
                 <td>{r.count}</td>
                 <td>{r.assigned}</td>
@@ -130,13 +130,13 @@ export function ReportsPage() {
         onExport={() => downloadCsv('unassigned.csv', unassignedCsv(unassignedRows))}
       >
         {unassignedRows.length === 0 ? (
-          <p className="text-sm text-gray-500">Everyone active has a seat.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Everyone active has a seat.</p>
         ) : (
-          <ul className="text-sm divide-y divide-gray-100 max-h-64 overflow-y-auto">
+          <ul className="text-sm divide-y divide-gray-100 dark:divide-gray-800 max-h-64 overflow-y-auto">
             {unassignedRows.map((r) => (
               <li key={r.id} className="py-1.5 flex items-center justify-between">
                 <span>{r.name}</span>
-                <span className="text-xs text-gray-500">{r.department ?? '—'}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{r.department ?? '—'}</span>
               </li>
             ))}
           </ul>
@@ -156,13 +156,13 @@ function Card({
   children: React.ReactNode
 }) {
   return (
-    <section className="bg-white border border-gray-200 rounded p-4">
+    <section className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded p-4">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-base font-semibold">{title}</h2>
         {onExport ? (
           <button
             onClick={onExport}
-            className="text-xs px-2 py-1 border border-gray-200 rounded hover:bg-gray-50"
+            className="text-xs px-2 py-1 border border-gray-200 dark:border-gray-800 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50"
           >
             Export CSV
           </button>

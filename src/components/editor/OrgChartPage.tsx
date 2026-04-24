@@ -66,7 +66,7 @@ export function OrgChartPage() {
 
   if (!canViewReports) {
     return (
-      <div className="p-6 text-gray-600">Not authorized to view the org chart.</div>
+      <div className="p-6 text-gray-600 dark:text-gray-300">Not authorized to view the org chart.</div>
     )
   }
 
@@ -81,7 +81,7 @@ export function OrgChartPage() {
       <div className="p-6 max-w-3xl space-y-4">
         <div
           data-testid="org-chart-cycle-banner"
-          className="flex items-start gap-3 border border-amber-300 bg-amber-50 rounded-md p-4 text-sm text-amber-900"
+          className="flex items-start gap-3 border border-amber-300 bg-amber-50 dark:bg-amber-950/40 rounded-md p-4 text-sm text-amber-900"
         >
           <AlertTriangle size={18} className="flex-shrink-0 mt-0.5" />
           <div className="space-y-2">
@@ -98,7 +98,7 @@ export function OrgChartPage() {
               <button
                 type="button"
                 onClick={() => onOpenInRoster(fixTarget.name)}
-                className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300"
+                className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 text-amber-900 border border-amber-300"
               >
                 Fix in roster
               </button>
@@ -171,7 +171,7 @@ function TreeBranch({
       />
       {node.children.length > 0 && (
         <div
-          className="flex items-start gap-6 mt-4 pl-2 border-l border-gray-200"
+          className="flex items-start gap-6 mt-4 pl-2 border-l border-gray-200 dark:border-gray-800"
           role="group"
           aria-label={`Direct reports of ${node.employee.name}`}
         >
@@ -211,7 +211,7 @@ function NodeCard({
       data-testid={`org-node-${node.id}`}
       role="treeitem"
       aria-label={`${e.name}${e.title ? `, ${e.title}` : ''}`}
-      className="text-left bg-white border border-gray-200 rounded-md shadow-sm hover:shadow-md hover:border-blue-300 transition-shadow px-3 py-2 min-w-[180px] max-w-[220px]"
+      className="text-left bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-md shadow-sm hover:shadow-md hover:border-blue-300 transition-shadow px-3 py-2 min-w-[180px] max-w-[220px]"
     >
       <div className="flex items-center gap-2">
         <span
@@ -219,12 +219,12 @@ function NodeCard({
           style={{ backgroundColor: deptColor }}
           aria-hidden="true"
         />
-        <div className="text-sm font-semibold text-gray-900 truncate">{e.name}</div>
+        <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{e.name}</div>
       </div>
       {e.title && (
-        <div className="text-xs text-gray-600 mt-0.5 truncate">{e.title}</div>
+        <div className="text-xs text-gray-600 dark:text-gray-300 mt-0.5 truncate">{e.title}</div>
       )}
-      <div className="text-[11px] text-gray-500 mt-1">
+      <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
         {seatLabel ?? 'Unassigned'}
       </div>
     </button>
@@ -233,9 +233,9 @@ function NodeCard({
 
 function EmptyState() {
   return (
-    <div className="border border-gray-200 rounded-md bg-white p-8 text-center text-gray-500">
-      <Users size={32} className="mx-auto text-gray-400 mb-3" />
-      <div className="text-sm font-medium text-gray-700">
+    <div className="border border-gray-200 dark:border-gray-800 rounded-md bg-white dark:bg-gray-900 p-8 text-center text-gray-500 dark:text-gray-400">
+      <Users size={32} className="mx-auto text-gray-400 dark:text-gray-500 mb-3" />
+      <div className="text-sm font-medium text-gray-700 dark:text-gray-200">
         No reporting data.
       </div>
       <div className="text-xs mt-1">

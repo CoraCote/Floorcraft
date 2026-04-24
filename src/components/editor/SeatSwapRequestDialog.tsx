@@ -87,14 +87,14 @@ export function SeatSwapRequestDialog({
   return (
     <Modal open onClose={onClose} title="Request seat swap">
       <ModalBody className="space-y-3 text-sm">
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-gray-500 dark:text-gray-400">
           {requester
             ? `You're requesting on behalf of ${requester.name}. A manager will review the request.`
             : 'A manager will review the request.'}
         </p>
 
         <label className="block">
-          <span className="text-xs font-medium text-gray-700">
+          <span className="text-xs font-medium text-gray-700 dark:text-gray-200">
             Swap with
           </span>
           <input
@@ -106,17 +106,17 @@ export function SeatSwapRequestDialog({
               setTargetId(null)
             }}
             placeholder="Type a name or email…"
-            className="mt-1 w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="mt-1 w-full px-3 py-1.5 border border-gray-300 dark:border-gray-700 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             aria-label="Target employee"
           />
           {!selected && query.length > 0 && suggestions.length === 0 && (
-            <div className="mt-1 text-[11px] text-gray-500">
+            <div className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
               No assigned employees match.
             </div>
           )}
           {!selected && suggestions.length > 0 && (
             <ul
-              className="mt-1 border border-gray-200 rounded bg-white divide-y divide-gray-100 max-h-40 overflow-y-auto"
+              className="mt-1 border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800 max-h-40 overflow-y-auto"
               role="listbox"
             >
               {suggestions.map((s) => (
@@ -127,13 +127,13 @@ export function SeatSwapRequestDialog({
                       setTargetId(s.id)
                       setQuery('')
                     }}
-                    className="w-full text-left px-2 py-1 text-xs hover:bg-blue-50"
+                    className="w-full text-left px-2 py-1 text-xs hover:bg-blue-50 dark:hover:bg-blue-950/40"
                     role="option"
                     aria-selected="false"
                   >
-                    <span className="font-medium text-gray-800">{s.name}</span>
+                    <span className="font-medium text-gray-800 dark:text-gray-100">{s.name}</span>
                     {s.seatId && (
-                      <span className="ml-2 text-gray-400">({s.seatId})</span>
+                      <span className="ml-2 text-gray-400 dark:text-gray-500">({s.seatId})</span>
                     )}
                   </button>
                 </li>
@@ -143,7 +143,7 @@ export function SeatSwapRequestDialog({
         </label>
 
         <label className="block">
-          <span className="text-xs font-medium text-gray-700">
+          <span className="text-xs font-medium text-gray-700 dark:text-gray-200">
             Reason (optional)
           </span>
           <textarea
@@ -151,7 +151,7 @@ export function SeatSwapRequestDialog({
             onChange={(e) => setReason(e.target.value)}
             rows={3}
             placeholder="Why do you want to swap?"
-            className="mt-1 w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="mt-1 w-full px-3 py-1.5 border border-gray-300 dark:border-gray-700 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </label>
       </ModalBody>

@@ -59,20 +59,20 @@ export function SharedProjectView() {
     }
   }, [projectId, token])
 
-  if (status === 'loading') return <div className="p-6 text-sm text-gray-500">Loading shared project…</div>
+  if (status === 'loading') return <div className="p-6 text-sm text-gray-500 dark:text-gray-400">Loading shared project…</div>
   if (status === 'invalid') return <div className="p-6 text-sm">This share link isn't valid.</div>
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       <header>
         <h1 className="text-xl font-semibold">Shared read-only view</h1>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-gray-600 dark:text-gray-300">
           {floorCount} floor{floorCount === 1 ? '' : 's'} · {employees.length} people
         </p>
       </header>
       <table className="w-full text-sm">
         <thead>
-          <tr className="text-left border-b border-gray-200">
+          <tr className="text-left border-b border-gray-200 dark:border-gray-800">
             <th className="py-2">Name</th>
             <th>Department</th>
             <th>Title</th>
@@ -81,7 +81,7 @@ export function SharedProjectView() {
         </thead>
         <tbody>
           {employees.map((e) => (
-            <tr key={e.id} className="border-b border-gray-100">
+            <tr key={e.id} className="border-b border-gray-100 dark:border-gray-800">
               <td className="py-1">{e.name}</td>
               <td className="py-1">{e.department ?? ''}</td>
               <td className="py-1">{e.title ?? ''}</td>

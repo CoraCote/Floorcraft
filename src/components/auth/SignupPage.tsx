@@ -65,13 +65,13 @@ export function SignupPage() {
 
   if (done) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
-        <div className="bg-white p-6 rounded-lg shadow max-w-sm space-y-3 text-sm">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-800/50 p-6">
+        <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow max-w-sm space-y-3 text-sm">
           <h1 className="text-lg font-semibold">Check your email</h1>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-300">
             We sent a verification link to <b>{email}</b>. Click the link to finish setting up your account.
           </p>
-          <p className="text-xs text-gray-500">Didn't get the email? Check your spam folder or resend:</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Didn't get the email? Check your spam folder or resend:</p>
           <ResendVerificationButton email={email} />
         </div>
       </div>
@@ -79,11 +79,11 @@ export function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <form onSubmit={onSubmit} className="bg-white p-6 rounded-lg shadow w-full max-w-sm space-y-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-800/50">
+      <form onSubmit={onSubmit} className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow w-full max-w-sm space-y-4">
         <h1 className="text-lg font-semibold">Create your Floorcraft account</h1>
         <label className="block text-sm">
-          <span className="block mb-1 text-gray-600">Name</span>
+          <span className="block mb-1 text-gray-600 dark:text-gray-300">Name</span>
           <input
             required
             className="w-full border rounded px-2 py-1.5"
@@ -94,7 +94,7 @@ export function SignupPage() {
           />
         </label>
         <label className="block text-sm">
-          <span className="block mb-1 text-gray-600">Email</span>
+          <span className="block mb-1 text-gray-600 dark:text-gray-300">Email</span>
           <input
             type="email"
             required
@@ -107,7 +107,7 @@ export function SignupPage() {
           />
         </label>
         <label className="block text-sm">
-          <span className="block mb-1 text-gray-600">Password</span>
+          <span className="block mb-1 text-gray-600 dark:text-gray-300">Password</span>
           <input
             type="password"
             required
@@ -122,7 +122,7 @@ export function SignupPage() {
           />
           <span
             id="signup-password-hint"
-            className="mt-1 block text-xs text-gray-500"
+            className="mt-1 block text-xs text-gray-500 dark:text-gray-400"
           >
             At least 8 characters.
           </span>
@@ -131,7 +131,7 @@ export function SignupPage() {
           <p
             id="signup-form-error"
             role="alert"
-            className="text-xs text-red-600 mt-1"
+            className="text-xs text-red-600 dark:text-red-400 mt-1"
           >
             {error}
           </p>
@@ -143,7 +143,7 @@ export function SignupPage() {
         >
           {busy ? 'Creating…' : 'Create account'}
         </button>
-        <div className="text-xs text-gray-500 text-center">
+        <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
           Already have an account? <Link to="/login" className="hover:underline">Log in</Link>
         </div>
       </form>

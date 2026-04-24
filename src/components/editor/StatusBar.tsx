@@ -63,17 +63,17 @@ export function StatusBar() {
   const hint = toolHint(activeTool)
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 h-8 bg-white/90 backdrop-blur border-t border-gray-200 flex items-center px-4 gap-6 text-xs text-gray-600 overflow-x-auto whitespace-nowrap">
+    <div className="absolute bottom-0 left-0 right-0 h-8 bg-white/90 dark:bg-gray-900/90 backdrop-blur border-t border-gray-200 dark:border-gray-800 flex items-center px-4 gap-6 text-xs text-gray-600 dark:text-gray-300 overflow-x-auto whitespace-nowrap">
       <span>Desks: <strong>{totalDesks}</strong></span>
       <span>Assigned: <strong>{assignedDesks}</strong></span>
       <span>Open: <strong>{openDesks}</strong></span>
       <span>Occupancy: <strong>{occupancyPct}%</strong></span>
 
-      <span className="w-px h-4 bg-gray-200" />
+      <span className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
 
       <span>Elements: <strong>{elementCount}</strong></span>
       {selectedIds.length > 0 && (
-        <span className="text-blue-700">Selected: <strong>{selectedIds.length}</strong></span>
+        <span className="text-blue-700 dark:text-blue-300">Selected: <strong>{selectedIds.length}</strong></span>
       )}
       <span>Zoom: <strong>{Math.round(stageScale * 100)}%</strong></span>
 
@@ -92,8 +92,8 @@ export function StatusBar() {
         }
         className={`text-[11px] px-2 py-0.5 rounded border ${
           activeTool === 'calibrate-scale'
-            ? 'bg-blue-50 border-blue-200 text-blue-700'
-            : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+            ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 text-blue-700 dark:text-blue-300'
+            : 'border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50'
         }`}
         title="Set canvas scale by clicking two points of a known distance"
         aria-pressed={activeTool === 'calibrate-scale'}
@@ -120,14 +120,14 @@ export function StatusBar() {
           X: <strong>{formatLength(toRealLength(cursorX, scale, scaleUnit), scaleUnit)}</strong>
           {' · '}
           Y: <strong>{formatLength(toRealLength(cursorY, scale, scaleUnit), scaleUnit)}</strong>{' '}
-          <span className="text-gray-400">{LENGTH_UNIT_SUFFIX[scaleUnit]}</span>
+          <span className="text-gray-400 dark:text-gray-500">{LENGTH_UNIT_SUFFIX[scaleUnit]}</span>
         </span>
       )}
 
       {hint && (
         <>
-          <span className="w-px h-4 bg-gray-200" />
-          <span className="text-gray-500 italic">{hint}</span>
+          <span className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
+          <span className="text-gray-500 dark:text-gray-400 italic">{hint}</span>
         </>
       )}
     </div>

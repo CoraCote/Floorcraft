@@ -52,7 +52,7 @@ export function ConfirmDialog({
 
   return (
     <Modal open onClose={onCancel} title={title} preventBackdropClose>
-      <ModalBody className="text-sm text-gray-600">{body}</ModalBody>
+      <ModalBody className="text-sm text-gray-600 dark:text-gray-300">{body}</ModalBody>
       <ModalFooter>
         <Button variant="ghost" onClick={onCancel}>
           {cancelLabel}

@@ -146,7 +146,7 @@ export function RosterFilterPresetsMenu({
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="flex items-center gap-1 px-2 py-1.5 text-sm border border-gray-200 rounded bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="flex items-center gap-1 px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 focus:outline-none focus:ring-2 focus:ring-blue-500"
         title="Saved filters"
       >
         <Bookmark size={14} />
@@ -157,11 +157,11 @@ export function RosterFilterPresetsMenu({
         <div
           role="menu"
           aria-label="Saved filter presets"
-          className="absolute top-full left-0 mt-1 z-20 bg-white border border-gray-200 rounded-lg shadow-xl w-80 overflow-hidden"
+          className="absolute top-full left-0 mt-1 z-20 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-xl w-80 overflow-hidden"
         >
           <div className="max-h-72 overflow-y-auto">
             {presets.length === 0 ? (
-              <div className="px-3 py-3 text-xs text-gray-500">
+              <div className="px-3 py-3 text-xs text-gray-500 dark:text-gray-400">
                 No saved filters yet. Set up a filter below and hit "Save
                 current filters as…" to stash it here.
               </div>
@@ -170,12 +170,12 @@ export function RosterFilterPresetsMenu({
                 {presets.map((p) => (
                   <li
                     key={p.id}
-                    className="flex items-center gap-1 px-2 py-1 hover:bg-gray-50"
+                    className="flex items-center gap-1 px-2 py-1 hover:bg-gray-50 dark:hover:bg-gray-800/50"
                   >
                     <button
                       type="button"
                       onClick={() => handleApply(p)}
-                      className="flex-1 text-left text-sm px-2 py-1 rounded hover:bg-gray-100 truncate"
+                      className="flex-1 text-left text-sm px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 truncate"
                       aria-label={`Apply preset ${p.name}`}
                       title={p.query || '(no filters)'}
                     >
@@ -186,7 +186,7 @@ export function RosterFilterPresetsMenu({
                       onClick={() => handleRename(p.id, p.name)}
                       aria-label={`Rename preset ${p.name}`}
                       title="Rename"
-                      className="p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-800"
+                      className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100"
                     >
                       <Pencil size={12} />
                     </button>
@@ -195,7 +195,7 @@ export function RosterFilterPresetsMenu({
                       onClick={() => handleDelete(p.id, p.name)}
                       aria-label={`Delete preset ${p.name}`}
                       title="Delete"
-                      className="p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-red-600"
+                      className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400"
                     >
                       <Trash2 size={12} />
                     </button>
@@ -204,12 +204,12 @@ export function RosterFilterPresetsMenu({
               </ul>
             )}
           </div>
-          <div className="border-t border-gray-200">
+          <div className="border-t border-gray-200 dark:border-gray-800">
             <button
               type="button"
               onClick={handleSave}
               disabled={!hasAnyFilter}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
               title={
                 hasAnyFilter
                   ? 'Save the current filters as a reusable preset'

@@ -2,6 +2,7 @@ import { Group, Path, Text } from 'react-konva'
 import type { WallElement } from '../../../types/elements'
 import { useUIStore } from '../../../stores/uiStore'
 import { wallPathData, wallSegments, segmentMidpoint } from '../../../lib/wallPath'
+import { useTheme } from '../../../lib/theme'
 
 interface WallRendererProps {
   element: WallElement
@@ -34,6 +35,7 @@ export function WallRenderer({ element }: WallRendererProps) {
   const selectedIds = useUIStore((s) => s.selectedIds)
   const isSelected = selectedIds.includes(element.id)
   const wallType = element.wallType ?? 'solid'
+  const { resolvedTheme } = useTheme()
 
   // Glass gets a lighter preset stroke when the user hasn't overridden the
   // stored stroke from the default. Selection highlight always wins so the
@@ -41,6 +43,13 @@ export function WallRenderer({ element }: WallRendererProps) {
   let baseStroke = element.style.stroke
   if (wallType === 'glass' && baseStroke === '#111827') {
     baseStroke = '#93C5FD'
+  }
+  // Default wall stroke is `#111827` (gray-900) which is invisible on the
+  // dark canvas. When the user hasn't overridden the default, swap it for
+  // an off-white (gray-100) so walls read on dark — but respect any
+  // explicit colour the user picked from the inspector.
+  if (resolvedTheme === 'dark' && baseStroke === '#111827') {
+    baseStroke = '#F3F4F6'
   }
   const stroke = isSelected ? '#3B82F6' : baseStroke
   const hitStrokeWidth = Math.max(12, element.thickness + 6)

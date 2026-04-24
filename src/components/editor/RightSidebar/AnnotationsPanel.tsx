@@ -53,17 +53,17 @@ export function AnnotationsPanel() {
   return (
     <div className="mb-3">
       <div className="flex items-center gap-1.5 mb-2">
-        <MessageSquare size={12} className="text-gray-400" />
-        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+        <MessageSquare size={12} className="text-gray-400 dark:text-gray-500" />
+        <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
           Annotations
         </div>
-        <div className="ml-auto text-[11px] text-gray-400">
+        <div className="ml-auto text-[11px] text-gray-400 dark:text-gray-500">
           {open.length} open
         </div>
       </div>
 
       {open.length === 0 && resolved.length === 0 ? (
-        <div className="text-xs text-gray-400 py-2">
+        <div className="text-xs text-gray-400 dark:text-gray-500 py-2">
           No annotations yet. Use the pin tool on the left sidebar to add one.
         </div>
       ) : (
@@ -84,7 +84,7 @@ export function AnnotationsPanel() {
               <button
                 type="button"
                 onClick={() => setShowResolved(!showResolved)}
-                className="w-full flex items-center gap-1 text-[11px] text-gray-400 hover:text-gray-600"
+                className="w-full flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                 aria-expanded={showResolved}
               >
                 {showResolved ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
@@ -145,8 +145,8 @@ function AnnotationRow({ a, canEdit, onResolve, resolved }: RowProps) {
 
   return (
     <div
-      className={`flex flex-col gap-1 p-2 rounded border border-gray-200 bg-white hover:bg-gray-50 cursor-pointer ${
-        resolved ? 'text-gray-500' : 'text-gray-800'
+      className={`flex flex-col gap-1 p-2 rounded border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer ${
+        resolved ? 'text-gray-500 dark:text-gray-400' : 'text-gray-800 dark:text-gray-100'
       }`}
       role="button"
       tabIndex={0}
@@ -165,7 +165,7 @@ function AnnotationRow({ a, canEdit, onResolve, resolved }: RowProps) {
         {preview}
       </div>
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-[10px] text-gray-500">
+        <div className="flex items-center gap-2 text-[10px] text-gray-500 dark:text-gray-400">
           <span className="truncate max-w-[8rem]" title={a.authorName}>
             {a.authorName}
           </span>
@@ -180,7 +180,7 @@ function AnnotationRow({ a, canEdit, onResolve, resolved }: RowProps) {
               onResolve()
             }}
             title={resolved ? 'Reopen annotation' : 'Resolve annotation'}
-            className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-800 px-1.5 py-0.5 rounded border border-gray-200 hover:border-gray-300"
+            className="flex items-center gap-1 text-[10px] text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-800 hover:border-gray-300"
           >
             {resolved ? <RotateCcw size={10} /> : <Check size={10} />}
             {resolved ? 'Reopen' : 'Resolve'}

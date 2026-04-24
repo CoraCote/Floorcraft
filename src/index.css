@@ -1,10 +1,23 @@
 @import "tailwindcss";
 
 /*
+ * Tailwind v4 dark-mode strategy. By default v4 enables dark mode via the
+ * `prefers-color-scheme` media query. Floocraft uses a class-based opt-in
+ * (toggled by `ThemeProvider`), so we override the `dark` variant to
+ * activate when an ancestor has `class="dark"`.
+ */
+@variant dark (&:where(.dark, .dark *));
+
+/*
  * Design-token extensions. Tailwind v4 consumes theme config via the
  * `@theme` CSS directive instead of a `tailwind.config.{js,ts}` file.
  * We only *extend* (new tokens) — existing blue-/gray-/red- scales and
  * the default spacing/fontSize scales remain untouched.
+ *
+ * Semantic surface/text tokens use light values here. The `.dark`
+ * override below in @layer base swaps them for the dark equivalents.
+ * Because they are CSS variables they automatically resolve at use-site
+ * (e.g. `bg-surface` → `background-color: var(--color-surface)`).
  */
 @theme {
   --color-muted: #6B7280;        /* gray-500 — secondary text            */
@@ -19,6 +32,63 @@
   --text-icon-sm--line-height: 1rem;
   --text-icon-md: 1rem;          /* 16px */
   --text-icon-md--line-height: 1.25rem;
+
+  /* Semantic surface + text tokens (light defaults; dark below). */
+  --color-surface: #ffffff;            /* white                           */
+  --color-surface-raised: #ffffff;     /* white                           */
+  --color-surface-sunken: #f9fafb;     /* gray-50                         */
+  --color-border: #e5e7eb;             /* gray-200                        */
+  --color-border-strong: #d1d5db;      /* gray-300                        */
+  --color-text: #111827;               /* gray-900                        */
+  --color-text-muted: #6b7280;         /* gray-500                        */
+  --color-text-subtle: #9ca3af;        /* gray-400                        */
+
+  /* Accents stay constant across themes — accent doesn't flip. */
+  --color-accent: #2563eb;             /* blue-600                        */
+  --color-accent-soft: #eff6ff;        /* blue-50                         */
+
+  --color-danger: #dc2626;             /* red-600                         */
+  --color-danger-soft: #fef2f2;        /* red-50                          */
+  --color-success: #16a34a;            /* green-600                       */
+  --color-success-soft: #f0fdf4;       /* green-50                        */
+  --color-warning: #d97706;            /* amber-600                       */
+  --color-warning-soft: #fffbeb;       /* amber-50                        */
+}
+
+/*
+ * Dark-mode token override. Tailwind v4 emits utilities that consume the
+ * `--color-*` CSS variables directly, so swapping the variable values
+ * under `.dark` is enough to retheme any utility built on these tokens.
+ */
+@layer base {
+  .dark {
+    --color-surface: #030712;          /* gray-950                        */
+    --color-surface-raised: #111827;   /* gray-900                        */
+    --color-surface-sunken: #030712;   /* gray-950                        */
+    --color-border: #1f2937;           /* gray-800                        */
+    --color-border-strong: #374151;    /* gray-700                        */
+    --color-text: #f3f4f6;             /* gray-100                        */
+    --color-text-muted: #9ca3af;       /* gray-400                        */
+    --color-text-subtle: #6b7280;      /* gray-500                        */
+
+    --color-accent-soft: rgb(23 37 84 / 0.5); /* blue-950 / 50%          */
+
+    --color-danger-soft: rgb(69 10 10 / 0.4); /* red-950 / 40%           */
+    --color-success-soft: rgb(5 46 22 / 0.4); /* green-950 / 40%         */
+    --color-warning-soft: rgb(69 26 3 / 0.4); /* amber-950 / 40%         */
+  }
+
+  /* Native form widgets + scrollbars adopt the page theme. */
+  html.dark {
+    color-scheme: dark;
+  }
+
+  /* Selection color is surprisingly distracting on dark left at default;
+     pin it to a translucent blue that works against either surface. */
+  ::selection {
+    background-color: rgb(37 99 235 / 0.30); /* blue-600 / 30% */
+    color: inherit;
+  }
 }
 
 /*

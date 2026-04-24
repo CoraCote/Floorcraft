@@ -96,17 +96,17 @@ export function MovePlanner() {
   return (
     <div className="flex flex-col gap-3">
       {/* Yellow banner */}
-      <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800">
+      <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800">
         <span className="font-semibold">Move Planner</span> — Plan seat changes before committing
       </div>
 
       {/* Add Move form */}
-      <div className="flex flex-col gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
-        <div className="text-xs font-medium text-gray-600">Add a move</div>
+      <div className="flex flex-col gap-2 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-800">
+        <div className="text-xs font-medium text-gray-600 dark:text-gray-300">Add a move</div>
         <select
           value={selectedEmployeeId}
           onChange={(e) => setSelectedEmployeeId(e.target.value)}
-          className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="w-full px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
         >
           <option value="">Select employee...</option>
           {allEmployees.map((emp) => (
@@ -122,7 +122,7 @@ export function MovePlanner() {
             setSelectedFloorId(e.target.value)
             setSelectedDeskId('')
           }}
-          className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="w-full px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
         >
           <option value="">Target floor...</option>
           {floors.map((f) => (
@@ -133,7 +133,7 @@ export function MovePlanner() {
         <select
           value={selectedDeskId}
           onChange={(e) => setSelectedDeskId(e.target.value)}
-          className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="w-full px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
           disabled={!selectedFloorId}
         >
           <option value="">Target desk...</option>
@@ -155,7 +155,7 @@ export function MovePlanner() {
       {/* Pending moves list */}
       {pendingMoves.length > 0 && (
         <div className="flex flex-col gap-1.5">
-          <div className="text-xs font-medium text-gray-500">
+          <div className="text-xs font-medium text-gray-500 dark:text-gray-400">
             Pending Moves ({pendingMoves.length})
           </div>
           {pendingMoves.map((move) => {
@@ -172,17 +172,17 @@ export function MovePlanner() {
             return (
               <div
                 key={move.employeeId}
-                className="flex items-center gap-2 px-2.5 py-1.5 bg-white border border-gray-200 rounded text-xs"
+                className="flex items-center gap-2 px-2.5 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded text-xs"
               >
-                <span className="font-medium text-gray-800 truncate flex-1">
+                <span className="font-medium text-gray-800 dark:text-gray-100 truncate flex-1">
                   {emp?.name || move.employeeId}
                 </span>
-                <span className="text-gray-500 flex-shrink-0">{fromLabel}</span>
-                <ArrowRight size={10} className="text-gray-400 flex-shrink-0" />
-                <span className="text-blue-600 flex-shrink-0">{toLabel}</span>
+                <span className="text-gray-500 dark:text-gray-400 flex-shrink-0">{fromLabel}</span>
+                <ArrowRight size={10} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                <span className="text-blue-600 dark:text-blue-400 flex-shrink-0">{toLabel}</span>
                 <button
                   onClick={() => handleRemoveMove(move.employeeId)}
-                  className="p-0.5 text-gray-400 hover:text-red-500 flex-shrink-0"
+                  className="p-0.5 text-gray-400 dark:text-gray-500 hover:text-red-500 flex-shrink-0"
                 >
                   <X size={12} />
                 </button>
@@ -204,7 +204,7 @@ export function MovePlanner() {
         </button>
         <button
           onClick={handleDiscard}
-          className="flex items-center justify-center gap-1.5 flex-1 px-3 py-2 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200"
+          className="flex items-center justify-center gap-1.5 flex-1 px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700"
         >
           <Trash2 size={12} />
           Discard

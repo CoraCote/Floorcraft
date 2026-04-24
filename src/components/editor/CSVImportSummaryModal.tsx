@@ -34,21 +34,21 @@ export function CSVImportSummaryModal() {
     <Modal open onClose={handleDone} title="Import complete" size="lg">
       <ModalBody>
         <div className="flex gap-4 mb-4 text-sm">
-          <span className="text-green-700 font-semibold">
+          <span className="text-green-700 dark:text-green-300 font-semibold">
             {`${importedCount} imported`}
           </span>
-          <span className="text-red-700 font-semibold">
+          <span className="text-red-700 dark:text-red-300 font-semibold">
             {`${skipped.length} skipped`}
           </span>
-          <span className="text-amber-700 font-semibold">
+          <span className="text-amber-700 dark:text-amber-300 font-semibold">
             {`${warnings.length} ${warnings.length === 1 ? 'warning' : 'warnings'}`}
           </span>
         </div>
 
         {allIssues.length > 0 && (
-          <div className="max-h-60 overflow-y-auto border border-gray-200 rounded">
+          <div className="max-h-60 overflow-y-auto border border-gray-200 dark:border-gray-800 rounded">
             <table className="w-full text-xs">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 dark:bg-gray-800/50">
                 <tr>
                   <th className="px-2 py-1 text-left">Row</th>
                   <th className="px-2 py-1 text-left">Reason</th>
@@ -57,7 +57,7 @@ export function CSVImportSummaryModal() {
               </thead>
               <tbody>
                 {allIssues.map((i, idx) => (
-                  <tr key={idx} className="border-t border-gray-100">
+                  <tr key={idx} className="border-t border-gray-100 dark:border-gray-800">
                     <td className="px-2 py-1 whitespace-nowrap">
                       Row {i.rowIndex}
                     </td>
@@ -65,8 +65,8 @@ export function CSVImportSummaryModal() {
                       <span
                         className={
                           i.kind === 'skipped'
-                            ? 'text-red-700'
-                            : 'text-amber-700'
+                            ? 'text-red-700 dark:text-red-300'
+                            : 'text-amber-700 dark:text-amber-300'
                         }
                       >
                         {i.reason}

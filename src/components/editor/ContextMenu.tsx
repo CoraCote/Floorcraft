@@ -68,22 +68,22 @@ export function ContextMenu() {
   return (
     <div
       ref={ref}
-      className="fixed z-50 bg-white rounded-lg shadow-xl border border-gray-200 py-1 min-w-[180px]"
+      className="fixed z-50 bg-white dark:bg-gray-900 rounded-lg shadow-xl border border-gray-200 dark:border-gray-800 py-1 min-w-[180px]"
       style={{ left: contextMenu.x, top: contextMenu.y }}
       onClick={(e) => e.stopPropagation()}
     >
       {items.map((item, i) =>
         item.separator ? (
-          <div key={i} className="h-px bg-gray-100 my-1" />
+          <div key={i} className="h-px bg-gray-100 dark:bg-gray-800 my-1" />
         ) : (
           <button
             key={i}
             onClick={() => { item.onClick(); setContextMenu(null) }}
             disabled={item.disabled}
-            className="w-full flex items-center justify-between px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-40"
+            className="w-full flex items-center justify-between px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40"
           >
             <span>{item.label}</span>
-            {item.shortcut && <span className="text-xs text-gray-400 ml-4">{item.shortcut}</span>}
+            {item.shortcut && <span className="text-xs text-gray-400 dark:text-gray-500 ml-4">{item.shortcut}</span>}
           </button>
         )
       )}

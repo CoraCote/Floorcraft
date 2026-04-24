@@ -87,18 +87,18 @@ function RoomBookingDialogBody({
   return (
     <Modal open onClose={onClose} title="Book meeting room" size="sm">
       <ModalBody className="flex flex-col gap-3">
-        <label className="flex flex-col gap-1 text-xs text-gray-600">
+        <label className="flex flex-col gap-1 text-xs text-gray-600 dark:text-gray-300">
           Date
           <input
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="border border-gray-200 rounded px-2 py-1 text-sm"
+            className="border border-gray-200 dark:border-gray-800 rounded px-2 py-1 text-sm"
           />
         </label>
 
         <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between text-xs text-gray-600">
+          <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-300">
             <span>Start</span>
             <span className="font-mono">{formatMinutes(startMinutes)}</span>
           </div>
@@ -116,7 +116,7 @@ function RoomBookingDialogBody({
             }}
           />
 
-          <div className="flex items-center justify-between text-xs text-gray-600">
+          <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-300">
             <span>End</span>
             <span className="font-mono">{formatMinutes(endMinutes)}</span>
           </div>
@@ -135,7 +135,7 @@ function RoomBookingDialogBody({
           />
         </div>
 
-        <label className="flex flex-col gap-1 text-xs text-gray-600">
+        <label className="flex flex-col gap-1 text-xs text-gray-600 dark:text-gray-300">
           Note (optional)
           <input
             type="text"
@@ -143,14 +143,14 @@ function RoomBookingDialogBody({
             onChange={(e) => setNote(e.target.value)}
             maxLength={140}
             placeholder="Planning sync"
-            className="border border-gray-200 rounded px-2 py-1 text-sm"
+            className="border border-gray-200 dark:border-gray-800 rounded px-2 py-1 text-sm"
           />
         </label>
 
         {error && (
           <div
             role="alert"
-            className="text-xs text-red-600 bg-red-50 border border-red-100 rounded px-2 py-1"
+            className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border border-red-100 rounded px-2 py-1"
           >
             {errorLabel(error)}
           </div>

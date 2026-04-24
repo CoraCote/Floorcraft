@@ -209,8 +209,8 @@ export function InsightsPanel() {
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <CheckCircle size={32} className="text-green-400 mb-3" />
-            <p className="text-sm font-medium text-gray-600">All clear</p>
-            <p className="text-xs text-gray-400 mt-1">No issues detected. Your office layout looks good.</p>
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-300">All clear</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">No issues detected. Your office layout looks good.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-2">
@@ -231,7 +231,7 @@ export function InsightsPanel() {
           <div className="mt-4">
             <button
               onClick={() => useInsightsStore.getState().setShowDismissed(!filter.showDismissed)}
-              className="text-xs text-gray-400 hover:text-gray-600 mb-2"
+              className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 mb-2"
             >
               {filter.showDismissed ? 'Hide' : 'Show'} dismissed ({dismissed.length})
             </button>
@@ -240,12 +240,12 @@ export function InsightsPanel() {
                 {dismissed.map((insight) => (
                   <div
                     key={insight.id}
-                    className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded text-xs text-gray-500"
+                    className="flex items-center justify-between px-3 py-2 bg-gray-50 dark:bg-gray-800/50 rounded text-xs text-gray-500 dark:text-gray-400"
                   >
                     <span className="truncate">{insight.title}</span>
                     <button
                       onClick={() => restoreInsight(insight.id)}
-                      className="ml-2 text-blue-500 hover:text-blue-700 flex-shrink-0"
+                      className="ml-2 text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex-shrink-0"
                     >
                       Restore
                     </button>
@@ -258,12 +258,12 @@ export function InsightsPanel() {
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-[10px] text-gray-400">
+      <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800 text-[10px] text-gray-400 dark:text-gray-500">
         <span>Last analyzed: {lastAnalyzedLabel}</span>
         <button
           onClick={triggerAnalysis}
           disabled={isAnalyzing}
-          className="flex items-center gap-1 text-gray-400 hover:text-gray-600 disabled:opacity-40"
+          className="flex items-center gap-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-40"
         >
           <RefreshCw size={10} className={isAnalyzing ? 'animate-spin' : ''} />
           Refresh

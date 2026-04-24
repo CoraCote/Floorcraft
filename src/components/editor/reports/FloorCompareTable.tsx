@@ -102,7 +102,7 @@ export function FloorCompareTable() {
     <div className="overflow-x-auto">
       <table className="w-full text-sm" data-testid="floor-compare-table">
         <thead>
-          <tr className="text-left border-b border-gray-200 text-gray-600">
+          <tr className="text-left border-b border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300">
             <th className="py-2 pr-3">Floor</th>
             <th className="pr-3 tabular-nums">Total seats</th>
             <th className="pr-3 tabular-nums">Assigned</th>
@@ -131,9 +131,9 @@ export function FloorCompareTable() {
                     handleRowClick(floor.id)
                   }
                 }}
-                className="border-b border-gray-100 cursor-pointer hover:bg-gray-50 focus:outline-none focus:bg-gray-50"
+                className="border-b border-gray-100 dark:border-gray-800 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 focus:outline-none focus:bg-gray-50"
               >
-                <td className="py-2 pr-3 font-medium text-gray-800">{floor.name}</td>
+                <td className="py-2 pr-3 font-medium text-gray-800 dark:text-gray-100">{floor.name}</td>
                 <td className="pr-3 tabular-nums">{m.totalSeats}</td>
                 <td className="pr-3 tabular-nums">{m.assignedSeats}</td>
                 <td className={`pr-3 tabular-nums ${HEALTH_TEXT[health]}`}>
@@ -143,7 +143,7 @@ export function FloorCompareTable() {
                 </td>
                 <td className="pr-3 tabular-nums">{m.meetingRoomSeats}</td>
                 <td className="pr-3 tabular-nums">{m.phoneBooths}</td>
-                <td className="pr-3 text-gray-500">
+                <td className="pr-3 text-gray-500 dark:text-gray-400">
                   <FloorCompareSparkline
                     series={series.map((p) => ({ date: p.date, value: p.assignedSeats }))}
                     ariaLabel={`14-day trend for ${floor.name}`}
@@ -154,7 +154,7 @@ export function FloorCompareTable() {
           })}
           {orderedFloors.length === 0 && (
             <tr>
-              <td colSpan={7} className="py-4 text-center text-gray-500">
+              <td colSpan={7} className="py-4 text-center text-gray-500 dark:text-gray-400">
                 No floors in this office yet.
               </td>
             </tr>
@@ -171,8 +171,8 @@ export function FloorCompareTable() {
  * read consistently.
  */
 const HEALTH_TEXT: Record<ReturnType<typeof occupancyHealth>, string> = {
-  healthy: 'text-green-700',
-  warn: 'text-amber-700',
-  critical: 'text-red-700',
-  unknown: 'text-gray-500',
+  healthy: 'text-green-700 dark:text-green-300',
+  warn: 'text-amber-700 dark:text-amber-300',
+  critical: 'text-red-700 dark:text-red-300',
+  unknown: 'text-gray-500 dark:text-gray-400',
 }

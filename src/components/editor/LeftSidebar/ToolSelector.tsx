@@ -176,8 +176,8 @@ export function ToolSelector() {
                 }
                 className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded text-sm transition-colors ${
                   activeTool === tool.id
-                    ? 'bg-blue-50 text-blue-700 font-medium'
-                    : 'text-gray-700 hover:bg-gray-100'
+                    ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-medium'
+                    : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
                 }`}
                 title={tool.shortcut ? `${tool.label} (${tool.shortcut})` : tool.label}
                 aria-describedby={isRich ? tooltipId : undefined}
@@ -185,7 +185,7 @@ export function ToolSelector() {
                 {tool.icon}
                 <span>{tool.label}</span>
                 {tool.shortcut && (
-                  <span className="ml-auto text-[10px] text-gray-400 font-mono">{tool.shortcut}</span>
+                  <span className="ml-auto text-[10px] text-gray-400 dark:text-gray-500 font-mono">{tool.shortcut}</span>
                 )}
               </button>
               {isRich && (
@@ -214,7 +214,7 @@ export function ToolSelector() {
                       className={`flex-1 px-2 py-0.5 text-[11px] rounded-full border transition-colors ${
                         wallDrawStyle === s.id
                           ? 'bg-blue-600 text-white border-blue-600'
-                          : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                          : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-800 hover:border-gray-300'
                       }`}
                     >
                       {s.label}

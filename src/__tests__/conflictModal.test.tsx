@@ -21,4 +21,13 @@ describe('ConflictModal', () => {
     const dialog = screen.getByRole('dialog')
     expect(dialog).toHaveAttribute('aria-modal', 'true')
   })
+
+  it('includes dark-mode variants on the panel surface', () => {
+    // Spot-check that the dark theme sweep landed on a representative
+    // modal surface — the panel uses the shared Modal primitive which
+    // pairs `bg-white` with `dark:bg-gray-900`.
+    render(<ConflictModal onReload={() => {}} onOverwrite={() => {}} onCancel={() => {}} />)
+    const dialog = screen.getByRole('dialog')
+    expect(dialog.className).toMatch(/dark:bg-gray-900/)
+  })
 })

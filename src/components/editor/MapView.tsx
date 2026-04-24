@@ -128,7 +128,7 @@ export function MapView() {
 
   if (presentationMode) {
     return (
-      <div className="fixed inset-0 z-50 w-screen h-screen bg-white">
+      <div className="fixed inset-0 z-50 w-screen h-screen bg-white dark:bg-gray-900">
         <CanvasStage />
         <KeyboardShortcutsOverlay />
         {/* Always-visible exit affordance — Escape/P alone is undiscoverable */}
@@ -139,7 +139,7 @@ export function MapView() {
           aria-label="Exit presentation mode"
         >
           <span>Exit</span>
-          <kbd className="text-[10px] font-mono bg-white/20 px-1.5 py-0.5 rounded">Esc</kbd>
+          <kbd className="text-[10px] font-mono bg-white/20 dark:bg-gray-900/20 px-1.5 py-0.5 rounded">Esc</kbd>
         </button>
       </div>
     )
@@ -158,7 +158,7 @@ export function MapView() {
           library owned its own `overflow-y-auto` inside a `min-h-0`
           column, which clipped tiles when its siblings took more space.
         */}
-        <div className="w-[260px] flex-shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-y-auto">
+        <div className="w-[260px] flex-shrink-0 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col overflow-y-auto">
           <CollapsibleSection title="Tools" defaultOpen storageKey="tools">
             <ToolSelector />
           </CollapsibleSection>
@@ -169,14 +169,14 @@ export function MapView() {
             <ElementLibrary />
           </CollapsibleSection>
         </div>
-        <div className="flex-1 relative bg-gray-100 overflow-hidden">
+        <div className="flex-1 relative bg-gray-100 dark:bg-gray-800 overflow-hidden">
           <CanvasStage />
           <StatusBar />
           <Minimap />
           <FirstRunCoach />
         </div>
         {rightSidebarOpen && (
-          <div className="w-[320px] flex-shrink-0 bg-white border-l border-gray-200 overflow-y-auto">
+          <div className="w-[320px] flex-shrink-0 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 overflow-y-auto">
             <RightSidebar />
           </div>
         )}

@@ -103,10 +103,10 @@ export function TeamSettingsMembers({
       <section className="space-y-2">
         <h2 className="font-semibold">Members</h2>
         {members.length === 0 ? (
-          <p className="text-gray-500">No members yet.</p>
+          <p className="text-gray-500 dark:text-gray-400">No members yet.</p>
         ) : (
           <table className="w-full border rounded overflow-hidden">
-            <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+            <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
               <tr>
                 <th className="p-2 text-left">Name</th>
                 <th className="p-2 text-left">Email</th>
@@ -140,7 +140,7 @@ export function TeamSettingsMembers({
                     {isAdmin && m.user_id !== selfId && (
                       <button
                         onClick={() => setPendingRemove(m)}
-                        className="text-red-600 hover:underline"
+                        className="text-red-600 dark:text-red-400 hover:underline"
                       >
                         Remove
                       </button>
@@ -165,7 +165,7 @@ export function TeamSettingsMembers({
                 ({pendingRemove.email ?? pendingRemove.user_id}) will lose
                 access to every office in this team.
               </div>
-              <div className="text-gray-500">
+              <div className="text-gray-500 dark:text-gray-400">
                 They'll need a new invite to rejoin.
               </div>
             </div>
@@ -187,7 +187,7 @@ export function TeamSettingsMembers({
           <h2 className="font-semibold">Invite teammates</h2>
           <div className="flex gap-2 items-end">
             <label className="flex-1">
-              <span className="block mb-1 text-gray-600">Email</span>
+              <span className="block mb-1 text-gray-600 dark:text-gray-300">Email</span>
               <input
                 type="email"
                 className="w-full border rounded px-2 py-1.5"
@@ -203,10 +203,10 @@ export function TeamSettingsMembers({
               {busy ? 'Sending…' : 'Send invite'}
             </button>
           </div>
-          {error && <p className="text-red-600">{error}</p>}
+          {error && <p className="text-red-600 dark:text-red-400">{error}</p>}
           {lastInvite && (
             <div
-              className="mt-2 p-3 border rounded bg-blue-50 space-y-2"
+              className="mt-2 p-3 border rounded bg-blue-50 dark:bg-blue-950/40 space-y-2"
               role="status"
               aria-live="polite"
             >
@@ -222,7 +222,7 @@ export function TeamSettingsMembers({
                   value={lastInvite.url}
                   onFocus={(e) => e.currentTarget.select()}
                   aria-label="Invite link"
-                  className="flex-1 border rounded px-2 py-1 text-xs font-mono bg-white"
+                  className="flex-1 border rounded px-2 py-1 text-xs font-mono bg-white dark:bg-gray-900"
                 />
                 <button
                   onClick={copyInviteLink}
@@ -236,8 +236,8 @@ export function TeamSettingsMembers({
           )}
           {invites.length > 0 && (
             <div className="mt-3">
-              <h3 className="text-xs uppercase tracking-wide text-gray-500 mb-1">Pending invites</h3>
-              <ul className="text-xs text-gray-600 space-y-1">
+              <h3 className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Pending invites</h3>
+              <ul className="text-xs text-gray-600 dark:text-gray-300 space-y-1">
                 {invites.map((i) => (
                   <li key={i.id}>
                     {i.email} — expires {new Date(i.expires_at).toLocaleDateString()}

@@ -36,7 +36,7 @@ export function InvitePage() {
   if (!token) return <div className="p-6 text-sm">Invalid invite link.</div>
 
   if (session.status === 'loading') {
-    return <div className="p-6 text-sm text-gray-500">Loading…</div>
+    return <div className="p-6 text-sm text-gray-500 dark:text-gray-400">Loading…</div>
   }
 
   if (session.status === 'unauthenticated') {
@@ -70,19 +70,19 @@ export function InvitePage() {
   const inviteInvalid = previewLoaded && !preview
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="bg-white p-6 rounded-lg shadow max-w-sm space-y-3 text-sm">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-800/50">
+      <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow max-w-sm space-y-3 text-sm">
         {preview ? (
           <>
             <h1 className="text-lg font-semibold">
               {preview.inviterName} invited you to {preview.teamName}
             </h1>
-            <p className="text-gray-600">Accept to join this workspace on Floorcraft.</p>
+            <p className="text-gray-600 dark:text-gray-300">Accept to join this workspace on Floorcraft.</p>
           </>
         ) : previewLoaded ? (
           <>
             <h1 className="text-lg font-semibold">Invite link not valid</h1>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-gray-300">
               This invite may be expired or already used. Ask your inviter for a fresh link.
             </p>
           </>
@@ -91,7 +91,7 @@ export function InvitePage() {
             <h1 className="text-lg font-semibold">Loading invite…</h1>
           </>
         )}
-        {error && <p className="text-red-600">{error}</p>}
+        {error && <p className="text-red-600 dark:text-red-400">{error}</p>}
         <button
           onClick={accept}
           disabled={busy || inviteInvalid}

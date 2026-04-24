@@ -168,7 +168,7 @@ export function FloorSwitcher() {
   }
 
   return (
-    <div className="h-10 bg-white border-b border-gray-200 flex items-center px-4 gap-1">
+    <div className="h-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center px-4 gap-1">
       <div
         role="tablist"
         aria-label="Floors"
@@ -198,8 +198,8 @@ export function FloorSwitcher() {
                 tabIndex={floor.id === activeFloorId ? 0 : -1}
                 className={`px-3 py-1.5 text-sm font-medium rounded-t cursor-pointer transition-colors ${
                   floor.id === activeFloorId
-                    ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 bg-blue-50 dark:bg-blue-950/40'
+                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800/50'
                 }`}
                 onClick={() => handleSwitchFloor(floor.id)}
                 onContextMenu={(e) => handleContextMenu(e, floor.id)}
@@ -216,7 +216,7 @@ export function FloorSwitcher() {
           type="button"
           onClick={handleAddFloor}
           aria-label="Add floor"
-          className="flex items-center gap-1 px-2 py-1.5 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors ml-1"
+          className="flex items-center gap-1 px-2 py-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors ml-1"
         >
           <Plus size={14} aria-hidden="true" />
           <span>Add Floor</span>
@@ -226,18 +226,18 @@ export function FloorSwitcher() {
       {contextMenuFloorId && canEdit && (
         <div
           ref={contextMenuRef}
-          className="fixed bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50 min-w-[120px]"
+          className="fixed bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg py-1 z-50 min-w-[120px]"
           style={{ left: contextMenuPos.x, top: contextMenuPos.y }}
         >
           <button
-            className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
+            className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
             onClick={() => handleRenameStart(contextMenuFloorId)}
           >
             Rename
           </button>
           {floors.length > 1 && (
             <button
-              className="w-full text-left px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
+              className="w-full text-left px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40"
               onClick={() => openDeleteConfirm(contextMenuFloorId)}
             >
               Delete
@@ -262,7 +262,7 @@ export function FloorSwitcher() {
                   </>
                 )}
               </div>
-              <div className="text-gray-500">
+              <div className="text-gray-500 dark:text-gray-400">
                 This action cannot be undone.
               </div>
             </div>

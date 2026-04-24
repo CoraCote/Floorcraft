@@ -33,8 +33,8 @@ const sections: Section[] = [
           stay in sync — assign Jamie to Desk D-014 on the map and the roster
           shows her seat, and vice versa.
         </p>
-        <h3 className="font-semibold text-gray-900 mt-4">Three-minute tour</h3>
-        <ol className="list-decimal pl-6 space-y-2 text-gray-700">
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">Three-minute tour</h3>
+        <ol className="list-decimal pl-6 space-y-2 text-gray-700 dark:text-gray-200">
           <li>
             Sign up, create a team, then hit <strong>Demo office</strong> on the
             team home. You land on a pre-populated roster with ~18 people across
@@ -55,7 +55,7 @@ const sections: Section[] = [
             edit every field — name, email, manager, office days, equipment.
           </li>
         </ol>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           Offices auto-save two seconds after the last edit. The cloud icon on
           the top bar shows live status (<em>Saving…</em> / <em>Saved just now</em>{' '}
           / <em>Save failed</em>).
@@ -74,8 +74,8 @@ const sections: Section[] = [
           a family (we don't judge). Inside a team you have <strong>offices</strong>,
           which is where the floor plan + roster actually live.
         </p>
-        <h3 className="font-semibold text-gray-900">Creating offices</h3>
-        <ul className="list-disc pl-6 space-y-1.5 text-gray-700">
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100">Creating offices</h3>
+        <ul className="list-disc pl-6 space-y-1.5 text-gray-700 dark:text-gray-200">
           <li>
             <strong>Create office</strong> — blank canvas, empty roster. Good if
             you want to draw from scratch.
@@ -86,13 +86,13 @@ const sections: Section[] = [
             committing real data.
           </li>
         </ul>
-        <h3 className="font-semibold text-gray-900 mt-4">Deleting offices</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">Deleting offices</h3>
         <p>
           On the team home, hover an office card — the trash icon in the top
           right corner opens a confirmation dialog. Deletion is permanent: the
           floor plan, roster, history, and share links all go.
         </p>
-        <h3 className="font-semibold text-gray-900 mt-4">Inviting collaborators</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">Inviting collaborators</h3>
         <p>
           Open <strong>Team → Settings → Members</strong>. Invite by email;
           invitees land on a preview screen showing who invited them and which
@@ -100,20 +100,20 @@ const sections: Section[] = [
           email? The signup "Check your email" screen has a{' '}
           <strong>Resend verification</strong> button with a 30-second cooldown.
         </p>
-        <h3 className="font-semibold text-gray-900 mt-4">Team vs office roles</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">Team vs office roles</h3>
         <p>
           Permissions come in two layers. The <strong>team role</strong>{' '}
           (<strong>Admin</strong> or <strong>Member</strong>) controls team
           settings, billing, and the ability to delete offices. Each office
           then has its own <strong>office role</strong>:
         </p>
-        <ul className="list-disc pl-6 space-y-1.5 text-gray-700">
+        <ul className="list-disc pl-6 space-y-1.5 text-gray-700 dark:text-gray-200">
           <li><strong>Owner</strong> — full access, including audit log, reports, and share-link generation.</li>
           <li><strong>HR Editor</strong> — edit the roster + view audit log + view reports. Cannot edit the map.</li>
           <li><strong>Space Planner</strong> — edit the map + view reports. Cannot edit the roster or see the audit log.</li>
           <li><strong>Viewer</strong> — read-only. Cannot edit, export, or view reports.</li>
         </ul>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           Buttons for actions your role can't perform appear disabled with a
           tooltip ("Read-only access. Contact an editor to make changes").
         </p>
@@ -132,15 +132,15 @@ const sections: Section[] = [
           undo/redo, grouping, and live collaboration.
         </p>
 
-        <h3 className="font-semibold text-gray-900">Drawing walls</h3>
-        <ol className="list-decimal pl-6 space-y-1.5 text-gray-700">
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100">Drawing walls</h3>
+        <ol className="list-decimal pl-6 space-y-1.5 text-gray-700 dark:text-gray-200">
           <li>Press <kbd>W</kbd> or click the Wall tool.</li>
           <li>Click to drop each wall segment endpoint. Double-click or press <kbd>Enter</kbd> to finish a run.</li>
           <li>Walls snap to the grid (toggle with <kbd>G</kbd>) and to existing wall endpoints.</li>
           <li>Drag a wall midpoint to curve it into an arc.</li>
         </ol>
 
-        <h3 className="font-semibold text-gray-900 mt-4">Placing elements</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">Placing elements</h3>
         <p>
           Drag any tile from the left <strong>Element Library</strong> onto the
           canvas — desks, workstations, private offices, conference rooms, phone
@@ -149,7 +149,7 @@ const sections: Section[] = [
           as you hover.
         </p>
 
-        <h3 className="font-semibold text-gray-900 mt-4">Multiple floors</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">Multiple floors</h3>
         <p>
           The floor switcher lives at the bottom of the map. <strong>+ Add
           floor</strong> spins up an empty floor; each floor has its own
@@ -159,15 +159,15 @@ const sections: Section[] = [
           They will be unassigned.") and frees those seats automatically.
         </p>
 
-        <h3 className="font-semibold text-gray-900 mt-4">Safe renames</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">Safe renames</h3>
         <p>
           Desk IDs must be unique within a floor. Renaming a desk to a name
           already in use shows an inline error in the properties panel and
           blocks the save — no silent collisions.
         </p>
 
-        <h3 className="font-semibold text-gray-900 mt-4">Selection & editing</h3>
-        <ul className="list-disc pl-6 space-y-1.5 text-gray-700">
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">Selection & editing</h3>
+        <ul className="list-disc pl-6 space-y-1.5 text-gray-700 dark:text-gray-200">
           <li>Click to select; Shift-click to add to selection.</li>
           <li>Drag on empty canvas to marquee-select.</li>
           <li><kbd>Ctrl</kbd>+<kbd>D</kbd> duplicates; arrow keys nudge (hold <kbd>Shift</kbd> for 10px).</li>
@@ -175,7 +175,7 @@ const sections: Section[] = [
           <li><kbd>Ctrl</kbd>+<kbd>L</kbd> locks/unlocks selection so it can't be moved accidentally.</li>
         </ul>
 
-        <h3 className="font-semibold text-gray-900 mt-4">Moving &amp; rotating</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">Moving &amp; rotating</h3>
         <p>
           As you drag an element, <strong>magenta alignment guides</strong>{' '}
           appear whenever one of its edges or its center lines up with the
@@ -209,12 +209,12 @@ const sections: Section[] = [
           sort and inline-edit support.
         </p>
 
-        <h3 className="font-semibold text-gray-900">The stats bar</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100">The stats bar</h3>
         <p>
           The chips at the top of the roster aren't just decoration — they're
           click-to-filter toggles.
         </p>
-        <ul className="list-disc pl-6 space-y-1.5 text-gray-700">
+        <ul className="list-disc pl-6 space-y-1.5 text-gray-700 dark:text-gray-200">
           <li><strong>Total</strong> — clears status/seat/day/equip/preset chips but keeps your search, department, and floor filters.</li>
           <li><strong>Active / On leave</strong> — filter by status.</li>
           <li><strong>Unassigned</strong> — people without a seat.</li>
@@ -224,8 +224,8 @@ const sections: Section[] = [
           <li><strong>In today</strong> — people whose office-days cover today's weekday (weekdays only).</li>
         </ul>
 
-        <h3 className="font-semibold text-gray-900 mt-4">Editing rows</h3>
-        <ul className="list-disc pl-6 space-y-1.5 text-gray-700">
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">Editing rows</h3>
+        <ul className="list-disc pl-6 space-y-1.5 text-gray-700 dark:text-gray-200">
           <li><strong>Inline edit</strong> — click or double-click a cell. Enter / blur commits; Escape cancels.</li>
           <li><strong>Side drawer</strong> — double-click a row. Covers every field, including office-day presets (Weekdays / MWF / TTh / Hybrid / Remote), leave metadata (type, expected return, coverage buddy, notes), and scheduled departure date.</li>
           <li><strong>Status</strong> — <strong>Active</strong>, <strong>On leave</strong>, or <strong>Departed</strong>. On-leave rows surface the leave type and expected-return date in the drawer; departed rows are kept for history.</li>
@@ -234,8 +234,8 @@ const sections: Section[] = [
           <li><strong>Undo after restore</strong> — if you delete an assigned desk and then <kbd>Ctrl</kbd>+<kbd>Z</kbd>, the desk comes back but the assignment is dropped on purpose. A toast reads <em>"Desk restored — Jane Doe's assignment not recovered. Reassign?"</em> and jumps you to that person on the roster.</li>
         </ul>
 
-        <h3 className="font-semibold text-gray-900 mt-4">Badges &amp; warnings</h3>
-        <ul className="list-disc pl-6 space-y-1.5 text-gray-700">
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">Badges &amp; warnings</h3>
+        <ul className="list-disc pl-6 space-y-1.5 text-gray-700 dark:text-gray-200">
           <li><strong>Amber "rehire?"</strong> — two rows share a name and department. Catches duplicate imports.</li>
           <li><strong>End-date pill</strong> — shows "in N days" when within 30 days.</li>
           <li><strong>Departure pill</strong> — active employees with a scheduled <code>departureDate</code> inside 30 days get a dated "Departing" pill.</li>
@@ -243,7 +243,7 @@ const sections: Section[] = [
           <li><strong>Manager dangling</strong> — the person's manager no longer exists. The drawer offers a one-click Clear.</li>
         </ul>
 
-        <h3 className="font-semibold text-gray-900 mt-4">Bulk actions</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">Bulk actions</h3>
         <p>
           Select rows via the checkboxes. The action bar lights up with
           set-department / set-status / unassign / delete / export-selection.
@@ -251,8 +251,8 @@ const sections: Section[] = [
           assemble a batch across views.
         </p>
 
-        <h3 className="font-semibold text-gray-900 mt-4">Import & export</h3>
-        <ul className="list-disc pl-6 space-y-1.5 text-gray-700">
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">Import & export</h3>
+        <ul className="list-disc pl-6 space-y-1.5 text-gray-700 dark:text-gray-200">
           <li><strong>Import CSV</strong> — paste a CSV or upload a file. A preview panel lists each row with a status (New / Update / Error) and surfaces per-row validation before you commit — no more silent drops on malformed data. Manager references resolve by name; duplicates are matched by email (falling back to name + department).</li>
           <li><strong>Export CSV</strong> — export all or just selected. Round-trips cleanly back through import.</li>
         </ul>
@@ -269,19 +269,19 @@ const sections: Section[] = [
           Seat assignment is the bridge between the map and the roster. Any
           Desk, Workstation, or Private Office can hold one or more employees.
         </p>
-        <h3 className="font-semibold text-gray-900">Ways to assign</h3>
-        <ul className="list-disc pl-6 space-y-1.5 text-gray-700">
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100">Ways to assign</h3>
+        <ul className="list-disc pl-6 space-y-1.5 text-gray-700 dark:text-gray-200">
           <li>Drag a person from the right-sidebar People panel onto a desk on the map.</li>
           <li>Click a desk, then click <strong>Assign</strong> in its properties panel and pick the person.</li>
           <li>Import a CSV where the <code>seat</code> column matches a desk's ID (e.g. <code>D-014</code>).</li>
         </ul>
-        <h3 className="font-semibold text-gray-900 mt-4">Moving &amp; unassigning</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">Moving &amp; unassigning</h3>
         <p>
           Dragging an already-seated person to another desk swaps them in. If
           the target desk is occupied, the existing occupant is bumped back to
           unassigned (you'll see a notification).
         </p>
-        <h3 className="font-semibold text-gray-900 mt-4">From roster → map</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">From roster → map</h3>
         <p>
           Click the Seat column in the roster — it takes you to the map,
           switches to the right floor, and selects the desk. Fast way to
@@ -301,8 +301,8 @@ const sections: Section[] = [
           a lightweight dashboard for pilot-scale utilization questions. It
           reads straight from the current office — no separate data pipeline.
         </p>
-        <h3 className="font-semibold text-gray-900">What's in it</h3>
-        <ul className="list-disc pl-6 space-y-1.5 text-gray-700">
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100">What's in it</h3>
+        <ul className="list-disc pl-6 space-y-1.5 text-gray-700 dark:text-gray-200">
           <li>
             <strong>Floor utilization</strong> — per-floor occupancy. Capacity
             counts desks as 1 seat, workstations by their <code>positions</code>,
@@ -319,13 +319,13 @@ const sections: Section[] = [
             seat. Sorted alphabetically.
           </li>
         </ul>
-        <h3 className="font-semibold text-gray-900 mt-4">Exporting</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">Exporting</h3>
         <p>
           Each section has its own <strong>Export CSV</strong> button so you
           can hand numbers to someone outside the tool. Exports are a snapshot
           of the current view; they're not signed or versioned.
         </p>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           Who can see it: Owner, HR Editor, and Space Planner. Viewers and
           unauthenticated visitors cannot.
         </p>
@@ -344,12 +344,12 @@ const sections: Section[] = [
           lifecycle events, and CSV imports. Each entry records the actor,
           action, target, and a small metadata blob.
         </p>
-        <h3 className="font-semibold text-gray-900">Filters</h3>
-        <ul className="list-disc pl-6 space-y-1.5 text-gray-700">
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100">Filters</h3>
+        <ul className="list-disc pl-6 space-y-1.5 text-gray-700 dark:text-gray-200">
           <li><strong>Actor</strong> — filter to a specific user ID.</li>
           <li><strong>Action</strong> — filter to a specific event type (e.g. <code>employee.delete</code>, <code>csv.import</code>).</li>
         </ul>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           Who can see it: Owner and HR Editor. The log is append-only — no one
           can edit or delete entries from the UI, and the database policies
           block UPDATE/DELETE as well.
@@ -369,19 +369,19 @@ const sections: Section[] = [
           headcount snapshot with a contractor, recruiter, or exec who
           shouldn't need a seat in the tool.
         </p>
-        <h3 className="font-semibold text-gray-900">Creating a link</h3>
-        <ol className="list-decimal pl-6 space-y-1.5 text-gray-700">
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100">Creating a link</h3>
+        <ol className="list-decimal pl-6 space-y-1.5 text-gray-700 dark:text-gray-200">
           <li>On the map, open <strong>Share</strong> in the top bar.</li>
           <li>Click <strong>Create share link</strong> under the Read-only link section. The URL is of the form <code>/shared/&lt;office-id&gt;/&lt;token&gt;</code>.</li>
           <li>Copy the link. Anyone with it sees the current roster as a static table with floor count.</li>
         </ol>
-        <h3 className="font-semibold text-gray-900 mt-4">Revoking</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">Revoking</h3>
         <p>
           Hit <strong>Revoke</strong> in the same panel. The token is marked
           revoked immediately; subsequent visits show "This share link isn't
           valid."
         </p>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           Scope: roster only. The Konva map itself is not shared — we deferred
           map-in-anon-view as a follow-up. Both create and revoke emit audit
           events.
@@ -401,47 +401,47 @@ const sections: Section[] = [
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
           <div>
-            <h4 className="font-semibold text-gray-900 mb-1.5">Editing</h4>
+            <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-1.5">Editing</h4>
             <dl className="text-sm space-y-1">
-              <dt className="inline"><kbd>Ctrl</kbd>+<kbd>Z</kbd></dt><dd className="inline text-gray-600"> — Undo</dd><br />
-              <dt className="inline"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd></dt><dd className="inline text-gray-600"> — Redo</dd><br />
-              <dt className="inline"><kbd>Ctrl</kbd>+<kbd>D</kbd></dt><dd className="inline text-gray-600"> — Duplicate</dd><br />
-              <dt className="inline"><kbd>Ctrl</kbd>+<kbd>A</kbd></dt><dd className="inline text-gray-600"> — Select all</dd><br />
-              <dt className="inline"><kbd>Del</kbd></dt><dd className="inline text-gray-600"> — Delete selected</dd><br />
-              <dt className="inline"><kbd>Ctrl</kbd>+<kbd>G</kbd></dt><dd className="inline text-gray-600"> — Group</dd><br />
-              <dt className="inline"><kbd>Ctrl</kbd>+<kbd>L</kbd></dt><dd className="inline text-gray-600"> — Lock / unlock</dd>
+              <dt className="inline"><kbd>Ctrl</kbd>+<kbd>Z</kbd></dt><dd className="inline text-gray-600 dark:text-gray-300"> — Undo</dd><br />
+              <dt className="inline"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd></dt><dd className="inline text-gray-600 dark:text-gray-300"> — Redo</dd><br />
+              <dt className="inline"><kbd>Ctrl</kbd>+<kbd>D</kbd></dt><dd className="inline text-gray-600 dark:text-gray-300"> — Duplicate</dd><br />
+              <dt className="inline"><kbd>Ctrl</kbd>+<kbd>A</kbd></dt><dd className="inline text-gray-600 dark:text-gray-300"> — Select all</dd><br />
+              <dt className="inline"><kbd>Del</kbd></dt><dd className="inline text-gray-600 dark:text-gray-300"> — Delete selected</dd><br />
+              <dt className="inline"><kbd>Ctrl</kbd>+<kbd>G</kbd></dt><dd className="inline text-gray-600 dark:text-gray-300"> — Group</dd><br />
+              <dt className="inline"><kbd>Ctrl</kbd>+<kbd>L</kbd></dt><dd className="inline text-gray-600 dark:text-gray-300"> — Lock / unlock</dd>
             </dl>
           </div>
           <div>
-            <h4 className="font-semibold text-gray-900 mb-1.5">Tools</h4>
+            <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-1.5">Tools</h4>
             <dl className="text-sm space-y-1">
-              <dt className="inline"><kbd>V</kbd></dt><dd className="inline text-gray-600"> — Select</dd><br />
-              <dt className="inline"><kbd>W</kbd></dt><dd className="inline text-gray-600"> — Wall</dd><br />
-              <dt className="inline"><kbd>R</kbd></dt><dd className="inline text-gray-600"> — Rectangle</dd><br />
-              <dt className="inline"><kbd>E</kbd></dt><dd className="inline text-gray-600"> — Ellipse</dd><br />
-              <dt className="inline"><kbd>T</kbd></dt><dd className="inline text-gray-600"> — Text</dd>
+              <dt className="inline"><kbd>V</kbd></dt><dd className="inline text-gray-600 dark:text-gray-300"> — Select</dd><br />
+              <dt className="inline"><kbd>W</kbd></dt><dd className="inline text-gray-600 dark:text-gray-300"> — Wall</dd><br />
+              <dt className="inline"><kbd>R</kbd></dt><dd className="inline text-gray-600 dark:text-gray-300"> — Rectangle</dd><br />
+              <dt className="inline"><kbd>E</kbd></dt><dd className="inline text-gray-600 dark:text-gray-300"> — Ellipse</dd><br />
+              <dt className="inline"><kbd>T</kbd></dt><dd className="inline text-gray-600 dark:text-gray-300"> — Text</dd>
             </dl>
           </div>
           <div>
-            <h4 className="font-semibold text-gray-900 mb-1.5">View</h4>
+            <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-1.5">View</h4>
             <dl className="text-sm space-y-1">
-              <dt className="inline"><kbd>Ctrl</kbd>+<kbd>+</kbd> / <kbd>-</kbd></dt><dd className="inline text-gray-600"> — Zoom in / out</dd><br />
-              <dt className="inline"><kbd>Ctrl</kbd>+<kbd>0</kbd></dt><dd className="inline text-gray-600"> — Reset zoom</dd><br />
-              <dt className="inline"><kbd>G</kbd></dt><dd className="inline text-gray-600"> — Toggle grid</dd><br />
-              <dt className="inline"><kbd>P</kbd></dt><dd className="inline text-gray-600"> — Presentation mode</dd><br />
-              <dt className="inline"><kbd>M</kbd> / <kbd>R</kbd></dt><dd className="inline text-gray-600"> — Map / Roster</dd>
+              <dt className="inline"><kbd>Ctrl</kbd>+<kbd>+</kbd> / <kbd>-</kbd></dt><dd className="inline text-gray-600 dark:text-gray-300"> — Zoom in / out</dd><br />
+              <dt className="inline"><kbd>Ctrl</kbd>+<kbd>0</kbd></dt><dd className="inline text-gray-600 dark:text-gray-300"> — Reset zoom</dd><br />
+              <dt className="inline"><kbd>G</kbd></dt><dd className="inline text-gray-600 dark:text-gray-300"> — Toggle grid</dd><br />
+              <dt className="inline"><kbd>P</kbd></dt><dd className="inline text-gray-600 dark:text-gray-300"> — Presentation mode</dd><br />
+              <dt className="inline"><kbd>M</kbd> / <kbd>R</kbd></dt><dd className="inline text-gray-600 dark:text-gray-300"> — Map / Roster</dd>
             </dl>
           </div>
           <div>
-            <h4 className="font-semibold text-gray-900 mb-1.5">General</h4>
+            <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-1.5">General</h4>
             <dl className="text-sm space-y-1">
-              <dt className="inline"><kbd>Esc</kbd></dt><dd className="inline text-gray-600"> — Deselect / cancel</dd><br />
-              <dt className="inline"><kbd>?</kbd></dt><dd className="inline text-gray-600"> — Show cheat sheet</dd><br />
-              <dt className="inline">Arrow keys</dt><dd className="inline text-gray-600"> — Nudge 1px (Shift = 10px)</dd>
+              <dt className="inline"><kbd>Esc</kbd></dt><dd className="inline text-gray-600 dark:text-gray-300"> — Deselect / cancel</dd><br />
+              <dt className="inline"><kbd>?</kbd></dt><dd className="inline text-gray-600 dark:text-gray-300"> — Show cheat sheet</dd><br />
+              <dt className="inline">Arrow keys</dt><dd className="inline text-gray-600 dark:text-gray-300"> — Nudge 1px (Shift = 10px)</dd>
             </dl>
           </div>
         </div>
-        <p className="text-sm text-gray-500 mt-3">
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
           On macOS, use <kbd>Cmd</kbd> wherever <kbd>Ctrl</kbd> appears.
         </p>
       </div>
@@ -618,12 +618,12 @@ const sections: Section[] = [
 
 function FaqItem({ q, children }: { q: string; children: React.ReactNode }) {
   return (
-    <details className="group border-l-2 border-gray-200 pl-4 py-1 hover:border-blue-400">
-      <summary className="cursor-pointer font-medium text-gray-900 list-none flex items-center gap-2">
-        <span className="text-gray-400 group-open:rotate-90 transition-transform">▸</span>
+    <details className="group border-l-2 border-gray-200 dark:border-gray-800 pl-4 py-1 hover:border-blue-400">
+      <summary className="cursor-pointer font-medium text-gray-900 dark:text-gray-100 list-none flex items-center gap-2">
+        <span className="text-gray-400 dark:text-gray-500 group-open:rotate-90 transition-transform">▸</span>
         {q}
       </summary>
-      <div className="mt-2 text-gray-700 text-sm leading-relaxed">{children}</div>
+      <div className="mt-2 text-gray-700 dark:text-gray-200 text-sm leading-relaxed">{children}</div>
     </details>
   )
 }
@@ -674,19 +674,19 @@ export function HelpPage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="border-b border-gray-200 bg-white">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50">
+      <header className="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link to="/" className="text-lg font-semibold text-gray-900 hover:text-blue-600">
+          <Link to="/" className="text-lg font-semibold text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400">
             Floorcraft
           </Link>
           <nav className="flex items-center gap-3 text-sm">
-            <Link to="/dashboard" className="text-gray-700 hover:text-blue-600">
+            <Link to="/dashboard" className="text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400">
               Dashboard
             </Link>
             <Link
               to="/account"
-              className="px-3 py-1.5 border rounded hover:bg-gray-50 text-gray-700"
+              className="px-3 py-1.5 border rounded hover:bg-gray-50 dark:hover:bg-gray-800/50 text-gray-700 dark:text-gray-200"
             >
               Account
             </Link>
@@ -703,10 +703,10 @@ export function HelpPage() {
           <details>, because <details>' open/closed is stateful DOM — not
           something a media query can override cleanly.
         */}
-        <details className="md:hidden -mb-2 rounded border border-gray-200 bg-gray-50 text-sm">
-          <summary className="cursor-pointer select-none px-3 py-2 text-gray-700 font-medium flex items-center justify-between">
+        <details className="md:hidden -mb-2 rounded border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 text-sm">
+          <summary className="cursor-pointer select-none px-3 py-2 text-gray-700 dark:text-gray-200 font-medium flex items-center justify-between">
             <span>On this page</span>
-            <span className="text-xs text-gray-500 font-normal">
+            <span className="text-xs text-gray-500 dark:text-gray-400 font-normal">
               {sections.length} sections
             </span>
           </summary>
@@ -717,8 +717,8 @@ export function HelpPage() {
                 href={`#${s.id}`}
                 className={`flex items-center gap-2 px-2 py-1.5 rounded transition-colors ${
                   activeId === s.id
-                    ? 'bg-blue-50 text-blue-700 font-medium'
-                    : 'text-gray-700 hover:bg-gray-100'
+                    ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-medium'
+                    : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
                 }`}
               >
                 <span aria-hidden>{s.icon}</span>
@@ -730,12 +730,12 @@ export function HelpPage() {
 
         {/* Desktop sticky sidebar TOC */}
         <aside className="hidden md:block md:sticky md:top-6 md:self-start">
-          <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">
+          <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">
             On this page
           </div>
-          <div className="text-xs text-gray-400 mb-3">
+          <div className="text-xs text-gray-400 dark:text-gray-500 mb-3">
             Press{' '}
-            <kbd className="px-1 py-0.5 rounded border border-gray-200 bg-white text-gray-600">
+            <kbd className="px-1 py-0.5 rounded border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300">
               ⌘K
             </kbd>{' '}
             to search
@@ -747,8 +747,8 @@ export function HelpPage() {
                 href={`#${s.id}`}
                 className={`flex items-center gap-2 px-2 py-1.5 rounded transition-colors ${
                   activeId === s.id
-                    ? 'bg-blue-50 text-blue-700 font-medium'
-                    : 'text-gray-700 hover:bg-gray-100'
+                    ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-medium'
+                    : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
                 }`}
               >
                 <span aria-hidden>{s.icon}</span>
@@ -759,8 +759,8 @@ export function HelpPage() {
         </aside>
 
         <main className="min-w-0">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">User guide</h1>
-          <p className="text-gray-600 mb-10 max-w-2xl">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">User guide</h1>
+          <p className="text-gray-600 dark:text-gray-300 mb-10 max-w-2xl">
             Everything you need to design an office, populate a roster, and
             keep both in sync. Use the sidebar to jump around, or scroll top
             to bottom.
@@ -775,22 +775,22 @@ export function HelpPage() {
               }}
               className="mb-14 scroll-mt-20"
             >
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
                 <span aria-hidden>{s.icon}</span>
                 {s.label}
               </h2>
-              <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
+              <div className="prose prose-sm max-w-none text-gray-700 dark:text-gray-200 leading-relaxed">
                 {s.body}
               </div>
             </section>
           ))}
 
-          <footer className="mt-20 pt-6 border-t border-gray-200 text-sm text-gray-500">
+          <footer className="mt-20 pt-6 border-t border-gray-200 dark:border-gray-800 text-sm text-gray-500 dark:text-gray-400">
             <p>
               Guide out of date?{' '}
               <a
                 href="https://github.com/rcasto123/Floorcraft/issues/new"
-                className="text-blue-600 hover:underline"
+                className="text-blue-600 dark:text-blue-400 hover:underline"
                 target="_blank"
                 rel="noreferrer"
               >

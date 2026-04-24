@@ -86,10 +86,10 @@ export function CSVImportDialog() {
     <Modal open={open} onClose={() => setOpen(false)} title="Import Employees from CSV" size="lg">
       <ModalBody>
         <div className="mb-3">
-          <label className="block text-sm text-gray-600 mb-1">Upload CSV file or paste below</label>
+          <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">Upload CSV file or paste below</label>
           <input type="file" accept=".csv,.txt" onChange={handleFileUpload} className="text-sm mb-2" />
           <textarea
-            className="w-full h-32 border border-gray-200 rounded-lg p-3 text-sm font-mono focus:outline-none focus:border-blue-400"
+            className="w-full h-32 border border-gray-200 dark:border-gray-800 rounded-lg p-3 text-sm font-mono focus:outline-none focus:border-blue-400"
             placeholder={`name,email,department,team,title,type,office_days,tags\nJane Smith,jane@co.com,Engineering,Frontend,Senior Engineer,full-time,"Mon,Wed,Fri",standing-desk`}
             value={csvText}
             onChange={(e) => { setCsvText(e.target.value); setPreview(null) }}
@@ -102,7 +102,7 @@ export function CSVImportDialog() {
           <p
             id="csv-size-error"
             role="alert"
-            className="text-xs text-red-600 mt-1 mb-3"
+            className="text-xs text-red-600 dark:text-red-400 mt-1 mb-3"
           >
             {sizeError}
           </p>
@@ -110,15 +110,15 @@ export function CSVImportDialog() {
         {preview && preview.errors.length > 0 && (
           <div
             role="alert"
-            className="mb-3 text-xs text-red-600"
+            className="mb-3 text-xs text-red-600 dark:text-red-400"
           >
             {preview.errors.map((e, i) => <div key={i}>{e}</div>)}
           </div>
         )}
         {preview && (
-          <div className="max-h-40 overflow-y-auto border border-gray-200 rounded">
+          <div className="max-h-40 overflow-y-auto border border-gray-200 dark:border-gray-800 rounded">
             <table className="w-full text-xs">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 dark:bg-gray-800/50">
                 <tr>
                   <th className="px-2 py-1 text-left">Name</th>
                   <th className="px-2 py-1 text-left">Email</th>
@@ -130,7 +130,7 @@ export function CSVImportDialog() {
               </thead>
               <tbody>
                 {preview.rows.slice(0, 10).map((r, i) => (
-                  <tr key={i} className="border-t border-gray-100">
+                  <tr key={i} className="border-t border-gray-100 dark:border-gray-800">
                     <td className="px-2 py-1">{r.name}</td>
                     <td className="px-2 py-1">{r.email || '\u2014'}</td>
                     <td className="px-2 py-1">{r.department || '\u2014'}</td>
@@ -142,7 +142,7 @@ export function CSVImportDialog() {
               </tbody>
             </table>
             {preview.rows.length > 10 && (
-              <div className="px-2 py-1 text-gray-400 text-center">
+              <div className="px-2 py-1 text-gray-400 dark:text-gray-500 text-center">
                 ...and {preview.rows.length - 10} more
               </div>
             )}

@@ -267,7 +267,7 @@ export function Minimap() {
   return (
     <div
       ref={ref}
-      className="absolute bottom-10 right-4 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden cursor-pointer select-none touch-none"
+      className="absolute bottom-10 right-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg overflow-hidden cursor-pointer select-none touch-none"
       style={{ width: MINIMAP_WIDTH, height: MINIMAP_HEIGHT }}
       onPointerDown={handlePointerDown}
       aria-label="Minimap"

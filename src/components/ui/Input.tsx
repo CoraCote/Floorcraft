@@ -10,8 +10,8 @@ interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'>
 }
 
 const BASE =
-  'block w-full rounded border bg-white text-gray-900 placeholder:text-gray-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-50'
-const BORDER_OK = 'border-gray-300'
+  'block w-full rounded border bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 focus-visible:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-50 dark:disabled:bg-gray-800'
+const BORDER_OK = 'border-gray-300 dark:border-gray-700'
 const BORDER_INVALID = 'border-red-500 focus-visible:ring-red-500'
 const SIZES: Record<Size, string> = {
   sm: 'px-2 py-1 text-xs',

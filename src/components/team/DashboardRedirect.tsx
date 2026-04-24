@@ -22,7 +22,7 @@ import { useMyTeams } from '../../lib/teams/useMyTeams'
  */
 export function DashboardRedirect() {
   const teams = useMyTeams()
-  if (!teams) return <div className="p-6 text-sm text-gray-500">Loading…</div>
+  if (!teams) return <div className="p-6 text-sm text-gray-500 dark:text-gray-400">Loading…</div>
   if (teams.length === 0) return <Navigate to="/onboarding/team" replace />
   return <Navigate to={`/t/${teams[0].slug}`} replace />
 }

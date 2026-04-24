@@ -29,11 +29,11 @@ export function AuthResetPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <form onSubmit={onSubmit} className="bg-white p-6 rounded-lg shadow w-full max-w-sm space-y-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-800/50">
+      <form onSubmit={onSubmit} className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow w-full max-w-sm space-y-4">
         <h1 className="text-lg font-semibold">Set a new password</h1>
         <label className="block text-sm">
-          <span className="block mb-1 text-gray-600">New password</span>
+          <span className="block mb-1 text-gray-600 dark:text-gray-300">New password</span>
           <input
             type="password"
             required
@@ -45,12 +45,12 @@ export function AuthResetPage() {
           />
           <span
             id="reset-password-hint"
-            className="mt-1 block text-xs text-gray-500"
+            className="mt-1 block text-xs text-gray-500 dark:text-gray-400"
           >
             At least 8 characters.
           </span>
         </label>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
         <button
           type="submit"
           disabled={busy}

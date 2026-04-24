@@ -30,7 +30,7 @@ export function ConflictModal({
       title="This office was edited by someone else"
     >
       <ModalBody className="space-y-3 text-sm">
-        <p className="text-gray-600">
+        <p className="text-gray-600 dark:text-gray-300">
           Since you opened it, a teammate saved changes. Choose how to proceed — your
           unsaved edits are still here until you pick Reload.
         </p>

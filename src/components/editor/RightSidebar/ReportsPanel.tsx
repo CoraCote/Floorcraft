@@ -121,12 +121,12 @@ export function ReportsPanel() {
               if (activeReport === 'move-planner') setMovePlannerActive(false)
               setActiveReport(null)
             }}
-            className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-800 mb-4"
+            className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 mb-4"
           >
             <ArrowLeft size={14} />
             Back to reports
           </button>
-          <div className="text-sm font-semibold text-gray-800 mb-3">{reportTitle}</div>
+          <div className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-3">{reportTitle}</div>
           <div className="flex-1 overflow-y-auto">
             {activeReport === 'occupancy' && <OccupancyDashboard />}
             {activeReport === 'unassigned' && <UnassignedReport />}
@@ -146,13 +146,13 @@ export function ReportsPanel() {
             if (activeReport === 'seat-map') setSeatMapColorMode(null)
             setActiveReport(null)
           }}
-          className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-800 mb-4"
+          className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 mb-4"
         >
           <ArrowLeft size={14} />
           Back to reports
         </button>
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-center text-gray-400">
+          <div className="text-center text-gray-400 dark:text-gray-500">
             <div className="text-sm font-medium mb-1">{reportTitle}</div>
             {activeReport === 'org-chart' && (
               <div className="text-xs">
@@ -171,8 +171,8 @@ export function ReportsPanel() {
                       onClick={() => setSeatMapColorMode(mode)}
                       className={`px-3 py-1.5 text-xs rounded border transition-colors ${
                         seatMapColorMode === mode
-                          ? 'bg-blue-100 border-blue-300 text-blue-700'
-                          : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                          ? 'bg-blue-100 dark:bg-blue-900/40 border-blue-300 text-blue-700 dark:text-blue-300'
+                          : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50'
                       }`}
                     >
                       {mode === 'employment-type'
@@ -191,7 +191,7 @@ export function ReportsPanel() {
                 <br />
                 <button
                   onClick={() => setEmployeeDirectoryOpen(true)}
-                  className="mt-2 text-blue-600 hover:underline"
+                  className="mt-2 text-blue-600 dark:text-blue-400 hover:underline"
                 >
                   Reopen directory
                 </button>
@@ -205,7 +205,7 @@ export function ReportsPanel() {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="text-xs font-medium text-gray-500 mb-1">Reports & Tools</div>
+      <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Reports & Tools</div>
       {REPORTS.map((report) => {
         const IconComponent = REPORT_ICONS[report.icon]
         const isActive =
@@ -220,28 +220,28 @@ export function ReportsPanel() {
             onClick={() => handleReportClick(report.id)}
             className={`flex items-center gap-3 w-full p-3 border rounded-lg text-left transition-colors ${
               isActive
-                ? 'bg-blue-50 border-blue-200 hover:bg-blue-100'
-                : 'border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+                ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 hover:bg-blue-100 dark:hover:bg-blue-900/40'
+                : 'border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:border-gray-300'
             }`}
           >
             <div
               className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
-                isActive ? 'bg-blue-100' : 'bg-gray-100'
+                isActive ? 'bg-blue-100 dark:bg-blue-900/40' : 'bg-gray-100 dark:bg-gray-800'
               }`}
             >
               {IconComponent && (
                 <IconComponent
                   size={16}
-                  className={isActive ? 'text-blue-600' : 'text-gray-600'}
+                  className={isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-300'}
                 />
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-sm font-medium text-gray-800 flex items-center gap-1.5">
+              <div className="text-sm font-medium text-gray-800 dark:text-gray-100 flex items-center gap-1.5">
                 {report.title}
-                {isActive && <CheckCircle size={12} className="text-blue-500" />}
+                {isActive && <CheckCircle size={12} className="text-blue-500 dark:text-blue-400" />}
               </div>
-              <div className="text-[11px] text-gray-400 truncate">{report.desc}</div>
+              <div className="text-[11px] text-gray-400 dark:text-gray-500 truncate">{report.desc}</div>
             </div>
           </button>
         )

@@ -100,23 +100,23 @@ export function SeatHistoryDrawer({ target, onClose }: Props) {
       />
       <aside
         ref={drawerRef}
-        className="relative ml-auto w-[420px] max-w-full h-full bg-white shadow-2xl overflow-y-auto flex flex-col"
+        className="relative ml-auto w-[420px] max-w-full h-full bg-white dark:bg-gray-900 shadow-2xl overflow-y-auto flex flex-col"
         role="dialog"
         aria-modal="true"
         aria-label={`Seat history for ${titleSuffix}`}
       >
-        <header className="flex items-center justify-between px-5 py-4 border-b border-gray-200 flex-shrink-0">
+        <header className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
           <div>
-            <div className="text-xs uppercase tracking-wider text-gray-400 flex items-center gap-1">
+            <div className="text-xs uppercase tracking-wider text-gray-400 dark:text-gray-500 flex items-center gap-1">
               <History size={12} aria-hidden="true" /> Seat history
             </div>
-            <h2 className="text-base font-semibold text-gray-900 truncate" title={titleSuffix}>
+            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate" title={titleSuffix}>
               {titleSuffix}
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded hover:bg-gray-100 text-gray-500"
+            className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
             aria-label="Close drawer"
           >
             <X size={18} />
@@ -131,7 +131,7 @@ export function SeatHistoryDrawer({ target, onClose }: Props) {
               {rows.map((entry) => (
                 <li
                   key={entry.id}
-                  className="border-l-2 border-blue-200 pl-3 text-sm text-gray-700"
+                  className="border-l-2 border-blue-200 pl-3 text-sm text-gray-700 dark:text-gray-200"
                   data-testid="seat-history-row"
                 >
                   <EntryRow
@@ -154,11 +154,11 @@ export function SeatHistoryDrawer({ target, onClose }: Props) {
 function EmptyState() {
   return (
     <div
-      className="text-sm text-gray-500 text-center py-8"
+      className="text-sm text-gray-500 dark:text-gray-400 text-center py-8"
       data-testid="seat-history-empty"
     >
-      <div className="mb-1 font-medium text-gray-600">No history recorded yet</div>
-      <p className="text-xs text-gray-400 max-w-[260px] mx-auto">
+      <div className="mb-1 font-medium text-gray-600 dark:text-gray-300">No history recorded yet</div>
+      <p className="text-xs text-gray-400 dark:text-gray-500 max-w-[260px] mx-auto">
         Assigning, unassigning, and re-seating an employee each add a row
         here. Entries are never deleted or edited.
       </p>
@@ -206,11 +206,11 @@ function EntryRow({
 
   return (
     <>
-      <div className="font-medium text-gray-800">{mainLine}</div>
-      <div className="text-xs text-gray-500 mt-0.5">
+      <div className="font-medium text-gray-800 dark:text-gray-100">{mainLine}</div>
+      <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
         {formatTimestamp(entry.timestamp)} · via {actorName}
       </div>
-      <div className="text-[10px] uppercase tracking-wider text-gray-400 mt-0.5">
+      <div className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 mt-0.5">
         {entry.action}
       </div>
     </>

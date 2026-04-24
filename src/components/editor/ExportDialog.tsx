@@ -144,12 +144,12 @@ export function ExportDialog() {
             <button
               key={exp.label}
               onClick={exp.onClick}
-              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 border border-gray-100 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500"
+              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 border border-gray-100 dark:border-gray-800 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 focus-visible:ring-blue-500"
             >
-              <div className="text-gray-500">{exp.icon}</div>
+              <div className="text-gray-500 dark:text-gray-400">{exp.icon}</div>
               <div>
-                <div className="text-sm font-medium text-gray-800">{exp.label}</div>
-                <div className="text-xs text-gray-400">{exp.desc}</div>
+                <div className="text-sm font-medium text-gray-800 dark:text-gray-100">{exp.label}</div>
+                <div className="text-xs text-gray-400 dark:text-gray-500">{exp.desc}</div>
               </div>
             </button>
           ))}

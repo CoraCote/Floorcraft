@@ -87,10 +87,10 @@ function DeskIdInput({
 
   return (
     <div>
-      <label className="text-xs font-medium text-gray-500 mb-1 block">Desk ID</label>
+      <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Desk ID</label>
       <input
         className={`w-full text-sm border rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 ${
-          error ? 'border-red-300' : 'border-gray-200'
+          error ? 'border-red-300' : 'border-gray-200 dark:border-gray-800'
         } disabled:bg-gray-50 disabled:text-gray-500`}
         value={draft}
         disabled={disabled}
@@ -115,7 +115,7 @@ function DeskIdInput({
           setError(null)
         }}
       />
-      {error && <div className="text-xs text-red-600 mt-0.5">{error}</div>}
+      {error && <div className="text-xs text-red-600 dark:text-red-400 mt-0.5">{error}</div>}
     </div>
   )
 }
@@ -140,11 +140,11 @@ function SeatStatusOverridePicker({
   const updateElement = useElementsStore((s) => s.updateElement)
   return (
     <div>
-      <label className="text-xs font-medium text-gray-500 mb-1 block">
+      <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">
         Seat status override
       </label>
       <select
-        className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500 bg-white"
+        className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500 bg-white dark:bg-gray-900"
         value={value ?? ''}
         disabled={disabled}
         onChange={(e) => {
@@ -242,7 +242,7 @@ function EmployeeDetailCard({
   return (
     <div
       data-testid="employee-detail-card"
-      className="rounded-md border border-gray-200 bg-white p-3 flex flex-col gap-2"
+      className="rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3 flex flex-col gap-2"
     >
       {/* Header: avatar + name + title */}
       <div className="flex items-center gap-2 min-w-0">
@@ -265,14 +265,14 @@ function EmployeeDetailCard({
         )}
         <div className="flex-1 min-w-0">
           <div
-            className="text-sm font-semibold text-gray-900 truncate"
+            className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate"
             title={employee.name}
           >
             {employee.name || '—'}
           </div>
           {employee.title && (
             <div
-              className="text-xs text-gray-500 truncate"
+              className="text-xs text-gray-500 dark:text-gray-400 truncate"
               title={employee.title}
             >
               {employee.title}
@@ -300,19 +300,19 @@ function EmployeeDetailCard({
       </div>
 
       {/* Info rows */}
-      <div className="grid grid-cols-[60px_1fr] gap-x-2 gap-y-0.5 text-[12px] text-gray-700">
-        <div className="text-[11px] text-gray-400">Team</div>
+      <div className="grid grid-cols-[60px_1fr] gap-x-2 gap-y-0.5 text-[12px] text-gray-700 dark:text-gray-200">
+        <div className="text-[11px] text-gray-400 dark:text-gray-500">Team</div>
         <div className="truncate" title={employee.team || '—'}>
           {employee.team || '—'}
         </div>
-        <div className="text-[11px] text-gray-400">Manager</div>
+        <div className="text-[11px] text-gray-400 dark:text-gray-500">Manager</div>
         <div
           className="truncate"
           title={canViewPII ? manager?.name || '—' : '— (redacted)'}
         >
           {canViewPII ? manager?.name || '—' : '— (redacted)'}
         </div>
-        <div className="text-[11px] text-gray-400">Email</div>
+        <div className="text-[11px] text-gray-400 dark:text-gray-500">Email</div>
         <div
           className="truncate"
           title={canViewPII ? employee.email || '—' : '— (redacted)'}
@@ -328,7 +328,7 @@ function EmployeeDetailCard({
             type="button"
             onClick={handleUnassign}
             data-testid="employee-detail-unassign"
-            className="px-2.5 py-1 text-xs text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50"
+            className="px-2.5 py-1 text-xs text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50"
           >
             Unassign
           </button>
@@ -337,7 +337,7 @@ function EmployeeDetailCard({
           type="button"
           onClick={handleViewProfile}
           data-testid="employee-detail-view-profile"
-          className="px-2.5 py-1 text-xs text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50"
+          className="px-2.5 py-1 text-xs text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50"
         >
           View profile
         </button>
@@ -375,7 +375,7 @@ export function PropertiesPanel() {
   }
 
   if (selectedIds.length === 0) {
-    return <div className="text-sm text-gray-400 text-center py-8">Select an element to see its properties</div>
+    return <div className="text-sm text-gray-400 dark:text-gray-500 text-center py-8">Select an element to see its properties</div>
   }
 
   if (selectedIds.length > 1) {
@@ -395,7 +395,7 @@ export function PropertiesPanel() {
         title={label}
         onClick={onClick}
         disabled={inputDisabled}
-        className="p-1.5 rounded hover:bg-gray-100 text-gray-600 border border-gray-200 disabled:opacity-40 disabled:cursor-not-allowed"
+        className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-800 disabled:opacity-40 disabled:cursor-not-allowed"
       >
         <Icon size={16} />
       </button>
@@ -403,7 +403,7 @@ export function PropertiesPanel() {
 
     return (
       <div className="flex flex-col gap-4">
-        <div className="text-sm text-gray-500 text-center py-4">
+        <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
           {selectedIds.length} elements selected
         </div>
 
@@ -411,7 +411,7 @@ export function PropertiesPanel() {
             distribution buttons disable below that count but stay visible
             so the toolbar layout doesn't jump. */}
         <div>
-          <div className="text-xs font-medium text-gray-500 mb-1">Align</div>
+          <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Align</div>
           <div className="flex items-center gap-1 flex-wrap">
             {alignBtn('Align left', () => alignElements(selectedIds, 'left'), AlignHorizontalJustifyStart)}
             {alignBtn('Align horizontal center', () => alignElements(selectedIds, 'h-center'), AlignHorizontalJustifyCenter)}
@@ -422,7 +422,7 @@ export function PropertiesPanel() {
           </div>
         </div>
         <div>
-          <div className="text-xs font-medium text-gray-500 mb-1">Distribute</div>
+          <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Distribute</div>
           <div className="flex items-center gap-1 flex-wrap">
             <button
               type="button"
@@ -430,7 +430,7 @@ export function PropertiesPanel() {
               title="Distribute horizontally"
               onClick={() => distributeElements(selectedIds, 'horizontal')}
               disabled={selectedIds.length < 3 || inputDisabled}
-              className="p-1.5 rounded text-gray-600 border border-gray-200 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="p-1.5 rounded text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <AlignHorizontalSpaceAround size={16} />
             </button>
@@ -440,7 +440,7 @@ export function PropertiesPanel() {
               title="Distribute vertically"
               onClick={() => distributeElements(selectedIds, 'vertical')}
               disabled={selectedIds.length < 3 || inputDisabled}
-              className="p-1.5 rounded text-gray-600 border border-gray-200 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="p-1.5 rounded text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <AlignVerticalSpaceAround size={16} />
             </button>
@@ -450,13 +450,13 @@ export function PropertiesPanel() {
         {allWalls && firstWall && (
           <>
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Thickness</label>
+              <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Thickness</label>
               <input
                 type="number"
                 min={2}
                 max={20}
                 step={1}
-                className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+                className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
                 value={firstWall.thickness}
                 disabled={inputDisabled}
                 onChange={(e) => {
@@ -466,10 +466,10 @@ export function PropertiesPanel() {
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Line style</label>
+              <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Line style</label>
               <select
                 aria-label="Line style"
-                className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+                className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
                 value={firstWall.dashStyle ?? 'solid'}
                 disabled={inputDisabled}
                 onChange={(e) => {
@@ -483,10 +483,10 @@ export function PropertiesPanel() {
               </select>
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Wall type</label>
+              <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Wall type</label>
               <select
                 aria-label="Wall type"
-                className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+                className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
                 value={firstWall.wallType ?? 'solid'}
                 disabled={inputDisabled}
                 onChange={(e) => {
@@ -502,10 +502,10 @@ export function PropertiesPanel() {
               </select>
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Stroke</label>
+              <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Stroke</label>
               <input
                 type="color"
-                className="w-full h-8 border border-gray-200 rounded cursor-pointer disabled:opacity-50"
+                className="w-full h-8 border border-gray-200 dark:border-gray-800 rounded cursor-pointer disabled:opacity-50"
                 value={firstWall.style.stroke}
                 disabled={inputDisabled}
                 onChange={(e) => {
@@ -527,7 +527,7 @@ export function PropertiesPanel() {
               deleteElements(selectedIds)
               useUIStore.getState().clearSelection()
             }}
-            className="mt-2 w-full px-3 py-1.5 text-sm font-medium text-red-600 border border-red-300 rounded hover:bg-red-50 transition-colors"
+            className="mt-2 w-full px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 border border-red-300 rounded hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
           >
             Delete {selectedIds.length} elements
           </button>
@@ -551,9 +551,9 @@ export function PropertiesPanel() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <label className="text-xs font-medium text-gray-500 mb-1 block">Label</label>
+        <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Label</label>
         <input
-          className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+          className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
           value={el.label}
           disabled={inputDisabled}
           onChange={(e) => update({ label: e.target.value })}
@@ -562,20 +562,20 @@ export function PropertiesPanel() {
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="text-xs font-medium text-gray-500 mb-1 block">X</label>
+          <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">X</label>
           <input
             type="number"
-            className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+            className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
             value={Math.round(el.x)}
             disabled={inputDisabled}
             onChange={(e) => update({ x: Number(e.target.value) })}
           />
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-500 mb-1 block">Y</label>
+          <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Y</label>
           <input
             type="number"
-            className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+            className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
             value={Math.round(el.y)}
             disabled={inputDisabled}
             onChange={(e) => update({ y: Number(e.target.value) })}
@@ -585,20 +585,20 @@ export function PropertiesPanel() {
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="text-xs font-medium text-gray-500 mb-1 block">Width</label>
+          <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Width</label>
           <input
             type="number"
-            className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+            className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
             value={Math.round(el.width)}
             disabled={inputDisabled}
             onChange={(e) => update({ width: Number(e.target.value) })}
           />
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-500 mb-1 block">Height</label>
+          <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Height</label>
           <input
             type="number"
-            className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+            className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
             value={Math.round(el.height)}
             disabled={inputDisabled}
             onChange={(e) => update({ height: Number(e.target.value) })}
@@ -607,10 +607,10 @@ export function PropertiesPanel() {
       </div>
 
       <div>
-        <label className="text-xs font-medium text-gray-500 mb-1 block">Rotation</label>
+        <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Rotation</label>
         <input
           type="number"
-          className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+          className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
           value={Math.round(el.rotation)}
           disabled={inputDisabled}
           onChange={(e) => update({ rotation: Number(e.target.value) % 360 })}
@@ -623,10 +623,10 @@ export function PropertiesPanel() {
         // Walls don't fill — only the stroke is meaningful. Hiding Fill
         // prevents users from setting a value with no visual effect.
         <div>
-          <label className="text-xs font-medium text-gray-500 mb-1 block">Stroke</label>
+          <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Stroke</label>
           <input
             type="color"
-            className="w-full h-8 border border-gray-200 rounded cursor-pointer disabled:opacity-50"
+            className="w-full h-8 border border-gray-200 dark:border-gray-800 rounded cursor-pointer disabled:opacity-50"
             value={el.style.stroke}
             disabled={inputDisabled}
             onChange={(e) => update({ style: { ...el.style, stroke: e.target.value } })}
@@ -635,20 +635,20 @@ export function PropertiesPanel() {
       ) : (
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Fill</label>
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Fill</label>
             <input
               type="color"
-              className="w-full h-8 border border-gray-200 rounded cursor-pointer disabled:opacity-50"
+              className="w-full h-8 border border-gray-200 dark:border-gray-800 rounded cursor-pointer disabled:opacity-50"
               value={el.style.fill}
               disabled={inputDisabled}
               onChange={(e) => update({ style: { ...el.style, fill: e.target.value } })}
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Stroke</label>
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Stroke</label>
             <input
               type="color"
-              className="w-full h-8 border border-gray-200 rounded cursor-pointer disabled:opacity-50"
+              className="w-full h-8 border border-gray-200 dark:border-gray-800 rounded cursor-pointer disabled:opacity-50"
               value={el.style.stroke}
               disabled={inputDisabled}
               onChange={(e) => update({ style: { ...el.style, stroke: e.target.value } })}
@@ -661,23 +661,23 @@ export function PropertiesPanel() {
       {isWallElement(el) && (
         <>
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Thickness</label>
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Thickness</label>
             <input
               type="number"
               min={2}
               max={20}
               step={1}
-              className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+              className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
               value={el.thickness}
               disabled={inputDisabled}
               onChange={(e) => update({ thickness: Number(e.target.value) } as Partial<WallElement>)}
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Line style</label>
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Line style</label>
             <select
               aria-label="Line style"
-              className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+              className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
               value={el.dashStyle ?? 'solid'}
               disabled={inputDisabled}
               onChange={(e) =>
@@ -690,10 +690,10 @@ export function PropertiesPanel() {
             </select>
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Wall type</label>
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Wall type</label>
             <select
               aria-label="Wall type"
-              className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+              className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
               value={el.wallType ?? 'solid'}
               disabled={inputDisabled}
               onChange={(e) =>
@@ -712,10 +712,10 @@ export function PropertiesPanel() {
 
       {isTableElement(el) && (
         <div>
-          <label className="text-xs font-medium text-gray-500 mb-1 block">Seats</label>
+          <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Seats</label>
           <input
             type="number"
-            className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+            className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
             value={el.seatCount}
             min={1}
             max={30}
@@ -743,8 +743,8 @@ export function PropertiesPanel() {
           <SeatStatusOverridePicker elementId={el.id} value={el.seatStatus} disabled={inputDisabled} />
           {!el.assignedEmployeeId && (
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Assigned To</label>
-              <div className="text-sm text-gray-400 border border-gray-200 rounded px-2 py-1.5">
+              <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Assigned To</label>
+              <div className="text-sm text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5">
                 No one assigned
               </div>
             </div>
@@ -758,10 +758,10 @@ export function PropertiesPanel() {
           <DeskIdInput elementId={el.id} value={el.deskId} disabled={inputDisabled} />
           <SeatStatusOverridePicker elementId={el.id} value={el.seatStatus} disabled={inputDisabled} />
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Positions</label>
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Positions</label>
             <input
               type="number"
-              className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+              className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
               value={el.positions}
               min={1}
               max={20}
@@ -780,14 +780,14 @@ export function PropertiesPanel() {
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">
               Assigned ({el.assignedEmployeeIds.length} / {el.positions})
             </label>
             {el.assignedEmployeeIds.length > 0 ? (
               <div className="flex flex-col gap-1">
                 {el.assignedEmployeeIds.map((empId) => (
-                  <div key={empId} className="flex items-center justify-between gap-2 text-sm border border-gray-200 rounded px-2 py-1">
-                    <span className="text-gray-800 truncate">
+                  <div key={empId} className="flex items-center justify-between gap-2 text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1">
+                    <span className="text-gray-800 dark:text-gray-100 truncate">
                       {getAssignedEmployeeName(empId) || empId}
                     </span>
                     {canEdit && (
@@ -795,7 +795,7 @@ export function PropertiesPanel() {
                         onClick={() => {
                           unassignEmployee(empId)
                         }}
-                        className="text-xs text-red-500 hover:text-red-700 flex-shrink-0"
+                        className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-300 flex-shrink-0"
                       >
                         Clear
                       </button>
@@ -804,7 +804,7 @@ export function PropertiesPanel() {
                 ))}
               </div>
             ) : (
-              <div className="text-sm text-gray-400 border border-gray-200 rounded px-2 py-1.5">
+              <div className="text-sm text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5">
                 No one assigned
               </div>
             )}
@@ -818,14 +818,14 @@ export function PropertiesPanel() {
           <DeskIdInput elementId={el.id} value={el.deskId} disabled={inputDisabled} />
           <SeatStatusOverridePicker elementId={el.id} value={el.seatStatus} disabled={inputDisabled} />
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">
               Assigned ({el.assignedEmployeeIds.length} / {el.capacity})
             </label>
             {el.assignedEmployeeIds.length > 0 ? (
               <div className="flex flex-col gap-1">
                 {el.assignedEmployeeIds.map((empId) => (
-                  <div key={empId} className="flex items-center justify-between gap-2 text-sm border border-gray-200 rounded px-2 py-1">
-                    <span className="text-gray-800 truncate">
+                  <div key={empId} className="flex items-center justify-between gap-2 text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1">
+                    <span className="text-gray-800 dark:text-gray-100 truncate">
                       {getAssignedEmployeeName(empId) || empId}
                     </span>
                     {canEdit && (
@@ -833,7 +833,7 @@ export function PropertiesPanel() {
                         onClick={() => {
                           unassignEmployee(empId)
                         }}
-                        className="text-xs text-red-500 hover:text-red-700 flex-shrink-0"
+                        className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-300 flex-shrink-0"
                       >
                         Clear
                       </button>
@@ -842,7 +842,7 @@ export function PropertiesPanel() {
                 ))}
               </div>
             ) : (
-              <div className="text-sm text-gray-400 border border-gray-200 rounded px-2 py-1.5">
+              <div className="text-sm text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5">
                 No one assigned
               </div>
             )}
@@ -854,19 +854,19 @@ export function PropertiesPanel() {
       {isConferenceRoomElement(el) && (
         <>
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Room Name</label>
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Room Name</label>
             <input
-              className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+              className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
               value={el.roomName}
               disabled={inputDisabled}
               onChange={(e) => update({ roomName: e.target.value } as Partial<ConferenceRoomElement>)}
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Capacity</label>
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Capacity</label>
             <input
               type="number"
-              className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+              className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
               value={el.capacity}
               min={1}
               max={100}
@@ -880,9 +880,9 @@ export function PropertiesPanel() {
       {/* Common area properties */}
       {isCommonAreaElement(el) && (
         <div>
-          <label className="text-xs font-medium text-gray-500 mb-1 block">Area Name</label>
+          <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Area Name</label>
           <input
-            className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+            className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
             value={el.areaName}
             disabled={inputDisabled}
             onChange={(e) => update({ areaName: e.target.value } as Partial<CommonAreaElement>)}
@@ -890,7 +890,7 @@ export function PropertiesPanel() {
         </div>
       )}
 
-      <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+      <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
         <input
           type="checkbox"
           checked={el.locked}
@@ -906,7 +906,7 @@ export function PropertiesPanel() {
           <button
             type="button"
             onClick={() => setHistoryTargetId(el.id)}
-            className="mt-2 w-full px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 transition-colors inline-flex items-center justify-center gap-1.5"
+            className="mt-2 w-full px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors inline-flex items-center justify-center gap-1.5"
             data-testid="properties-history-button"
           >
             <History size={14} aria-hidden="true" /> History
@@ -920,7 +920,7 @@ export function PropertiesPanel() {
             deleteElements(selectedIds)
             useUIStore.getState().clearSelection()
           }}
-          className="mt-2 w-full px-3 py-1.5 text-sm font-medium text-red-600 border border-red-300 rounded hover:bg-red-50 transition-colors"
+          className="mt-2 w-full px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 border border-red-300 rounded hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
         >
           {selectedIds.length === 1 ? 'Delete element' : `Delete ${selectedIds.length} elements`}
         </button>

@@ -111,12 +111,12 @@ export function PeoplePanel() {
       {/* Header actions */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Users size={14} className="text-gray-500" />
-          <span className="text-sm font-medium text-gray-700">{totalCount} people</span>
+          <Users size={14} className="text-gray-500 dark:text-gray-400" />
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{totalCount} people</span>
           {rosterHref && (
             <Link
               to={rosterHref}
-              className="inline-flex items-center gap-0.5 text-[11px] text-blue-600 hover:text-blue-800 hover:underline"
+              className="inline-flex items-center gap-0.5 text-[11px] text-blue-600 dark:text-blue-400 hover:text-blue-800 hover:underline"
               title="Open full roster view"
             >
               Open Roster
@@ -134,7 +134,7 @@ export function PeoplePanel() {
           </button>
           <button
             onClick={() => setCsvImportOpen(true)}
-            className="flex items-center gap-1 px-2 py-1.5 text-xs border border-gray-200 rounded hover:bg-gray-50"
+            className="flex items-center gap-1 px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-800 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50"
           >
             <Upload size={12} />
             CSV
@@ -144,9 +144,9 @@ export function PeoplePanel() {
 
       {/* Inline add form */}
       {showAddForm && (
-        <div className="flex flex-col gap-1.5 mb-3 p-2 bg-gray-50 rounded-lg">
+        <div className="flex flex-col gap-1.5 mb-3 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
           <input
-            className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400"
+            className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400"
             placeholder="Name"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
@@ -156,7 +156,7 @@ export function PeoplePanel() {
             autoFocus
           />
           <input
-            className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400"
+            className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400"
             placeholder="Email"
             value={newEmail}
             onChange={(e) => setNewEmail(e.target.value)}
@@ -166,7 +166,7 @@ export function PeoplePanel() {
           />
           <div className="flex gap-1">
             <input
-              className="flex-1 text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400"
+              className="flex-1 text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400"
               placeholder="Department"
               value={newDepartment}
               onChange={(e) => setNewDepartment(e.target.value)}
@@ -189,9 +189,9 @@ export function PeoplePanel() {
 
       {/* Search bar */}
       <div className="relative mb-2">
-        <Search size={14} className="absolute left-2.5 top-2.5 text-gray-400" />
+        <Search size={14} className="absolute left-2.5 top-2.5 text-gray-400 dark:text-gray-500" />
         <input
-          className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400"
+          className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-lg focus:outline-none focus:border-blue-400"
           placeholder="Search people..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -204,8 +204,8 @@ export function PeoplePanel() {
           onClick={() => setFilterBy('all')}
           className={`px-2.5 py-1 text-xs rounded-full font-medium transition-colors ${
             filterBy === 'all'
-              ? 'bg-blue-100 text-blue-700'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
+              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
           }`}
         >
           All ({totalCount})
@@ -214,8 +214,8 @@ export function PeoplePanel() {
           onClick={() => setFilterBy('unassigned')}
           className={`px-2.5 py-1 text-xs rounded-full font-medium transition-colors ${
             filterBy === 'unassigned'
-              ? 'bg-red-100 text-red-700'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'
+              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
           }`}
         >
           Unassigned ({unassignedCount})
@@ -224,8 +224,8 @@ export function PeoplePanel() {
           onClick={() => setFilterBy('new-hires')}
           className={`px-2.5 py-1 text-xs rounded-full font-medium transition-colors ${
             filterBy === 'new-hires'
-              ? 'bg-green-100 text-green-700'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
+              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
           }`}
         >
           New Hires ({newHiresCount})
@@ -235,7 +235,7 @@ export function PeoplePanel() {
       {/* Employee list grouped by department */}
       <div className="flex-1 overflow-y-auto -mx-3 px-3">
         {filteredEmployees.length === 0 ? (
-          <div className="text-center text-gray-400 text-sm py-8">
+          <div className="text-center text-gray-400 dark:text-gray-500 text-sm py-8">
             No people found. Add manually or import CSV.
           </div>
         ) : (
@@ -247,11 +247,11 @@ export function PeoplePanel() {
                 <div key={dept}>
                   <button
                     onClick={() => toggleDept(dept)}
-                    className="flex items-center gap-1.5 w-full px-1 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 rounded"
+                    className="flex items-center gap-1.5 w-full px-1 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded"
                   >
                     {isCollapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
                     <span>{dept}</span>
-                    <span className="text-gray-400 font-normal">({deptEmployees.length})</span>
+                    <span className="text-gray-400 dark:text-gray-500 font-normal">({deptEmployees.length})</span>
                   </button>
                   {!isCollapsed && (
                     <div className="flex flex-col gap-0.5 ml-1">
@@ -262,7 +262,7 @@ export function PeoplePanel() {
                         return (
                           <div
                             key={employee.id}
-                            className={`flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-gray-50 group ${canEdit ? 'cursor-grab' : 'cursor-default'}`}
+                            className={`flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 group ${canEdit ? 'cursor-grab' : 'cursor-default'}`}
                             draggable={canEdit}
                             title={!canEdit ? 'Read-only access. Contact an editor to make changes.' : undefined}
                             onDragStart={(e) => {
@@ -289,11 +289,11 @@ export function PeoplePanel() {
                             </div>
                             {/* Info */}
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium text-gray-800 truncate">
+                              <div className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">
                                 {employee.name}
                               </div>
                               {employee.title && (
-                                <div className="text-[10px] text-gray-400 truncate">
+                                <div className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
                                   {employee.title}
                                 </div>
                               )}
@@ -307,7 +307,7 @@ export function PeoplePanel() {
                               />
                               <span
                                 className={`text-[10px] ${
-                                  employee.seatId ? 'text-green-600' : 'text-red-500'
+                                  employee.seatId ? 'text-green-600 dark:text-green-400' : 'text-red-500'
                                 }`}
                               >
                                 {employee.seatId || 'Unassigned'}

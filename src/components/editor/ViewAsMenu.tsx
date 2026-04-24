@@ -41,8 +41,8 @@ export function ViewAsMenu() {
         onClick={() => setOpen((o) => !o)}
         className={`flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded ${
           impersonatedRole
-            ? 'bg-amber-100 text-amber-800 hover:bg-amber-200'
-            : 'text-gray-600 hover:bg-gray-100'
+            ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 hover:bg-amber-200'
+            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
         }`}
         aria-haspopup="menu"
         aria-expanded={open}
@@ -54,9 +54,9 @@ export function ViewAsMenu() {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 mt-1 w-48 bg-white border rounded shadow z-30 py-1"
+          className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-900 border rounded shadow z-30 py-1"
         >
-          <div className="px-3 py-1 text-[10px] uppercase tracking-wide text-gray-400">
+          <div className="px-3 py-1 text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500">
             Preview as role
           </div>
           <button
@@ -66,10 +66,10 @@ export function ViewAsMenu() {
               setImpersonatedRole(null)
               setOpen(false)
             }}
-            className="flex items-center justify-between w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
+            className="flex items-center justify-between w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-800/50"
           >
             <span>None (owner)</span>
-            {impersonatedRole === null && <Check size={14} className="text-blue-600" />}
+            {impersonatedRole === null && <Check size={14} className="text-blue-600 dark:text-blue-400" />}
           </button>
           {PREVIEW_ROLES.map((role) => (
             <button
@@ -80,10 +80,10 @@ export function ViewAsMenu() {
                 setImpersonatedRole(role)
                 setOpen(false)
               }}
-              className="flex items-center justify-between w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
+              className="flex items-center justify-between w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-800/50"
             >
               <span>{role}</span>
-              {impersonatedRole === role && <Check size={14} className="text-blue-600" />}
+              {impersonatedRole === role && <Check size={14} className="text-blue-600 dark:text-blue-400" />}
             </button>
           ))}
         </div>

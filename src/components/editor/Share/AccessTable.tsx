@@ -37,11 +37,11 @@ export function AccessTable({
                 {e.name ?? e.email}
                 {e.isSelf ? ' (you)' : ''}
               </div>
-              <div className="text-xs text-gray-500">{e.email}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{e.email}</div>
             </td>
             <td className="py-2 w-32">
               {e.role === 'owner' || !canEdit || e.isSelf ? (
-                <span className="capitalize text-gray-600">{e.role}</span>
+                <span className="capitalize text-gray-600 dark:text-gray-300">{e.role}</span>
               ) : (
                 <select
                   aria-label={`${e.email} role`}
@@ -59,7 +59,7 @@ export function AccessTable({
               {canEdit && e.role !== 'owner' && !e.isSelf && (
                 <button
                   onClick={() => remove(e)}
-                  className="text-gray-400 hover:text-red-600"
+                  className="text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400"
                   title="Remove override"
                   aria-label={`Remove ${e.email}`}
                 >

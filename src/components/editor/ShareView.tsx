@@ -85,25 +85,25 @@ export function ShareView() {
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       <header>
         <h1 className="text-xl font-semibold">Shared read-only map</h1>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-gray-600 dark:text-gray-300">
           Office: {officeSlug} · {floorCount} floor{floorCount === 1 ? '' : 's'} ·{' '}
           {elementCount} element{elementCount === 1 ? '' : 's'} ·{' '}
           {peopleList.length} people
         </p>
       </header>
 
-      <section aria-label="Map" className="border border-gray-200 rounded p-4 bg-gray-50">
-        <h2 className="text-sm font-medium text-gray-700 mb-2">Map</h2>
-        <p className="text-xs text-gray-500">
+      <section aria-label="Map" className="border border-gray-200 dark:border-gray-800 rounded p-4 bg-gray-50 dark:bg-gray-800/50">
+        <h2 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Map</h2>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
           Read-only view. Editing is disabled on shared links.
         </p>
       </section>
 
       <section aria-label="People">
-        <h2 className="text-sm font-medium text-gray-700 mb-2">People (redacted)</h2>
+        <h2 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">People (redacted)</h2>
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left border-b border-gray-200">
+            <tr className="text-left border-b border-gray-200 dark:border-gray-800">
               <th className="py-2">Initials</th>
               <th>Department</th>
               <th>Title</th>
@@ -112,7 +112,7 @@ export function ShareView() {
           </thead>
           <tbody>
             {peopleList.map((e) => (
-              <tr key={e.id} className="border-b border-gray-100">
+              <tr key={e.id} className="border-b border-gray-100 dark:border-gray-800">
                 <td className="py-1">{e.name}</td>
                 <td className="py-1">{e.department ?? ''}</td>
                 <td className="py-1">{e.title ?? ''}</td>

@@ -233,7 +233,7 @@ function CommandPaletteBody() {
       data-testid="command-palette"
     >
       <div
-        className="bg-white rounded-xl shadow-2xl w-full max-w-[600px] mx-4 overflow-hidden"
+        className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-[600px] mx-4 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
@@ -245,21 +245,21 @@ function CommandPaletteBody() {
           placeholder="Jump to anything…"
           aria-label="Command palette search"
           data-testid="command-palette-input"
-          className="w-full px-4 py-3 text-sm border-b border-gray-200 outline-none"
+          className="w-full px-4 py-3 text-sm border-b border-gray-200 dark:border-gray-800 outline-none"
         />
         <ul
           className="max-h-[60vh] overflow-y-auto py-1"
           data-testid="command-palette-list"
         >
           {grouped.length === 0 && crossResults.length === 0 && (
-            <li className="px-4 py-6 text-center text-sm text-gray-500">
+            <li className="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
               No matches.
             </li>
           )}
           {grouped.map((group) => (
             <li key={group.section}>
               <div
-                className="px-4 pt-3 pb-1 text-[11px] font-semibold text-gray-400 uppercase tracking-wide"
+                className="px-4 pt-3 pb-1 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide"
                 data-testid={`command-palette-section-${group.section}`}
               >
                 {SECTION_LABELS[group.section]}
@@ -278,15 +278,15 @@ function CommandPaletteBody() {
                         onClick={() => item.run()}
                         className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 border-l-2 ${
                           active
-                            ? 'bg-blue-50 text-blue-900 border-blue-500'
-                            : 'text-gray-800 hover:bg-gray-50 border-transparent'
+                            ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-900 border-blue-500'
+                            : 'text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800/50 border-transparent'
                         }`}
                       >
                         <div className="flex-1 min-w-0">
                           <div className="truncate">{item.label}</div>
                         </div>
                         {item.subtitle && (
-                          <div className="text-xs text-gray-400 flex-shrink-0">
+                          <div className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">
                             {item.subtitle}
                           </div>
                         )}

@@ -19,7 +19,7 @@ export function SeatCell({
 }) {
   if (!floorName || !seatLabel || !onJump) {
     return (
-      <span className="inline-flex items-center rounded-full border border-dashed border-gray-300 px-2.5 py-0.5 text-xs text-gray-400">
+      <span className="inline-flex items-center rounded-full border border-dashed border-gray-300 dark:border-gray-700 px-2.5 py-0.5 text-xs text-gray-400 dark:text-gray-500">
         Unassigned
       </span>
     )
@@ -28,18 +28,18 @@ export function SeatCell({
     <button
       type="button"
       onClick={onJump}
-      className="inline-flex items-center gap-2 rounded px-1 py-0.5 text-left hover:bg-gray-100"
+      className="inline-flex items-center gap-2 rounded px-1 py-0.5 text-left hover:bg-gray-100 dark:hover:bg-gray-800"
       title="Show seat on map"
       aria-label={`Seat ${floorName} ${seatLabel} — show on map`}
     >
       <MapPin
         size={14}
         aria-hidden="true"
-        className="text-gray-400 flex-shrink-0"
+        className="text-gray-400 dark:text-gray-500 flex-shrink-0"
       />
       <span className="flex flex-col min-w-0 leading-tight">
-        <span className="text-sm text-gray-700 truncate">{floorName}</span>
-        <span className="text-xs text-gray-500 truncate">{seatLabel}</span>
+        <span className="text-sm text-gray-700 dark:text-gray-200 truncate">{floorName}</span>
+        <span className="text-xs text-gray-500 dark:text-gray-400 truncate">{seatLabel}</span>
       </span>
     </button>
   )

@@ -48,7 +48,7 @@ export function SeatSwapsPanel() {
     return (
       <div className="mb-3">
         <Header count={0} />
-        <div className="text-xs text-gray-400 py-2">
+        <div className="text-xs text-gray-400 dark:text-gray-500 py-2">
           No swap requests yet.
         </div>
       </div>
@@ -104,11 +104,11 @@ export function SeatSwapsPanel() {
 function Header({ count }: { count: number }) {
   return (
     <div className="flex items-center gap-1.5 mb-2">
-      <ArrowLeftRight size={12} className="text-gray-400" />
-      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+      <ArrowLeftRight size={12} className="text-gray-400 dark:text-gray-500" />
+      <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
         Seat swaps
       </div>
-      <div className="ml-auto text-[11px] text-gray-400">{count} pending</div>
+      <div className="ml-auto text-[11px] text-gray-400 dark:text-gray-500">{count} pending</div>
     </div>
   )
 }
@@ -124,7 +124,7 @@ function Group({
 }) {
   return (
     <div className="flex flex-col gap-1.5" data-swap-group={status}>
-      <div className="text-[10px] font-medium uppercase text-gray-400 tracking-wider">
+      <div className="text-[10px] font-medium uppercase text-gray-400 dark:text-gray-500 tracking-wider">
         {label}
       </div>
       {children}
@@ -158,22 +158,22 @@ function SwapRow({
   const isPending = request.status === 'pending'
   return (
     <div
-      className="flex flex-col gap-1 p-2 rounded border border-gray-200 bg-white"
+      className="flex flex-col gap-1 p-2 rounded border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900"
       data-swap-request-id={request.id}
     >
-      <div className="flex items-center gap-1 text-xs text-gray-800">
+      <div className="flex items-center gap-1 text-xs text-gray-800 dark:text-gray-100">
         <span className="font-medium truncate" title={requesterName}>
           {requesterName}
         </span>
-        <span className="text-gray-400">({request.requesterSeatId})</span>
-        <ArrowLeftRight size={10} className="text-gray-400 mx-1 flex-shrink-0" />
+        <span className="text-gray-400 dark:text-gray-500">({request.requesterSeatId})</span>
+        <ArrowLeftRight size={10} className="text-gray-400 dark:text-gray-500 mx-1 flex-shrink-0" />
         <span className="font-medium truncate" title={targetName}>
           {targetName}
         </span>
-        <span className="text-gray-400">({request.targetSeatId})</span>
+        <span className="text-gray-400 dark:text-gray-500">({request.targetSeatId})</span>
       </div>
       {request.reason && (
-        <div className="text-[11px] text-gray-500 leading-snug whitespace-pre-wrap">
+        <div className="text-[11px] text-gray-500 dark:text-gray-400 leading-snug whitespace-pre-wrap">
           {request.reason}
         </div>
       )}
@@ -193,7 +193,7 @@ function SwapRow({
             <button
               type="button"
               onClick={onDeny}
-              className="flex items-center gap-1 text-[11px] text-red-700 hover:text-red-800 px-2 py-0.5 rounded border border-red-200 bg-red-50 hover:bg-red-100"
+              className="flex items-center gap-1 text-[11px] text-red-700 dark:text-red-300 hover:text-red-800 px-2 py-0.5 rounded border border-red-200 bg-red-50 dark:bg-red-950/40 hover:bg-red-100"
               aria-label={`Deny swap between ${requesterName} and ${targetName}`}
             >
               <X size={11} /> Deny
@@ -203,7 +203,7 @@ function SwapRow({
             <button
               type="button"
               onClick={onCancel}
-              className="flex items-center gap-1 text-[11px] text-gray-600 hover:text-gray-800 px-2 py-0.5 rounded border border-gray-200 bg-white hover:bg-gray-50"
+              className="flex items-center gap-1 text-[11px] text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 px-2 py-0.5 rounded border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50"
             >
               Cancel request
             </button>

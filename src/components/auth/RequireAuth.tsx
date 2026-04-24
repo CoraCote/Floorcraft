@@ -6,7 +6,7 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
   const location = useLocation()
 
   if (session.status === 'loading') {
-    return <div className="p-6 text-sm text-gray-500">Loading…</div>
+    return <div className="p-6 text-sm text-gray-500 dark:text-gray-400">Loading…</div>
   }
   if (session.status === 'unauthenticated') {
     const next = encodeURIComponent(location.pathname + location.search)

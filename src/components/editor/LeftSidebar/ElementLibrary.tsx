@@ -310,7 +310,7 @@ function LibraryTile({ item, onClick, onDragStart, onDelete }: LibraryTileProps)
       // The wrapper owns the drag; the inner <button> handles click-to-add.
       // The star sits above as a sibling with its own keyboard handler so
       // Tab reaches it and Space/Enter toggles without placing the element.
-      className="group relative flex items-center gap-1.5 px-2 py-1.5 text-xs text-gray-700 hover:bg-gray-100 rounded border border-gray-100 hover:border-gray-200 transition-colors cursor-grab active:cursor-grabbing"
+      className="group relative flex items-center gap-1.5 px-2 py-1.5 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded border border-gray-100 dark:border-gray-800 hover:border-gray-200 transition-colors cursor-grab active:cursor-grabbing"
     >
       <button
         type="button"
@@ -328,9 +328,9 @@ function LibraryTile({ item, onClick, onDragStart, onDelete }: LibraryTileProps)
           onKeyDown={(e) => {
             if (e.key === ' ' || e.key === 'Enter') handleDeleteClick(e)
           }}
-          className="absolute top-0.5 right-0.5 p-0.5 rounded opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus:ring-1 focus:ring-red-400 hover:bg-red-50"
+          className="absolute top-0.5 right-0.5 p-0.5 rounded opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus:ring-1 focus:ring-red-400 hover:bg-red-50 dark:hover:bg-red-950/40"
         >
-          <X size={12} aria-hidden="true" className="text-gray-400 hover:text-red-500" />
+          <X size={12} aria-hidden="true" className="text-gray-400 dark:text-gray-500 hover:text-red-500" />
         </button>
       ) : (
         <button
@@ -349,7 +349,7 @@ function LibraryTile({ item, onClick, onDragStart, onDelete }: LibraryTileProps)
           <Star
             size={12}
             aria-hidden="true"
-            className={isFavorite ? 'fill-amber-400 text-amber-400' : 'text-gray-400'}
+            className={isFavorite ? 'fill-amber-400 text-amber-400' : 'text-gray-400 dark:text-gray-500'}
           />
         </button>
       )}
@@ -391,14 +391,14 @@ function LibrarySection({
         <button
           type="button"
           onClick={() => toggle(id)}
-          className="w-full flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 mb-1"
+          className="w-full flex items-center gap-1 text-xs font-medium text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 mb-1"
           aria-expanded={!isCollapsed}
         >
           {isCollapsed ? <ChevronRight size={12} aria-hidden="true" /> : <ChevronDown size={12} aria-hidden="true" />}
           <span>{title}</span>
         </button>
       ) : (
-        <div className="text-xs font-medium text-gray-400 mb-1 px-1">{title}</div>
+        <div className="text-xs font-medium text-gray-400 dark:text-gray-500 mb-1 px-1">{title}</div>
       )}
       {!isCollapsed && (
         <div className="grid grid-cols-2 gap-1">
@@ -578,7 +578,7 @@ export function ElementLibrary() {
   // can leave notes tied to desks/people without needing map privileges.
   if (!canEdit) {
     return (
-      <div className="p-4 text-xs text-gray-500 space-y-2 flex-1 min-h-0 overflow-y-auto">
+      <div className="p-4 text-xs text-gray-500 dark:text-gray-400 space-y-2 flex-1 min-h-0 overflow-y-auto">
         {canAnnotate && (
           <button
             type="button"
@@ -587,15 +587,15 @@ export function ElementLibrary() {
             title="Click an element or empty canvas to add a sticky note (280 chars max)"
             className={`w-full flex items-center gap-2 px-2.5 py-1.5 text-xs rounded border transition-colors ${
               activeTool === 'pin'
-                ? 'bg-amber-50 text-amber-800 border-amber-300'
-                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+                ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 border-amber-300'
+                : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:border-gray-300'
             }`}
           >
             <MessageSquarePlus size={14} aria-hidden="true" />
             <span className="flex-1 text-left">Annotation pin</span>
           </button>
         )}
-        <div className="font-medium text-gray-600">View-only</div>
+        <div className="font-medium text-gray-600 dark:text-gray-300">View-only</div>
         <div>You don't have permission to add elements to this office.</div>
       </div>
     )
@@ -613,7 +613,7 @@ export function ElementLibrary() {
         placeholder="Search shapes…"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        className="w-full mb-3 px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+        className="w-full mb-3 px-2 py-1 text-xs border border-gray-200 dark:border-gray-800 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
       />
       {canAnnotate && (
         // Pin tool: a one-off entry here (rather than a LibraryItem)
@@ -627,14 +627,14 @@ export function ElementLibrary() {
           title="Click an element or empty canvas to add a sticky note (280 chars max)"
           className={`w-full mb-3 flex items-center gap-2 px-2.5 py-1.5 text-xs rounded border transition-colors ${
             activeTool === 'pin'
-              ? 'bg-amber-50 text-amber-800 border-amber-300'
-              : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+              ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 border-amber-300'
+              : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:border-gray-300'
           }`}
         >
           <MessageSquarePlus size={14} aria-hidden="true" />
           <span className="flex-1 text-left">Annotation pin</span>
           {activeTool === 'pin' && (
-            <span className="text-[10px] font-mono text-amber-600">ESC</span>
+            <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400">ESC</span>
           )}
         </button>
       )}
@@ -694,7 +694,7 @@ export function ElementLibrary() {
             <button
               type="button"
               onClick={handleUploadClick}
-              className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded border border-dashed border-gray-300 hover:border-gray-400 transition-colors"
+              className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded border border-dashed border-gray-300 dark:border-gray-700 hover:border-gray-400 transition-colors"
             >
               <Upload size={12} aria-hidden="true" />
               <span>Upload SVG</span>
@@ -710,7 +710,7 @@ export function ElementLibrary() {
             {uploadError && (
               <div
                 role="alert"
-                className="mt-1 px-2 py-1 text-xs text-red-600 bg-red-50 border border-red-100 rounded"
+                className="mt-1 px-2 py-1 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border border-red-100 rounded"
               >
                 {uploadError}
               </div>

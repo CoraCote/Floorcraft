@@ -49,7 +49,7 @@ export function CrossOfficeResultsGroup({ results, highlightedId, onHover, onPic
   return (
     <li data-testid="command-palette-cross-office">
       <div
-        className="px-4 pt-3 pb-1 text-[11px] font-semibold text-gray-400 uppercase tracking-wide"
+        className="px-4 pt-3 pb-1 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide"
         data-testid="command-palette-section-cross-office"
       >
         All offices
@@ -57,7 +57,7 @@ export function CrossOfficeResultsGroup({ results, highlightedId, onHover, onPic
       {groups.map((group) => (
         <div key={group.officeName}>
           <div
-            className="px-4 pt-1 pb-0.5 text-[10px] font-medium text-gray-500"
+            className="px-4 pt-1 pb-0.5 text-[10px] font-medium text-gray-500 dark:text-gray-400"
             data-testid={`cross-office-group-${group.officeName}`}
           >
             {group.officeName}
@@ -75,12 +75,12 @@ export function CrossOfficeResultsGroup({ results, highlightedId, onHover, onPic
                     onMouseEnter={() => onHover(rowKey)}
                     onClick={() => onPick(item)}
                     className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 ${
-                      active ? 'bg-blue-50 text-blue-900' : 'text-gray-800 hover:bg-gray-50'
+                      active ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-900' : 'text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800/50'
                     }`}
                   >
                     <span
                       aria-hidden="true"
-                      className="text-xs text-gray-400 w-3 inline-block"
+                      className="text-xs text-gray-400 dark:text-gray-500 w-3 inline-block"
                       title={KIND_LABEL[item.kind]}
                     >
                       {KIND_ICON[item.kind]}
@@ -88,10 +88,10 @@ export function CrossOfficeResultsGroup({ results, highlightedId, onHover, onPic
                     <span className="flex-1 min-w-0 truncate">
                       <span>{item.label}</span>
                       {item.sublabel && (
-                        <span className="text-xs text-gray-500 ml-2">{item.sublabel}</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">{item.sublabel}</span>
                       )}
                     </span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 whitespace-nowrap">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 whitespace-nowrap">
                       {item.officeName}
                     </span>
                   </button>

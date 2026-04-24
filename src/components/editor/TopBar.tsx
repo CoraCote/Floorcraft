@@ -27,6 +27,7 @@ import { UserMenu } from '../team/UserMenu'
 import { ScaleSettingsPopover } from './ScaleSettingsPopover'
 import { ViewAsMenu } from './ViewAsMenu'
 import { ShareLinkDialog } from './ShareLinkDialog'
+import { ThemeToggle } from '../ui/ThemeToggle'
 
 export function TopBar() {
   const project = useProjectStore((s) => s.currentProject)
@@ -209,7 +210,7 @@ export function TopBar() {
   }
 
   return (
-    <div className="h-14 bg-white border-b border-gray-200 flex items-center px-4 gap-3 flex-shrink-0">
+    <div className="h-14 bg-white border-b border-gray-200 dark:bg-gray-900 dark:border-gray-800 flex items-center px-4 gap-3 flex-shrink-0">
       {/* ───── Identity cluster ─────
           Who am I, what file, is it saved, can I undo? These answer the
           "where am I" and "am I safe" mental-model questions that precede
@@ -220,7 +221,7 @@ export function TopBar() {
         {editing ? (
           <input
             ref={inputRef}
-            className="text-sm font-semibold px-2 py-1 border border-blue-400 rounded outline-none"
+            className="text-sm font-semibold px-2 py-1 border border-blue-400 rounded outline-none bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100 dark:border-blue-500"
             value={nameValue}
             onChange={(e) => setNameValue(e.target.value)}
             onBlur={handleNameSubmit}
@@ -231,7 +232,7 @@ export function TopBar() {
           />
         ) : (
           <button
-            className="text-sm font-semibold text-gray-800 hover:bg-gray-100 px-2 py-1 rounded"
+            className="text-sm font-semibold text-gray-800 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-800 px-2 py-1 rounded"
             title="Click to rename"
             onClick={() => {
               setNameValue(project?.name || '')
@@ -249,7 +250,7 @@ export function TopBar() {
         <button
           onClick={() => undo()}
           disabled={!canUndo}
-          className={`p-1.5 rounded text-gray-600 ${canUndo ? 'hover:bg-gray-100' : 'opacity-40 cursor-not-allowed'}`}
+          className={`p-1.5 rounded text-gray-600 dark:text-gray-300 dark:text-gray-400 ${canUndo ? 'hover:bg-gray-100 dark:hover:bg-gray-800' : 'opacity-40 cursor-not-allowed'}`}
           title={canUndo ? 'Undo (Ctrl+Z)' : 'Nothing to undo'}
           aria-label="Undo"
         >
@@ -258,7 +259,7 @@ export function TopBar() {
         <button
           onClick={() => redo()}
           disabled={!canRedo}
-          className={`p-1.5 rounded text-gray-600 ${canRedo ? 'hover:bg-gray-100' : 'opacity-40 cursor-not-allowed'}`}
+          className={`p-1.5 rounded text-gray-600 dark:text-gray-300 dark:text-gray-400 ${canRedo ? 'hover:bg-gray-100 dark:hover:bg-gray-800' : 'opacity-40 cursor-not-allowed'}`}
           title={canRedo ? 'Redo (Ctrl+Shift+Z)' : 'Nothing to redo'}
           aria-label="Redo"
         >
@@ -266,7 +267,7 @@ export function TopBar() {
         </button>
       </div>
 
-      <div className="w-px h-6 bg-gray-200" />
+      <div className="w-px h-6 bg-gray-200 dark:bg-gray-700" />
 
       {/* ───── Viewport cluster ─────
           Everything that changes how the canvas LOOKS without changing its
@@ -278,7 +279,7 @@ export function TopBar() {
       <div className="relative" ref={viewMenuRef}>
         <button
           onClick={() => setViewMenuOpen((o) => !o)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800 rounded"
           aria-haspopup="menu"
           aria-expanded={viewMenuOpen}
         >
@@ -289,7 +290,7 @@ export function TopBar() {
         {viewMenuOpen && (
           <div
             role="menu"
-            className="absolute left-0 mt-1 w-56 bg-white border rounded shadow z-30 py-1"
+            className="absolute left-0 mt-1 w-56 bg-white border border-gray-200 rounded shadow dark:bg-gray-900 dark:border-gray-700 dark:shadow-black/40 z-30 py-1"
           >
             <button
               role="menuitem"
@@ -297,11 +298,11 @@ export function TopBar() {
                 setViewMenuOpen(false)
                 zoomIn()
               }}
-              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
+              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800/50"
             >
               <ZoomIn size={14} aria-hidden="true" />
               Zoom in
-              <kbd className="ml-auto text-[10px] text-gray-400 font-mono">+</kbd>
+              <kbd className="ml-auto text-[10px] text-gray-400 dark:text-gray-500 font-mono">+</kbd>
             </button>
             <button
               role="menuitem"
@@ -309,11 +310,11 @@ export function TopBar() {
                 setViewMenuOpen(false)
                 zoomOut()
               }}
-              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
+              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800/50"
             >
               <ZoomOut size={14} aria-hidden="true" />
               Zoom out
-              <kbd className="ml-auto text-[10px] text-gray-400 font-mono">−</kbd>
+              <kbd className="ml-auto text-[10px] text-gray-400 dark:text-gray-500 font-mono">−</kbd>
             </button>
             <button
               role="menuitem"
@@ -321,22 +322,22 @@ export function TopBar() {
                 setViewMenuOpen(false)
                 resetZoom()
               }}
-              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
+              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800/50"
             >
               <span className="inline-block w-[14px] text-center text-xs font-mono">
                 {Math.round(stageScale * 100)}
               </span>
               Reset zoom
-              <kbd className="ml-auto text-[10px] text-gray-400 font-mono">0</kbd>
+              <kbd className="ml-auto text-[10px] text-gray-400 dark:text-gray-500 font-mono">0</kbd>
             </button>
-            <div className="my-1 border-t border-gray-100" />
+            <div className="my-1 border-t border-gray-100 dark:border-gray-800" />
             <button
               role="menuitem"
               onClick={() => {
                 setViewMenuOpen(false)
                 toggleGrid()
               }}
-              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
+              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800/50"
               aria-pressed={settings.showGrid}
             >
               {settings.showGrid ? (
@@ -346,7 +347,7 @@ export function TopBar() {
               )}
               <Grid3x3 size={14} aria-hidden="true" />
               Toggle grid
-              <kbd className="ml-auto text-[10px] text-gray-400 font-mono">G</kbd>
+              <kbd className="ml-auto text-[10px] text-gray-400 dark:text-gray-500 font-mono">G</kbd>
             </button>
             <button
               role="menuitem"
@@ -354,7 +355,7 @@ export function TopBar() {
                 setViewMenuOpen(false)
                 toggleDimensions()
               }}
-              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
+              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800/50"
               aria-pressed={settings.showDimensions}
             >
               {settings.showDimensions ? (
@@ -364,7 +365,7 @@ export function TopBar() {
               )}
               <Ruler size={14} aria-hidden="true" />
               Toggle dimensions
-              <kbd className="ml-auto text-[10px] text-gray-400 font-mono">D</kbd>
+              <kbd className="ml-auto text-[10px] text-gray-400 dark:text-gray-500 font-mono">D</kbd>
             </button>
           </div>
         )}
@@ -381,7 +382,7 @@ export function TopBar() {
         step={2}
         value={settings.gridSize}
         onChange={(e) => setSettings({ gridSize: Number(e.target.value) })}
-        className="w-[60px] text-xs border border-gray-200 rounded px-1 py-1 focus:outline-none focus:border-blue-400"
+        className="w-[60px] text-xs bg-white text-gray-900 border border-gray-200 rounded px-1 py-1 focus:outline-none focus:border-blue-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
         title="Grid size"
         aria-label="Grid size"
       />
@@ -403,7 +404,7 @@ export function TopBar() {
       {selectedIds.length > 0 && (
         <button
           onClick={clearSelection}
-          className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded"
+          className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 dark:text-blue-300 dark:bg-blue-950/40 dark:hover:bg-blue-900/40 rounded"
           title="Clear selection"
           aria-label={`Clear selection (${selectedIds.length} selected)`}
         >
@@ -426,8 +427,8 @@ export function TopBar() {
         onClick={() => setPresentationMode(!presentationMode)}
         className={`p-1.5 rounded flex items-center gap-1 ${
           presentationMode
-            ? 'bg-gray-900 text-white hover:bg-gray-800'
-            : 'hover:bg-gray-100 text-gray-600'
+            ? 'bg-gray-900 text-white hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200'
+            : 'hover:bg-gray-100 text-gray-600 dark:text-gray-400 dark:hover:bg-gray-800'
         }`}
         title={
           presentationMode
@@ -446,7 +447,7 @@ export function TopBar() {
 
       <button
         onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
-        className="p-1.5 rounded hover:bg-gray-100 text-gray-600"
+        className="p-1.5 rounded hover:bg-gray-100 text-gray-600 dark:text-gray-400 dark:hover:bg-gray-800"
         title="Toggle Right Sidebar"
         aria-label={rightSidebarOpen ? 'Close right sidebar' : 'Open right sidebar'}
       >
@@ -466,7 +467,7 @@ export function TopBar() {
       <div className="relative" ref={shareMenuRef}>
         <button
           onClick={() => setShareMenuOpen((o) => !o)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800 rounded"
           aria-haspopup="menu"
           aria-expanded={shareMenuOpen}
         >
@@ -477,7 +478,7 @@ export function TopBar() {
         {shareMenuOpen && (
           <div
             role="menu"
-            className="absolute right-0 mt-1 w-56 bg-white border rounded shadow z-30 py-1"
+            className="absolute right-0 mt-1 w-56 bg-white border border-gray-200 rounded shadow dark:bg-gray-900 dark:border-gray-700 dark:shadow-black/40 z-30 py-1"
           >
             <button
               role="menuitem"
@@ -485,7 +486,7 @@ export function TopBar() {
                 setShareMenuOpen(false)
                 setShareModalOpen(true)
               }}
-              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
+              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800/50"
             >
               <Share2 size={14} aria-hidden="true" /> Invite collaborators
             </button>
@@ -496,7 +497,7 @@ export function TopBar() {
                   setShareMenuOpen(false)
                   setShareLinkOpen(true)
                 }}
-                className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
+                className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800/50"
               >
                 <Link2 size={14} aria-hidden="true" /> Create view-only link
               </button>
@@ -528,7 +529,7 @@ export function TopBar() {
         {exportMenuOpen && (
           <div
             role="menu"
-            className="absolute right-0 mt-1 w-56 bg-white border rounded shadow z-30 py-1"
+            className="absolute right-0 mt-1 w-56 bg-white border border-gray-200 rounded shadow dark:bg-gray-900 dark:border-gray-700 dark:shadow-black/40 z-30 py-1"
           >
             {canViewReports && (
               <button
@@ -537,7 +538,7 @@ export function TopBar() {
                   setExportMenuOpen(false)
                   handleExportWayfindingPdf()
                 }}
-                className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
+                className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800/50"
                 title="Download a print-ready PDF of this floor"
               >
                 <Printer size={14} aria-hidden="true" /> Export PDF (wayfinding)
@@ -550,20 +551,20 @@ export function TopBar() {
                   setExportMenuOpen(false)
                   handleExportPng()
                 }}
-                className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
+                className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800/50"
                 title="Download a PNG image of this floor"
               >
                 <ImageIcon size={14} aria-hidden="true" /> Export PNG
               </button>
             )}
-            {canViewReports && <div className="my-1 border-t border-gray-100" />}
+            {canViewReports && <div className="my-1 border-t border-gray-100 dark:border-gray-800" />}
             <button
               role="menuitem"
               onClick={() => {
                 setExportMenuOpen(false)
                 setExportDialogOpen(true)
               }}
-              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
+              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800/50"
             >
               <Download size={14} aria-hidden="true" /> More formats…
             </button>
@@ -577,14 +578,14 @@ export function TopBar() {
           a navigation action, not part of identity. Guarded on both
           params so the hotkeys are inert outside the editor routes. */}
       {teamSlug && officeSlug && (
-        <nav aria-label="Project views" className="flex items-center bg-gray-100 rounded-md p-0.5">
+        <nav aria-label="Project views" className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-md p-0.5">
           <NavLink
             to={`/t/${teamSlug}/o/${officeSlug}/map`}
             className={({ isActive }) =>
               `px-3 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
                 isActive
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-800'
+                  ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100'
+                  : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
               }`
             }
           >
@@ -595,8 +596,8 @@ export function TopBar() {
             className={({ isActive }) =>
               `px-3 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
                 isActive
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-800'
+                  ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100'
+                  : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
               }`
             }
           >
@@ -608,8 +609,8 @@ export function TopBar() {
               className={({ isActive }) =>
                 `px-3 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
                   isActive
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-800'
+                    ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100'
+                    : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
                 }`
               }
             >
@@ -622,8 +623,8 @@ export function TopBar() {
               className={({ isActive }) =>
                 `px-3 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
                   isActive
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-800'
+                    ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100'
+                    : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
                 }`
               }
             >
@@ -636,8 +637,8 @@ export function TopBar() {
               className={({ isActive }) =>
                 `px-3 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
                   isActive
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-800'
+                    ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100'
+                    : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
                 }`
               }
             >
@@ -653,7 +654,7 @@ export function TopBar() {
         href="/help"
         target="_blank"
         rel="noreferrer"
-        className="text-xs px-2 py-1 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded"
+        className="text-xs px-2 py-1 text-gray-600 hover:text-blue-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-blue-400 dark:hover:bg-gray-800 rounded"
         title="Open user guide in a new tab"
       >
         Help
@@ -664,6 +665,10 @@ export function TopBar() {
           own session state. The component self-gates on role so non-owners
           don't see it at all. */}
       <ViewAsMenu />
+
+      {/* Theme toggle — sits in the actions cluster next to the account
+          menu so it's discoverable without crowding the canvas chrome. */}
+      <ThemeToggle />
 
       {/* Account dropdown — rightmost so it's the one element users
           always know where to find. */}
@@ -697,7 +702,7 @@ function SaveIndicator({
     if (saveState === 'saving') {
       return (
         <span
-          className="flex items-center gap-1 text-xs text-gray-500 whitespace-nowrap"
+          className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap"
           title="Saving to Supabase"
         >
           <UploadCloud size={14} className="animate-pulse" aria-hidden="true" />
@@ -714,7 +719,7 @@ function SaveIndicator({
       // dead end.
       return (
         <span
-          className="flex items-center gap-1 text-xs text-red-600 whitespace-nowrap"
+          className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 whitespace-nowrap"
           title="Save failed — we're retrying automatically; check your connection if this persists"
         >
           <CloudOff size={14} aria-hidden="true" />
@@ -726,7 +731,7 @@ function SaveIndicator({
     if (!relative) return null
     return (
       <span
-        className="flex items-center gap-1 text-xs text-green-600 whitespace-nowrap"
+        className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 whitespace-nowrap"
         title={`Saved at ${lastSavedAt}`}
       >
         <Cloud size={14} aria-hidden="true" />

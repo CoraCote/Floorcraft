@@ -290,14 +290,14 @@ export function ProjectShell() {
   }, [teamSlug, officeSlug])
 
   if (shellState === 'loading') {
-    return <div className="p-6 text-sm text-gray-500">Loading office…</div>
+    return <div className="p-6 text-sm text-gray-500 dark:text-gray-400">Loading office…</div>
   }
   if (shellState === 'not_found') {
-    return <div className="p-6 text-sm text-red-600">Office not found.</div>
+    return <div className="p-6 text-sm text-red-600 dark:text-red-400">Office not found.</div>
   }
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-gray-50">
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-gray-50 dark:bg-gray-800/50">
       {/* Skip-to-main link: first interactive element inside the shell so
           keyboard users can bypass the TopBar/banner nav and land on the
           outlet directly. Hidden by default (`sr-only`) and becomes

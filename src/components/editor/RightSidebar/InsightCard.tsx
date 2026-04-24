@@ -8,9 +8,9 @@ const BORDER_COLORS: Record<Severity, string> = {
 }
 
 const BADGE_COLORS: Record<Severity, string> = {
-  critical: 'bg-red-100 text-red-700',
-  warning: 'bg-yellow-100 text-yellow-700',
-  info: 'bg-blue-100 text-blue-700',
+  critical: 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300',
+  warning: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700',
+  info: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300',
 }
 
 interface InsightCardProps {
@@ -23,7 +23,7 @@ interface InsightCardProps {
 export function InsightCard({ insight, onDismiss, onAction, onClick }: InsightCardProps) {
   return (
     <div
-      className={`relative border-l-4 ${BORDER_COLORS[insight.severity]} bg-white rounded-r-lg p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer`}
+      className={`relative border-l-4 ${BORDER_COLORS[insight.severity]} bg-white dark:bg-gray-900 rounded-r-lg p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer`}
       onClick={() => onClick(insight)}
     >
       {/* Header */}
@@ -32,7 +32,7 @@ export function InsightCard({ insight, onDismiss, onAction, onClick }: InsightCa
           <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded ${BADGE_COLORS[insight.severity]}`}>
             {insight.severity.toUpperCase()}
           </span>
-          <span className="text-xs text-gray-400">{insight.category}</span>
+          <span className="text-xs text-gray-400 dark:text-gray-500">{insight.category}</span>
         </div>
         <button
           onClick={(e) => {
@@ -47,10 +47,10 @@ export function InsightCard({ insight, onDismiss, onAction, onClick }: InsightCa
       </div>
 
       {/* Title */}
-      <h4 className="text-sm font-semibold text-gray-800 mb-1">{insight.title}</h4>
+      <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1">{insight.title}</h4>
 
       {/* Narrative */}
-      <p className="text-xs text-gray-500 leading-relaxed mb-2">{insight.narrative}</p>
+      <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-2">{insight.narrative}</p>
 
       {/* Actions */}
       {insight.actions.length > 0 && (
@@ -62,7 +62,7 @@ export function InsightCard({ insight, onDismiss, onAction, onClick }: InsightCa
                 e.stopPropagation()
                 onAction(insight.id, i)
               }}
-              className="px-2.5 py-1 text-xs font-medium border border-gray-200 rounded hover:bg-gray-50 transition-colors text-gray-600"
+              className="px-2.5 py-1 text-xs font-medium border border-gray-200 dark:border-gray-800 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors text-gray-600 dark:text-gray-300"
             >
               {action.label}
             </button>

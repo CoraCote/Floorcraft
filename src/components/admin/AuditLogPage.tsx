@@ -43,10 +43,10 @@ export function AuditLogPage() {
   }, [canView, teamId, actorFilter, actionFilter])
 
   if (!canView) {
-    return <div className="p-6 text-gray-600">Not authorized to view the audit log.</div>
+    return <div className="p-6 text-gray-600 dark:text-gray-300">Not authorized to view the audit log.</div>
   }
   if (!teamId) {
-    return <div className="p-6 text-gray-600">No team loaded.</div>
+    return <div className="p-6 text-gray-600 dark:text-gray-300">No team loaded.</div>
   }
 
   return (
@@ -57,13 +57,13 @@ export function AuditLogPage() {
           placeholder="Filter by actor id"
           value={actorFilter}
           onChange={(e) => setActorFilter(e.target.value)}
-          className="px-2 py-1 text-sm border border-gray-200 rounded"
+          className="px-2 py-1 text-sm border border-gray-200 dark:border-gray-800 rounded"
         />
         <input
           placeholder="Filter by action"
           value={actionFilter}
           onChange={(e) => setActionFilter(e.target.value)}
-          className="px-2 py-1 text-sm border border-gray-200 rounded"
+          className="px-2 py-1 text-sm border border-gray-200 dark:border-gray-800 rounded"
         />
       </div>
       {loading ? (
@@ -71,7 +71,7 @@ export function AuditLogPage() {
       ) : (
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left border-b border-gray-200">
+            <tr className="text-left border-b border-gray-200 dark:border-gray-800">
               <th className="py-2">When</th>
               <th>Actor</th>
               <th>Action</th>
@@ -82,7 +82,7 @@ export function AuditLogPage() {
             {events.map((e) => (
               <tr
                 key={e.id ?? `${e.actor_id}-${e.created_at ?? ''}`}
-                className="border-b border-gray-100"
+                className="border-b border-gray-100 dark:border-gray-800"
               >
                 <td className="py-1">{e.created_at ?? ''}</td>
                 <td className="py-1">{e.actor_id}</td>

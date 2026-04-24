@@ -93,7 +93,7 @@ export function AccountPage() {
   }
 
   if (session.status === 'loading') {
-    return <div className="p-6 text-sm text-gray-500">Loading…</div>
+    return <div className="p-6 text-sm text-gray-500 dark:text-gray-400">Loading…</div>
   }
   if (session.status !== 'authenticated') return null
 
@@ -101,7 +101,7 @@ export function AccountPage() {
     <div className="p-6 max-w-xl mx-auto space-y-8">
       <header className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Account</h1>
-        <Link to="/dashboard" className="text-sm text-blue-600 hover:underline">
+        <Link to="/dashboard" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
           Back to dashboard
         </Link>
       </header>
@@ -109,23 +109,23 @@ export function AccountPage() {
       <form onSubmit={onSaveName} className="space-y-3 text-sm">
         <h2 className="font-semibold">Profile</h2>
         <label className="block">
-          <span className="block mb-1 text-gray-600">Email</span>
+          <span className="block mb-1 text-gray-600 dark:text-gray-300">Email</span>
           <input
             readOnly
             value={session.user.email}
-            className="w-full border rounded px-2 py-1.5 bg-gray-50"
+            className="w-full border rounded px-2 py-1.5 bg-gray-50 dark:bg-gray-800/50"
           />
         </label>
         <label className="block">
-          <span className="block mb-1 text-gray-600">Display name</span>
+          <span className="block mb-1 text-gray-600 dark:text-gray-300">Display name</span>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="w-full border rounded px-2 py-1.5"
           />
         </label>
-        {nameError && <p className="text-red-600">{nameError}</p>}
-        {nameSaved && <p className="text-green-600">Saved.</p>}
+        {nameError && <p className="text-red-600 dark:text-red-400">{nameError}</p>}
+        {nameSaved && <p className="text-green-600 dark:text-green-400">Saved.</p>}
         <button
           disabled={savingName}
           className="px-3 py-1.5 bg-blue-600 text-white rounded disabled:opacity-50"
@@ -137,7 +137,7 @@ export function AccountPage() {
       <form onSubmit={onChangePassword} className="space-y-3 text-sm">
         <h2 className="font-semibold">Change password</h2>
         <label className="block">
-          <span className="block mb-1 text-gray-600">New password</span>
+          <span className="block mb-1 text-gray-600 dark:text-gray-300">New password</span>
           <input
             type="password"
             value={newPassword}
@@ -147,7 +147,7 @@ export function AccountPage() {
           />
         </label>
         <label className="block">
-          <span className="block mb-1 text-gray-600">Confirm new password</span>
+          <span className="block mb-1 text-gray-600 dark:text-gray-300">Confirm new password</span>
           <input
             type="password"
             value={confirmPassword}
@@ -156,8 +156,8 @@ export function AccountPage() {
             autoComplete="new-password"
           />
         </label>
-        {passwordError && <p className="text-red-600">{passwordError}</p>}
-        {passwordSaved && <p className="text-green-600">Password updated.</p>}
+        {passwordError && <p className="text-red-600 dark:text-red-400">{passwordError}</p>}
+        {passwordSaved && <p className="text-green-600 dark:text-green-400">Password updated.</p>}
         <button
           disabled={savingPassword}
           className="px-3 py-1.5 bg-blue-600 text-white rounded disabled:opacity-50"
@@ -168,12 +168,12 @@ export function AccountPage() {
 
       <section className="space-y-2 text-sm border-t pt-6">
         <h2 className="font-semibold">Sign out</h2>
-        <p className="text-gray-500">
+        <p className="text-gray-500 dark:text-gray-400">
           Sign out of Floorcraft on this device. Other browsers stay signed in.
         </p>
         <button
           onClick={onSignOut}
-          className="px-3 py-1.5 border rounded hover:bg-gray-50"
+          className="px-3 py-1.5 border rounded hover:bg-gray-50 dark:hover:bg-gray-800/50"
         >
           Sign out
         </button>
@@ -290,7 +290,7 @@ function DataPrivacySection() {
       <h2 className="font-semibold">Data &amp; privacy</h2>
 
       <div className="space-y-2">
-        <p className="text-gray-600">
+        <p className="text-gray-600 dark:text-gray-300">
           Download a copy of everything Floorcraft stores about you —
           profile, team memberships, invites, offices you own or can
           edit.
@@ -298,32 +298,32 @@ function DataPrivacySection() {
         <button
           onClick={onExport}
           disabled={exporting}
-          className="px-3 py-1.5 border rounded hover:bg-gray-50 disabled:opacity-50"
+          className="px-3 py-1.5 border rounded hover:bg-gray-50 dark:hover:bg-gray-800/50 disabled:opacity-50"
         >
           {exporting ? 'Preparing…' : 'Export my data'}
         </button>
-        {exportError && <p className="text-red-600">{exportError}</p>}
+        {exportError && <p className="text-red-600 dark:text-red-400">{exportError}</p>}
       </div>
 
       <div className="space-y-2 pt-3 border-t">
-        <h3 className="font-semibold text-red-700">Delete my account</h3>
+        <h3 className="font-semibold text-red-700 dark:text-red-300">Delete my account</h3>
         {scheduledFor ? (
           <>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-gray-300">
               Your account is scheduled for permanent deletion on{' '}
               <b>{new Date(scheduledFor).toLocaleDateString()}</b>. Cancel
               any time before that date to restore access.
             </p>
             <button
               onClick={onCancelDeletion}
-              className="px-3 py-1.5 border rounded hover:bg-gray-50"
+              className="px-3 py-1.5 border rounded hover:bg-gray-50 dark:hover:bg-gray-800/50"
             >
               Cancel deletion request
             </button>
           </>
         ) : (
           <>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-gray-300">
               Schedule your account for permanent deletion. You'll have
               30 days to change your mind before anything is removed.
             </p>
@@ -333,13 +333,13 @@ function DataPrivacySection() {
                 setDeleteInput('')
                 setDeleteError(null)
               }}
-              className="px-3 py-1.5 border border-red-300 text-red-700 rounded hover:bg-red-50"
+              className="px-3 py-1.5 border border-red-300 text-red-700 dark:text-red-300 rounded hover:bg-red-50 dark:hover:bg-red-950/40"
             >
               Request account deletion
             </button>
           </>
         )}
-        {deleteError && <p className="text-red-600">{deleteError}</p>}
+        {deleteError && <p className="text-red-600 dark:text-red-400">{deleteError}</p>}
       </div>
 
       {deleteOpen && (
@@ -348,19 +348,19 @@ function DataPrivacySection() {
           onClick={() => setDeleteOpen(false)}
         >
           <div
-            className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full space-y-4"
+            className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 max-w-md w-full space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-base font-semibold text-red-700">
+            <h3 className="text-base font-semibold text-red-700 dark:text-red-300">
               Request account deletion
             </h3>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
               Your account will be scheduled for permanent deletion in 30
               days. You can cancel the request at any time before then.
               After deletion, your profile and data cannot be recovered.
             </p>
             <label className="block text-sm">
-              <span className="block mb-1 text-gray-600">
+              <span className="block mb-1 text-gray-600 dark:text-gray-300">
                 Type <b>delete my account</b> to confirm
               </span>
               <input
@@ -377,7 +377,7 @@ function DataPrivacySection() {
               <button
                 onClick={() => setDeleteOpen(false)}
                 disabled={deleteBusy}
-                className="px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded"
+                className="px-3 py-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
               >
                 Cancel
               </button>

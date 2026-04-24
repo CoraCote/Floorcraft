@@ -93,7 +93,7 @@ export function ScenarioDetailPane({
         <button
           type="button"
           onClick={onClone}
-          className="text-xs px-3 py-1.5 border border-gray-200 rounded hover:bg-gray-50"
+          className="text-xs px-3 py-1.5 border border-gray-200 dark:border-gray-800 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50"
         >
           Clone scenario
         </button>
@@ -141,7 +141,7 @@ export function ScenarioDetailPane({
       {/* Adjustment list. */}
       <section className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
             Adjustments
           </h3>
           {editable && (
@@ -149,7 +149,7 @@ export function ScenarioDetailPane({
               <button
                 type="button"
                 onClick={() => setMenuOpen((v) => !v)}
-                className="text-xs px-3 py-1.5 border border-gray-200 rounded hover:bg-gray-50"
+                className="text-xs px-3 py-1.5 border border-gray-200 dark:border-gray-800 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50"
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
               >
@@ -158,7 +158,7 @@ export function ScenarioDetailPane({
               {menuOpen && (
                 <div
                   role="menu"
-                  className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded shadow-md z-10"
+                  className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded shadow-md z-10"
                 >
                   <MenuItem onClick={() => handleAdd('add-headcount')}>
                     Add headcount
@@ -175,7 +175,7 @@ export function ScenarioDetailPane({
           )}
         </div>
         {scenario.adjustments.length === 0 ? (
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             No adjustments yet. The projection matches today's numbers.
           </p>
         ) : (
@@ -197,12 +197,12 @@ export function ScenarioDetailPane({
       {/* Per-department breakdown — a low-noise table that helps planners
           see where the headcount changes landed. */}
       <section className="flex flex-col gap-2">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
           By department
         </h3>
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left border-b border-gray-200">
+            <tr className="text-left border-b border-gray-200 dark:border-gray-800">
               <th className="py-2">Department</th>
               <th className="text-right">Today</th>
               <th className="text-right">Projected</th>
@@ -216,13 +216,13 @@ export function ScenarioDetailPane({
                 const proj = projected.employeesByDepartment[dept] ?? 0
                 const d = proj - cur
                 return (
-                  <tr key={dept} className="border-b border-gray-100">
+                  <tr key={dept} className="border-b border-gray-100 dark:border-gray-800">
                     <td className="py-2">{dept}</td>
                     <td className="text-right tabular-nums">{cur}</td>
                     <td className="text-right tabular-nums">{proj}</td>
                     <td
                       className={`text-right tabular-nums ${
-                        d > 0 ? 'text-emerald-700' : d < 0 ? 'text-rose-700' : 'text-gray-400'
+                        d > 0 ? 'text-emerald-700' : d < 0 ? 'text-rose-700' : 'text-gray-400 dark:text-gray-500'
                       }`}
                     >
                       {d > 0 ? '+' : ''}
@@ -267,15 +267,15 @@ function MetricTile({
   const fmt = formatter ?? ((v: number) => v.toString())
   const dfmt = deltaFormatter ?? ((v: number) => (v >= 0 ? `+${v}` : `${v}`))
   const deltaColor =
-    delta > 0 ? 'text-emerald-700' : delta < 0 ? 'text-rose-700' : 'text-gray-400'
+    delta > 0 ? 'text-emerald-700' : delta < 0 ? 'text-rose-700' : 'text-gray-400 dark:text-gray-500'
   return (
-    <div className="border border-gray-200 rounded p-3" data-testid={testId}>
-      <div className="text-xs uppercase tracking-wide text-gray-500">{label}</div>
+    <div className="border border-gray-200 dark:border-gray-800 rounded p-3" data-testid={testId}>
+      <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">{label}</div>
       <div className="mt-1 flex items-baseline gap-3">
         <span className="text-2xl font-semibold tabular-nums">{fmt(projected)}</span>
         <span className={`text-sm tabular-nums ${deltaColor}`}>{dfmt(delta)}</span>
       </div>
-      <div className="text-xs text-gray-500 tabular-nums">Today: {fmt(current)}</div>
+      <div className="text-xs text-gray-500 dark:text-gray-400 tabular-nums">Today: {fmt(current)}</div>
     </div>
   )
 }
@@ -286,7 +286,7 @@ function MenuItem({ onClick, children }: { onClick: () => void; children: React.
       type="button"
       role="menuitem"
       onClick={onClick}
-      className="block w-full text-left text-sm px-3 py-2 hover:bg-gray-50"
+      className="block w-full text-left text-sm px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/50"
     >
       {children}
     </button>

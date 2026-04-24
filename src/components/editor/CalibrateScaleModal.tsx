@@ -76,16 +76,16 @@ function CalibrateScaleModalBody() {
   return (
     <Modal open onClose={reset} title="Set scale" size="sm">
       <ModalBody>
-        <p className="text-xs text-gray-500 mb-3">
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
           How far apart are these two points in real life?
         </p>
-        <p className="text-[11px] text-gray-400 mb-3 tabular-nums">
+        <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-3 tabular-nums">
           Canvas distance: {canvasPx.toFixed(1)} px
         </p>
 
         <div className="flex gap-2">
           <div className="flex-1">
-            <label className="block text-xs text-gray-700 mb-1" htmlFor="calibrate-distance">
+            <label className="block text-xs text-gray-700 dark:text-gray-200 mb-1" htmlFor="calibrate-distance">
               Distance
             </label>
             <input
@@ -107,18 +107,18 @@ function CalibrateScaleModalBody() {
               }}
               aria-invalid={!!error}
               aria-describedby={error ? 'calibrate-distance-error' : undefined}
-              className="w-full text-sm border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
+              className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
             />
           </div>
           <div className="w-24">
-            <label className="block text-xs text-gray-700 mb-1" htmlFor="calibrate-unit">
+            <label className="block text-xs text-gray-700 dark:text-gray-200 mb-1" htmlFor="calibrate-unit">
               Unit
             </label>
             <select
               id="calibrate-unit"
               value={unit}
               onChange={(e) => setUnit(e.target.value as LengthUnit)}
-              className="w-full text-sm border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
+              className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
             >
               {CALIBRATION_UNITS.map((u) => (
                 <option key={u} value={u}>
@@ -132,7 +132,7 @@ function CalibrateScaleModalBody() {
         {error && (
           <p
             id="calibrate-distance-error"
-            className="text-xs text-red-600 mt-1"
+            className="text-xs text-red-600 dark:text-red-400 mt-1"
             role="alert"
           >
             {error}

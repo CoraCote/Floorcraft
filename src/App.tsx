@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useOutletContext } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import { AuthProvider } from './lib/auth/AuthProvider'
+import { ThemeProvider } from './lib/theme'
 // RequireAuth/RequireTeam stay eager: they are synchronous guards that
 // only redirect or render their children, and are referenced by almost
 // every protected route. Wrapping them in a lazy boundary would just
@@ -140,8 +141,9 @@ function TeamSettingsMembersBridge() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
+    <ThemeProvider>
+      <BrowserRouter>
+        <AuthProvider>
         <Suspense fallback={<RouteLoadingFallback />}>
           <Routes>
             {/* Public */}
@@ -253,8 +255,9 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
-      </AuthProvider>
-    </BrowserRouter>
+        </AuthProvider>
+      </BrowserRouter>
+    </ThemeProvider>
   )
 }
 

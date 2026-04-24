@@ -53,14 +53,14 @@ export function EmptyCanvasHint() {
   return (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
       <div
-        className="bg-white/95 backdrop-blur rounded-lg shadow-lg border border-gray-200 p-6 max-w-xs text-sm text-gray-700 pointer-events-auto"
+        className="bg-white/95 dark:bg-gray-900/95 backdrop-blur rounded-lg shadow-lg border border-gray-200 dark:border-gray-800 p-6 max-w-xs text-sm text-gray-700 dark:text-gray-200 pointer-events-auto"
         role="note"
       >
-        <div className="font-medium text-gray-900 mb-3">Start by adding something</div>
+        <div className="font-medium text-gray-900 dark:text-gray-100 mb-3">Start by adding something</div>
         <ul className="space-y-1.5 mb-4 list-disc pl-5">
           <li>Drag a desk from the left sidebar →</li>
           <li>
-            or press <kbd className="px-1 py-0.5 text-[11px] font-mono bg-gray-100 border border-gray-300 rounded">W</kbd> to draw a wall
+            or press <kbd className="px-1 py-0.5 text-[11px] font-mono bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded">W</kbd> to draw a wall
           </li>
         </ul>
         <div className="flex justify-center">

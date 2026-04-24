@@ -67,7 +67,7 @@ export function ChurnHeatmap({ today }: { today?: Date } = {}) {
 
   if (max === 0) {
     return (
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-gray-500 dark:text-gray-400">
         No seat changes in the last 13 weeks.
       </p>
     )
@@ -150,7 +150,7 @@ export function ChurnHeatmap({ today }: { today?: Date } = {}) {
       </svg>
 
       {/* Legend. */}
-      <div className="mt-2 flex items-center gap-1 text-xs text-gray-500">
+      <div className="mt-2 flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
         <span>Less</span>
         {SHADES.map((c) => (
           <span

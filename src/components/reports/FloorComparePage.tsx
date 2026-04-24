@@ -15,7 +15,7 @@ export function FloorComparePage() {
   const { teamSlug, officeSlug } = useParams<{ teamSlug: string; officeSlug: string }>()
 
   if (!canView) {
-    return <div className="p-6 text-gray-600">Not authorized to view reports.</div>
+    return <div className="p-6 text-gray-600 dark:text-gray-300">Not authorized to view reports.</div>
   }
 
   const reportsHref =
@@ -26,20 +26,20 @@ export function FloorComparePage() {
       <div>
         <Link
           to={reportsHref}
-          className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
+          className="inline-flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
         >
           <ArrowLeft size={14} />
           Back to reports
         </Link>
       </div>
       <header>
-        <h1 className="text-xl font-semibold text-gray-900">Floor compare</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Floor compare</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           Side-by-side utilization metrics for every floor, plus a 14-day
           seat-activity sparkline. Click a row to jump to that floor on the map.
         </p>
       </header>
-      <section className="bg-white border border-gray-200 rounded p-4">
+      <section className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded p-4">
         <FloorCompareTable />
       </section>
     </div>

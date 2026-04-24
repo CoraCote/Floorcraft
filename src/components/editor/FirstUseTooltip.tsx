@@ -44,7 +44,7 @@ export function FirstUseTooltip({
           <span className="font-semibold text-sm">{name}</span>
           {shortcut && (
             <kbd
-              className="ml-auto text-[10px] font-mono bg-white/15 px-1.5 py-0.5 rounded"
+              className="ml-auto text-[10px] font-mono bg-white/15 dark:bg-gray-900/15 px-1.5 py-0.5 rounded"
               aria-hidden="true"
             >
               {shortcut}

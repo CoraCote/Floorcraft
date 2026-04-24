@@ -4,10 +4,10 @@ import { useToastStore, type ToastTone } from '../../stores/toastStore'
 const AUTO_DISMISS_MS = 5000
 
 const toneClasses: Record<ToastTone, string> = {
-  info: 'bg-blue-50 border-blue-200 text-blue-900',
-  success: 'bg-green-50 border-green-200 text-green-900',
-  warning: 'bg-amber-50 border-amber-200 text-amber-900',
-  error: 'bg-red-50 border-red-200 text-red-900',
+  info: 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 text-blue-900',
+  success: 'bg-green-50 dark:bg-green-950/40 border-green-200 text-green-900',
+  warning: 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 text-amber-900',
+  error: 'bg-red-50 dark:bg-red-950/40 border-red-200 text-red-900',
 }
 
 export function Toaster() {

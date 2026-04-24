@@ -107,25 +107,25 @@ export function FirstRunCoach() {
     <div
       role="complementary"
       aria-label="First-run help"
-      className="absolute bottom-12 right-4 w-[340px] bg-white shadow-xl rounded-xl border border-gray-200 p-5 z-40"
+      className="absolute bottom-12 right-4 w-[340px] bg-white dark:bg-gray-900 shadow-xl rounded-xl border border-gray-200 dark:border-gray-800 p-5 z-40"
     >
       <div className="flex items-start gap-3">
         <div
           aria-hidden="true"
-          className="bg-blue-50 text-blue-600 rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0"
+          className="bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0"
         >
           <Sparkles size={20} aria-hidden="true" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="font-semibold text-gray-900">Welcome to Floorcraft</div>
-          <div className="text-sm text-gray-600 mt-0.5">
+          <div className="font-semibold text-gray-900 dark:text-gray-100">Welcome to Floorcraft</div>
+          <div className="text-sm text-gray-600 dark:text-gray-300 mt-0.5">
             Get your floor plan started in 60 seconds.
           </div>
         </div>
         <button
           type="button"
           onClick={handleDismiss}
-          className="text-gray-400 hover:text-gray-600 flex-shrink-0 -mr-1 -mt-1 p-1 rounded"
+          className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0 -mr-1 -mt-1 p-1 rounded"
           aria-label="Dismiss welcome card"
         >
           <X size={16} aria-hidden="true" />
@@ -138,7 +138,7 @@ export function FirstRunCoach() {
             {item.done ? (
               <CheckCircle2
                 size={18}
-                className="text-green-600 flex-shrink-0"
+                className="text-green-600 dark:text-green-400 flex-shrink-0"
                 aria-hidden="true"
               />
             ) : (
@@ -150,7 +150,7 @@ export function FirstRunCoach() {
             )}
             <span
               className={
-                item.done ? 'text-gray-500 line-through' : 'text-gray-800'
+                item.done ? 'text-gray-500 dark:text-gray-400 line-through' : 'text-gray-800 dark:text-gray-100'
               }
             >
               {item.label}
@@ -163,14 +163,14 @@ export function FirstRunCoach() {
         <button
           type="button"
           onClick={handleGetStarted}
-          className="px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 text-gray-800 hover:bg-gray-50"
+          className="px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800/50"
         >
           Get started
         </button>
         <button
           type="button"
           onClick={handleDismiss}
-          className="text-sm text-gray-500 hover:text-gray-700"
+          className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
         >
           Dismiss
         </button>

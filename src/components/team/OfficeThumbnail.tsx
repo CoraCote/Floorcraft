@@ -65,7 +65,7 @@ export function OfficeThumbnail({ elements, width = 240, height = 120 }: Props) 
       <svg
         viewBox={`0 0 ${vbW} ${vbH}`}
         preserveAspectRatio="xMidYMid meet"
-        className="rounded bg-gray-50 border border-gray-200"
+        className="rounded bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800"
         width={width}
         height={height}
         role="img"
@@ -117,7 +117,7 @@ export function OfficeThumbnail({ elements, width = 240, height = 120 }: Props) 
     <svg
       viewBox={`${vbX} ${vbY} ${vbW} ${vbH}`}
       preserveAspectRatio="xMidYMid meet"
-      className="rounded bg-gray-50 border border-gray-200"
+      className="rounded bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800"
       width={width}
       height={height}
       role="img"

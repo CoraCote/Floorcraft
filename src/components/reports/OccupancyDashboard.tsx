@@ -84,24 +84,24 @@ export function OccupancyDashboard() {
         >
           {overall.pct}%
         </div>
-        <div className="text-xs text-gray-500 mt-1">
+        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
           {overall.assigned} / {overall.totalSeats} seats occupied
         </div>
       </div>
 
       {/* Per-floor breakdown */}
       <div>
-        <div className="text-xs font-medium text-gray-500 mb-2">By Floor</div>
+        <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">By Floor</div>
         <div className="flex flex-col gap-2">
           {perFloor.map((f) => (
             <div key={f.id}>
               <div className="flex items-center justify-between text-xs mb-0.5">
-                <span className="text-gray-700 font-medium">{f.name}</span>
-                <span className="text-gray-500">
+                <span className="text-gray-700 dark:text-gray-200 font-medium">{f.name}</span>
+                <span className="text-gray-500 dark:text-gray-400">
                   {f.pct}% ({f.assigned}/{f.seats})
                 </span>
               </div>
-              <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div className="w-full h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all"
                   style={{
@@ -117,7 +117,7 @@ export function OccupancyDashboard() {
 
       {/* Per-department breakdown */}
       <div>
-        <div className="text-xs font-medium text-gray-500 mb-2">By Department</div>
+        <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">By Department</div>
         <div className="flex flex-col gap-1.5">
           {perDepartment.map((dept) => (
             <div key={dept.name} className="flex items-center gap-2 text-xs">
@@ -128,8 +128,8 @@ export function OccupancyDashboard() {
                     dept.name === 'Unassigned' ? '#9CA3AF' : getDepartmentColor(dept.name),
                 }}
               />
-              <span className="text-gray-700 flex-1 truncate">{dept.name}</span>
-              <span className="text-gray-500 flex-shrink-0">
+              <span className="text-gray-700 dark:text-gray-200 flex-1 truncate">{dept.name}</span>
+              <span className="text-gray-500 dark:text-gray-400 flex-shrink-0">
                 {dept.assigned}/{dept.total} seats
               </span>
             </div>

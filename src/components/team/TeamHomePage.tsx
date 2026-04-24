@@ -181,9 +181,9 @@ function StatChip({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <Icon size={16} className="text-gray-400" aria-hidden="true" />
+      <Icon size={16} className="text-gray-400 dark:text-gray-500" aria-hidden="true" />
       <span>
-        <span className="font-semibold text-gray-900">{value}</span>{' '}
+        <span className="font-semibold text-gray-900 dark:text-gray-100">{value}</span>{' '}
         <span>{label}</span>
       </span>
     </div>
@@ -194,15 +194,15 @@ function StatChip({
 function OfficeCardSkeleton() {
   return (
     <div
-      className="bg-white rounded-xl border border-gray-200 overflow-hidden animate-pulse"
+      className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden animate-pulse"
       aria-hidden="true"
     >
-      <div className="w-full h-40 bg-gray-100 border-b border-gray-100" />
+      <div className="w-full h-40 bg-gray-100 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-800" />
       <div className="p-4 space-y-3">
-        <div className="h-4 bg-gray-200 rounded w-1/2" />
-        <div className="h-3 bg-gray-100 rounded w-3/4" />
-        <div className="pt-3 border-t border-gray-100">
-          <div className="h-5 bg-gray-100 rounded-full w-20" />
+        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+        <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded w-3/4" />
+        <div className="pt-3 border-t border-gray-100 dark:border-gray-800">
+          <div className="h-5 bg-gray-100 dark:bg-gray-800 rounded-full w-20" />
         </div>
       </div>
     </div>
@@ -340,7 +340,7 @@ export function TeamHomePage() {
     }
   }
 
-  if (!team) return <div className="p-6 text-sm text-gray-500">Loading…</div>
+  if (!team) return <div className="p-6 text-sm text-gray-500 dark:text-gray-400">Loading…</div>
   const visible = offices.filter((o) => o.name.toLowerCase().includes(q.trim().toLowerCase()))
   const canCreate = session.status === 'authenticated'
 
@@ -349,15 +349,15 @@ export function TeamHomePage() {
       {/* Page header: team name + description on the left, primary/secondary CTAs on the right. */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-gray-900">{team.name}</h1>
-          <p className="mt-1 text-sm text-gray-500">Plan and manage your workspace</p>
+          <h1 className="text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">{team.name}</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Plan and manage your workspace</p>
         </div>
         <div className="flex items-center gap-2">
           <input
             placeholder="Search offices…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            className="border border-gray-200 rounded-md px-3 py-1.5 text-sm w-56 bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="border border-gray-200 dark:border-gray-800 rounded-md px-3 py-1.5 text-sm w-56 bg-white dark:bg-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           />
           {canCreate && (
             <>
@@ -367,7 +367,7 @@ export function TeamHomePage() {
                   /* Import UX is not yet wired — secondary CTA exists for shape and to signal forthcoming flow. */
                   window.alert('Import is not available yet. Create a blank office to start, or use the sample office template.')
                 }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-md text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               >
                 <Upload size={14} aria-hidden="true" />
                 Import
@@ -385,13 +385,13 @@ export function TeamHomePage() {
           )}
           <Link
             to={`/t/${team.slug}/settings`}
-            className="px-3 py-1.5 border border-gray-200 rounded-md text-sm text-gray-700 hover:bg-gray-50"
+            className="px-3 py-1.5 border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50"
           >
             Settings
           </Link>
           <Link
             to="/help"
-            className="px-3 py-1.5 border border-gray-200 rounded-md text-sm hover:bg-gray-50 text-gray-700"
+            className="px-3 py-1.5 border border-gray-200 dark:border-gray-800 rounded-md text-sm hover:bg-gray-50 dark:hover:bg-gray-800/50 text-gray-700 dark:text-gray-200"
             title="User guide and FAQ"
           >
             Help
@@ -401,7 +401,7 @@ export function TeamHomePage() {
 
       {/* Stats strip — quiet, skimmable. Hidden while loading so the numbers don't pop from 0 to real values. */}
       {!loadingOffices && (
-        <div className="flex flex-wrap gap-6 text-sm text-gray-500 mb-6">
+        <div className="flex flex-wrap gap-6 text-sm text-gray-500 dark:text-gray-400 mb-6">
           <StatChip
             icon={Building2}
             value={offices.length}
@@ -427,14 +427,14 @@ export function TeamHomePage() {
       */}
       {canCreate && offices.length > 0 && (
         <details className="mb-4 text-xs">
-          <summary className="cursor-pointer text-gray-500 hover:text-gray-700 select-none">
+          <summary className="cursor-pointer text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 select-none">
             Or start from a template
           </summary>
           <div className="mt-2 ml-2">
             <button
               onClick={onNewDemo}
               disabled={creating}
-              className="text-blue-600 hover:underline disabled:text-gray-400 disabled:no-underline"
+              className="text-blue-600 dark:text-blue-400 hover:underline disabled:text-gray-400 disabled:no-underline"
               title="Pre-populated with ~18 demo employees to exercise the roster features"
             >
               Sample office · ~18 employees
@@ -462,16 +462,16 @@ export function TeamHomePage() {
         </>
       ) : visible.length === 0 ? (
         q ? (
-          <div className="text-center py-16 text-sm text-gray-500">No matches.</div>
+          <div className="text-center py-16 text-sm text-gray-500 dark:text-gray-400">No matches.</div>
         ) : (
           // First-run empty state. Centered card with a decorative icon,
           // a friendly headline (h2 — there's already an h1 for the team
           // name), and dual CTAs so a new user can pick "start blank" or
           // "explore a sample" without hunting.
-          <div className="mt-6 bg-white border border-gray-200 rounded-xl p-10 text-center max-w-lg mx-auto">
+          <div className="mt-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-10 text-center max-w-lg mx-auto">
             <Building2 size={40} className="mx-auto text-gray-300" aria-hidden="true" />
-            <h2 className="mt-4 text-lg font-semibold text-gray-900">No offices yet</h2>
-            <p className="mt-2 text-sm text-gray-500">
+            <h2 className="mt-4 text-lg font-semibold text-gray-900 dark:text-gray-100">No offices yet</h2>
+            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
               Create your first office to start planning. You can import from a CSV or start with
               a blank canvas.
             </p>
@@ -489,7 +489,7 @@ export function TeamHomePage() {
                 <button
                   onClick={onNewDemo}
                   disabled={creating}
-                  className="px-3 py-1.5 border border-gray-200 rounded-md text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                  className="px-3 py-1.5 border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 disabled:opacity-50"
                   title="Pre-populated with ~18 demo employees to exercise the roster features"
                 >
                   Try the sample office
@@ -528,7 +528,7 @@ export function TeamHomePage() {
                 This removes the floor plan, roster, and every saved edit
                 for this office. It cannot be undone.
               </p>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 Team members with a link will lose access immediately.
               </p>
             </div>

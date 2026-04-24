@@ -55,11 +55,11 @@ export function ScenarioCompareView({ primary, other, allScenarios }: ScenarioCo
             adjustments={other.adjustments.length}
           />
         ) : (
-          <div className="border border-dashed border-gray-300 rounded p-6 flex flex-col items-center justify-center gap-2">
-            <p className="text-sm text-gray-500">Pick a scenario to compare</p>
+          <div className="border border-dashed border-gray-300 dark:border-gray-700 rounded p-6 flex flex-col items-center justify-center gap-2">
+            <p className="text-sm text-gray-500 dark:text-gray-400">Pick a scenario to compare</p>
             <select
               aria-label="Compare against"
-              className="text-sm px-2 py-1 border border-gray-200 rounded"
+              className="text-sm px-2 py-1 border border-gray-200 dark:border-gray-800 rounded"
               value=""
               onChange={(e) => setCompareScenario(e.target.value || null)}
             >
@@ -76,8 +76,8 @@ export function ScenarioCompareView({ primary, other, allScenarios }: ScenarioCo
 
       {/* Quick-delta strip under the columns when both are chosen. */}
       {other && projB && (
-        <section className="mt-6 border border-gray-200 rounded p-4">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-2">
+        <section className="mt-6 border border-gray-200 dark:border-gray-800 rounded p-4">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">
             {primary.name} vs. {other.name}
           </h3>
           <ul className="text-sm space-y-1">
@@ -97,7 +97,7 @@ export function ScenarioCompareView({ primary, other, allScenarios }: ScenarioCo
           <button
             type="button"
             onClick={() => setCompareScenario(null)}
-            className="mt-3 text-xs text-gray-500 underline hover:text-gray-700"
+            className="mt-3 text-xs text-gray-500 dark:text-gray-400 underline hover:text-gray-700 dark:hover:text-gray-200"
           >
             Clear comparison
           </button>
@@ -117,10 +117,10 @@ function ScenarioColumn({
   adjustments: number
 }) {
   return (
-    <div className="border border-gray-200 rounded p-4">
+    <div className="border border-gray-200 dark:border-gray-800 rounded p-4">
       <header className="mb-3">
         <div className="text-sm font-semibold">{title}</div>
-        <div className="text-xs text-gray-500">
+        <div className="text-xs text-gray-500 dark:text-gray-400">
           {adjustments} adjustment{adjustments === 1 ? '' : 's'}
         </div>
       </header>
@@ -139,7 +139,7 @@ function ScenarioColumn({
 function Row({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="flex justify-between">
-      <dt className="text-gray-500">{label}</dt>
+      <dt className="text-gray-500 dark:text-gray-400">{label}</dt>
       <dd className="tabular-nums">{value}</dd>
     </div>
   )
@@ -159,12 +159,12 @@ function DeltaLine({
   const fmt = formatter ?? ((v: number) => v.toString())
   const diff = b - a
   const diffColor =
-    diff > 0 ? 'text-emerald-700' : diff < 0 ? 'text-rose-700' : 'text-gray-400'
+    diff > 0 ? 'text-emerald-700' : diff < 0 ? 'text-rose-700' : 'text-gray-400 dark:text-gray-500'
   const sign = diff > 0 ? '+' : ''
   const diffText = formatter ? `${sign}${Math.round(diff * 100)}pp` : `${sign}${diff}`
   return (
     <li className="flex justify-between">
-      <span className="text-gray-600">{label}</span>
+      <span className="text-gray-600 dark:text-gray-300">{label}</span>
       <span className="tabular-nums">
         {fmt(a)} → {fmt(b)} <span className={diffColor}>({diffText})</span>
       </span>

@@ -32,22 +32,22 @@ export function ForgotPasswordPage() {
 
   if (done) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
-        <div className="bg-white p-6 rounded-lg shadow max-w-sm text-sm space-y-2">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-800/50 p-6">
+        <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow max-w-sm text-sm space-y-2">
           <h1 className="text-lg font-semibold">Check your email</h1>
-          <p className="text-gray-600">If an account exists for {email}, a reset link is on its way.</p>
-          <Link to="/login" className="text-blue-600 hover:underline">Back to login</Link>
+          <p className="text-gray-600 dark:text-gray-300">If an account exists for {email}, a reset link is on its way.</p>
+          <Link to="/login" className="text-blue-600 dark:text-blue-400 hover:underline">Back to login</Link>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <form onSubmit={onSubmit} className="bg-white p-6 rounded-lg shadow w-full max-w-sm space-y-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-800/50">
+      <form onSubmit={onSubmit} className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow w-full max-w-sm space-y-4">
         <h1 className="text-lg font-semibold">Reset your password</h1>
         <label className="block text-sm">
-          <span className="block mb-1 text-gray-600">Email</span>
+          <span className="block mb-1 text-gray-600 dark:text-gray-300">Email</span>
           <input
             type="email"
             required
@@ -62,7 +62,7 @@ export function ForgotPasswordPage() {
           <p
             id="forgot-form-error"
             role="alert"
-            className="text-xs text-red-600 mt-1"
+            className="text-xs text-red-600 dark:text-red-400 mt-1"
           >
             {error}
           </p>

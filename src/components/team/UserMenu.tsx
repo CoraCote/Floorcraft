@@ -39,7 +39,7 @@ export function UserMenu() {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((o) => !o)}
-        className="w-8 h-8 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-sm font-semibold hover:bg-gray-300"
+        className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 flex items-center justify-center text-sm font-semibold hover:bg-gray-300"
         aria-label="Account menu"
         aria-haspopup="menu"
         aria-expanded={open}
@@ -49,9 +49,9 @@ export function UserMenu() {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 mt-1 w-56 bg-white border rounded shadow z-30"
+          className="absolute right-0 mt-1 w-56 bg-white dark:bg-gray-900 border rounded shadow z-30"
         >
-          <div className="px-3 py-2 text-xs text-gray-500 truncate" title={session.user.email}>
+          <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400 truncate" title={session.user.email}>
             {session.user.email}
           </div>
           <button
@@ -60,7 +60,7 @@ export function UserMenu() {
               setOpen(false)
               navigate('/account')
             }}
-            className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
+            className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-800/50"
           >
             <UserIcon size={14} /> Account
           </button>
@@ -71,7 +71,7 @@ export function UserMenu() {
               await supabase.auth.signOut()
               navigate('/login')
             }}
-            className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
+            className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-800/50"
           >
             <LogOut size={14} /> Log out
           </button>

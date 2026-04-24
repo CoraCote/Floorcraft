@@ -53,15 +53,15 @@ export function RosterBulkEditPopover({ selectedIds, onClose }: Props) {
 
   return (
     <div
-      className="absolute top-full left-0 mt-1 z-20 bg-white border border-gray-200 rounded-lg shadow-xl p-3 w-72"
+      className="absolute top-full left-0 mt-1 z-20 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-xl p-3 w-72"
       role="dialog"
       aria-label="Bulk edit selected employees"
     >
-      <div className="text-xs text-gray-500 mb-2">
+      <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
         Editing {selectedIds.length} selected
       </div>
 
-      <label className="block text-xs font-medium text-gray-700 mb-1" htmlFor="bulk-edit-dept">
+      <label className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1" htmlFor="bulk-edit-dept">
         Department
       </label>
       <input
@@ -69,10 +69,10 @@ export function RosterBulkEditPopover({ selectedIds, onClose }: Props) {
         value={department}
         onChange={(e) => setDepartment(e.target.value)}
         placeholder="Leave blank to keep"
-        className="w-full mb-2 px-2 py-1 border border-gray-300 rounded text-sm"
+        className="w-full mb-2 px-2 py-1 border border-gray-300 dark:border-gray-700 rounded text-sm"
       />
 
-      <label className="block text-xs font-medium text-gray-700 mb-1" htmlFor="bulk-edit-title">
+      <label className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1" htmlFor="bulk-edit-title">
         Title
       </label>
       <input
@@ -80,10 +80,10 @@ export function RosterBulkEditPopover({ selectedIds, onClose }: Props) {
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Leave blank to keep"
-        className="w-full mb-2 px-2 py-1 border border-gray-300 rounded text-sm"
+        className="w-full mb-2 px-2 py-1 border border-gray-300 dark:border-gray-700 rounded text-sm"
       />
 
-      <label className="block text-xs font-medium text-gray-700 mb-1" htmlFor="bulk-edit-team">
+      <label className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1" htmlFor="bulk-edit-team">
         Team
       </label>
       <input
@@ -91,17 +91,17 @@ export function RosterBulkEditPopover({ selectedIds, onClose }: Props) {
         value={team}
         onChange={(e) => setTeam(e.target.value)}
         placeholder="Leave blank to keep"
-        className="w-full mb-2 px-2 py-1 border border-gray-300 rounded text-sm"
+        className="w-full mb-2 px-2 py-1 border border-gray-300 dark:border-gray-700 rounded text-sm"
       />
 
-      <label className="block text-xs font-medium text-gray-700 mb-1" htmlFor="bulk-edit-status">
+      <label className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1" htmlFor="bulk-edit-status">
         Status
       </label>
       <select
         id="bulk-edit-status"
         value={status}
         onChange={(e) => setStatus(e.target.value as EmployeeStatus | '')}
-        className="w-full mb-3 px-2 py-1 border border-gray-300 rounded text-sm bg-white"
+        className="w-full mb-3 px-2 py-1 border border-gray-300 dark:border-gray-700 rounded text-sm bg-white dark:bg-gray-900"
       >
         <option value="">Leave unchanged</option>
         {EMPLOYEE_STATUSES.map((s) => (
@@ -113,7 +113,7 @@ export function RosterBulkEditPopover({ selectedIds, onClose }: Props) {
         <button
           type="button"
           onClick={onClose}
-          className="px-2 py-1 text-sm text-gray-600 hover:text-gray-800"
+          className="px-2 py-1 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100"
         >
           Cancel
         </button>

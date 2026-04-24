@@ -45,27 +45,27 @@ export function OfficeCard({ office, teamSlug, thumbnailElements, stats, avatars
     <div className="relative group">
       <Link
         to={`/t/${teamSlug}/o/${office.slug}/map`}
-        className="block bg-white rounded-xl border border-gray-200 overflow-hidden hover:border-gray-300 hover:shadow-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+        className="block bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden hover:border-gray-300 hover:shadow-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
       >
-        <div className="w-full h-40 bg-gray-50 border-b border-gray-100">
+        <div className="w-full h-40 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
           <OfficeThumbnail elements={thumbnailElements} width="100%" height="100%" />
         </div>
         <div className="p-4">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="text-base font-semibold text-gray-900 truncate">{office.name}</h3>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">{office.name}</h3>
             {/* Spacer so the kebab button (positioned absolutely) doesn't collide with the title. */}
             <span className="w-7 shrink-0" aria-hidden="true" />
           </div>
           <div
-            className="mt-1 text-xs text-gray-500"
+            className="mt-1 text-xs text-gray-500 dark:text-gray-400"
             title={`Last updated ${preciseTitle}`}
           >
             {metaParts.join(' · ')}
           </div>
           {office.is_private && (
-            <div className="mt-2 text-xs text-amber-700">Private</div>
+            <div className="mt-2 text-xs text-amber-700 dark:text-amber-300">Private</div>
           )}
-          <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+          <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
             {avatars.length > 0 ? (
               <div className="flex -space-x-2">
                 {avatars.slice(0, 4).map((a) => (
@@ -79,13 +79,13 @@ export function OfficeCard({ office, teamSlug, thumbnailElements, stats, avatars
                   </div>
                 ))}
                 {stats.assigned > avatars.length && (
-                  <div className="w-6 h-6 rounded-full ring-2 ring-white bg-gray-100 flex items-center justify-center text-[10px] font-medium text-gray-600">
+                  <div className="w-6 h-6 rounded-full ring-2 ring-white bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-[10px] font-medium text-gray-600 dark:text-gray-300">
                     +{stats.assigned - avatars.length}
                   </div>
                 )}
               </div>
             ) : (
-              <div className="text-xs text-gray-500">
+              <div className="text-xs text-gray-500 dark:text-gray-400">
                 {stats.assigned > 0
                   ? `${stats.assigned} ${stats.assigned === 1 ? 'person' : 'people'} assigned`
                   : 'No one assigned yet'}
@@ -103,7 +103,7 @@ export function OfficeCard({ office, teamSlug, thumbnailElements, stats, avatars
           e.stopPropagation()
           onMenu(office)
         }}
-        className="absolute top-[10px] right-[10px] p-1.5 rounded-md text-gray-400 bg-white/80 backdrop-blur-sm hover:text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+        className="absolute top-[10px] right-[10px] p-1.5 rounded-md text-gray-400 dark:text-gray-500 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
       >
         <MoreHorizontal size={16} aria-hidden="true" />
       </button>

@@ -36,11 +36,11 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <form onSubmit={onSubmit} className="bg-white p-6 rounded-lg shadow w-full max-w-sm space-y-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-800/50">
+      <form onSubmit={onSubmit} className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow w-full max-w-sm space-y-4">
         <h1 className="text-lg font-semibold">Log in to Floorcraft</h1>
         <label className="block text-sm">
-          <span className="block mb-1 text-gray-600">Email</span>
+          <span className="block mb-1 text-gray-600 dark:text-gray-300">Email</span>
           <input
             type="email"
             required
@@ -52,7 +52,7 @@ export function LoginPage() {
           />
         </label>
         <label className="block text-sm">
-          <span className="block mb-1 text-gray-600">Password</span>
+          <span className="block mb-1 text-gray-600 dark:text-gray-300">Password</span>
           <input
             type="password"
             required
@@ -67,7 +67,7 @@ export function LoginPage() {
           <p
             id="login-form-error"
             role="alert"
-            className="text-xs text-red-600 mt-1"
+            className="text-xs text-red-600 dark:text-red-400 mt-1"
           >
             {error}
           </p>
@@ -79,7 +79,7 @@ export function LoginPage() {
         >
           {busy ? 'Signing in…' : 'Log in'}
         </button>
-        <div className="flex justify-between text-xs text-gray-500">
+        <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
           <Link to="/forgot" className="hover:underline">Forgot password?</Link>
           <Link to="/signup" className="hover:underline">Create an account</Link>
         </div>

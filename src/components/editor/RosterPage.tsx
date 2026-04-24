@@ -813,7 +813,7 @@ export function RosterPage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-white">
+    <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-gray-900">
       {/* Redacted-mode notice. Explains why names read as initials and
           why email/office-days columns are empty — without it the UI
           looks broken to a viewer-role user seeing a colleague's roster
@@ -821,7 +821,7 @@ export function RosterPage() {
       {!canViewPII && (
         <div
           role="status"
-          className="px-5 py-2 border-b border-gray-200 bg-gray-50 text-xs text-gray-600 flex-shrink-0"
+          className="px-5 py-2 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 text-xs text-gray-600 dark:text-gray-300 flex-shrink-0"
           data-testid="pii-redaction-banner"
         >
           Viewing in redacted mode — personal details hidden.
@@ -873,7 +873,7 @@ export function RosterPage() {
         Everything else collapses behind a "More filters" popover, and a
         row of active-filter pills below makes narrowing explicit.
       */}
-      <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-200 flex-shrink-0">
+      <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
         <div className="relative flex-1 max-w-md">
           <input
             ref={searchInputRef}
@@ -891,7 +891,7 @@ export function RosterPage() {
                 ;(e.target as HTMLInputElement).blur()
               }
             }}
-            className={`w-full px-3 py-1.5 ${q ? 'pr-8' : ''} text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500`}
+            className={`w-full px-3 py-1.5 ${q ? 'pr-8' : ''} text-sm border border-gray-200 dark:border-gray-800 rounded focus:outline-none focus:ring-2 focus:ring-blue-500`}
           />
           {q && (
             <button
@@ -902,7 +902,7 @@ export function RosterPage() {
                 setFilter('q', '')
                 searchInputRef.current?.focus()
               }}
-              className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700"
+              className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-200"
               aria-label="Clear search"
               title="Clear search (Esc)"
             >
@@ -914,7 +914,7 @@ export function RosterPage() {
         <select
           value={statusFilter}
           onChange={(e) => setFilter('status', e.target.value)}
-          className="px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
           aria-label="Filter by status"
         >
           <option value="">All statuses</option>
@@ -926,7 +926,7 @@ export function RosterPage() {
         <select
           value={deptFilter}
           onChange={(e) => setFilter('dept', e.target.value)}
-          className="px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
           aria-label="Filter by department"
         >
           <option value="">All depts</option>
@@ -947,8 +947,8 @@ export function RosterPage() {
             onClick={() => setMoreFiltersOpen((o) => !o)}
             className={`flex items-center gap-1.5 px-2 py-1.5 text-sm border rounded ${
               secondaryFilterCount > 0
-                ? 'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100'
-                : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                ? 'border-blue-300 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40'
+                : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50'
             }`}
             aria-haspopup="dialog"
             aria-expanded={moreFiltersOpen}
@@ -962,16 +962,16 @@ export function RosterPage() {
             <div
               role="dialog"
               aria-label="More filters"
-              className="fixed sm:absolute left-auto mt-1 w-[280px] bg-white border border-gray-200 rounded shadow-lg z-30 p-3"
+              className="fixed sm:absolute left-auto mt-1 w-[280px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded shadow-lg z-30 p-3"
               style={{ top: 'auto' }}
             >
               <div className="space-y-2">
-                <label className="flex items-center gap-2 text-xs text-gray-600">
+                <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
                   <span className="w-20 flex-shrink-0">Preset</span>
                   <select
                     value={presetFilter}
                     onChange={(e) => setFilter('preset', e.target.value)}
-                    className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     aria-label="Preset view"
                     title={
                       presetFilter
@@ -988,12 +988,12 @@ export function RosterPage() {
                   </select>
                 </label>
 
-                <label className="flex items-center gap-2 text-xs text-gray-600">
+                <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
                   <span className="w-20 flex-shrink-0">Floor</span>
                   <select
                     value={floorFilter}
                     onChange={(e) => setFilter('floor', e.target.value)}
-                    className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     aria-label="Filter by floor"
                   >
                     <option value="">All floors</option>
@@ -1003,12 +1003,12 @@ export function RosterPage() {
                   </select>
                 </label>
 
-                <label className="flex items-center gap-2 text-xs text-gray-600">
+                <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
                   <span className="w-20 flex-shrink-0">Seat</span>
                   <select
                     value={seatFilter}
                     onChange={(e) => setFilter('seat', e.target.value)}
-                    className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     aria-label="Filter by seat assignment"
                   >
                     <option value="">All seats</option>
@@ -1017,12 +1017,12 @@ export function RosterPage() {
                   </select>
                 </label>
 
-                <label className="flex items-center gap-2 text-xs text-gray-600">
+                <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
                   <span className="w-20 flex-shrink-0">Day</span>
                   <select
                     value={dayFilter}
                     onChange={(e) => setFilter('day', e.target.value)}
-                    className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     aria-label="Filter by office day"
                   >
                     <option value="">All days</option>
@@ -1032,12 +1032,12 @@ export function RosterPage() {
                   </select>
                 </label>
 
-                <label className="flex items-center gap-2 text-xs text-gray-600">
+                <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
                   <span className="w-20 flex-shrink-0">Equipment</span>
                   <select
                     value={equipFilter}
                     onChange={(e) => setFilter('equip', e.target.value)}
-                    className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     aria-label="Filter by equipment status"
                   >
                     <option value="">All equipment</option>
@@ -1046,12 +1046,12 @@ export function RosterPage() {
                 </label>
               </div>
 
-              <div className="flex items-center justify-end pt-3 mt-2 border-t border-gray-100">
+              <div className="flex items-center justify-end pt-3 mt-2 border-t border-gray-100 dark:border-gray-800">
                 <button
                   type="button"
                   onClick={resetSecondaryFilters}
                   disabled={secondaryFilterCount === 0}
-                  className="px-2 py-1 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded disabled:text-gray-300 disabled:hover:bg-transparent"
+                  className="px-2 py-1 text-xs text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded disabled:text-gray-300 disabled:hover:bg-transparent"
                   title="Reset secondary filters"
                 >
                   Reset
@@ -1069,7 +1069,7 @@ export function RosterPage() {
           without reading a label.
         */}
         <div
-          className="inline-flex items-center border border-gray-200 rounded overflow-hidden"
+          className="inline-flex items-center border border-gray-200 dark:border-gray-800 rounded overflow-hidden"
           role="group"
           aria-label="View mode"
         >
@@ -1078,7 +1078,7 @@ export function RosterPage() {
             className={`flex items-center gap-1 px-2 py-1.5 text-xs font-medium ${
               viewMode === 'list'
                 ? 'bg-gray-800 text-white'
-                : 'bg-white text-gray-600 hover:bg-gray-50'
+                : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50'
             }`}
             aria-pressed={viewMode === 'list'}
             aria-label="List view"
@@ -1089,10 +1089,10 @@ export function RosterPage() {
           </button>
           <button
             onClick={() => setFilter('view', 'cards')}
-            className={`flex items-center gap-1 px-2 py-1.5 text-xs font-medium border-l border-gray-200 ${
+            className={`flex items-center gap-1 px-2 py-1.5 text-xs font-medium border-l border-gray-200 dark:border-gray-800 ${
               viewMode === 'cards'
                 ? 'bg-gray-800 text-white'
-                : 'bg-white text-gray-600 hover:bg-gray-50'
+                : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50'
             }`}
             aria-pressed={viewMode === 'cards'}
             aria-label="Card view"
@@ -1115,20 +1115,20 @@ export function RosterPage() {
         {canEdit && (
           <button
             onClick={() => setCsvImportOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 border border-gray-200 rounded"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded"
           >
             <Upload size={14} /> Import
           </button>
         )}
         <button
           onClick={handleExportAll}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 border border-gray-200 rounded"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded"
         >
           <Download size={14} /> Export CSV
         </button>
         <button
           onClick={() => setHelpOpen(true)}
-          className="flex items-center justify-center p-1.5 text-gray-500 hover:bg-gray-100 border border-gray-200 rounded"
+          className="flex items-center justify-center p-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded"
           aria-label="Show keyboard shortcuts"
           title="Keyboard shortcuts (?)"
         >
@@ -1170,7 +1170,7 @@ export function RosterPage() {
 
       {/* Bulk-action bar — only visible with selection; hidden for viewers */}
       {canEdit && selected.size > 0 && (
-        <div className="flex items-center gap-3 px-5 py-2 bg-blue-50 border-b border-blue-100 flex-shrink-0 text-sm overflow-x-auto whitespace-nowrap">
+        <div className="flex items-center gap-3 px-5 py-2 bg-blue-50 dark:bg-blue-950/40 border-b border-blue-100 flex-shrink-0 text-sm overflow-x-auto whitespace-nowrap">
           <span className="font-medium text-blue-900 flex-shrink-0">
             {selected.size} selected
           </span>
@@ -1188,7 +1188,7 @@ export function RosterPage() {
               if (v === '__clear__') handleBulkClearDepartment()
               else handleBulkSetDepartment(v)
             }}
-            className="px-2 py-1 text-xs border border-blue-200 rounded bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-2 py-1 text-xs border border-blue-200 rounded bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
             aria-label="Set department on selected rows"
           >
             <option value="" disabled>
@@ -1209,7 +1209,7 @@ export function RosterPage() {
               const v = e.target.value as EmployeeStatus | ''
               if (v) handleBulkSetStatus(v)
             }}
-            className="px-2 py-1 text-xs border border-blue-200 rounded bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-2 py-1 text-xs border border-blue-200 rounded bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
             aria-label="Set status on selected rows"
           >
             <option value="" disabled>
@@ -1226,7 +1226,7 @@ export function RosterPage() {
             <button
               type="button"
               onClick={() => setBulkEditOpen((v) => !v)}
-              className="px-2 py-1 text-xs font-medium text-gray-700 hover:bg-white rounded border border-blue-200"
+              className="px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-gray-900 rounded border border-blue-200"
             >
               Edit…
             </button>
@@ -1258,32 +1258,32 @@ export function RosterPage() {
                 navigate(`/t/${teamSlug}/o/${officeSlug}/map`)
               }
             }}
-            className="px-2 py-1 text-xs font-medium text-gray-700 hover:bg-white rounded border border-blue-200"
+            className="px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-gray-900 rounded border border-blue-200"
           >
             Assign to…
           </button>
 
           <button
             onClick={handleBulkUnassign}
-            className="px-2 py-1 text-xs font-medium text-gray-700 hover:bg-white rounded"
+            className="px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-gray-900 rounded"
           >
             Unassign
           </button>
           <button
             onClick={handleExportSelection}
-            className="px-2 py-1 text-xs font-medium text-gray-700 hover:bg-white rounded"
+            className="px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-gray-900 rounded"
           >
             Export selection
           </button>
           <button
             onClick={requestBulkDelete}
-            className="px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-100 rounded"
+            className="px-2 py-1 text-xs font-medium text-red-700 dark:text-red-300 hover:bg-red-100 rounded"
           >
             Delete
           </button>
           <button
             onClick={() => setSelected(new Set())}
-            className="ml-auto flex items-center gap-1 px-2 py-1 text-xs text-gray-500 hover:text-gray-800 flex-shrink-0"
+            className="ml-auto flex items-center gap-1 px-2 py-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 flex-shrink-0"
           >
             <X size={12} /> Clear
           </button>
@@ -1292,7 +1292,7 @@ export function RosterPage() {
 
       {/* Table OR card grid, based on `view` URL param */}
       {viewMode === 'cards' ? (
-        <div className="flex-1 overflow-auto p-5 bg-gray-50/50" data-testid="roster-cards">
+        <div className="flex-1 overflow-auto p-5 bg-gray-50/50 dark:bg-gray-800/50" data-testid="roster-cards">
           {/*
             Card view can't hang sort/select-all off <thead> the way the
             table does, so it gets a small toolbar. The sort <select>
@@ -1303,7 +1303,7 @@ export function RosterPage() {
           <div className="flex items-center gap-3 mb-3 text-xs">
             {canEdit && (
               <>
-                <label className="flex items-center gap-1.5 text-gray-600 cursor-pointer select-none">
+                <label className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300 cursor-pointer select-none">
                   <input
                     type="checkbox"
                     checked={allVisibleSelected}
@@ -1315,15 +1315,15 @@ export function RosterPage() {
                   />
                   {allVisibleSelected ? 'Unselect all' : 'Select all'}
                 </label>
-                <span className="w-px h-4 bg-gray-200" />
+                <span className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
               </>
             )}
-            <label className="flex items-center gap-1.5 text-gray-600">
+            <label className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
               Sort by
               <select
                 value={sortColumn}
                 onChange={(e) => setSortColumn(e.target.value as SortColumn)}
-                className="px-1.5 py-1 border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="px-1.5 py-1 border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 aria-label="Sort column"
               >
                 <option value="name">Name</option>
@@ -1335,7 +1335,7 @@ export function RosterPage() {
             </label>
             <button
               onClick={() => setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))}
-              className="px-2 py-1 border border-gray-200 rounded bg-white text-gray-600 hover:bg-gray-50 flex items-center gap-1"
+              className="px-2 py-1 border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 flex items-center gap-1"
               aria-label={`Sort direction ${sortDir}`}
               title={`Sort direction: ${sortDir}ending`}
             >
@@ -1383,7 +1383,7 @@ export function RosterPage() {
       ) : (
       <div className="flex-1 overflow-auto">
         <table className="w-full text-sm">
-          <thead className="sticky top-0 bg-white border-b border-gray-200 z-10">
+          <thead className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 z-10">
             <tr>
               {canEdit && (
                 <th className="px-4 py-2 w-8">
@@ -1409,14 +1409,14 @@ export function RosterPage() {
                 <th
                   key={col.key}
                   onClick={() => col.sortable && handleSort(col.key as SortColumn)}
-                  className={`px-4 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider select-none whitespace-nowrap ${
-                    col.sortable ? 'cursor-pointer hover:bg-gray-50' : ''
+                  className={`px-4 py-2 text-left text-[11px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider select-none whitespace-nowrap ${
+                    col.sortable ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50' : ''
                   }`}
                 >
                   <span className="inline-flex items-center gap-1">
                     {col.label}
                     {col.sortable && sortColumn === col.key && (
-                      <ArrowUpDown size={12} className="text-blue-500" />
+                      <ArrowUpDown size={12} className="text-blue-500 dark:text-blue-400" />
                     )}
                   </span>
                 </th>
@@ -1428,8 +1428,8 @@ export function RosterPage() {
             {sorted.map((emp) => {
               const isSelected = selected.has(emp.id)
               const rowBg = isSelected
-                ? 'bg-blue-50/60 hover:bg-blue-50/80'
-                : 'hover:bg-gray-50'
+                ? 'bg-blue-50/60 dark:bg-blue-950/40 hover:bg-blue-50/80 dark:hover:bg-blue-950/40'
+                : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
               // Mark the leftmost cell with a 2px accent stripe when the row
               // is selected — a Linear-style affordance that indicates
               // selection without relying on the whole-row tint alone.
@@ -1456,7 +1456,7 @@ export function RosterPage() {
                   ) return
                   setDrawerId(emp.id)
                 }}
-                className={`group transition-colors border-b border-gray-100 ${rowBg}`}
+                className={`group transition-colors border-b border-gray-100 dark:border-gray-800 ${rowBg}`}
               >
                 {canEdit && (
                   <td className={`px-4 py-3 align-middle ${leftStripe}`}>
@@ -1468,7 +1468,7 @@ export function RosterPage() {
                     />
                   </td>
                 )}
-                <td className={`px-4 py-3 align-middle font-medium text-gray-800 ${canEdit ? '' : leftStripe}`}>
+                <td className={`px-4 py-3 align-middle font-medium text-gray-800 dark:text-gray-100 ${canEdit ? '' : leftStripe}`}>
                   <div className="flex items-center gap-2.5 min-w-0">
                     <Avatar
                       employee={emp}
@@ -1480,7 +1480,7 @@ export function RosterPage() {
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <div className={`min-w-0 flex-1 ${emp.status === 'departed' ? 'line-through text-gray-400' : ''}`}>
+                        <div className={`min-w-0 flex-1 ${emp.status === 'departed' ? 'line-through text-gray-400 dark:text-gray-500' : ''}`}>
                           <InlineEditCell>
                             <InlineText
                               value={emp.name}
@@ -1500,7 +1500,7 @@ export function RosterPage() {
                           const nameDupe = describeNameDuplicate(emp)
                           return nameDupe ? (
                             <span
-                              className="inline-flex items-center gap-0.5 text-amber-700 bg-amber-100 px-1 py-0.5 rounded text-[10px] font-medium flex-shrink-0"
+                              className="inline-flex items-center gap-0.5 text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 px-1 py-0.5 rounded text-[10px] font-medium flex-shrink-0"
                               title={nameDupe}
                             >
                               <AlertCircle size={10} aria-hidden="true" /> rehire?
@@ -1509,12 +1509,12 @@ export function RosterPage() {
                         })()}
                       </div>
                       {emp.email && (
-                        <div className="px-1.5 text-[11px] text-gray-400 truncate flex items-center gap-1" title={emp.email}>
+                        <div className="px-1.5 text-[11px] text-gray-400 dark:text-gray-500 truncate flex items-center gap-1" title={emp.email}>
                           {(() => {
                             const dupeLabel = describeDuplicate(emp.email, emp.id)
                             return dupeLabel ? (
                               <span
-                                className="inline-flex items-center gap-0.5 text-amber-700 bg-amber-100 px-1 py-0.5 rounded text-[10px] font-medium flex-shrink-0"
+                                className="inline-flex items-center gap-0.5 text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 px-1 py-0.5 rounded text-[10px] font-medium flex-shrink-0"
                                 title={dupeLabel}
                               >
                                 <AlertCircle size={10} aria-hidden="true" /> dupe
@@ -1527,7 +1527,7 @@ export function RosterPage() {
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-3 align-middle text-gray-600">
+                <td className="px-4 py-3 align-middle text-gray-600 dark:text-gray-300">
                   <InlineEditCell>
                     {canEdit ? (
                       <InlineText
@@ -1560,7 +1560,7 @@ export function RosterPage() {
                     )}
                   </InlineEditCell>
                 </td>
-                <td className="px-4 py-3 align-middle text-gray-600">
+                <td className="px-4 py-3 align-middle text-gray-600 dark:text-gray-300">
                   <InlineEditCell>
                     <InlineText
                       value={emp.title ?? ''}
@@ -1573,7 +1573,7 @@ export function RosterPage() {
                 <td className="px-4 py-3 align-middle">
                   <OfficeDays days={emp.officeDays} todayLabel={todayLabel} />
                 </td>
-                <td className="px-4 py-3 align-middle text-gray-600">
+                <td className="px-4 py-3 align-middle text-gray-600 dark:text-gray-300">
                   <SeatCell
                     floorName={emp.floorId ? floorMap[emp.floorId] ?? null : null}
                     seatLabel={
@@ -1594,7 +1594,7 @@ export function RosterPage() {
                           onChange={(e) =>
                             handleRowSetStatus(emp.id, e.target.value as EmployeeStatus)
                           }
-                          className="text-xs px-1.5 py-1 border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="text-xs px-1.5 py-1 border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
                           aria-label={`Status for ${emp.name}`}
                         >
                           {EMPLOYEE_STATUSES.map((s) => (
@@ -1622,7 +1622,7 @@ export function RosterPage() {
                     <>
                       <button
                         onClick={() => setOpenMenuId((cur) => (cur === emp.id ? null : emp.id))}
-                        className="p-1 rounded hover:bg-gray-200 text-gray-500"
+                        className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
                         aria-label="Row actions"
                       >
                         <MoreHorizontal size={14} />
@@ -1681,7 +1681,7 @@ export function RosterPage() {
       )}
 
       {/* Footer */}
-      <div className="px-5 py-2 border-t border-gray-200 text-xs text-gray-500 flex-shrink-0">
+      <div className="px-5 py-2 border-t border-gray-200 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
         {sorted.length} of {allEmployees.length} people shown
       </div>
 
@@ -1729,12 +1729,12 @@ export function RosterPage() {
                   pointer from any direct reports. This cannot be undone.
                 </p>
                 {preview.length > 0 && (
-                  <ul className="pl-4 list-disc text-gray-700 text-xs">
+                  <ul className="pl-4 list-disc text-gray-700 dark:text-gray-200 text-xs">
                     {preview.map((n, i) => (
                       <li key={i}>{n}</li>
                     ))}
                     {extra > 0 && (
-                      <li className="text-gray-500">
+                      <li className="text-gray-500 dark:text-gray-400">
                         …and {extra} other{extra === 1 ? '' : 's'}
                       </li>
                     )}
@@ -1774,12 +1774,12 @@ export function RosterPage() {
                   {count === 1 ? 'it' : 'them'} keeps occupancy stats accurate.
                 </p>
                 {preview.length > 0 && (
-                  <ul className="pl-4 list-disc text-gray-700 text-xs">
+                  <ul className="pl-4 list-disc text-gray-700 dark:text-gray-200 text-xs">
                     {preview.map((n, i) => (
                       <li key={i}>{n}</li>
                     ))}
                     {extra > 0 && (
-                      <li className="text-gray-500">
+                      <li className="text-gray-500 dark:text-gray-400">
                         …and {extra} other{extra === 1 ? '' : 's'}
                       </li>
                     )}
@@ -1871,7 +1871,7 @@ function InlineText({
       <span className="block w-full text-left px-1.5 py-1 truncate">
         {renderDisplay
           ? renderDisplay(value)
-          : value || <span className="text-gray-400">{placeholder}</span>}
+          : value || <span className="text-gray-400 dark:text-gray-500">{placeholder}</span>}
       </span>
     )
   }
@@ -1891,7 +1891,7 @@ function InlineText({
             setEditing(false)
           }
         }}
-        className="w-full px-1.5 py-1 text-sm border border-blue-400 rounded bg-white focus:outline-none"
+        className="w-full px-1.5 py-1 text-sm border border-blue-400 rounded bg-white dark:bg-gray-900 focus:outline-none"
       />
     )
   }
@@ -1901,11 +1901,11 @@ function InlineText({
       ref={buttonRef}
       type="button"
       onClick={() => setEditing(true)}
-      className="w-full text-left px-1.5 py-1 rounded hover:bg-white group-hover:bg-white truncate"
+      className="w-full text-left px-1.5 py-1 rounded hover:bg-white dark:hover:bg-gray-900 group-hover:bg-white truncate"
     >
       {renderDisplay
         ? renderDisplay(value)
-        : value || <span className="text-gray-400">{placeholder}</span>}
+        : value || <span className="text-gray-400 dark:text-gray-500">{placeholder}</span>}
     </button>
   )
 }
@@ -1930,7 +1930,7 @@ function ActiveFilterPills({
   onClearAll: () => void
 }) {
   // Empty row collapses to nothing — no visible spacing when no filters
-  // are active. A previous iteration kept a faint bg-blue-50 bar around
+  // are active. A previous iteration kept a faint bg-blue-50 dark:bg-blue-950/40 bar around
   // so the "Filtered by" label never appeared to pop in; but the bar
   // still consumed ~36px of vertical rhythm between the filter row and
   // the table, which made "no filters" feel unnecessarily crowded.
@@ -1943,13 +1943,13 @@ function ActiveFilterPills({
       {pills.map((p) => (
         <span
           key={p.key}
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-medium"
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-xs font-medium"
         >
           {p.label}
           <button
             type="button"
             onClick={() => onRemove(p.key)}
-            className="p-0.5 rounded-full hover:bg-blue-100 text-blue-500 hover:text-blue-900"
+            className="p-0.5 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-500 dark:text-blue-400 hover:text-blue-900"
             aria-label={`Remove filter: ${p.label}`}
             title={`Remove filter: ${p.label}`}
           >
@@ -1961,7 +1961,7 @@ function ActiveFilterPills({
         <button
           type="button"
           onClick={onClearAll}
-          className="ml-1 text-[11px] text-gray-500 hover:text-gray-800 underline decoration-dotted"
+          className="ml-1 text-[11px] text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 underline decoration-dotted"
           title="Clear all filters"
         >
           Clear all
@@ -2025,11 +2025,11 @@ function StatsBar({
     // active state flips to a saturated fill so "this axis is narrowing the
     // list" is still obvious at a glance.
     const toneClasses = {
-      gray: isActive ? 'bg-gray-800 text-white border-gray-800' : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100',
-      green: isActive ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-gray-50 text-emerald-700 border-gray-200 hover:bg-emerald-50',
-      amber: isActive ? 'bg-amber-600 text-white border-amber-600' : 'bg-gray-50 text-amber-700 border-gray-200 hover:bg-amber-50',
-      red: isActive ? 'bg-red-600 text-white border-red-600' : 'bg-gray-50 text-red-700 border-gray-200 hover:bg-red-50',
-      blue: isActive ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 text-blue-700 border-gray-200 hover:bg-blue-50',
+      gray: isActive ? 'bg-gray-800 text-white border-gray-800' : 'bg-gray-50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800',
+      green: isActive ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-gray-50 dark:bg-gray-800/50 text-emerald-700 border-gray-200 dark:border-gray-800 hover:bg-emerald-50',
+      amber: isActive ? 'bg-amber-600 text-white border-amber-600' : 'bg-gray-50 dark:bg-gray-800/50 text-amber-700 dark:text-amber-300 border-gray-200 dark:border-gray-800 hover:bg-amber-50',
+      red: isActive ? 'bg-red-600 text-white border-red-600' : 'bg-gray-50 dark:bg-gray-800/50 text-red-700 dark:text-red-300 border-gray-200 dark:border-gray-800 hover:bg-red-50 dark:hover:bg-red-950/40',
+      blue: isActive ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 dark:bg-gray-800/50 text-blue-700 dark:text-blue-300 border-gray-200 dark:border-gray-800 hover:bg-blue-50 dark:hover:bg-blue-950/40',
     }[tone]
     return (
       <button
@@ -2058,7 +2058,7 @@ function StatsBar({
     !active.presetFilter
 
   return (
-    <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-100 bg-gray-50/60 flex-shrink-0 overflow-x-auto whitespace-nowrap">
+    <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/50 flex-shrink-0 overflow-x-auto whitespace-nowrap">
       {chip('Total', stats.total, noChipFilter, onClearChipAxes, 'gray', 'All people (clears chip filters; leaves search/dept/floor alone)', Users)}
       {chip(
         'Active',
@@ -2179,8 +2179,8 @@ function WeeklyCapacity({
   onSetFilter: (key: string, value: string) => void
 }) {
   return (
-    <div className="flex items-center gap-3 px-5 py-2 border-b border-gray-100 bg-white flex-shrink-0 overflow-x-auto">
-      <div className="text-[11px] font-medium text-gray-500 uppercase tracking-wider flex-shrink-0">
+    <div className="flex items-center gap-3 px-5 py-2 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 flex-shrink-0 overflow-x-auto">
+      <div className="text-[11px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider flex-shrink-0">
         Week in office
       </div>
       <div className="flex items-end gap-2 min-w-0">
@@ -2194,7 +2194,7 @@ function WeeklyCapacity({
               key={d}
               onClick={() => onSetFilter('day', isActive ? '' : d)}
               className={`group flex flex-col items-center gap-1 px-2 py-1 rounded transition-colors ${
-                isActive ? 'bg-blue-50' : 'hover:bg-gray-50'
+                isActive ? 'bg-blue-50 dark:bg-blue-950/40' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
               }`}
               title={`${count} in office on ${d}${isActive ? ' — click again to clear' : ''}`}
               aria-pressed={isActive}
@@ -2214,14 +2214,14 @@ function WeeklyCapacity({
               </div>
               <div
                 className={`text-[10px] font-semibold ${
-                  isActive ? 'text-blue-700' : 'text-gray-600'
+                  isActive ? 'text-blue-700 dark:text-blue-300' : 'text-gray-600 dark:text-gray-300'
                 } tabular-nums`}
               >
                 {count}
               </div>
               <div
                 className={`text-[10px] font-medium ${
-                  isToday ? 'text-blue-700' : 'text-gray-400'
+                  isToday ? 'text-blue-700 dark:text-blue-300' : 'text-gray-400 dark:text-gray-500'
                 }`}
               >
                 {d}
@@ -2239,7 +2239,7 @@ function DeptDot({ color }: { color: string | null }) {
     return (
       <span
         aria-hidden="true"
-        className="w-2.5 h-2.5 rounded-sm bg-gray-200 border border-gray-200 flex-shrink-0"
+        className="w-2.5 h-2.5 rounded-sm bg-gray-200 dark:bg-gray-700 border border-gray-200 dark:border-gray-800 flex-shrink-0"
       />
     )
   }
@@ -2276,7 +2276,7 @@ function OfficeDays({ days, todayLabel }: { days: string[]; todayLabel: string }
             className={`w-4 h-4 rounded-full text-[8px] font-bold leading-none flex items-center justify-center border ${
               on
                 ? 'bg-blue-500 text-white border-blue-500'
-                : 'bg-white text-gray-400 border-gray-200'
+                : 'bg-white dark:bg-gray-900 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-800'
             } ${isToday ? 'ring-2 ring-blue-300 ring-offset-1 ring-offset-white' : ''}`}
           >
             {d[0]}
@@ -2308,7 +2308,7 @@ function Avatar({ employee, deptColor }: { employee: Employee; deptColor?: strin
       <img
         src={employee.photoUrl}
         alt=""
-        className="w-7 h-7 rounded-full object-cover bg-gray-100 flex-shrink-0"
+        className="w-7 h-7 rounded-full object-cover bg-gray-100 dark:bg-gray-800 flex-shrink-0"
         onError={(e) => {
           // If the URL 404s / CORS-fails, swap in the initials circle by
           // hiding the broken <img> — the sibling fallback renders whenever
@@ -2361,7 +2361,7 @@ function PendingStatusIndicator({ employee }: { employee: Employee }) {
   }${suffix}`
   return (
     <span
-      className="inline-flex items-center text-gray-400"
+      className="inline-flex items-center text-gray-400 dark:text-gray-500"
       title={tooltip}
       aria-label="Has scheduled status changes"
       data-testid="pending-status-indicator"
@@ -2390,7 +2390,7 @@ function EndingSoonBadge({ endDate }: { endDate: string | null }) {
   if (days < 0) {
     return (
       <span
-        className="text-[10px] font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded"
+        className="text-[10px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded"
         title={`Ended ${endDate}`}
       >
         Ended
@@ -2401,7 +2401,7 @@ function EndingSoonBadge({ endDate }: { endDate: string | null }) {
   const label = days === 0 ? 'Ends today' : days === 1 ? 'Ends tomorrow' : `Ends in ${days}d`
   return (
     <span
-      className="text-[10px] font-medium text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded"
+      className="text-[10px] font-medium text-amber-800 bg-amber-100 dark:bg-amber-900/40 px-1.5 py-0.5 rounded"
       title={`End date: ${endDate}`}
     >
       {label}
@@ -2430,7 +2430,7 @@ function DepartingSoonBadge({ departureDate }: { departureDate: string | null })
   if (days < 0) {
     return (
       <span
-        className="text-[10px] font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded"
+        className="text-[10px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded"
         title={`Departed ${departureDate}`}
       >
         Departed
@@ -2452,7 +2452,7 @@ function DepartingSoonBadge({ departureDate }: { departureDate: string | null })
   }
   return (
     <span
-      className="text-[10px] font-medium text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded"
+      className="text-[10px] font-medium text-amber-800 bg-amber-100 dark:bg-amber-900/40 px-1.5 py-0.5 rounded"
       title={`Departure date: ${departureDate}`}
     >
       {label}
@@ -2494,7 +2494,7 @@ function PersonCard({
   canEdit: boolean
 }) {
   const statusTone =
-    EMPLOYEE_STATUS_PILL_CLASSES[employee.status] ?? 'bg-gray-100 text-gray-500'
+    EMPLOYEE_STATUS_PILL_CLASSES[employee.status] ?? 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
   return (
     <div
       onDoubleClick={(e) => {
@@ -2508,8 +2508,8 @@ function PersonCard({
         ) return
         onOpen()
       }}
-      className={`group relative rounded-lg border bg-white shadow-sm hover:shadow transition-shadow p-3 ${
-        isSelected ? 'border-blue-400 ring-2 ring-blue-200' : 'border-gray-200'
+      className={`group relative rounded-lg border bg-white dark:bg-gray-900 shadow-sm hover:shadow transition-shadow p-3 ${
+        isSelected ? 'border-blue-400 ring-2 ring-blue-200' : 'border-gray-200 dark:border-gray-800'
       }`}
     >
       {/*
@@ -2542,14 +2542,14 @@ function PersonCard({
             <button
               type="button"
               onClick={onOpen}
-              className="text-sm font-semibold text-gray-800 truncate hover:underline text-left"
+              className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate hover:underline text-left"
               title="Open details"
             >
               {employee.name}
             </button>
             {duplicateLabel && (
               <span
-                className="inline-flex items-center gap-0.5 text-amber-700 bg-amber-100 px-1 py-0.5 rounded text-[10px] font-medium flex-shrink-0"
+                className="inline-flex items-center gap-0.5 text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 px-1 py-0.5 rounded text-[10px] font-medium flex-shrink-0"
                 title={duplicateLabel}
               >
                 <AlertCircle size={10} /> dupe
@@ -2557,7 +2557,7 @@ function PersonCard({
             )}
             {nameDuplicateLabel && (
               <span
-                className="inline-flex items-center gap-0.5 text-amber-700 bg-amber-100 px-1 py-0.5 rounded text-[10px] font-medium flex-shrink-0"
+                className="inline-flex items-center gap-0.5 text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 px-1 py-0.5 rounded text-[10px] font-medium flex-shrink-0"
                 title={nameDuplicateLabel}
               >
                 <AlertCircle size={10} /> rehire?
@@ -2565,12 +2565,12 @@ function PersonCard({
             )}
           </div>
           {employee.title && (
-            <div className="text-xs text-gray-500 truncate">{employee.title}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{employee.title}</div>
           )}
           <div className="flex items-center gap-1.5 mt-1 min-w-0">
             <DeptDot color={deptColor} />
-            <span className="text-xs text-gray-600 truncate">
-              {employee.department ?? <span className="text-gray-400">No department</span>}
+            <span className="text-xs text-gray-600 dark:text-gray-300 truncate">
+              {employee.department ?? <span className="text-gray-400 dark:text-gray-500">No department</span>}
             </span>
           </div>
         </div>
@@ -2588,13 +2588,13 @@ function PersonCard({
         {employee.seatId ? (
           <button
             onClick={onJumpToSeat}
-            className="text-blue-600 hover:underline truncate"
+            className="text-blue-600 dark:text-blue-400 hover:underline truncate"
             title="Show seat on map"
           >
             {floorName ?? '?'} / {seatLabel ?? employee.seatId.slice(0, 4)}
           </button>
         ) : (
-          <span className="text-gray-400">Unassigned</span>
+          <span className="text-gray-400 dark:text-gray-500">Unassigned</span>
         )}
         <EndingSoonBadge endDate={employee.endDate} />
         <DepartingSoonBadge departureDate={employee.departureDate} />
@@ -2670,11 +2670,11 @@ function RowActionMenu({
         aria-label="Close menu"
         tabIndex={-1}
       />
-      <div className="absolute right-2 top-full mt-1 z-40 w-48 bg-white border border-gray-200 rounded-md shadow-lg py-1">
+      <div className="absolute right-2 top-full mt-1 z-40 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-md shadow-lg py-1">
         {canEdit && (
           <button
             onClick={onEdit}
-            className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
+            className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
           >
             Edit full details
           </button>
@@ -2682,7 +2682,7 @@ function RowActionMenu({
         {hasEmail ? (
           <button
             onClick={handleCopyEmail}
-            className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
+            className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
             title={`Copy ${employee.email} to clipboard`}
           >
             {copied ? (
@@ -2698,7 +2698,7 @@ function RowActionMenu({
         ) : (
           <button
             disabled
-            className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-400 cursor-not-allowed"
+            className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-400 dark:text-gray-500 cursor-not-allowed"
           >
             <Clipboard size={12} /> Copy email
           </button>
@@ -2707,7 +2707,7 @@ function RowActionMenu({
           <a
             href={mailtoHref}
             onClick={onClose}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
+            className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
             title={`Email ${employee.email}`}
           >
             <Mail size={12} /> Send invite…
@@ -2715,7 +2715,7 @@ function RowActionMenu({
         ) : (
           <button
             disabled
-            className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-400 cursor-not-allowed"
+            className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-400 dark:text-gray-500 cursor-not-allowed"
             title="Add an email to enable invites"
           >
             <Mail size={12} /> Send invite…
@@ -2728,7 +2728,7 @@ function RowActionMenu({
         <button
           onClick={onRequestSwap}
           disabled={!employee.seatId}
-          className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+          className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:text-gray-400 disabled:cursor-not-allowed disabled:hover:bg-transparent"
           title={employee.seatId ? 'Request a seat swap' : 'Assign a seat before requesting a swap'}
         >
           Request swap
@@ -2737,14 +2737,14 @@ function RowActionMenu({
           <>
             <button
               onClick={onUnassign}
-              className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
+              className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
             >
               Unassign seat
             </button>
-            <div className="my-1 border-t border-gray-100" />
+            <div className="my-1 border-t border-gray-100 dark:border-gray-800" />
             <button
               onClick={onDelete}
-              className="w-full text-left px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
+              className="w-full text-left px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40"
             >
               Delete
             </button>
@@ -2790,12 +2790,12 @@ function ShortcutsCheatSheet({ onClose }: { onClose: () => void }) {
         aria-label="Close shortcuts"
         tabIndex={-1}
       />
-      <div className="relative w-80 max-w-[90vw] bg-white rounded-lg shadow-xl border border-gray-200 p-4">
+      <div className="relative w-80 max-w-[90vw] bg-white dark:bg-gray-900 rounded-lg shadow-xl border border-gray-200 dark:border-gray-800 p-4">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-gray-800">Keyboard shortcuts</h2>
+          <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Keyboard shortcuts</h2>
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-gray-100 text-gray-500"
+            className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
             aria-label="Close"
           >
             <X size={14} />
@@ -2804,9 +2804,9 @@ function ShortcutsCheatSheet({ onClose }: { onClose: () => void }) {
         <dl className="space-y-1.5 text-xs">
           {shortcuts.map(([key, desc]) => (
             <div key={key} className="flex items-center justify-between gap-3">
-              <dt className="text-gray-600">{desc}</dt>
+              <dt className="text-gray-600 dark:text-gray-300">{desc}</dt>
               <dd>
-                <kbd className="px-1.5 py-0.5 text-[11px] font-mono font-semibold text-gray-700 bg-gray-100 border border-gray-200 rounded">
+                <kbd className="px-1.5 py-0.5 text-[11px] font-mono font-semibold text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded">
                   {key}
                 </kbd>
               </dd>
@@ -2862,7 +2862,7 @@ function InlineEditCell({
       {!hidePencil && (
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 focus-within:opacity-0 transition-opacity text-gray-400"
+          className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 focus-within:opacity-0 transition-opacity text-gray-400 dark:text-gray-500"
         >
           <Pencil size={12} />
         </span>
@@ -2898,10 +2898,10 @@ function RosterEmptyState({
   return (
     <div className="flex flex-col items-center gap-2 text-center py-8">
       <Users size={40} aria-hidden="true" className="text-gray-300" />
-      <div className="text-sm font-medium text-gray-700">
+      <div className="text-sm font-medium text-gray-700 dark:text-gray-200">
         {isFilterMiss ? 'No matches' : 'Your office is empty'}
       </div>
-      <div className="text-xs text-gray-500">
+      <div className="text-xs text-gray-500 dark:text-gray-400">
         {isFilterMiss
           ? 'Try clearing filters or changing your search.'
           : 'Add your first teammate to start building the roster.'}
@@ -2910,7 +2910,7 @@ function RosterEmptyState({
         <button
           type="button"
           onClick={onClearFilters}
-          className="mt-1 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 border border-gray-200 rounded hover:bg-gray-50"
+          className="mt-1 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-800 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50"
         >
           Clear filters
         </button>

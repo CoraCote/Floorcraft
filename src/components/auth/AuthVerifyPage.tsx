@@ -28,7 +28,7 @@ export function AuthVerifyPage() {
   }, [navigate])
 
   if (error) {
-    return <div className="p-6 text-sm text-red-600">{error}</div>
+    return <div className="p-6 text-sm text-red-600 dark:text-red-400">{error}</div>
   }
-  return <div className="p-6 text-sm text-gray-500">Completing sign-in…</div>
+  return <div className="p-6 text-sm text-gray-500 dark:text-gray-400">Completing sign-in…</div>
 }

@@ -64,8 +64,8 @@ export function ScaleSettingsPopover() {
         onClick={() => setOpen((v) => !v)}
         className={`text-xs px-2 py-1 rounded border ${
           open
-            ? 'bg-blue-50 border-blue-200 text-blue-700'
-            : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+            ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 text-blue-700 dark:text-blue-300'
+            : 'border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50'
         }`}
         title="Project scale and units"
         aria-haspopup="dialog"
@@ -78,20 +78,20 @@ export function ScaleSettingsPopover() {
         <div
           role="dialog"
           aria-label="Project scale"
-          className="absolute top-full mt-1 right-0 z-40 w-64 bg-white border border-gray-200 rounded-md shadow-lg p-3"
+          className="absolute top-full mt-1 right-0 z-40 w-64 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-md shadow-lg p-3"
         >
-          <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">
+          <h3 className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
             Measurement
           </h3>
 
-          <label className="block text-xs text-gray-700 mb-1" htmlFor="scale-unit">
+          <label className="block text-xs text-gray-700 dark:text-gray-200 mb-1" htmlFor="scale-unit">
             Unit
           </label>
           <select
             id="scale-unit"
             value={scaleUnit}
             onChange={(e) => setSettings({ scaleUnit: e.target.value as typeof LENGTH_UNITS[number] })}
-            className="w-full text-sm border border-gray-200 rounded px-2 py-1 mb-3 focus:outline-none focus:border-blue-400"
+            className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1 mb-3 focus:outline-none focus:border-blue-400"
           >
             {LENGTH_UNITS.map((u) => (
               <option key={u} value={u}>
@@ -100,7 +100,7 @@ export function ScaleSettingsPopover() {
             ))}
           </select>
 
-          <label className="block text-xs text-gray-700 mb-1" htmlFor="scale-value">
+          <label className="block text-xs text-gray-700 dark:text-gray-200 mb-1" htmlFor="scale-value">
             Scale: 1 canvas px ={' '}
           </label>
           <div className="flex items-center gap-2">
@@ -115,12 +115,12 @@ export function ScaleSettingsPopover() {
                 if (!Number.isFinite(v) || v <= 0) return
                 setSettings({ scale: v })
               }}
-              className="w-24 text-sm border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
+              className="w-24 text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
               disabled={scaleUnit === 'px'}
             />
-            <span className="text-sm text-gray-500">{LENGTH_UNIT_SUFFIX[scaleUnit]}</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">{LENGTH_UNIT_SUFFIX[scaleUnit]}</span>
           </div>
-          <p className="mt-2 text-[11px] leading-snug text-gray-500">
+          <p className="mt-2 text-[11px] leading-snug text-gray-500 dark:text-gray-400">
             {scaleUnit === 'px'
               ? 'Pixel mode: no real-world conversion. Switch unit to enable scaling.'
               : 'Tip: use the Measure tool (⇧M) and the two-click calibrator to set this from a known distance on an imported floor plan.'}

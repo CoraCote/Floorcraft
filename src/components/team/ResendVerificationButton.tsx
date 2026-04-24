@@ -45,11 +45,11 @@ export function ResendVerificationButton({ email }: { email: string }) {
       <button
         onClick={onClick}
         disabled={remaining > 0 || sending}
-        className="text-sm text-blue-600 hover:underline disabled:text-gray-400 disabled:no-underline"
+        className="text-sm text-blue-600 dark:text-blue-400 hover:underline disabled:text-gray-400 disabled:no-underline"
       >
         {label}
       </button>
-      {lastError && <p className="text-xs text-red-600">{lastError}</p>}
+      {lastError && <p className="text-xs text-red-600 dark:text-red-400">{lastError}</p>}
     </div>
   )
 }

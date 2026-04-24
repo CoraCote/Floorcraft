@@ -38,7 +38,7 @@ export function TeamSwitcher({ currentSlug }: { currentSlug: string | undefined 
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1 px-2 py-1 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded"
+        className="flex items-center gap-1 px-2 py-1 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
         aria-haspopup="menu"
         aria-expanded={open}
       >
@@ -48,7 +48,7 @@ export function TeamSwitcher({ currentSlug }: { currentSlug: string | undefined 
       {open && (
         <div
           role="menu"
-          className="absolute left-0 mt-1 w-56 bg-white border rounded shadow z-30"
+          className="absolute left-0 mt-1 w-56 bg-white dark:bg-gray-900 border rounded shadow z-30"
         >
           {teams.map((t) => (
             <button
@@ -58,7 +58,7 @@ export function TeamSwitcher({ currentSlug }: { currentSlug: string | undefined 
                 setOpen(false)
                 navigate(`/t/${t.slug}`)
               }}
-              className={`block w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 ${
+              className={`block w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-800/50 ${
                 t.slug === currentSlug ? 'font-medium' : ''
               }`}
             >
@@ -71,7 +71,7 @@ export function TeamSwitcher({ currentSlug }: { currentSlug: string | undefined 
               setOpen(false)
               navigate('/onboarding/team')
             }}
-            className="block w-full text-left px-3 py-1.5 text-sm text-blue-600 hover:bg-gray-50"
+            className="block w-full text-left px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800/50"
           >
             + Create team
           </button>

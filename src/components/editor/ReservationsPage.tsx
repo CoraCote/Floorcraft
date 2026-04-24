@@ -112,7 +112,7 @@ export function ReservationsPage() {
           <select
             id="res-emp-picker"
             data-testid="reservations-employee-picker"
-            className="border border-gray-300 rounded px-2 py-1 text-sm"
+            className="border border-gray-300 dark:border-gray-700 rounded px-2 py-1 text-sm"
             value={selectedEmployeeId}
             onChange={(e) => setSelectedEmployeeId(e.target.value)}
           >
@@ -131,16 +131,16 @@ export function ReservationsPage() {
       )}
 
       {reservableDesks.length === 0 ? (
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           No reservable desks right now. Every desk is either permanently
           assigned or decommissioned.
         </p>
       ) : (
-        <div className="overflow-auto border border-gray-200 rounded">
+        <div className="overflow-auto border border-gray-200 dark:border-gray-800 rounded">
           <table className="text-xs">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-gray-800/50">
               <tr>
-                <th className="px-2 py-1 text-left sticky left-0 bg-gray-50">
+                <th className="px-2 py-1 text-left sticky left-0 bg-gray-50 dark:bg-gray-800/50">
                   Desk
                 </th>
                 {dates.map((d) => (
@@ -152,8 +152,8 @@ export function ReservationsPage() {
             </thead>
             <tbody>
               {reservableDesks.map((desk) => (
-                <tr key={desk.id} className="border-t border-gray-100">
-                  <td className="px-2 py-1 sticky left-0 bg-white whitespace-nowrap">
+                <tr key={desk.id} className="border-t border-gray-100 dark:border-gray-800">
+                  <td className="px-2 py-1 sticky left-0 bg-white dark:bg-gray-900 whitespace-nowrap">
                     {desk.label || desk.deskId}
                   </td>
                   {dates.map((d) => {
@@ -168,8 +168,8 @@ export function ReservationsPage() {
                           data-testid={`reservations-cell-${desk.id}-${d}`}
                           className={`w-full min-w-[60px] rounded px-1 py-0.5 text-[11px] ${
                             res
-                              ? 'bg-blue-50 text-blue-800 hover:bg-blue-100'
-                              : 'text-gray-400 hover:bg-gray-50'
+                              ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/40'
+                              : 'text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50'
                           } ${canEdit ? '' : 'cursor-not-allowed opacity-60'}`}
                         >
                           {res ? (vis?.name ?? 'R') : '·'}

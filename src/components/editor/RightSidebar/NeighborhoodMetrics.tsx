@@ -59,23 +59,23 @@ export function NeighborhoodMetrics() {
   if (rows.length === 0) return null
 
   return (
-    <div className="rounded-md border border-gray-200 bg-white p-2">
-      <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 mb-1">
+    <div className="rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-2">
+      <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
         Neighborhoods
       </div>
       <ul className="flex flex-col gap-1">
         {rows.map((r) => (
           <li
             key={r.id}
-            className="flex items-center gap-2 text-xs text-gray-700"
+            className="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-200"
           >
             <span
               aria-hidden
               className="inline-block w-2 h-2 rounded-sm flex-shrink-0"
               style={{ backgroundColor: r.color }}
             />
-            <span className="truncate font-medium text-gray-800">{r.name}</span>
-            <span className="ml-auto text-gray-500 whitespace-nowrap">
+            <span className="truncate font-medium text-gray-800 dark:text-gray-100">{r.name}</span>
+            <span className="ml-auto text-gray-500 dark:text-gray-400 whitespace-nowrap">
               {r.seats} seats, {r.assigned} assigned
             </span>
           </li>

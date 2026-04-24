@@ -5,6 +5,7 @@ import { useMyTeams } from '../../lib/teams/useMyTeams'
 import { FloorPlanHero } from './FloorPlanHero'
 import { BrowserFrame } from './BrowserFrame'
 import { FeatureCard } from './FeatureCard'
+import { ThemeToggle } from '../ui/ThemeToggle'
 
 /**
  * Public landing page at `/`.
@@ -46,7 +47,7 @@ export function LandingPage() {
         </Link>
         <Link
           to="/help"
-          className="px-6 py-3 border border-gray-300 rounded-xl font-medium text-gray-700 hover:bg-gray-50 text-lg text-center"
+          className="px-6 py-3 border border-gray-300 rounded-xl font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800/50 text-lg text-center"
         >
           See a demo
         </Link>
@@ -54,18 +55,23 @@ export function LandingPage() {
     )
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-gray-950 dark:to-gray-900">
+      {/* Theme toggle pinned top-right; absolute so it doesn't push the
+          hero down on small screens. */}
+      <div className="absolute top-4 right-4 z-10">
+        <ThemeToggle />
+      </div>
       {/* Hero */}
       <section className="max-w-5xl mx-auto px-6 pt-16 pb-20 sm:pt-24 sm:pb-28 text-center">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500 mb-5">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500 dark:text-blue-400 mb-5">
           Workplace planning, reimagined
         </p>
-        <h1 className="text-5xl sm:text-6xl font-bold tracking-tight text-gray-900 mb-4">
+        <h1 className="text-5xl sm:text-6xl font-bold tracking-tight text-gray-900 dark:text-gray-100 mb-4">
           Plan your office.
           <br />
-          <span className="text-gray-500">Seat your team.</span>
+          <span className="text-gray-500 dark:text-gray-400">Seat your team.</span>
         </h1>
-        <p className="text-xl text-gray-500 mb-10 max-w-2xl mx-auto">
+        <p className="text-xl text-gray-500 dark:text-gray-400 mb-10 max-w-2xl mx-auto">
           The floor-plan editor built for hybrid workplace teams.
         </p>
         {primaryCta}
@@ -88,7 +94,7 @@ export function LandingPage() {
 
       {/* Feature grid */}
       <section className="max-w-5xl mx-auto px-6 pb-20 sm:pb-24">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-500 text-center mb-10">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 text-center mb-10">
           What you can do
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-8">
@@ -112,14 +118,14 @@ export function LandingPage() {
 
       {/* Social-proof row */}
       <section className="max-w-4xl mx-auto px-6 pb-20">
-        <p className="text-center text-xs uppercase tracking-wider text-gray-400 mb-4">
+        <p className="text-center text-xs uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">
           Trusted by teams at
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
           {['Acme', 'Nimbus', 'Orbit', 'Lattice', 'Fielder'].map((name) => (
             <div
               key={name}
-              className="grayscale h-10 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-500 font-semibold text-sm tracking-wider transition-colors"
+              className="grayscale h-10 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-300 font-semibold text-sm tracking-wider transition-colors"
             >
               {name}
             </div>
@@ -138,7 +144,7 @@ export function LandingPage() {
           </p>
           <Link
             to="/signup"
-            className="inline-block px-8 py-3 bg-white text-blue-700 text-lg font-medium rounded-xl hover:bg-blue-50 shadow-lg transition-all"
+            className="inline-block px-8 py-3 bg-white dark:bg-gray-900 text-blue-700 dark:text-blue-300 text-lg font-medium rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/40 shadow-lg transition-all"
           >
             Create your first office
           </Link>
@@ -146,10 +152,10 @@ export function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-gray-100 py-6 text-center text-sm text-gray-400">
+      <footer className="border-t border-gray-100 dark:border-gray-800 py-6 text-center text-sm text-gray-400 dark:text-gray-500">
         Floorcraft — Office layout &amp; seat management
         <span className="mx-2">·</span>
-        <Link to="/help" className="hover:text-blue-600">
+        <Link to="/help" className="hover:text-blue-600 dark:hover:text-blue-400">
           User guide &amp; FAQ
         </Link>
       </footer>

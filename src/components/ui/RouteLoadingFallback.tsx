@@ -8,12 +8,12 @@
 export function RouteLoadingFallback() {
   return (
     <div
-      className="flex items-center justify-center h-screen w-screen bg-gray-50"
+      className="flex items-center justify-center h-screen w-screen bg-gray-50 dark:bg-gray-800/50"
       role="status"
       aria-live="polite"
       aria-label="Loading page"
     >
-      <div className="h-8 w-8 rounded-full border-2 border-gray-300 border-t-gray-600 animate-spin" />
+      <div className="h-8 w-8 rounded-full border-2 border-gray-300 dark:border-gray-700 border-t-gray-600 animate-spin" />
     </div>
   )
 }

@@ -153,28 +153,28 @@ export function EmployeeDirectory() {
     <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={handleClose}>
       <div className="absolute inset-0 bg-black/40" />
       <div
-        className="relative bg-white rounded-xl shadow-2xl max-w-6xl w-full mx-4 max-h-[85vh] flex flex-col"
+        className="relative bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-6xl w-full mx-4 max-h-[85vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-800">Employee Directory</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Employee Directory</h2>
           <button
             onClick={handleClose}
-            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
           >
             <X size={18} />
           </button>
         </div>
 
         {/* Search */}
-        <div className="px-6 py-3 border-b border-gray-100">
+        <div className="px-6 py-3 border-b border-gray-100 dark:border-gray-800">
           <input
             type="text"
             placeholder="Search by name, department, team, title, email, or tags..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             autoFocus
           />
         </div>
@@ -182,54 +182,54 @@ export function EmployeeDirectory() {
         {/* Table */}
         <div className="flex-1 overflow-auto">
           <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-gray-50 border-b border-gray-200">
+            <thead className="sticky top-0 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
               <tr>
                 {columns.map((col) => (
                   <th
                     key={col.key}
                     onClick={() => handleSort(col.key)}
-                    className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 whitespace-nowrap select-none"
+                    className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 whitespace-nowrap select-none"
                   >
                     <span className="inline-flex items-center gap-1">
                       {col.label}
                       {sortColumn === col.key && (
-                        <ArrowUpDown size={12} className="text-blue-500" />
+                        <ArrowUpDown size={12} className="text-blue-500 dark:text-blue-400" />
                       )}
                     </span>
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
               {sorted.map((emp) => (
                 <tr
                   key={emp.id}
                   onClick={() => handleRowClick(emp)}
-                  className="hover:bg-blue-50 cursor-pointer transition-colors"
+                  className="hover:bg-blue-50 dark:hover:bg-blue-950/40 cursor-pointer transition-colors"
                 >
-                  <td className="px-3 py-2 font-medium text-gray-800 whitespace-nowrap">{emp.name}</td>
-                  <td className="px-3 py-2 text-gray-600 whitespace-nowrap">{emp.department || '—'}</td>
-                  <td className="px-3 py-2 text-gray-600 whitespace-nowrap">{emp.team || '—'}</td>
-                  <td className="px-3 py-2 text-gray-600 whitespace-nowrap">{emp.title || '—'}</td>
-                  <td className="px-3 py-2 text-gray-600 whitespace-nowrap">
+                  <td className="px-3 py-2 font-medium text-gray-800 dark:text-gray-100 whitespace-nowrap">{emp.name}</td>
+                  <td className="px-3 py-2 text-gray-600 dark:text-gray-300 whitespace-nowrap">{emp.department || '—'}</td>
+                  <td className="px-3 py-2 text-gray-600 dark:text-gray-300 whitespace-nowrap">{emp.team || '—'}</td>
+                  <td className="px-3 py-2 text-gray-600 dark:text-gray-300 whitespace-nowrap">{emp.title || '—'}</td>
+                  <td className="px-3 py-2 text-gray-600 dark:text-gray-300 whitespace-nowrap">
                     {emp.floorId ? (floorMap[emp.floorId] || '—') : '—'}
                   </td>
-                  <td className="px-3 py-2 text-gray-600 whitespace-nowrap">{emp.seatId || '—'}</td>
-                  <td className="px-3 py-2 text-gray-600 whitespace-nowrap">
+                  <td className="px-3 py-2 text-gray-600 dark:text-gray-300 whitespace-nowrap">{emp.seatId || '—'}</td>
+                  <td className="px-3 py-2 text-gray-600 dark:text-gray-300 whitespace-nowrap">
                     {emp.managerId ? (employeeMap[emp.managerId]?.name || '—') : '—'}
                   </td>
-                  <td className="px-3 py-2 text-gray-600 whitespace-nowrap">{emp.employmentType}</td>
-                  <td className="px-3 py-2 text-gray-600 whitespace-nowrap">
+                  <td className="px-3 py-2 text-gray-600 dark:text-gray-300 whitespace-nowrap">{emp.employmentType}</td>
+                  <td className="px-3 py-2 text-gray-600 dark:text-gray-300 whitespace-nowrap">
                     {emp.officeDays.length > 0 ? emp.officeDays.join(', ') : '—'}
                   </td>
-                  <td className="px-3 py-2 text-gray-600 whitespace-nowrap">
+                  <td className="px-3 py-2 text-gray-600 dark:text-gray-300 whitespace-nowrap">
                     {emp.tags.length > 0 ? emp.tags.join(', ') : '—'}
                   </td>
                 </tr>
               ))}
               {sorted.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-3 py-8 text-center text-gray-400 text-sm">
+                  <td colSpan={10} className="px-3 py-8 text-center text-gray-400 dark:text-gray-500 text-sm">
                     {search ? 'No employees match your search.' : 'No employees added yet.'}
                   </td>
                 </tr>
@@ -239,7 +239,7 @@ export function EmployeeDirectory() {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 border-t border-gray-200 text-xs text-gray-500">
+        <div className="px-6 py-3 border-t border-gray-200 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400">
           {sorted.length} employee{sorted.length !== 1 ? 's' : ''} shown
         </div>
       </div>

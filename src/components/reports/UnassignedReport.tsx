@@ -97,12 +97,12 @@ export function UnassignedReport() {
     <div className="flex flex-col gap-4">
       {/* Employees without seats */}
       <div>
-        <div className="text-xs font-medium text-gray-500 mb-2 flex items-center gap-1.5">
+        <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1.5">
           <User size={12} />
           Employees Without Seats ({unassigned.length})
         </div>
         {unassigned.length === 0 ? (
-          <div className="text-xs text-gray-400 px-2 py-3 text-center">
+          <div className="text-xs text-gray-400 dark:text-gray-500 px-2 py-3 text-center">
             All employees are assigned!
           </div>
         ) : (
@@ -113,13 +113,13 @@ export function UnassignedReport() {
                 onClick={() => handleEmpClick(emp.id)}
                 className={`flex items-center gap-2 w-full px-2.5 py-1.5 rounded text-left text-xs transition-colors ${
                   highlightedEmpId === emp.id
-                    ? 'bg-blue-100 border border-blue-300'
-                    : 'bg-white border border-gray-200 hover:bg-gray-50'
+                    ? 'bg-blue-100 dark:bg-blue-900/40 border border-blue-300'
+                    : 'bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50'
                 }`}
               >
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-gray-800 truncate">{emp.name}</div>
-                  <div className="text-[11px] text-gray-500 truncate">
+                  <div className="font-medium text-gray-800 dark:text-gray-100 truncate">{emp.name}</div>
+                  <div className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
                     {emp.department || 'No department'}
                     {emp.startDate && (
                       <span className="ml-1.5">
@@ -136,22 +136,22 @@ export function UnassignedReport() {
 
       {/* Open desks */}
       <div>
-        <div className="text-xs font-medium text-gray-500 mb-2 flex items-center gap-1.5">
+        <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1.5">
           <Monitor size={12} />
           Open Desks
           {highlightedEmpId && (
-            <span className="text-blue-600 font-normal ml-1">— click a desk to assign</span>
+            <span className="text-blue-600 dark:text-blue-400 font-normal ml-1">— click a desk to assign</span>
           )}
         </div>
         {openDesksByFloor.length === 0 ? (
-          <div className="text-xs text-gray-400 px-2 py-3 text-center">
+          <div className="text-xs text-gray-400 dark:text-gray-500 px-2 py-3 text-center">
             No open desks available.
           </div>
         ) : (
           <div className="flex flex-col gap-3">
             {openDesksByFloor.map((floor) => (
               <div key={floor.floorId}>
-                <div className="text-[11px] font-medium text-gray-600 mb-1">{floor.floorName}</div>
+                <div className="text-[11px] font-medium text-gray-600 dark:text-gray-300 mb-1">{floor.floorName}</div>
                 <div className="flex flex-wrap gap-1">
                   {floor.desks.map((desk) => (
                     <button
@@ -160,8 +160,8 @@ export function UnassignedReport() {
                       disabled={!highlightedEmpId}
                       className={`px-2 py-1 text-[11px] rounded border transition-colors ${
                         highlightedEmpId
-                          ? 'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 cursor-pointer'
-                          : 'border-gray-200 bg-gray-50 text-gray-500 cursor-default'
+                          ? 'border-blue-300 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 cursor-pointer'
+                          : 'border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 cursor-default'
                       }`}
                     >
                       {desk.label}

@@ -70,15 +70,15 @@ export function RoomBookingsPanel() {
   return (
     <div className="mb-3" data-testid="room-bookings-panel">
       <div className="flex items-center gap-1.5 mb-2">
-        <CalendarClock size={12} className="text-gray-400" />
-        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+        <CalendarClock size={12} className="text-gray-400 dark:text-gray-500" />
+        <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
           Room bookings
         </div>
-        <div className="ml-auto text-[11px] text-gray-400">today</div>
+        <div className="ml-auto text-[11px] text-gray-400 dark:text-gray-500">today</div>
       </div>
 
       {rows.length === 0 ? (
-        <div className="text-xs text-gray-400 py-2">
+        <div className="text-xs text-gray-400 dark:text-gray-500 py-2">
           No room bookings today. Use the book tool to reserve a room.
         </div>
       ) : (
@@ -86,7 +86,7 @@ export function RoomBookingsPanel() {
           {rows.map(([elementId, list]) => (
             <div
               key={elementId}
-              className="flex flex-col gap-1 p-2 rounded border border-gray-200 bg-white hover:bg-gray-50 cursor-pointer"
+              className="flex flex-col gap-1 p-2 rounded border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
               role="button"
               tabIndex={0}
               onClick={() => focusElements([elementId])}
@@ -97,7 +97,7 @@ export function RoomBookingsPanel() {
                 }
               }}
             >
-              <div className="text-xs font-medium text-gray-800 truncate">
+              <div className="text-xs font-medium text-gray-800 dark:text-gray-100 truncate">
                 {resolveLabel(elementId)}
               </div>
               <div className="flex flex-col gap-0.5">
@@ -107,7 +107,7 @@ export function RoomBookingsPanel() {
                   return (
                     <div
                       key={b.id}
-                      className="flex items-center justify-between text-[11px] text-gray-600"
+                      className="flex items-center justify-between text-[11px] text-gray-600 dark:text-gray-300"
                     >
                       <span className="font-mono">
                         {formatMinutes(b.startMinutes)}–
@@ -126,7 +126,7 @@ export function RoomBookingsPanel() {
                           }}
                           title="Cancel booking"
                           aria-label={`Cancel booking ${formatMinutes(b.startMinutes)}`}
-                          className="text-gray-400 hover:text-red-500 flex-shrink-0"
+                          className="text-gray-400 dark:text-gray-500 hover:text-red-500 flex-shrink-0"
                         >
                           <X size={11} />
                         </button>

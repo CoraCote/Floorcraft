@@ -50,7 +50,7 @@ export function DepartmentChip({
 }) {
   if (!department) {
     return (
-      <span className="inline-flex items-center rounded-full bg-gray-100 text-gray-500 px-2.5 py-0.5 text-xs font-medium">
+      <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-2.5 py-0.5 text-xs font-medium">
         —
       </span>
     )
@@ -58,7 +58,7 @@ export function DepartmentChip({
   const rgb = color ? hexToRgb(color) : null
   if (!rgb) {
     return (
-      <span className="inline-flex items-center rounded-full bg-gray-100 text-gray-600 px-2.5 py-0.5 text-xs font-medium">
+      <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 px-2.5 py-0.5 text-xs font-medium">
         {department}
       </span>
     )

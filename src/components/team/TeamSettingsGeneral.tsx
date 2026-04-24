@@ -60,7 +60,7 @@ export function TeamSettingsGeneral({ team, isAdmin }: { team: Team; isAdmin: bo
       <section className="space-y-2">
         <h2 className="font-semibold">General</h2>
         <label className="block">
-          <span className="block mb-1 text-gray-600">Team name</span>
+          <span className="block mb-1 text-gray-600 dark:text-gray-300">Team name</span>
           <input
             disabled={!isAdmin || busy}
             className="w-full border rounded px-2 py-1.5 disabled:bg-gray-50"
@@ -81,7 +81,7 @@ export function TeamSettingsGeneral({ team, isAdmin }: { team: Team; isAdmin: bo
 
       {isAdmin && (
         <section className="space-y-2 border-t pt-4">
-          <h2 className="font-semibold text-red-700">Danger zone</h2>
+          <h2 className="font-semibold text-red-700 dark:text-red-300">Danger zone</h2>
           <button
             onClick={openConfirm}
             disabled={busy}
@@ -92,7 +92,7 @@ export function TeamSettingsGeneral({ team, isAdmin }: { team: Team; isAdmin: bo
         </section>
       )}
 
-      {error && <p className="text-red-600">{error}</p>}
+      {error && <p className="text-red-600 dark:text-red-400">{error}</p>}
 
       {confirmOpen && (
         <div
@@ -100,18 +100,18 @@ export function TeamSettingsGeneral({ team, isAdmin }: { team: Team; isAdmin: bo
           onClick={closeConfirm}
         >
           <div
-            className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full space-y-4"
+            className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 max-w-md w-full space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-base font-semibold text-red-700">
+            <h3 className="text-base font-semibold text-red-700 dark:text-red-300">
               Delete team?
             </h3>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
               This permanently removes <b>{team.name}</b>, every office in
               it, and removes all members. This cannot be undone.
             </p>
             <label className="block text-sm">
-              <span className="block mb-1 text-gray-600">
+              <span className="block mb-1 text-gray-600 dark:text-gray-300">
                 Type <b>{team.name}</b> to confirm
               </span>
               <input
@@ -131,7 +131,7 @@ export function TeamSettingsGeneral({ team, isAdmin }: { team: Team; isAdmin: bo
               <button
                 onClick={closeConfirm}
                 disabled={busy}
-                className="px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded"
+                className="px-3 py-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
               >
                 Cancel
               </button>

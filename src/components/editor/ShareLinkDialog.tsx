@@ -70,10 +70,10 @@ export function ShareLinkDialog({ open, onClose }: Props) {
   return (
     <Modal open={open} onClose={onClose} title="Share view-only link" size="lg">
       <ModalBody className="max-h-[75vh] overflow-y-auto">
-        <section className="space-y-3 pb-4 border-b border-gray-200">
-          <h3 className="text-sm font-medium text-gray-700">Generate new link</h3>
+        <section className="space-y-3 pb-4 border-b border-gray-200 dark:border-gray-800">
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-200">Generate new link</h3>
           <fieldset>
-            <legend className="text-xs text-gray-500 mb-1">Duration</legend>
+            <legend className="text-xs text-gray-500 dark:text-gray-400 mb-1">Duration</legend>
             <div className="flex flex-wrap gap-3">
               {SHARE_LINK_TTL_OPTIONS.map((opt) => (
                 <label key={opt.seconds} className="flex items-center gap-1 text-sm">
@@ -90,13 +90,13 @@ export function ShareLinkDialog({ open, onClose }: Props) {
             </div>
           </fieldset>
           <label className="block text-sm">
-            <span className="text-xs text-gray-500">Label (optional)</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">Label (optional)</span>
             <input
               type="text"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder="e.g. board review"
-              className="mt-1 block w-full border border-gray-300 rounded px-2 py-1 text-sm"
+              className="mt-1 block w-full border border-gray-300 dark:border-gray-700 rounded px-2 py-1 text-sm"
             />
           </label>
           <Button
@@ -110,11 +110,11 @@ export function ShareLinkDialog({ open, onClose }: Props) {
         </section>
 
         <section className="pt-4">
-          <h3 className="text-sm font-medium text-gray-700 mb-2">
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
             Existing links ({activeLinks.length})
           </h3>
           {activeLinks.length === 0 && (
-            <p className="text-xs text-gray-500">No links yet.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">No links yet.</p>
           )}
           <ul className="space-y-2">
             {activeLinks.map((l) => {
@@ -129,16 +129,16 @@ export function ShareLinkDialog({ open, onClose }: Props) {
               return (
                 <li
                   key={l.id}
-                  className="border border-gray-200 rounded p-2 flex items-start justify-between gap-2"
+                  className="border border-gray-200 dark:border-gray-800 rounded p-2 flex items-start justify-between gap-2"
                 >
                   <div className="min-w-0 flex-1">
                     {l.label && (
                       <div className="text-sm font-medium truncate">{l.label}</div>
                     )}
-                    <div className="text-xs text-gray-500 truncate" title={url}>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 truncate" title={url}>
                       {url}
                     </div>
-                    <div className="text-xs mt-0.5 text-gray-500">{status}</div>
+                    <div className="text-xs mt-0.5 text-gray-500 dark:text-gray-400">{status}</div>
                   </div>
                   <div className="flex flex-col gap-1 items-end">
                     <Button
