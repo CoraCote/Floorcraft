@@ -27,6 +27,7 @@ import type { Employee, EmployeeStatus } from '../../types/employee'
 import { EMPLOYEE_STATUSES, EMPLOYEE_STATUS_PILL_CLASSES } from '../../types/employee'
 import { RosterDetailDrawer } from './RosterDetailDrawer'
 import { RosterBulkEditPopover } from './RosterBulkEditPopover'
+import { RosterFilterPresetsMenu } from './RosterFilterPresetsMenu'
 import { ConfirmDialog } from './ConfirmDialog'
 import { downloadCSV, employeesToCSV } from '../../lib/employeeCsv'
 
@@ -207,6 +208,25 @@ export function RosterPage() {
     next.delete('preset')
     setSearchParams(next, { replace: true })
   }, [searchParams, setSearchParams])
+
+  /**
+   * Apply a saved filter preset. The stored query string is the
+   * `URLSearchParams.toString()` snapshot at save time, so we just hand
+   * it back to react-router and let the existing URL-synced filter
+   * hooks re-read. View mode is preserved — a preset describes *what*
+   * you're filtering, not *how* the list is rendered. Without this the
+   * user would be thrown back to the list table every time they
+   * clicked a preset while working in cards mode.
+   */
+  const applyPreset = useCallback(
+    (query: string) => {
+      const next = new URLSearchParams(query)
+      const currentView = searchParams.get('view')
+      if (currentView && !next.has('view')) next.set('view', currentView)
+      setSearchParams(next, { replace: true })
+    },
+    [searchParams, setSearchParams],
+  )
 
   // Normalize a stale/hand-crafted `day` URL — the predicate silently no-ops
   // for anything outside Mon-Fri, which produced "why is nothing showing?"
@@ -746,6 +766,20 @@ export function RosterPage() {
         dayFilter={dayFilter}
         onSetFilter={setFilter}
       />
+
+      {/* Saved filter presets — a lightweight dropdown that sits above
+          the filter bar so HR-style recurring queries ("on-leave +
+          engineering", "no-seat + full-time") become one click. The
+          menu persists its list to localStorage and re-applies by
+          rewriting the URL search, which the filter bar is already
+          URL-synced against. */}
+      <div className="flex items-center gap-2 px-5 pt-3 flex-shrink-0">
+        <RosterFilterPresetsMenu
+          currentSearch={searchParams.toString()}
+          hasAnyFilter={hasAnyFilter}
+          onApplyPreset={applyPreset}
+        />
+      </div>
 
       {/* Filters bar */}
       <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-200 flex-shrink-0">
