@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useShareLinksStore, SHARE_LINK_TTL_OPTIONS } from '../../stores/shareLinksStore'
 import { useProjectStore } from '../../stores/projectStore'
 import { buildShareUrl } from '../../lib/shareLinkUrl'
+import { Button, Modal, ModalBody } from '../ui'
 
 /**
  * Dialog for generating + managing D6 view-only share links. Triggered by
@@ -43,8 +44,6 @@ export function ShareLinkDialog({ open, onClose }: Props) {
     return () => clearInterval(id)
   }, [open])
 
-  if (!open) return null
-
   const activeLinks = Object.values(links)
     .filter((l) => l.officeId === officeId)
     .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
@@ -69,29 +68,9 @@ export function ShareLinkDialog({ open, onClose }: Props) {
   }
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Share link"
-      className="fixed inset-0 z-40 flex items-center justify-center bg-black/40"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-lg shadow-lg w-[520px] max-w-[95vw] max-h-[85vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-base font-semibold">Share view-only link</h2>
-          <button
-            onClick={onClose}
-            className="text-sm text-gray-500 hover:text-gray-700"
-            aria-label="Close"
-          >
-            Close
-          </button>
-        </header>
-
-        <section className="px-5 py-4 space-y-3 border-b border-gray-200">
+    <Modal open={open} onClose={onClose} title="Share view-only link" size="lg">
+      <ModalBody className="max-h-[75vh] overflow-y-auto">
+        <section className="space-y-3 pb-4 border-b border-gray-200">
           <h3 className="text-sm font-medium text-gray-700">Generate new link</h3>
           <fieldset>
             <legend className="text-xs text-gray-500 mb-1">Duration</legend>
@@ -120,17 +99,17 @@ export function ShareLinkDialog({ open, onClose }: Props) {
               className="mt-1 block w-full border border-gray-300 rounded px-2 py-1 text-sm"
             />
           </label>
-          <button
+          <Button
             type="button"
+            variant="primary"
             onClick={handleGenerate}
             disabled={!officeId}
-            className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded"
           >
             Generate link
-          </button>
+          </Button>
         </section>
 
-        <section className="px-5 py-4">
+        <section className="pt-4">
           <h3 className="text-sm font-medium text-gray-700 mb-2">
             Existing links ({activeLinks.length})
           </h3>
@@ -162,22 +141,24 @@ export function ShareLinkDialog({ open, onClose }: Props) {
                     <div className="text-xs mt-0.5 text-gray-500">{status}</div>
                   </div>
                   <div className="flex flex-col gap-1 items-end">
-                    <button
+                    <Button
                       type="button"
+                      variant="secondary"
+                      size="sm"
                       onClick={() => handleCopy(l.token)}
                       disabled={!!l.revokedAt || expired}
-                      className="text-xs px-2 py-0.5 border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-40"
                     >
                       {justCopied === l.token ? 'Copied' : 'Copy'}
-                    </button>
+                    </Button>
                     {!l.revokedAt && !expired && (
-                      <button
+                      <Button
                         type="button"
+                        variant="danger"
+                        size="sm"
                         onClick={() => revokeLink(l.id)}
-                        className="text-xs px-2 py-0.5 border border-red-300 text-red-600 rounded hover:bg-red-50"
                       >
                         Revoke
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </li>
@@ -185,8 +166,8 @@ export function ShareLinkDialog({ open, onClose }: Props) {
             })}
           </ul>
         </section>
-      </div>
-    </div>
+      </ModalBody>
+    </Modal>
   )
 }
 

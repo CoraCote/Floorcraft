@@ -7,7 +7,8 @@ import {
   importEmployees,
 } from '../../../lib/employeeCsv'
 import { emit } from '../../../lib/audit'
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback } from 'react'
+import { Button, Modal, ModalBody, ModalFooter } from '../../ui'
 
 export function CSVImportDialog() {
   const open = useUIStore((s) => s.csvImportOpen)
@@ -81,22 +82,9 @@ export function CSVImportDialog() {
     reader.readAsText(file)
   }, [])
 
-  useEffect(() => {
-    if (!open) return
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false)
-    }
-    window.addEventListener('keydown', handleKey)
-    return () => window.removeEventListener('keydown', handleKey)
-  }, [open, setOpen])
-
-  if (!open) return null
-
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setOpen(false)}>
-      <div className="bg-white rounded-xl shadow-2xl p-6 max-w-lg w-full mx-4" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-lg font-semibold mb-4">Import Employees from CSV</h2>
-
+    <Modal open={open} onClose={() => setOpen(false)} title="Import Employees from CSV" size="lg">
+      <ModalBody>
         <div className="mb-3">
           <label className="block text-sm text-gray-600 mb-1">Upload CSV file or paste below</label>
           <input type="file" accept=".csv,.txt" onChange={handleFileUpload} className="text-sm mb-2" />
@@ -119,69 +107,68 @@ export function CSVImportDialog() {
             {sizeError}
           </p>
         )}
-        {!preview ? (
-          <button
-            onClick={handleParse}
-            disabled={!csvText.trim()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-40"
+        {preview && preview.errors.length > 0 && (
+          <div
+            role="alert"
+            className="mb-3 text-xs text-red-600"
           >
-            Preview
-          </button>
-        ) : (
-          <>
-            {preview.errors.length > 0 && (
-              <div
-                role="alert"
-                className="mb-3 text-xs text-red-600"
-              >
-                {preview.errors.map((e, i) => <div key={i}>{e}</div>)}
+            {preview.errors.map((e, i) => <div key={i}>{e}</div>)}
+          </div>
+        )}
+        {preview && (
+          <div className="max-h-40 overflow-y-auto border border-gray-200 rounded">
+            <table className="w-full text-xs">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-2 py-1 text-left">Name</th>
+                  <th className="px-2 py-1 text-left">Email</th>
+                  <th className="px-2 py-1 text-left">Dept</th>
+                  <th className="px-2 py-1 text-left">Team</th>
+                  <th className="px-2 py-1 text-left">Title</th>
+                  <th className="px-2 py-1 text-left">Type</th>
+                </tr>
+              </thead>
+              <tbody>
+                {preview.rows.slice(0, 10).map((r, i) => (
+                  <tr key={i} className="border-t border-gray-100">
+                    <td className="px-2 py-1">{r.name}</td>
+                    <td className="px-2 py-1">{r.email || '\u2014'}</td>
+                    <td className="px-2 py-1">{r.department || '\u2014'}</td>
+                    <td className="px-2 py-1">{r.team || '\u2014'}</td>
+                    <td className="px-2 py-1">{r.title || '\u2014'}</td>
+                    <td className="px-2 py-1">{r.type || '\u2014'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {preview.rows.length > 10 && (
+              <div className="px-2 py-1 text-gray-400 text-center">
+                ...and {preview.rows.length - 10} more
               </div>
             )}
-            <div className="mb-3 max-h-40 overflow-y-auto border border-gray-200 rounded">
-              <table className="w-full text-xs">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-2 py-1 text-left">Name</th>
-                    <th className="px-2 py-1 text-left">Email</th>
-                    <th className="px-2 py-1 text-left">Dept</th>
-                    <th className="px-2 py-1 text-left">Team</th>
-                    <th className="px-2 py-1 text-left">Title</th>
-                    <th className="px-2 py-1 text-left">Type</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {preview.rows.slice(0, 10).map((r, i) => (
-                    <tr key={i} className="border-t border-gray-100">
-                      <td className="px-2 py-1">{r.name}</td>
-                      <td className="px-2 py-1">{r.email || '\u2014'}</td>
-                      <td className="px-2 py-1">{r.department || '\u2014'}</td>
-                      <td className="px-2 py-1">{r.team || '\u2014'}</td>
-                      <td className="px-2 py-1">{r.title || '\u2014'}</td>
-                      <td className="px-2 py-1">{r.type || '\u2014'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {preview.rows.length > 10 && (
-                <div className="px-2 py-1 text-gray-400 text-center">
-                  ...and {preview.rows.length - 10} more
-                </div>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={handleImport}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
-              >
-                Import {preview.rows.length} employees
-              </button>
-              <button onClick={() => setOpen(false)} className="px-4 py-2 text-gray-600 text-sm hover:bg-gray-100 rounded-lg">
-                Cancel
-              </button>
-            </div>
+          </div>
+        )}
+      </ModalBody>
+      <ModalFooter>
+        {!preview ? (
+          <Button
+            variant="primary"
+            onClick={handleParse}
+            disabled={!csvText.trim()}
+          >
+            Preview
+          </Button>
+        ) : (
+          <>
+            <Button variant="ghost" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={handleImport}>
+              Import {preview.rows.length} employees
+            </Button>
           </>
         )}
-      </div>
-    </div>
+      </ModalFooter>
+    </Modal>
   )
 }

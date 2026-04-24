@@ -7,6 +7,7 @@ import { useProjectStore } from '../../../stores/projectStore'
 import { useEmployeeStore } from '../../../stores/employeeStore'
 import { formatMinutes, todayIso, type BookingError } from '../../../lib/roomBookings'
 import { useRoomBookingDialogStore } from '../../../lib/roomBookingDialogStore'
+import { Button, Modal, ModalBody, ModalFooter } from '../../ui'
 
 /**
  * Half-hour step hour-range picker + note. Date defaults to today but
@@ -84,27 +85,8 @@ function RoomBookingDialogBody({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/20"
-      role="dialog"
-      aria-label="Book meeting room"
-      aria-modal="true"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose()
-      }}
-    >
-      <div className="bg-white rounded-lg shadow-xl border border-gray-200 w-[360px] p-4 flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-800">Book meeting room</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-xs text-gray-400 hover:text-gray-600"
-          >
-            Close
-          </button>
-        </div>
-
+    <Modal open onClose={onClose} title="Book meeting room" size="sm">
+      <ModalBody className="flex flex-col gap-3">
         <label className="flex flex-col gap-1 text-xs text-gray-600">
           Date
           <input
@@ -173,25 +155,16 @@ function RoomBookingDialogBody({
             {errorLabel(error)}
           </div>
         )}
-
-        <div className="flex items-center justify-end gap-2 pt-1">
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-xs px-3 py-1.5 rounded border border-gray-200 text-gray-700 hover:bg-gray-50"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            className="text-xs px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700"
-          >
-            Book
-          </button>
-        </div>
-      </div>
-    </div>
+      </ModalBody>
+      <ModalFooter>
+        <Button type="button" variant="secondary" size="sm" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button type="button" variant="primary" size="sm" onClick={handleSubmit}>
+          Book
+        </Button>
+      </ModalFooter>
+    </Modal>
   )
 }
 

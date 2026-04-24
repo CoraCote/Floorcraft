@@ -7,6 +7,7 @@ import {
   type LengthUnit,
 } from '../../lib/units'
 import { pointDistance } from '../../lib/calibrateScale'
+import { Button, Modal, ModalBody, ModalFooter } from '../ui'
 
 /**
  * Tiny modal shown after the user has dropped both calibration points.
@@ -73,16 +74,8 @@ function CalibrateScaleModalBody() {
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/20"
-      role="dialog"
-      aria-label="Set canvas scale from two points"
-      aria-modal="true"
-    >
-      <div className="bg-white rounded-lg shadow-xl w-80 p-4 border border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-800 mb-1">
-          Set scale
-        </h3>
+    <Modal open onClose={reset} title="Set scale" size="sm">
+      <ModalBody>
         <p className="text-xs text-gray-500 mb-3">
           How far apart are these two points in real life?
         </p>
@@ -145,25 +138,21 @@ function CalibrateScaleModalBody() {
             {error}
           </p>
         )}
-
-        <div className="mt-4 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={reset}
-            className="text-xs px-3 py-1 rounded border border-gray-200 text-gray-700 hover:bg-gray-50"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleApply}
-            disabled={!valid}
-            className="text-xs px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
-          >
-            Apply
-          </button>
-        </div>
-      </div>
-    </div>
+      </ModalBody>
+      <ModalFooter>
+        <Button type="button" variant="secondary" size="sm" onClick={reset}>
+          Cancel
+        </Button>
+        <Button
+          type="button"
+          variant="primary"
+          size="sm"
+          onClick={handleApply}
+          disabled={!valid}
+        >
+          Apply
+        </Button>
+      </ModalFooter>
+    </Modal>
   )
 }

@@ -1,6 +1,7 @@
 import { useUIStore } from '../../stores/uiStore'
 import { downloadCSV, skippedRowsToCSV, type ImportIssue } from '../../lib/employeeCsv'
-import { useCallback, useEffect } from 'react'
+import { useCallback } from 'react'
+import { Button, Modal, ModalBody, ModalFooter } from '../ui'
 
 /**
  * Post-import summary. Blocks the editor until dismissed so users can't
@@ -21,15 +22,6 @@ export function CSVImportSummaryModal() {
 
   const handleDone = useCallback(() => clear(null), [clear])
 
-  useEffect(() => {
-    if (!summary) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') handleDone()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [summary, handleDone])
-
   if (!summary) return null
 
   const { importedCount, skipped, warnings } = summary
@@ -39,16 +31,8 @@ export function CSVImportSummaryModal() {
   ].sort((a, b) => a.rowIndex - b.rowIndex)
 
   return (
-    <div
-      className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="csv-summary-title"
-    >
-      <div className="bg-white rounded-xl shadow-2xl p-6 max-w-xl w-full mx-4">
-        <h2 id="csv-summary-title" className="text-lg font-semibold mb-4">
-          Import complete
-        </h2>
+    <Modal open onClose={handleDone} title="Import complete" size="lg">
+      <ModalBody>
         <div className="flex gap-4 mb-4 text-sm">
           <span className="text-green-700 font-semibold">
             {`${importedCount} imported`}
@@ -62,7 +46,7 @@ export function CSVImportSummaryModal() {
         </div>
 
         {allIssues.length > 0 && (
-          <div className="mb-4 max-h-60 overflow-y-auto border border-gray-200 rounded">
+          <div className="max-h-60 overflow-y-auto border border-gray-200 rounded">
             <table className="w-full text-xs">
               <thead className="bg-gray-50">
                 <tr>
@@ -95,24 +79,17 @@ export function CSVImportSummaryModal() {
             </table>
           </div>
         )}
-
-        <div className="flex gap-2 justify-end">
-          {skipped.length > 0 && (
-            <button
-              onClick={handleDownload}
-              className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              Download skipped rows (CSV)
-            </button>
-          )}
-          <button
-            onClick={handleDone}
-            className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
-          >
-            Done
-          </button>
-        </div>
-      </div>
-    </div>
+      </ModalBody>
+      <ModalFooter>
+        {skipped.length > 0 && (
+          <Button variant="secondary" onClick={handleDownload}>
+            Download skipped rows (CSV)
+          </Button>
+        )}
+        <Button variant="primary" onClick={handleDone}>
+          Done
+        </Button>
+      </ModalFooter>
+    </Modal>
   )
 }

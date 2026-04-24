@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useUIStore } from '../../stores/uiStore'
+import { Button, Modal, ModalBody, ModalFooter } from '../ui'
 
 /**
  * Minimal confirmation dialog. Used anywhere an action destroys data we
@@ -7,8 +8,11 @@ import { useUIStore } from '../../stores/uiStore'
  * title, one body, two buttons.
  *
  * Registers as a modal on the UI store so global keyboard shortcuts stand
- * down while it's open. Escape and backdrop click cancel; Enter confirms
- * the danger action (matches native OS confirm dialogs).
+ * down while it's open. Escape cancels; Enter confirms the danger action
+ * (matches native OS confirm dialogs).
+ *
+ * Backdrop click does NOT cancel — destructive actions shouldn't be one
+ * stray click away from being confirmed.
  *
  * `tone="danger"` colors the primary button red. `tone="primary"` is the
  * default neutral blue for confirmations that aren't destructive.
@@ -46,57 +50,21 @@ export function ConfirmDialog({
     confirmBtnRef.current?.focus()
   }, [])
 
-  const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      e.preventDefault()
-      e.stopPropagation()
-      onCancel()
-    }
-  }
-
-  const primaryClass =
-    tone === 'danger'
-      ? 'bg-red-600 hover:bg-red-700 text-white'
-      : 'bg-blue-600 hover:bg-blue-700 text-white'
-
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="confirm-dialog-title"
-      onKeyDown={onKeyDown}
-    >
-      <div
-        className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full space-y-3 text-sm"
-        // Stop clicks on the panel from bubbling to the backdrop — we
-        // intentionally don't wire a backdrop-click dismiss here: destructive
-        // actions shouldn't be one stray click away from being confirmed.
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2
-          id="confirm-dialog-title"
-          className="text-base font-semibold text-gray-900"
+    <Modal open onClose={onCancel} title={title} preventBackdropClose>
+      <ModalBody className="text-sm text-gray-600">{body}</ModalBody>
+      <ModalFooter>
+        <Button variant="ghost" onClick={onCancel}>
+          {cancelLabel}
+        </Button>
+        <Button
+          ref={confirmBtnRef}
+          variant={tone === 'danger' ? 'danger' : 'primary'}
+          onClick={onConfirm}
         >
-          {title}
-        </h2>
-        <div className="text-gray-600">{body}</div>
-        <div className="flex flex-wrap gap-2 justify-end pt-2">
-          <button
-            onClick={onCancel}
-            className="px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded"
-          >
-            {cancelLabel}
-          </button>
-          <button
-            ref={confirmBtnRef}
-            onClick={onConfirm}
-            className={`px-3 py-1.5 rounded ${primaryClass}`}
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
+          {confirmLabel}
+        </Button>
+      </ModalFooter>
+    </Modal>
   )
 }

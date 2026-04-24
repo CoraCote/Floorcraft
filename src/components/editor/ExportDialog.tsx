@@ -12,8 +12,8 @@ import { exportPng } from '../../lib/exportPng'
 import { getActiveStage } from '../../lib/stageRegistry'
 import { useCan } from '../../hooks/useCan'
 import { redactEmployeeMap } from '../../lib/redactEmployee'
-import { FileText, Table, FileJson, Image as ImageIcon, X } from 'lucide-react'
-import { useEffect } from 'react'
+import { FileText, Table, FileJson, Image as ImageIcon } from 'lucide-react'
+import { Modal, ModalBody } from '../ui'
 
 export function ExportDialog() {
   const open = useUIStore((s) => s.exportDialogOpen)
@@ -38,20 +38,6 @@ export function ExportDialog() {
   const close = () => {
     setOpen(false)
   }
-
-  useEffect(() => {
-    if (!open) return
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') close()
-    }
-    window.addEventListener('keydown', handleKey)
-    return () => window.removeEventListener('keydown', handleKey)
-    // `close` closes over stable setters, so the effect only needs to
-    // re-subscribe when `open` flips.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open])
-
-  if (!open) return null
 
   const projectName = project?.name || 'floorplan'
 
@@ -151,18 +137,14 @@ export function ExportDialog() {
   ]
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={close}>
-      <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Export</h2>
-          <button onClick={close} className="text-gray-400 hover:text-gray-600" aria-label="Close export dialog"><X size={18} /></button>
-        </div>
+    <Modal open={open} onClose={close} title="Export" size="sm">
+      <ModalBody>
         <div className="flex flex-col gap-2">
           {exports.map((exp) => (
             <button
               key={exp.label}
               onClick={exp.onClick}
-              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 border border-gray-100 text-left transition-colors"
+              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 border border-gray-100 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500"
             >
               <div className="text-gray-500">{exp.icon}</div>
               <div>
@@ -172,7 +154,7 @@ export function ExportDialog() {
             </button>
           ))}
         </div>
-      </div>
-    </div>
+      </ModalBody>
+    </Modal>
   )
 }

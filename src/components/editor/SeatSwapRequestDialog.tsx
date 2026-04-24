@@ -3,6 +3,7 @@ import { useEmployeeStore } from '../../stores/employeeStore'
 import { useSeatSwapsStore } from '../../stores/seatSwapsStore'
 import { useToastStore } from '../../stores/toastStore'
 import { useUIStore } from '../../stores/uiStore'
+import { Button, Modal, ModalBody, ModalFooter } from '../ui'
 
 /**
  * Modal for an employee to open a swap request. The caller seeds
@@ -83,32 +84,9 @@ export function SeatSwapRequestDialog({
     onClose()
   }
 
-  const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      e.preventDefault()
-      e.stopPropagation()
-      onClose()
-    }
-  }
-
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="seat-swap-dialog-title"
-      onKeyDown={onKeyDown}
-    >
-      <div
-        className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full space-y-3 text-sm"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2
-          id="seat-swap-dialog-title"
-          className="text-base font-semibold text-gray-900"
-        >
-          Request seat swap
-        </h2>
+    <Modal open onClose={onClose} title="Request seat swap">
+      <ModalBody className="space-y-3 text-sm">
         <p className="text-xs text-gray-500">
           {requester
             ? `You're requesting on behalf of ${requester.name}. A manager will review the request.`
@@ -176,26 +154,21 @@ export function SeatSwapRequestDialog({
             className="mt-1 w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </label>
-
-        <div className="flex flex-wrap gap-2 justify-end pt-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={!targetId}
-            className="px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-700 text-white disabled:bg-gray-300 disabled:cursor-not-allowed"
-          >
-            Submit request
-          </button>
-        </div>
-      </div>
-    </div>
+      </ModalBody>
+      <ModalFooter>
+        <Button type="button" variant="ghost" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button
+          type="button"
+          variant="primary"
+          onClick={handleSubmit}
+          disabled={!targetId}
+        >
+          Submit request
+        </Button>
+      </ModalFooter>
+    </Modal>
   )
 }
 
