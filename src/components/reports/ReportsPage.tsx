@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { Link, useParams } from 'react-router-dom'
 import { useFloorStore } from '../../stores/floorStore'
 import { useVisibleEmployees } from '../../hooks/useVisibleEmployees'
 import { useCan } from '../../hooks/useCan'
@@ -13,6 +14,7 @@ import { ChurnHeatmap } from './ChurnHeatmap'
 
 export function ReportsPage() {
   const canView = useCan('viewReports')
+  const { teamSlug, officeSlug } = useParams<{ teamSlug: string; officeSlug: string }>()
   const floors = useFloorStore((s) => s.floors)
   // Headcount still counts accurately (redaction preserves id/seatId/
   // department/status), but the unassigned table renders initials + blank
@@ -30,6 +32,20 @@ export function ReportsPage() {
 
   return (
     <div className="p-6 space-y-6 max-w-5xl">
+      {/* Reports cross-links. Keeps discovery of the sibling report pages
+          easy without introducing a full sidebar layout component — the
+          office editor's top bar handles primary navigation, and the
+          sub-reports (Scenarios, future siblings) chain in from here. */}
+      {teamSlug && officeSlug && (
+        <nav className="flex items-center gap-2 text-sm">
+          <Link
+            to={`/t/${teamSlug}/o/${officeSlug}/reports/scenarios`}
+            className="px-3 py-1.5 border border-gray-200 rounded bg-white hover:bg-gray-50"
+          >
+            Capacity scenarios →
+          </Link>
+        </nav>
+      )}
       <Card
         title="Floor utilization"
         onExport={() => downloadCsv('floor-utilization.csv', utilizationCsv(utilRows))}
