@@ -49,13 +49,14 @@ import { SofaRenderer } from './SofaRenderer'
 import { PlantRenderer } from './PlantRenderer'
 import { PrinterRenderer } from './PrinterRenderer'
 import { WhiteboardRenderer } from './WhiteboardRenderer'
-import { useCallback } from 'react'
+import { useCallback, useState, type ReactNode } from 'react'
 import type Konva from 'konva'
 import { snapToGrid, getSnappedPosition } from '../../../lib/geometry'
 import { elementBounds } from '../../../lib/elementBounds'
 import { ALIGNMENT_THRESHOLD } from '../../../lib/constants'
 import { isBookableRoom } from '../../../lib/roomBookings'
 import { useRoomBookingDialogStore } from '../../../lib/roomBookingDialogStore'
+import { useElementSpawnAnimation } from '../../../hooks/useElementSpawnAnimation'
 
 export function ElementRenderer() {
   const elements = useElementsStore((s) => s.elements)
@@ -103,6 +104,14 @@ export function ElementRenderer() {
     .filter((el) => el.visible)
     .filter((el) => categoryVisible[categoryForElement(el)])
     .sort((a, b) => a.zIndex - b.zIndex)
+
+  // Snapshot the initial element ids once. The spawn-animation hook uses
+  // this list to seed its "already animated" set so that on cold load
+  // (project open, page refresh) every existing element renders at full
+  // opacity from frame one — only newly added ids animate. `useState`
+  // with a lazy initializer captures the snapshot exactly once and
+  // never updates afterwards, which is what we want.
+  const [initialIds] = useState(() => Object.keys(elements))
 
   // Snap the dragged element (center-origin) to alignment guides formed by
   // the edges and centers of OTHER elements on the floor. Walls, doors,
@@ -269,13 +278,66 @@ export function ElementRenderer() {
             ? 1
             : 0.25
           : undefined
+
+        const child: ReactNode = (() => {
+          const VariantRenderer = getShapeRenderer(el)
+          if (VariantRenderer) return <VariantRenderer element={el} />
+
+          if (isDeskElement(el) || isWorkstationElement(el) || isPrivateOfficeElement(el))
+            return <DeskRenderer element={el} />
+          if (isConferenceRoomElement(el) || isCommonAreaElement(el) || el.type === 'phone-booth')
+            return <RoomRenderer element={el as ConferenceRoomElement | PhoneBoothElement | CommonAreaElement} />
+          if (isTableElement(el))
+            return <TableRenderer element={el} />
+          if (isWallElement(el))
+            return <WallRenderer element={el} />
+          if (isDoorElement(el))
+            return <DoorRenderer element={el} />
+          if (isWindowElement(el))
+            return <WindowRenderer element={el} />
+          if (isRectShapeElement(el))
+            return <RectShapeRenderer element={el} />
+          if (isEllipseElement(el))
+            return <EllipseRenderer element={el} />
+          if (isLineShapeElement(el))
+            return <LineShapeRenderer element={el} />
+          if (isArrowElement(el))
+            return <ArrowRenderer element={el} />
+          if (isFreeTextElement(el))
+            return <FreeTextRenderer element={el} />
+          if (isCustomSvgElement(el))
+            return <CustomSvgRenderer element={el} />
+          if (isDecorElement(el))
+            return <FurnitureRenderer element={el} />
+          // Furniture catalog — see SofaRenderer et al. Each has a
+          // distinct silhouette, so they can't share FurnitureRenderer
+          // (which is a generic rounded rect fallback).
+          if (isSofaElement(el))
+            return <SofaRenderer element={el} />
+          if (isPlantElement(el))
+            return <PlantRenderer element={el} />
+          if (isPrinterElement(el))
+            return <PrinterRenderer element={el} />
+          if (isWhiteboardElement(el))
+            return <WhiteboardRenderer element={el} />
+          return <FurnitureRenderer element={el} />
+        })()
+
         return (
-          <Group
+          <AnimatedElementGroup
             key={el.id}
-            id={`element-${el.id}`}
+            id={el.id}
+            initialIds={initialIds}
             x={ownsPosition ? 0 : el.x}
             y={ownsPosition ? 0 : el.y}
-            opacity={finderOpacity}
+            // For points-primitives / walls / attached elements the Group
+            // sits at (0, 0) — scaling there would scale the whole
+            // floor's coordinate space, so we suppress the scale animation
+            // and only fade those in. For center-origin elements the
+            // Group's position IS the element center, so scaling around
+            // it is correct without any offset trick.
+            applyScale={!ownsPosition}
+            finderOpacity={finderOpacity}
             draggable={groupDraggable}
             onDragMove={(e) => handleDragMove(el.id, e)}
             onDragEnd={(e) => handleDragEnd(el.id, e)}
@@ -285,52 +347,85 @@ export function ElementRenderer() {
             onMouseEnter={() => handleMouseEnter(el.id)}
             onMouseLeave={() => handleMouseLeave(el.id)}
           >
-            {(() => {
-              const VariantRenderer = getShapeRenderer(el)
-              if (VariantRenderer) return <VariantRenderer element={el} />
-
-              if (isDeskElement(el) || isWorkstationElement(el) || isPrivateOfficeElement(el))
-                return <DeskRenderer element={el} />
-              if (isConferenceRoomElement(el) || isCommonAreaElement(el) || el.type === 'phone-booth')
-                return <RoomRenderer element={el as ConferenceRoomElement | PhoneBoothElement | CommonAreaElement} />
-              if (isTableElement(el))
-                return <TableRenderer element={el} />
-              if (isWallElement(el))
-                return <WallRenderer element={el} />
-              if (isDoorElement(el))
-                return <DoorRenderer element={el} />
-              if (isWindowElement(el))
-                return <WindowRenderer element={el} />
-              if (isRectShapeElement(el))
-                return <RectShapeRenderer element={el} />
-              if (isEllipseElement(el))
-                return <EllipseRenderer element={el} />
-              if (isLineShapeElement(el))
-                return <LineShapeRenderer element={el} />
-              if (isArrowElement(el))
-                return <ArrowRenderer element={el} />
-              if (isFreeTextElement(el))
-                return <FreeTextRenderer element={el} />
-              if (isCustomSvgElement(el))
-                return <CustomSvgRenderer element={el} />
-              if (isDecorElement(el))
-                return <FurnitureRenderer element={el} />
-              // Furniture catalog — see SofaRenderer et al. Each has a
-              // distinct silhouette, so they can't share FurnitureRenderer
-              // (which is a generic rounded rect fallback).
-              if (isSofaElement(el))
-                return <SofaRenderer element={el} />
-              if (isPlantElement(el))
-                return <PlantRenderer element={el} />
-              if (isPrinterElement(el))
-                return <PrinterRenderer element={el} />
-              if (isWhiteboardElement(el))
-                return <WhiteboardRenderer element={el} />
-              return <FurnitureRenderer element={el} />
-            })()}
-          </Group>
+            {child}
+          </AnimatedElementGroup>
         )
       })}
     </Layer>
+  )
+}
+
+interface AnimatedElementGroupProps {
+  id: string
+  initialIds: string[]
+  x: number
+  y: number
+  applyScale: boolean
+  finderOpacity: number | undefined
+  draggable: boolean
+  onDragMove: (e: Konva.KonvaEventObject<DragEvent>) => void
+  onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => void
+  onClick: (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void
+  onTap: (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void
+  onContextMenu: (e: Konva.KonvaEventObject<PointerEvent>) => void
+  onMouseEnter: () => void
+  onMouseLeave: () => void
+  children: ReactNode
+}
+
+/**
+ * Per-element wrapper that runs the spawn animation hook. Lifted into
+ * its own component because hooks can't be called inside the `.map`
+ * iteration in `ElementRenderer`. The component is intentionally
+ * pass-through — it only adds the {opacity, scale} multiply on top of
+ * the existing Group props so that nothing else changes about the
+ * render tree.
+ */
+function AnimatedElementGroup({
+  id,
+  initialIds,
+  x,
+  y,
+  applyScale,
+  finderOpacity,
+  draggable,
+  onDragMove,
+  onDragEnd,
+  onClick,
+  onTap,
+  onContextMenu,
+  onMouseEnter,
+  onMouseLeave,
+  children,
+}: AnimatedElementGroupProps) {
+  const spawn = useElementSpawnAnimation(id, { initialIds })
+  // Combine the spawn-fade with the finder dim. When the finder is
+  // active and this element isn't a match, the finder opacity (0.25)
+  // wins for the steady state; while the spawn animation is in flight
+  // we multiply so it still ramps up but to the dimmed level rather
+  // than full.
+  const baseOpacity = finderOpacity ?? 1
+  const combinedOpacity = baseOpacity * spawn.opacity
+  const scaleX = applyScale ? spawn.scaleX : 1
+  const scaleY = applyScale ? spawn.scaleY : 1
+  return (
+    <Group
+      id={`element-${id}`}
+      x={x}
+      y={y}
+      opacity={combinedOpacity}
+      scaleX={scaleX}
+      scaleY={scaleY}
+      draggable={draggable}
+      onDragMove={onDragMove}
+      onDragEnd={onDragEnd}
+      onClick={onClick}
+      onTap={onTap}
+      onContextMenu={onContextMenu}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
+      {children}
+    </Group>
   )
 }
