@@ -2,14 +2,18 @@ import { useProjectStore } from '../../stores/projectStore'
 import { useCanvasStore } from '../../stores/canvasStore'
 import { useUIStore } from '../../stores/uiStore'
 import { useElementsStore } from '../../stores/elementsStore'
+import { useEmployeeStore } from '../../stores/employeeStore'
+import { useFloorStore } from '../../stores/floorStore'
 import { useNeighborhoodStore } from '../../stores/neighborhoodStore'
 import { useShallow } from 'zustand/react/shallow'
 import {
   Undo2, Redo2, ZoomIn, ZoomOut, Share2, Download,
   Maximize2, Minimize2, PanelRightOpen, PanelRightClose,
   Cloud, CloudOff, UploadCloud, X as XIcon,
-  Ruler, Grid3x3,
+  Ruler, Grid3x3, Printer,
 } from 'lucide-react'
+import { buildWayfindingPdf, buildFileName } from '../../lib/pdfExport'
+import { getActiveStage } from '../../lib/stageRegistry'
 import { useState, useRef, useEffect } from 'react'
 import { NavLink, useParams } from 'react-router-dom'
 import { useTemporalState } from '../../hooks/useTemporalState'
@@ -109,6 +113,34 @@ export function TopBar() {
       updateName(nameValue.trim())
     }
     setEditing(false)
+  }
+
+  const handleExportWayfindingPdf = () => {
+    const stage = getActiveStage()
+    if (!stage || !project) return
+    const floors = useFloorStore.getState().floors
+    const activeFloorId = useFloorStore.getState().activeFloorId
+    const floor = floors.find((f) => f.id === activeFloorId) ?? floors[0]
+    if (!floor) return
+    const elements = Object.values(useElementsStore.getState().elements)
+    const employees = Object.values(useEmployeeStore.getState().employees)
+    const settings = useCanvasStore.getState().settings
+    const blob = buildWayfindingPdf({
+      stage,
+      projectName: project.name,
+      floor,
+      elements,
+      employees,
+      canvasSettings: settings,
+    })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = buildFileName(project.name, floor.name)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
   }
 
   return (
@@ -363,6 +395,26 @@ export function TopBar() {
         <Share2 size={14} />
         Share
       </button>
+
+      {/*
+        Wayfinding PDF — a print-ready handout with a legend. Separate from
+        the multi-format Export modal because facilities managers want
+        one-click-to-print without picking PDF vs PNG vs JSON every time.
+        Gated behind `viewReports`: the same audience (planners, HR
+        admins, owners) that already sees utilization reports is the one
+        that pre-posts floor plans before a move.
+      */}
+      {canViewReports && (
+        <button
+          onClick={handleExportWayfindingPdf}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded"
+          title="Download a print-ready PDF of this floor"
+          aria-label="Export PDF"
+        >
+          <Printer size={14} />
+          Export PDF
+        </button>
+      )}
 
       <button
         onClick={() => setExportDialogOpen(true)}
