@@ -28,6 +28,7 @@ import { ScaleSettingsPopover } from './ScaleSettingsPopover'
 import { ViewAsMenu } from './ViewAsMenu'
 import { ShareLinkDialog } from './ShareLinkDialog'
 import { ThemeToggle } from '../ui/ThemeToggle'
+import { PlanHealthPill } from './PlanHealthPill'
 
 export function TopBar() {
   const project = useProjectStore((s) => s.currentProject)
@@ -665,6 +666,8 @@ export function TopBar() {
           own session state. The component self-gates on role so non-owners
           don't see it at all. */}
       <ViewAsMenu />
+
+      <PlanHealthPill />
 
       {/* Theme toggle — sits in the actions cluster next to the account
           menu so it's discoverable without crowding the canvas chrome. */}
