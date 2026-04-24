@@ -8,6 +8,7 @@ import { useSeatHistoryStore } from '../../stores/seatHistoryStore'
 import { useNeighborhoodStore } from '../../stores/neighborhoodStore'
 import { useReservationsStore } from '../../stores/reservationsStore'
 import { useAnnotationsStore } from '../../stores/annotationsStore'
+import { useSeatSwapsStore } from '../../stores/seatSwapsStore'
 import { saveOffice, saveOfficeForce } from './officeRepository'
 
 /**
@@ -57,6 +58,10 @@ function buildCurrentPayload(): Record<string, unknown> {
   // only an elementId (element-anchored), and the flat Record shape
   // round-trips cleanly through `migrateAnnotations` on load.
   const annotations = useAnnotationsStore.getState().annotations
+  // Seat-swap requests sit alongside reservations / annotations — a
+  // top-level `seatSwaps` key whose absence on legacy payloads falls
+  // through the hydration path as an empty map.
+  const seatSwaps = useSeatSwapsStore.getState().requests
   return {
     version: 2,
     elements,
@@ -76,6 +81,7 @@ function buildCurrentPayload(): Record<string, unknown> {
     // round-trips through older payloads without breaking them.
     reservations,
     annotations,
+    seatSwaps,
   }
 }
 
@@ -89,6 +95,7 @@ export function useOfficeSync() {
   const neighborhoods = useNeighborhoodStore((s) => s.neighborhoods)
   const reservations = useReservationsStore((s) => s.reservations)
   const annotations = useAnnotationsStore((s) => s.annotations)
+  const seatSwaps = useSeatSwapsStore((s) => s.requests)
 
   const seatHistory = useSeatHistoryStore((s) => s.entries)
 
@@ -107,7 +114,7 @@ export function useOfficeSync() {
 
   useEffect(() => {
     if (!officeId || !loadedVersion) return
-    const snapshot = { elements, employees, departmentColors, floors, activeFloorId, settings, seatHistory, neighborhoods, reservations, annotations }
+    const snapshot = { elements, employees, departmentColors, floors, activeFloorId, settings, seatHistory, neighborhoods, reservations, annotations, seatSwaps }
 
     if (initialSnapshotRef.current === null) {
       initialSnapshotRef.current = snapshot
@@ -170,6 +177,7 @@ export function useOfficeSync() {
     neighborhoods,
     reservations,
     annotations,
+    seatSwaps,
     setSaveState,
     setLastSavedAt,
     setLoadedVersion,

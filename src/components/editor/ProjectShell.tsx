@@ -27,6 +27,7 @@ import { useReservationsStore } from '../../stores/reservationsStore'
 import { coerceReservations } from '../../lib/offices/reservationsPersistence'
 import { useNeighborhoodStore } from '../../stores/neighborhoodStore'
 import { useAnnotationsStore } from '../../stores/annotationsStore'
+import { useSeatSwapsStore } from '../../stores/seatSwapsStore'
 import type { Neighborhood } from '../../types/neighborhood'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 import { useUndoDataLossToast } from '../../hooks/useUndoDataLossToast'
@@ -39,6 +40,7 @@ import { isEmployeeStatus, type Employee } from '../../types/employee'
 import {
   migrateAnnotations,
   migrateEmployees,
+  migrateSeatSwaps,
 } from '../../lib/offices/loadFromLegacyPayload'
 import { commitDueStatusChanges } from '../../lib/commitDueStatusChanges'
 import { todayIsoDate } from '../../lib/time'
@@ -192,6 +194,13 @@ export function ProjectShell() {
       // never crashes on a hand-edited blob.
       useAnnotationsStore.setState({
         annotations: migrateAnnotations(p.annotations),
+      })
+
+      // Seat-swap requests hydrate from a top-level `seatSwaps` key
+      // (Record<id, SeatSwapRequest>). Legacy payloads omit the key
+      // entirely; `migrateSeatSwaps` returns `{}` in that case.
+      useSeatSwapsStore.setState({
+        requests: migrateSeatSwaps(p.seatSwaps),
       })
 
       // Seed the project facade so UI that reads `currentProject` (share

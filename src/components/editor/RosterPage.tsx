@@ -26,6 +26,7 @@ import { deleteEmployee, unassignEmployee } from '../../lib/seatAssignment'
 import type { Employee, EmployeeStatus } from '../../types/employee'
 import { EMPLOYEE_STATUSES, EMPLOYEE_STATUS_PILL_CLASSES } from '../../types/employee'
 import { RosterDetailDrawer } from './RosterDetailDrawer'
+import { SeatSwapRequestDialog } from './SeatSwapRequestDialog'
 import { RosterBulkEditPopover } from './RosterBulkEditPopover'
 import { RosterFilterPresetsMenu } from './RosterFilterPresetsMenu'
 import { ConfirmDialog } from './ConfirmDialog'
@@ -291,6 +292,11 @@ export function RosterPage() {
   const [pendingDepartedUnassign, setPendingDepartedUnassign] = useState<
     string[] | null
   >(null)
+
+  // Id of the employee whose "Request swap" dialog is open, or null when
+  // nothing is open. Kept at the page level rather than on the menu so the
+  // modal persists past the menu's close-on-outside-click.
+  const [swapRequestEmployeeId, setSwapRequestEmployeeId] = useState<string | null>(null)
 
   const searchInputRef = useRef<HTMLInputElement>(null)
 
@@ -1456,6 +1462,10 @@ export function RosterPage() {
                             requestRowDelete(emp.id)
                             setOpenMenuId(null)
                           }}
+                          onRequestSwap={() => {
+                            setSwapRequestEmployeeId(emp.id)
+                            setOpenMenuId(null)
+                          }}
                           onClose={() => setOpenMenuId(null)}
                         />
                       )}
@@ -1508,6 +1518,13 @@ export function RosterPage() {
           key={drawerId}
           employeeId={drawerId}
           onClose={() => setDrawerId(null)}
+        />
+      )}
+
+      {swapRequestEmployeeId && (
+        <SeatSwapRequestDialog
+          requesterId={swapRequestEmployeeId}
+          onClose={() => setSwapRequestEmployeeId(null)}
         />
       )}
 
@@ -2390,6 +2407,7 @@ function RowActionMenu({
   onEdit,
   onUnassign,
   onDelete,
+  onRequestSwap,
   onClose,
   canEdit,
 }: {
@@ -2397,6 +2415,7 @@ function RowActionMenu({
   onEdit: () => void
   onUnassign: () => void
   onDelete: () => void
+  onRequestSwap: () => void
   onClose: () => void
   canEdit: boolean
 }) {
@@ -2501,6 +2520,18 @@ function RowActionMenu({
             <Mail size={12} /> Send invite…
           </button>
         )}
+        {/* Request swap — available to anyone (swap requests are a
+            non-destructive workflow; a manager still has to approve).
+            Disabled when the row has no seat, because there's nothing
+            to swap. */}
+        <button
+          onClick={onRequestSwap}
+          disabled={!employee.seatId}
+          className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+          title={employee.seatId ? 'Request a seat swap' : 'Assign a seat before requesting a swap'}
+        >
+          Request swap
+        </button>
         {canEdit && (
           <>
             <button

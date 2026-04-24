@@ -14,6 +14,10 @@ import {
 import { WALL_TYPES, type WallType } from '../../types/elements'
 import type { Annotation, AnnotationAnchor } from '../../types/annotations'
 import { ANNOTATION_BODY_MAX } from '../../types/annotations'
+import {
+  isSeatSwapStatus,
+  type SeatSwapRequest,
+} from '../../types/seatSwaps'
 
 /**
  * Legacy-payload migration helpers.
@@ -341,6 +345,58 @@ export function migrateAnnotations(
         : new Date(0).toISOString(),
       resolvedAt: isNonEmptyString(a.resolvedAt) ? a.resolvedAt : null,
       anchor,
+    }
+  }
+  return out
+}
+
+/**
+ * Coerce the top-level `seatSwaps` payload slot into a `Record<id,
+ * SeatSwapRequest>`. Legacy payloads predate the feature and will have
+ * `undefined` (or legacy array/null shapes) — fall back to `{}` in any
+ * case that isn't a well-formed object. Entries missing required
+ * fields are dropped with a `console.warn`.
+ */
+export function migrateSeatSwaps(
+  raw: unknown,
+): Record<string, SeatSwapRequest> {
+  if (!raw || typeof raw !== 'object') return {}
+  // Legacy snapshot from an earlier task shape might have stored an array
+  // rather than a Record. Normalise both paths through the same loop.
+  const entries: unknown[] = Array.isArray(raw)
+    ? raw
+    : Object.values(raw as Record<string, unknown>)
+  const out: Record<string, SeatSwapRequest> = {}
+  for (const entry of entries) {
+    if (!entry || typeof entry !== 'object') continue
+    const e = entry as Record<string, unknown>
+    if (!isNonEmptyString(e.id)) {
+      console.warn('[seatSwap migration] dropping entry with missing id', e)
+      continue
+    }
+    if (!isNonEmptyString(e.requesterId) || !isNonEmptyString(e.targetEmployeeId)) {
+      console.warn(`[seatSwap migration] dropping ${e.id}: missing party ids`)
+      continue
+    }
+    if (!isNonEmptyString(e.requesterSeatId) || !isNonEmptyString(e.targetSeatId)) {
+      console.warn(`[seatSwap migration] dropping ${e.id}: missing seat ids`)
+      continue
+    }
+    if (!isSeatSwapStatus(e.status)) {
+      console.warn(`[seatSwap migration] dropping ${e.id}: invalid status`)
+      continue
+    }
+    out[e.id] = {
+      id: e.id,
+      requesterId: e.requesterId,
+      requesterSeatId: e.requesterSeatId,
+      targetEmployeeId: e.targetEmployeeId,
+      targetSeatId: e.targetSeatId,
+      status: e.status,
+      reason: typeof e.reason === 'string' ? e.reason : '',
+      createdAt: isNonEmptyString(e.createdAt) ? e.createdAt : new Date(0).toISOString(),
+      resolvedAt: isNonEmptyString(e.resolvedAt) ? e.resolvedAt : null,
+      resolvedBy: isNonEmptyString(e.resolvedBy) ? e.resolvedBy : null,
     }
   }
   return out
