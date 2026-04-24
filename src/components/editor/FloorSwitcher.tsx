@@ -10,7 +10,7 @@ import {
 } from '../../types/elements'
 import { ConfirmDialog } from './ConfirmDialog'
 import { Plus } from 'lucide-react'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, type KeyboardEvent } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 
 /**
@@ -149,44 +149,76 @@ export function FloorSwitcher() {
     setPendingDelete(null)
   }
 
+  // Arrow-key roving within the floor tab strip. We activate on arrow so
+  // the canvas updates in lockstep (the same "automatic activation"
+  // pattern as the right sidebar); Home/End jump to first/last floor.
+  const onTablistKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'Home' && e.key !== 'End') return
+    if (renamingFloorId) return
+    e.preventDefault()
+    const idx = sortedFloors.findIndex((f) => f.id === activeFloorId)
+    if (idx < 0) return
+    let next = idx
+    if (e.key === 'ArrowLeft') next = (idx - 1 + sortedFloors.length) % sortedFloors.length
+    else if (e.key === 'ArrowRight') next = (idx + 1) % sortedFloors.length
+    else if (e.key === 'Home') next = 0
+    else if (e.key === 'End') next = sortedFloors.length - 1
+    const nextId = sortedFloors[next].id
+    handleSwitchFloor(nextId)
+  }
+
   return (
     <div className="h-10 bg-white border-b border-gray-200 flex items-center px-4 gap-1">
-      {sortedFloors.map((floor) => (
-        <div key={floor.id} className="relative">
-          {renamingFloorId === floor.id ? (
-            <input
-              ref={renameInputRef}
-              className="px-3 py-1.5 text-sm font-medium rounded-t border border-blue-400 outline-none w-28"
-              value={renameValue}
-              onChange={(e) => setRenameValue(e.target.value)}
-              onBlur={handleRenameSubmit}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleRenameSubmit()
-                if (e.key === 'Escape') setRenamingFloorId(null)
-              }}
-            />
-          ) : (
-            <button
-              className={`px-3 py-1.5 text-sm font-medium rounded-t cursor-pointer transition-colors ${
-                floor.id === activeFloorId
-                  ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-              }`}
-              onClick={() => handleSwitchFloor(floor.id)}
-              onContextMenu={(e) => handleContextMenu(e, floor.id)}
-            >
-              {floor.name}
-            </button>
-          )}
-        </div>
-      ))}
+      <div
+        role="tablist"
+        aria-label="Floors"
+        className="flex items-center gap-1"
+        onKeyDown={onTablistKeyDown}
+      >
+        {sortedFloors.map((floor) => (
+          <div key={floor.id} className="relative">
+            {renamingFloorId === floor.id ? (
+              <input
+                ref={renameInputRef}
+                aria-label={`Rename floor ${floor.name}`}
+                className="px-3 py-1.5 text-sm font-medium rounded-t border border-blue-400 outline-none w-28"
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                onBlur={handleRenameSubmit}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleRenameSubmit()
+                  if (e.key === 'Escape') setRenamingFloorId(null)
+                }}
+              />
+            ) : (
+              <button
+                type="button"
+                role="tab"
+                aria-selected={floor.id === activeFloorId}
+                tabIndex={floor.id === activeFloorId ? 0 : -1}
+                className={`px-3 py-1.5 text-sm font-medium rounded-t cursor-pointer transition-colors ${
+                  floor.id === activeFloorId
+                    ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                }`}
+                onClick={() => handleSwitchFloor(floor.id)}
+                onContextMenu={(e) => handleContextMenu(e, floor.id)}
+              >
+                {floor.name}
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
 
       {canEdit && (
         <button
+          type="button"
           onClick={handleAddFloor}
+          aria-label="Add floor"
           className="flex items-center gap-1 px-2 py-1.5 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors ml-1"
         >
-          <Plus size={14} />
+          <Plus size={14} aria-hidden="true" />
           <span>Add Floor</span>
         </button>
       )}

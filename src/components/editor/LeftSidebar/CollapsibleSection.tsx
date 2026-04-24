@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import type { ReactNode } from 'react'
 
@@ -34,19 +34,33 @@ export function CollapsibleSection({ title, defaultOpen = true, storageKey, trai
       return next
     })
   }
+  // Stable id pair so the header button and panel can reference each
+  // other via aria-controls / aria-labelledby without any cross-instance
+  // id collisions.
+  const idBase = useId()
+  const buttonId = `${idBase}-header`
+  const panelId = `${idBase}-panel`
   return (
     <div className="border-b border-gray-200 last:border-b-0">
       <button
+        id={buttonId}
         type="button"
         onClick={toggle}
         aria-expanded={open}
+        aria-controls={panelId}
         className="w-full flex items-center gap-1.5 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-600 hover:bg-gray-50"
       >
-        {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+        {open
+          ? <ChevronDown size={12} aria-hidden="true" />
+          : <ChevronRight size={12} aria-hidden="true" />}
         <span className="flex-1 text-left">{title}</span>
         {trailing}
       </button>
-      {open && <div>{children}</div>}
+      {open && (
+        <div id={panelId} role="region" aria-labelledby={buttonId}>
+          {children}
+        </div>
+      )}
     </div>
   )
 }

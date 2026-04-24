@@ -330,7 +330,7 @@ function LibraryTile({ item, onClick, onDragStart, onDelete }: LibraryTileProps)
           }}
           className="absolute top-0.5 right-0.5 p-0.5 rounded opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus:ring-1 focus:ring-red-400 hover:bg-red-50"
         >
-          <X size={12} className="text-gray-400 hover:text-red-500" />
+          <X size={12} aria-hidden="true" className="text-gray-400 hover:text-red-500" />
         </button>
       ) : (
         <button
@@ -348,6 +348,7 @@ function LibraryTile({ item, onClick, onDragStart, onDelete }: LibraryTileProps)
         >
           <Star
             size={12}
+            aria-hidden="true"
             className={isFavorite ? 'fill-amber-400 text-amber-400' : 'text-gray-400'}
           />
         </button>
@@ -393,7 +394,7 @@ function LibrarySection({
           className="w-full flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 mb-1"
           aria-expanded={!isCollapsed}
         >
-          {isCollapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
+          {isCollapsed ? <ChevronRight size={12} aria-hidden="true" /> : <ChevronDown size={12} aria-hidden="true" />}
           <span>{title}</span>
         </button>
       ) : (
@@ -590,7 +591,7 @@ export function ElementLibrary() {
                 : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:border-gray-300'
             }`}
           >
-            <MessageSquarePlus size={14} />
+            <MessageSquarePlus size={14} aria-hidden="true" />
             <span className="flex-1 text-left">Annotation pin</span>
           </button>
         )}
@@ -630,7 +631,7 @@ export function ElementLibrary() {
               : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:border-gray-300'
           }`}
         >
-          <MessageSquarePlus size={14} />
+          <MessageSquarePlus size={14} aria-hidden="true" />
           <span className="flex-1 text-left">Annotation pin</span>
           {activeTool === 'pin' && (
             <span className="text-[10px] font-mono text-amber-600">ESC</span>
@@ -695,7 +696,7 @@ export function ElementLibrary() {
               onClick={handleUploadClick}
               className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded border border-dashed border-gray-300 hover:border-gray-400 transition-colors"
             >
-              <Upload size={12} />
+              <Upload size={12} aria-hidden="true" />
               <span>Upload SVG</span>
             </button>
             <input

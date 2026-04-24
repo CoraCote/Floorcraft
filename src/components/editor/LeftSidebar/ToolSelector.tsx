@@ -16,28 +16,28 @@ import {
 } from 'lucide-react'
 
 const tools: { id: ToolType; label: string; icon: React.ReactNode; shortcut: string }[] = [
-  { id: 'select', label: 'Select', icon: <MousePointer2 size={18} />, shortcut: 'V' },
-  { id: 'pan', label: 'Pan', icon: <Hand size={18} />, shortcut: 'Space' },
-  { id: 'wall', label: 'Wall', icon: <Minus size={18} />, shortcut: 'W' },
-  { id: 'door', label: 'Door', icon: <DoorOpen size={18} />, shortcut: '⇧D' },
-  { id: 'window', label: 'Window', icon: <SquareIcon size={18} />, shortcut: '⇧N' },
+  { id: 'select', label: 'Select', icon: <MousePointer2 size={18} aria-hidden="true" />, shortcut: 'V' },
+  { id: 'pan', label: 'Pan', icon: <Hand size={18} aria-hidden="true" />, shortcut: 'Space' },
+  { id: 'wall', label: 'Wall', icon: <Minus size={18} aria-hidden="true" />, shortcut: 'W' },
+  { id: 'door', label: 'Door', icon: <DoorOpen size={18} aria-hidden="true" />, shortcut: '⇧D' },
+  { id: 'window', label: 'Window', icon: <SquareIcon size={18} aria-hidden="true" />, shortcut: '⇧N' },
   // Drawing primitives. Shortcut picks:
   //   R = rect, E = ellipse (C is already taken visually by "Circle" but we
   //   avoid the D/G/M/R conflicts in useKeyboardShortcuts), L = line,
   //   A = arrow, T = text. D is "toggle dimensions" and G is "toggle grid",
   //   so we avoid those.
-  { id: 'rect-shape', label: 'Rectangle', icon: <Square size={18} />, shortcut: '⇧R' },
-  { id: 'ellipse', label: 'Ellipse', icon: <Circle size={18} />, shortcut: 'E' },
-  { id: 'line-shape', label: 'Line', icon: <Slash size={18} />, shortcut: 'L' },
-  { id: 'arrow', label: 'Arrow', icon: <ArrowRight size={18} />, shortcut: 'A' },
-  { id: 'free-text', label: 'Text', icon: <Type size={18} />, shortcut: 'T' },
+  { id: 'rect-shape', label: 'Rectangle', icon: <Square size={18} aria-hidden="true" />, shortcut: '⇧R' },
+  { id: 'ellipse', label: 'Ellipse', icon: <Circle size={18} aria-hidden="true" />, shortcut: 'E' },
+  { id: 'line-shape', label: 'Line', icon: <Slash size={18} aria-hidden="true" />, shortcut: 'L' },
+  { id: 'arrow', label: 'Arrow', icon: <ArrowRight size={18} aria-hidden="true" />, shortcut: 'A' },
+  { id: 'free-text', label: 'Text', icon: <Type size={18} aria-hidden="true" />, shortcut: 'T' },
   // Measure is a read-only tool — architects and facilities managers use
   // it often to check corridor widths and room sizes, so we expose it
   // alongside the primitives. Shift+M because plain M jumps to Map view.
-  { id: 'measure', label: 'Measure', icon: <Ruler size={18} />, shortcut: '⇧M' },
+  { id: 'measure', label: 'Measure', icon: <Ruler size={18} aria-hidden="true" />, shortcut: '⇧M' },
   // Neighborhoods: drag-create a labeled zone that tints a seat region.
   // Plain G is "toggle grid", so the tool is shift-locked to ⇧G.
-  { id: 'neighborhood', label: 'Neighborhood', icon: <MapPin size={18} />, shortcut: '⇧G' },
+  { id: 'neighborhood', label: 'Neighborhood', icon: <MapPin size={18} aria-hidden="true" />, shortcut: '⇧G' },
 ]
 
 const WALL_STYLES: { id: WallDrawStyle; label: string }[] = [

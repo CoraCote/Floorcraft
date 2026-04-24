@@ -298,6 +298,16 @@ export function ProjectShell() {
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-gray-50">
+      {/* Skip-to-main link: first interactive element inside the shell so
+          keyboard users can bypass the TopBar/banner nav and land on the
+          outlet directly. Hidden by default (`sr-only`) and becomes
+          visually prominent when focused. */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:bg-white focus:px-3 focus:py-2 focus:shadow-lg focus:rounded"
+      >
+        Skip to main content
+      </a>
       {/* NarrowScreenBanner sits at the very top so the map view's
           "editor works best on a larger screen" warning is visible
           before the operator tries to use the canvas. Only renders on
@@ -307,7 +317,9 @@ export function ProjectShell() {
       <NarrowScreenBanner />
       <ImpersonationBanner />
       <TopBar />
-      <Outlet />
+      <main id="main-content" tabIndex={-1} className="contents">
+        <Outlet />
+      </main>
       <ContextMenu />
       <KeyboardShortcutsOverlay />
       <CommandPalette />

@@ -253,7 +253,7 @@ export function TopBar() {
           title={canUndo ? 'Undo (Ctrl+Z)' : 'Nothing to undo'}
           aria-label="Undo"
         >
-          <Undo2 size={16} />
+          <Undo2 size={16} aria-hidden="true" />
         </button>
         <button
           onClick={() => redo()}
@@ -262,7 +262,7 @@ export function TopBar() {
           title={canRedo ? 'Redo (Ctrl+Shift+Z)' : 'Nothing to redo'}
           aria-label="Redo"
         >
-          <Redo2 size={16} />
+          <Redo2 size={16} aria-hidden="true" />
         </button>
       </div>
 
@@ -282,9 +282,9 @@ export function TopBar() {
           aria-haspopup="menu"
           aria-expanded={viewMenuOpen}
         >
-          <Eye size={14} />
+          <Eye size={14} aria-hidden="true" />
           View
-          <ChevronDown size={14} />
+          <ChevronDown size={14} aria-hidden="true" />
         </button>
         {viewMenuOpen && (
           <div
@@ -299,7 +299,7 @@ export function TopBar() {
               }}
               className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
             >
-              <ZoomIn size={14} />
+              <ZoomIn size={14} aria-hidden="true" />
               Zoom in
               <kbd className="ml-auto text-[10px] text-gray-400 font-mono">+</kbd>
             </button>
@@ -311,7 +311,7 @@ export function TopBar() {
               }}
               className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
             >
-              <ZoomOut size={14} />
+              <ZoomOut size={14} aria-hidden="true" />
               Zoom out
               <kbd className="ml-auto text-[10px] text-gray-400 font-mono">−</kbd>
             </button>
@@ -340,11 +340,11 @@ export function TopBar() {
               aria-pressed={settings.showGrid}
             >
               {settings.showGrid ? (
-                <Check size={14} />
+                <Check size={14} aria-hidden="true" />
               ) : (
                 <span className="inline-block w-[14px]" />
               )}
-              <Grid3x3 size={14} />
+              <Grid3x3 size={14} aria-hidden="true" />
               Toggle grid
               <kbd className="ml-auto text-[10px] text-gray-400 font-mono">G</kbd>
             </button>
@@ -358,11 +358,11 @@ export function TopBar() {
               aria-pressed={settings.showDimensions}
             >
               {settings.showDimensions ? (
-                <Check size={14} />
+                <Check size={14} aria-hidden="true" />
               ) : (
                 <span className="inline-block w-[14px]" />
               )}
-              <Ruler size={14} />
+              <Ruler size={14} aria-hidden="true" />
               Toggle dimensions
               <kbd className="ml-auto text-[10px] text-gray-400 font-mono">D</kbd>
             </button>
@@ -405,9 +405,10 @@ export function TopBar() {
           onClick={clearSelection}
           className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded"
           title="Clear selection"
+          aria-label={`Clear selection (${selectedIds.length} selected)`}
         >
           {selectedIds.length} selected
-          <XIcon size={12} />
+          <XIcon size={12} aria-hidden="true" />
         </button>
       )}
 
@@ -438,7 +439,9 @@ export function TopBar() {
         }
         aria-pressed={presentationMode}
       >
-        {presentationMode ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+        {presentationMode
+          ? <Minimize2 size={16} aria-hidden="true" />
+          : <Maximize2 size={16} aria-hidden="true" />}
       </button>
 
       <button
@@ -447,7 +450,9 @@ export function TopBar() {
         title="Toggle Right Sidebar"
         aria-label={rightSidebarOpen ? 'Close right sidebar' : 'Open right sidebar'}
       >
-        {rightSidebarOpen ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
+        {rightSidebarOpen
+          ? <PanelRightClose size={16} aria-hidden="true" />
+          : <PanelRightOpen size={16} aria-hidden="true" />}
       </button>
 
       {/*
@@ -465,9 +470,9 @@ export function TopBar() {
           aria-haspopup="menu"
           aria-expanded={shareMenuOpen}
         >
-          <Share2 size={14} />
+          <Share2 size={14} aria-hidden="true" />
           Share
-          <ChevronDown size={14} />
+          <ChevronDown size={14} aria-hidden="true" />
         </button>
         {shareMenuOpen && (
           <div
@@ -482,7 +487,7 @@ export function TopBar() {
               }}
               className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
             >
-              <Share2 size={14} /> Invite collaborators
+              <Share2 size={14} aria-hidden="true" /> Invite collaborators
             </button>
             {canShareMap && (
               <button
@@ -493,7 +498,7 @@ export function TopBar() {
                 }}
                 className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
               >
-                <Link2 size={14} /> Create view-only link
+                <Link2 size={14} aria-hidden="true" /> Create view-only link
               </button>
             )}
           </div>
@@ -516,9 +521,9 @@ export function TopBar() {
           aria-haspopup="menu"
           aria-expanded={exportMenuOpen}
         >
-          <Download size={14} />
+          <Download size={14} aria-hidden="true" />
           Export
-          <ChevronDown size={14} />
+          <ChevronDown size={14} aria-hidden="true" />
         </button>
         {exportMenuOpen && (
           <div
@@ -535,7 +540,7 @@ export function TopBar() {
                 className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
                 title="Download a print-ready PDF of this floor"
               >
-                <Printer size={14} /> Export PDF (wayfinding)
+                <Printer size={14} aria-hidden="true" /> Export PDF (wayfinding)
               </button>
             )}
             {canViewReports && (
@@ -548,7 +553,7 @@ export function TopBar() {
                 className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
                 title="Download a PNG image of this floor"
               >
-                <ImageIcon size={14} /> Export PNG
+                <ImageIcon size={14} aria-hidden="true" /> Export PNG
               </button>
             )}
             {canViewReports && <div className="my-1 border-t border-gray-100" />}
@@ -560,7 +565,7 @@ export function TopBar() {
               }}
               className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
             >
-              <Download size={14} /> More formats…
+              <Download size={14} aria-hidden="true" /> More formats…
             </button>
           </div>
         )}
@@ -685,43 +690,53 @@ function SaveIndicator({
   saveState: 'idle' | 'saving' | 'saved' | 'error'
   lastSavedAt: string | null
 }) {
-  if (saveState === 'saving') {
+  // The outer wrapper is always mounted so screen readers pick up
+  // transitions between "Saving…" / "Saved 3s ago" / "Save failed"
+  // without needing to re-evaluate a new live region each time.
+  const inner = (() => {
+    if (saveState === 'saving') {
+      return (
+        <span
+          className="flex items-center gap-1 text-xs text-gray-500 whitespace-nowrap"
+          title="Saving to Supabase"
+        >
+          <UploadCloud size={14} className="animate-pulse" aria-hidden="true" />
+          Saving…
+        </span>
+      )
+    }
+    if (saveState === 'error') {
+      // useOfficeSync already retries on its own exponential backoff
+      // (2s → 5s → 15s → 30s), so there's no user-triggered retry action
+      // to wire here. The hint text still names retry as the recovery so
+      // the user understands the app is actively working on it — without
+      // this, a red "Save failed" chip with no further context reads as a
+      // dead end.
+      return (
+        <span
+          className="flex items-center gap-1 text-xs text-red-600 whitespace-nowrap"
+          title="Save failed — we're retrying automatically; check your connection if this persists"
+        >
+          <CloudOff size={14} aria-hidden="true" />
+          Save failed — retrying
+        </span>
+      )
+    }
+    const relative = formatRelative(lastSavedAt)
+    if (!relative) return null
     return (
       <span
-        className="flex items-center gap-1 text-xs text-gray-500 whitespace-nowrap"
-        title="Saving to Supabase"
+        className="flex items-center gap-1 text-xs text-green-600 whitespace-nowrap"
+        title={`Saved at ${lastSavedAt}`}
       >
-        <UploadCloud size={14} className="animate-pulse" />
-        Saving…
+        <Cloud size={14} aria-hidden="true" />
+        Saved {relative}
       </span>
     )
-  }
-  if (saveState === 'error') {
-    // useOfficeSync already retries on its own exponential backoff
-    // (2s → 5s → 15s → 30s), so there's no user-triggered retry action
-    // to wire here. The hint text still names retry as the recovery so
-    // the user understands the app is actively working on it — without
-    // this, a red "Save failed" chip with no further context reads as a
-    // dead end.
-    return (
-      <span
-        className="flex items-center gap-1 text-xs text-red-600 whitespace-nowrap"
-        title="Save failed — we're retrying automatically; check your connection if this persists"
-      >
-        <CloudOff size={14} />
-        Save failed — retrying
-      </span>
-    )
-  }
-  const relative = formatRelative(lastSavedAt)
-  if (!relative) return null
+  })()
   return (
-    <span
-      className="flex items-center gap-1 text-xs text-green-600 whitespace-nowrap"
-      title={`Saved at ${lastSavedAt}`}
-    >
-      <Cloud size={14} />
-      Saved {relative}
-    </span>
+    <div aria-live="polite" aria-atomic="true" className="flex items-center">
+      {inner}
+    </div>
   )
 }
