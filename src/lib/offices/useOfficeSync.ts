@@ -6,6 +6,7 @@ import { useCanvasStore } from '../../stores/canvasStore'
 import { useProjectStore } from '../../stores/projectStore'
 import { useSeatHistoryStore } from '../../stores/seatHistoryStore'
 import { useNeighborhoodStore } from '../../stores/neighborhoodStore'
+import { useReservationsStore } from '../../stores/reservationsStore'
 import { saveOffice, saveOfficeForce } from './officeRepository'
 
 /**
@@ -49,6 +50,7 @@ function buildCurrentPayload(): Record<string, unknown> {
   // Record<id, entry> so the load path doesn't have to reverse an array.
   const seatHistory = useSeatHistoryStore.getState().entries
   const neighborhoods = useNeighborhoodStore.getState().neighborhoods
+  const reservations = useReservationsStore.getState().reservations
   return {
     version: 2,
     elements,
@@ -63,6 +65,10 @@ function buildCurrentPayload(): Record<string, unknown> {
     // through migration more simply, matching how the element map sits at
     // the top level beside `floors`.
     neighborhoods,
+    // Reservations ride alongside neighborhoods as a top-level array. The
+    // load path (`ProjectShell`) treats a missing key as `[]`, so this
+    // round-trips through older payloads without breaking them.
+    reservations,
   }
 }
 
@@ -74,6 +80,7 @@ export function useOfficeSync() {
   const activeFloorId = useFloorStore((s) => s.activeFloorId)
   const settings = useCanvasStore((s) => s.settings)
   const neighborhoods = useNeighborhoodStore((s) => s.neighborhoods)
+  const reservations = useReservationsStore((s) => s.reservations)
 
   const seatHistory = useSeatHistoryStore((s) => s.entries)
 
@@ -92,7 +99,7 @@ export function useOfficeSync() {
 
   useEffect(() => {
     if (!officeId || !loadedVersion) return
-    const snapshot = { elements, employees, departmentColors, floors, activeFloorId, settings, seatHistory, neighborhoods }
+    const snapshot = { elements, employees, departmentColors, floors, activeFloorId, settings, seatHistory, neighborhoods, reservations }
 
     if (initialSnapshotRef.current === null) {
       initialSnapshotRef.current = snapshot
@@ -153,6 +160,7 @@ export function useOfficeSync() {
     settings,
     seatHistory,
     neighborhoods,
+    reservations,
     setSaveState,
     setLastSavedAt,
     setLoadedVersion,

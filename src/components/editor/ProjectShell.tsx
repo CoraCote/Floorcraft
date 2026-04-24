@@ -23,6 +23,8 @@ import { useEmployeeStore } from '../../stores/employeeStore'
 import { useInsightsStore } from '../../stores/insightsStore'
 import { useSeatHistoryStore } from '../../stores/seatHistoryStore'
 import { coerceSeatHistoryEntries } from '../../lib/offices/seatHistoryPersistence'
+import { useReservationsStore } from '../../stores/reservationsStore'
+import { coerceReservations } from '../../lib/offices/reservationsPersistence'
 import { useNeighborhoodStore } from '../../stores/neighborhoodStore'
 import type { Neighborhood } from '../../types/neighborhood'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
@@ -171,6 +173,13 @@ export function ProjectShell() {
       useNeighborhoodStore.setState({
         neighborhoods:
           (p.neighborhoods as Record<string, Neighborhood> | undefined) ?? {},
+      })
+
+      // Rehydrate hot-desk reservations. Legacy payloads (before the
+      // feature existed) simply have no `reservations` key; the coercer
+      // normalises undefined / malformed blobs to an empty array.
+      useReservationsStore.setState({
+        reservations: coerceReservations(p.reservations),
       })
 
       // Seed the project facade so UI that reads `currentProject` (share

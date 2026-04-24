@@ -41,6 +41,7 @@ function makeEmployee(partial: Partial<Employee> & Pick<Employee, 'id' | 'name'>
     seatId: null,
     floorId: null,
     pendingStatusChanges: [],
+    sensitivityTags: [],
     createdAt: new Date().toISOString(),
     ...partial,
   }
