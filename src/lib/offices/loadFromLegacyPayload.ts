@@ -4,6 +4,7 @@ import { useProjectStore } from '../../stores/projectStore'
 import { useCanvasStore } from '../../stores/canvasStore'
 import { useFloorStore } from '../../stores/floorStore'
 import { isEmployeeStatus, LEAVE_TYPES, type LeaveType } from '../../types/employee'
+import { WALL_TYPES, type WallType } from '../../types/elements'
 
 /**
  * Legacy-payload migration helpers.
@@ -67,12 +68,23 @@ function migrateElements(
         const b = currentBulges[i]
         bulges.push(typeof b === 'number' && Number.isFinite(b) ? b : 0)
       }
+      // `wallType` (semantic classification) was introduced after the
+      // original wall shape; any legacy payload missing it defaults to
+      // 'solid' (drywall) — same pattern as the `bulges` back-fill above.
+      // Unknown string values coerce to 'solid' rather than silently
+      // propagating, so the renderer's switch is exhaustive.
+      const wallType: WallType =
+        typeof el.wallType === 'string' &&
+        (WALL_TYPES as readonly string[]).includes(el.wallType)
+          ? (el.wallType as WallType)
+          : 'solid'
       out[id] = {
         ...el,
         bulges,
         connectedWallIds: Array.isArray(el.connectedWallIds)
           ? el.connectedWallIds
           : [],
+        wallType,
       }
     } else {
       out[id] = el

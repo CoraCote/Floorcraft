@@ -17,6 +17,7 @@ function makeWall(id: string): WallElement {
     points: [0, 0, 100, 0],
     thickness: 6,
     connectedWallIds: [],
+    wallType: 'solid',
   }
 }
 
@@ -44,7 +45,9 @@ describe('PropertiesPanel wall styling', () => {
     render(<PropertiesPanel />)
     expect(screen.getByText(/Thickness/i)).toBeInTheDocument()
     expect(screen.getByText(/Line style/i)).toBeInTheDocument()
-    expect(screen.getByRole('combobox')).toBeInTheDocument()
+    // Line style + wall type both surface as selects; use the accessible
+    // name so future additions don't silently break this assertion.
+    expect(screen.getByRole('combobox', { name: /Line style/i })).toBeInTheDocument()
   })
 
   it('changing line-style select updates the store', () => {
@@ -52,7 +55,7 @@ describe('PropertiesPanel wall styling', () => {
     useUIStore.setState({ selectedIds: ['w'] } as any)
     render(<PropertiesPanel />)
 
-    const select = screen.getByRole('combobox') as HTMLSelectElement
+    const select = screen.getByRole('combobox', { name: /Line style/i }) as HTMLSelectElement
     fireEvent.change(select, { target: { value: 'dashed' } })
 
     const updated = useElementsStore.getState().elements.w as WallElement
@@ -66,7 +69,7 @@ describe('PropertiesPanel wall styling', () => {
     useUIStore.setState({ selectedIds: ['a', 'b'] } as any)
     render(<PropertiesPanel />)
 
-    const select = screen.getByRole('combobox') as HTMLSelectElement
+    const select = screen.getByRole('combobox', { name: /Line style/i }) as HTMLSelectElement
     fireEvent.change(select, { target: { value: 'dotted' } })
 
     const els = useElementsStore.getState().elements

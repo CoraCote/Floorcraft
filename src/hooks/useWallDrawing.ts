@@ -328,6 +328,7 @@ export function useWallDrawing() {
         bulges: normalizedBulges,
         thickness: 6,
         connectedWallIds: [],
+        wallType: 'solid',
         ...(wallDrawStyle && wallDrawStyle !== 'solid' ? { dashStyle: wallDrawStyle } : {}),
       }
       addElement(wall)

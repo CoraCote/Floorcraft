@@ -56,6 +56,25 @@ export interface BaseElement {
   style: ElementStyle
 }
 
+/**
+ * Semantic classification of a wall — independent of its visual stroke
+ * style (`dashStyle`). Used for space-planning reports, export legends, and
+ * per-type visual treatments in `WallRenderer` (opacity, color, marker).
+ *
+ *   - `solid`       drywall; the default for any legacy or untagged wall.
+ *   - `glass`       glass partition (renders lighter + translucent).
+ *   - `half-height` pony wall / cubicle divider (< 4ft) — rendered with a
+ *                   secondary dashed rail to signal "short wall".
+ *   - `demountable` modular/reconfigurable wall — rendered with a dashed
+ *                   stroke + an "M" midpoint marker.
+ *
+ * `WallDrawStyle` (solid/dashed/dotted) is orthogonal: a wall can be both
+ * `glass` + `dashed`. The type controls semantics; dashStyle controls the
+ * line-pattern overlay.
+ */
+export const WALL_TYPES = ['solid', 'glass', 'half-height', 'demountable'] as const
+export type WallType = (typeof WALL_TYPES)[number]
+
 export interface WallElement extends BaseElement {
   type: 'wall'
   points: number[]
@@ -75,6 +94,12 @@ export interface WallElement extends BaseElement {
    * dashes with a round line cap so they render as dots.
    */
   dashStyle?: 'solid' | 'dashed' | 'dotted'
+  /**
+   * Semantic wall classification. See `WallType` for the full enum.
+   * Construction sites must default to `'solid'`; legacy autosave payloads
+   * are back-filled to `'solid'` in `loadFromLegacyPayload.migrateElements`.
+   */
+  wallType: WallType
 }
 
 export interface DoorElement extends BaseElement {

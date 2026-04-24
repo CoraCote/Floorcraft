@@ -22,6 +22,8 @@ import { useWallDrawing } from '../../../hooks/useWallDrawing'
 import { ZOOM_MIN, ZOOM_MAX, ZOOM_WHEEL_SENSITIVITY } from '../../../lib/constants'
 import { isAssignableElement } from '../../../types/elements'
 import { elementsIntersectingRect } from '../../../lib/marquee'
+import { useLayerVisibilityStore } from '../../../stores/layerVisibilityStore'
+import { categoryForElement } from '../../../lib/layerCategory'
 import { assignEmployee } from '../../../lib/seatAssignment'
 import { consumeQueueAtElement } from '../../../lib/multiSeatAssign'
 import { useToastStore } from '../../../stores/toastStore'
@@ -758,7 +760,17 @@ export function CanvasStage() {
       if (!rect || rect.w < 1 || rect.h < 1) return
 
       const elements = useElementsStore.getState().elements
-      const hits = elementsIntersectingRect(elements, rect)
+      // Honour the category-visibility toggles here too so a hidden
+      // category can't be swept-selected by a marquee drag. Filter before
+      // passing into the geometric intersection test so marquee code stays
+      // pure/geometric and the visibility rule lives in one place (the
+      // same rule ElementRenderer applies).
+      const categoryVisible = useLayerVisibilityStore.getState().visible
+      const visibleElements: typeof elements = {}
+      for (const [id, el] of Object.entries(elements)) {
+        if (categoryVisible[categoryForElement(el)]) visibleElements[id] = el
+      }
+      const hits = elementsIntersectingRect(visibleElements, rect)
 
       const uiStore = useUIStore.getState()
       if (shift) {
@@ -888,14 +900,18 @@ export function CanvasStage() {
     e.preventDefault()
 
     // (el.x, el.y) is CENTER; rotation ignored (acceptable simplification).
-    // Skip locked and hidden elements — they can't accept a drop.
+    // Skip locked and hidden elements — they can't accept a drop. A hidden
+    // category is treated the same as a hidden element: you can't drop
+    // onto something you can't see.
     const elements = useElementsStore.getState().elements
+    const categoryVisible = useLayerVisibilityStore.getState().visible
     let hitId: string | null = null
     let hitZ = -Infinity
     for (const el of Object.values(elements)) {
       if (!isAssignableElement(el)) continue
       if (el.locked) continue
       if (el.visible === false) continue
+      if (!categoryVisible[categoryForElement(el)]) continue
       const halfW = el.width / 2
       const halfH = el.height / 2
       if (

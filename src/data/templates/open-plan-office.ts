@@ -58,6 +58,7 @@ function makeWall(
     points,
     thickness: 8,
     connectedWallIds: [],
+    wallType: 'solid',
   }
 }
 

@@ -54,6 +54,7 @@ describe('Wall persistence', () => {
       bulges: [0, 10],
       thickness: 6,
       connectedWallIds: [],
+      wallType: 'solid',
     }
     const payload = {
       project: null,

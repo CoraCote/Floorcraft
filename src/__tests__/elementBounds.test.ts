@@ -41,6 +41,7 @@ function wall(points: number[]): WallElement {
     points,
     thickness: 4,
     connectedWallIds: [],
+    wallType: 'solid',
   }
 }
 

@@ -42,6 +42,7 @@ function makeWall(id: string): WallElement {
     points: [0, 0, 100, 0],
     thickness: 5,
     connectedWallIds: [],
+    wallType: 'solid',
   } as WallElement
 }
 

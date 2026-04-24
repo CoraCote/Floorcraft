@@ -2,6 +2,8 @@ import { Layer, Group } from 'react-konva'
 import { useElementsStore } from '../../../stores/elementsStore'
 import { useUIStore } from '../../../stores/uiStore'
 import { useCanvasStore } from '../../../stores/canvasStore'
+import { useLayerVisibilityStore } from '../../../stores/layerVisibilityStore'
+import { categoryForElement } from '../../../lib/layerCategory'
 import { useShallow } from 'zustand/react/shallow'
 import {
   isTableElement,
@@ -67,9 +69,15 @@ export function ElementRenderer() {
   const activeTool = useCanvasStore((s) => s.activeTool)
   const gridSize = useCanvasStore((s) => s.settings.gridSize)
   const showGrid = useCanvasStore((s) => s.settings.showGrid)
+  // Category-level visibility: if a category is hidden, EVERY element
+  // mapped to it is filtered out before the render pass. Combines with
+  // the existing per-element `visible` flag via AND — either "off" wins,
+  // so there's no way for a hidden category to leak an element through.
+  const categoryVisible = useLayerVisibilityStore((s) => s.visible)
 
   const sorted = Object.values(elements)
     .filter((el) => el.visible)
+    .filter((el) => categoryVisible[categoryForElement(el)])
     .sort((a, b) => a.zIndex - b.zIndex)
 
   // Snap the dragged element (center-origin) to alignment guides formed by

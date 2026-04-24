@@ -22,7 +22,7 @@ function wall(id: string): WallElement {
     label: 'Wall', visible: true,
     style: { fill: '#000', stroke: '#111', strokeWidth: 4, opacity: 1 },
     points: [0, 0, 100, 0],
-    thickness: 4, connectedWallIds: [],
+    thickness: 4, connectedWallIds: [], wallType: 'solid',
   }
 }
 

@@ -70,6 +70,7 @@ describe('Curved wall end-to-end flow', () => {
       bulges: [20, 0],
       thickness: 6,
       connectedWallIds: [],
+      wallType: 'solid',
     }
     useElementsStore.setState({ elements: { w1: w } })
     act(() => {
@@ -98,6 +99,7 @@ describe('Curved wall end-to-end flow', () => {
       bulges: [0],
       thickness: 6,
       connectedWallIds: [],
+      wallType: 'solid',
     }
     useElementsStore.setState({ elements: { w1: w } })
     const temporal = useElementsStore.temporal.getState()

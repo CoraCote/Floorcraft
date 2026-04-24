@@ -68,6 +68,7 @@ function wall(overrides: Partial<WallElement> = {}): WallElement {
     points: [0, 0, 100, 0, 100, 100],
     thickness: 6,
     connectedWallIds: [],
+    wallType: 'solid',
     ...overrides,
   }
 }
@@ -92,11 +93,13 @@ function konvaKindsFor(el: WallElement): string[] {
       </Layer>
     </Stage>,
   )
+  // The renderer wraps its children in a <Group> so the wallType opacity /
+  // secondary rail can compose cleanly. For the "node stability across
+  // bulge changes" invariant these tests enforce, what matters is the
+  // number + kind of Path nodes rendered — not the wrapping Group. Walk
+  // the whole tree and collect every <Path>.
   const kinds: string[] = []
-  // The renderer no longer wraps in an inner <Group>; its node is a direct
-  // child of the test Layer. Collect all non-layer descendants.
-  const layer = stage?.findOne('Layer')
-  layer?.getChildren().forEach((c: any) => kinds.push(c.getClassName()))
+  stage?.find('Path').forEach((c: any) => kinds.push(c.getClassName()))
   return kinds
 }
 

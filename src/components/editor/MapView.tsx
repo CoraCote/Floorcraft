@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { FloorSwitcher } from './FloorSwitcher'
 import { ToolSelector } from './LeftSidebar/ToolSelector'
+import { LayerVisibilityPanel } from './LeftSidebar/LayerVisibilityPanel'
 import { ElementLibrary } from './LeftSidebar/ElementLibrary'
 import { RightSidebar } from './RightSidebar/RightSidebar'
 import { StatusBar } from './StatusBar'
@@ -83,6 +84,8 @@ export function MapView() {
       <div className="flex flex-1 overflow-hidden">
         <div className="w-[260px] flex-shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-y-auto">
           <ToolSelector />
+          <div className="border-t border-gray-200" />
+          <LayerVisibilityPanel />
           <div className="border-t border-gray-200" />
           <ElementLibrary />
         </div>

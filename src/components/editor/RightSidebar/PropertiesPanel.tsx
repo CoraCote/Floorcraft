@@ -24,10 +24,18 @@ import {
   isConferenceRoomElement,
   isCommonAreaElement,
   isWallElement,
+  WALL_TYPES,
 } from '../../../types/elements'
 import { computeSeatPositions } from '../../../lib/seatLayout'
-import type { TableElement, WorkstationElement, ConferenceRoomElement, CommonAreaElement, WallElement, DeskElement, PrivateOfficeElement } from '../../../types/elements'
+import type { TableElement, WorkstationElement, ConferenceRoomElement, CommonAreaElement, WallElement, DeskElement, PrivateOfficeElement, WallType } from '../../../types/elements'
 import { SEAT_STATUS_OVERRIDES, type SeatStatus } from '../../../types/seatAssignment'
+
+const WALL_TYPE_LABELS: Record<WallType, string> = {
+  solid: 'Solid (drywall)',
+  glass: 'Glass partition',
+  'half-height': 'Half-height',
+  demountable: 'Demountable',
+}
 
 /**
  * Controlled desk-id editor with on-blur uniqueness validation.
@@ -249,6 +257,7 @@ export function PropertiesPanel() {
             <div>
               <label className="text-xs font-medium text-gray-500 mb-1 block">Line style</label>
               <select
+                aria-label="Line style"
                 className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
                 value={firstWall.dashStyle ?? 'solid'}
                 disabled={inputDisabled}
@@ -260,6 +269,25 @@ export function PropertiesPanel() {
                 <option value="solid">Solid</option>
                 <option value="dashed">Dashed</option>
                 <option value="dotted">Dotted</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">Wall type</label>
+              <select
+                aria-label="Wall type"
+                className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+                value={firstWall.wallType ?? 'solid'}
+                disabled={inputDisabled}
+                onChange={(e) => {
+                  const v = e.target.value as WallType
+                  for (const id of selectedIds) updateElement(id, { wallType: v } as Partial<WallElement>)
+                }}
+              >
+                {WALL_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {WALL_TYPE_LABELS[t]}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
@@ -437,6 +465,7 @@ export function PropertiesPanel() {
           <div>
             <label className="text-xs font-medium text-gray-500 mb-1 block">Line style</label>
             <select
+              aria-label="Line style"
               className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
               value={el.dashStyle ?? 'solid'}
               disabled={inputDisabled}
@@ -447,6 +476,24 @@ export function PropertiesPanel() {
               <option value="solid">Solid</option>
               <option value="dashed">Dashed</option>
               <option value="dotted">Dotted</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">Wall type</label>
+            <select
+              aria-label="Wall type"
+              className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+              value={el.wallType ?? 'solid'}
+              disabled={inputDisabled}
+              onChange={(e) =>
+                update({ wallType: e.target.value as WallType } as Partial<WallElement>)
+              }
+            >
+              {WALL_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {WALL_TYPE_LABELS[t]}
+                </option>
+              ))}
             </select>
           </div>
         </>

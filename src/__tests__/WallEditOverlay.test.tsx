@@ -72,6 +72,7 @@ function seedWall(partial: Partial<WallElement> = {}): WallElement {
     bulges: [0, 0],
     thickness: 6,
     connectedWallIds: [],
+    wallType: 'solid',
     ...partial,
   }
   useElementsStore.setState({ elements: { [w.id]: w } })

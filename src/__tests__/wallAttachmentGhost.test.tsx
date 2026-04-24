@@ -60,6 +60,7 @@ function makeWall(overrides: Partial<WallElement> = {}): WallElement {
     bulges: [0],
     thickness: 6,
     connectedWallIds: [],
+    wallType: 'solid',
     ...overrides,
   }
 }

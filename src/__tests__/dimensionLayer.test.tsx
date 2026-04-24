@@ -38,7 +38,7 @@ function wall(points: number[]): WallElement {
     locked: false, groupId: null, zIndex: 1,
     label: 'Wall', visible: true,
     style: { fill: '#000', stroke: '#111', strokeWidth: 4, opacity: 1 },
-    points, thickness: 4, connectedWallIds: [],
+    points, thickness: 4, connectedWallIds: [], wallType: 'solid',
   }
 }
 
