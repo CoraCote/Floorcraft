@@ -1,20 +1,25 @@
+import type { ComponentType, ReactNode } from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   AlertCircle,
   ArrowUpDown,
   Check,
+  CircleSlash,
   Clipboard,
   Clock,
+  Coffee,
   Download,
   Keyboard,
   LayoutGrid,
   List,
   Mail,
   MoreHorizontal,
+  Pencil,
   Plus,
   SlidersHorizontal,
   Upload,
+  Users,
   X,
 } from 'lucide-react'
 import { useEmployeeStore } from '../../stores/employeeStore'
@@ -26,6 +31,9 @@ import { useVisibleEmployees } from '../../hooks/useVisibleEmployees'
 import { deleteEmployee, unassignEmployee } from '../../lib/seatAssignment'
 import type { Employee, EmployeeStatus } from '../../types/employee'
 import { EMPLOYEE_STATUSES, EMPLOYEE_STATUS_PILL_CLASSES } from '../../types/employee'
+import { DepartmentChip } from './roster/DepartmentChip'
+import { StatusPill } from './roster/StatusPill'
+import { SeatCell } from './roster/SeatCell'
 import { RosterDetailDrawer } from './RosterDetailDrawer'
 import { SeatSwapRequestDialog } from './SeatSwapRequestDialog'
 import { RosterBulkEditPopover } from './RosterBulkEditPopover'
@@ -1336,20 +1344,13 @@ export function RosterPage() {
             </button>
           </div>
           {sorted.length === 0 ? (
-            <div className="text-center text-gray-400 text-sm py-16">
-              {hasAnyFilter ? (
-                <>
-                  No people match these filters.{' '}
-                  <button
-                    onClick={clearAllFilters}
-                    className="text-blue-600 hover:underline"
-                  >
-                    Clear filters
-                  </button>
-                </>
-              ) : (
-                'No people yet. Click + Add person or Import CSV to get started.'
-              )}
+            <div className="py-8">
+              <RosterEmptyState
+                filtered={hasAnyFilter}
+                hasAnyEmployees={allEmployees.length > 0}
+                onClearFilters={clearAllFilters}
+                onAdd={canEdit ? handleAdd : null}
+              />
             </div>
           ) : (
             <div className="grid gap-3 grid-cols-[repeat(auto-fill,minmax(220px,1fr))]">
@@ -1382,10 +1383,10 @@ export function RosterPage() {
       ) : (
       <div className="flex-1 overflow-auto">
         <table className="w-full text-sm">
-          <thead className="sticky top-0 bg-gray-50 border-b border-gray-200 z-10">
+          <thead className="sticky top-0 bg-white border-b border-gray-200 z-10">
             <tr>
               {canEdit && (
-                <th className="px-3 py-2 w-8">
+                <th className="px-4 py-2 w-8">
                   <input
                     type="checkbox"
                     checked={allVisibleSelected}
@@ -1408,8 +1409,8 @@ export function RosterPage() {
                 <th
                   key={col.key}
                   onClick={() => col.sortable && handleSort(col.key as SortColumn)}
-                  className={`px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider select-none whitespace-nowrap ${
-                    col.sortable ? 'cursor-pointer hover:bg-gray-100' : ''
+                  className={`px-4 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider select-none whitespace-nowrap ${
+                    col.sortable ? 'cursor-pointer hover:bg-gray-50' : ''
                   }`}
                 >
                   <span className="inline-flex items-center gap-1">
@@ -1420,11 +1421,22 @@ export function RosterPage() {
                   </span>
                 </th>
               ))}
-              <th className="px-3 py-2 w-10" aria-label="Row actions" />
+              <th className="px-4 py-2 w-10" aria-label="Row actions" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
-            {sorted.map((emp) => (
+          <tbody>
+            {sorted.map((emp) => {
+              const isSelected = selected.has(emp.id)
+              const rowBg = isSelected
+                ? 'bg-blue-50/60 hover:bg-blue-50/80'
+                : 'hover:bg-gray-50'
+              // Mark the leftmost cell with a 2px accent stripe when the row
+              // is selected — a Linear-style affordance that indicates
+              // selection without relying on the whole-row tint alone.
+              const leftStripe = isSelected
+                ? 'border-l-2 border-blue-500'
+                : 'border-l-2 border-transparent'
+              return (
               <tr
                 key={emp.id}
                 // Double-click anywhere on the row opens the detail drawer.
@@ -1444,36 +1456,45 @@ export function RosterPage() {
                   ) return
                   setDrawerId(emp.id)
                 }}
-                className={`group transition-colors ${selected.has(emp.id) ? 'bg-blue-50/50' : 'hover:bg-gray-50'}`}
+                className={`group transition-colors border-b border-gray-100 ${rowBg}`}
               >
                 {canEdit && (
-                  <td className="px-3 py-1.5 align-middle">
+                  <td className={`px-4 py-3 align-middle ${leftStripe}`}>
                     <input
                       type="checkbox"
-                      checked={selected.has(emp.id)}
+                      checked={isSelected}
                       onChange={() => toggleRow(emp.id)}
                       aria-label={`Select ${emp.name}`}
                     />
                   </td>
                 )}
-                <td className="px-3 py-1.5 align-middle font-medium text-gray-800">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Avatar employee={emp} />
+                <td className={`px-4 py-3 align-middle font-medium text-gray-800 ${canEdit ? '' : leftStripe}`}>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <Avatar
+                      employee={emp}
+                      deptColor={
+                        emp.department
+                          ? departmentColors[emp.department] ?? getDepartmentColor(emp.department)
+                          : null
+                      }
+                    />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <div className="min-w-0 flex-1">
-                          <InlineText
-                            value={emp.name}
-                            // Name is required; silently ignoring an empty commit
-                            // would look like a bug ("I hit Enter on nothing — did
-                            // it save?"). Reject it so the field reverts visibly.
-                            onCommit={(v) => {
-                              if (v) updateEmployee(emp.id, { name: v })
-                            }}
-                            allowEmpty={false}
-                            placeholder="—"
-                            canEdit={canEdit}
-                          />
+                        <div className={`min-w-0 flex-1 ${emp.status === 'departed' ? 'line-through text-gray-400' : ''}`}>
+                          <InlineEditCell>
+                            <InlineText
+                              value={emp.name}
+                              // Name is required; silently ignoring an empty commit
+                              // would look like a bug ("I hit Enter on nothing — did
+                              // it save?"). Reject it so the field reverts visibly.
+                              onCommit={(v) => {
+                                if (v) updateEmployee(emp.id, { name: v })
+                              }}
+                              allowEmpty={false}
+                              placeholder="—"
+                              canEdit={canEdit}
+                            />
+                          </InlineEditCell>
                         </div>
                         {(() => {
                           const nameDupe = describeNameDuplicate(emp)
@@ -1482,7 +1503,7 @@ export function RosterPage() {
                               className="inline-flex items-center gap-0.5 text-amber-700 bg-amber-100 px-1 py-0.5 rounded text-[10px] font-medium flex-shrink-0"
                               title={nameDupe}
                             >
-                              <AlertCircle size={10} /> rehire?
+                              <AlertCircle size={10} aria-hidden="true" /> rehire?
                             </span>
                           ) : null
                         })()}
@@ -1496,7 +1517,7 @@ export function RosterPage() {
                                 className="inline-flex items-center gap-0.5 text-amber-700 bg-amber-100 px-1 py-0.5 rounded text-[10px] font-medium flex-shrink-0"
                                 title={dupeLabel}
                               >
-                                <AlertCircle size={10} /> dupe
+                                <AlertCircle size={10} aria-hidden="true" /> dupe
                               </span>
                             ) : null
                           })()}
@@ -1506,72 +1527,90 @@ export function RosterPage() {
                     </div>
                   </div>
                 </td>
-                <td className="px-3 py-1.5 align-middle text-gray-600">
-                  <div className="flex items-center gap-1.5">
-                    <DeptDot
-                      color={
-                        emp.department
-                          ? departmentColors[emp.department] ??
-                            getDepartmentColor(emp.department)
-                          : null
-                      }
-                    />
+                <td className="px-4 py-3 align-middle text-gray-600">
+                  <InlineEditCell>
+                    {canEdit ? (
+                      <InlineText
+                        value={emp.department ?? ''}
+                        onCommit={(v) => updateEmployee(emp.id, { department: v || null })}
+                        placeholder="—"
+                        listId="roster-dept-list"
+                        canEdit={canEdit}
+                        renderDisplay={(value) => (
+                          <DepartmentChip
+                            department={value || null}
+                            color={
+                              value
+                                ? departmentColors[value] ?? getDepartmentColor(value)
+                                : null
+                            }
+                          />
+                        )}
+                      />
+                    ) : (
+                      <DepartmentChip
+                        department={emp.department}
+                        color={
+                          emp.department
+                            ? departmentColors[emp.department] ??
+                              getDepartmentColor(emp.department)
+                            : null
+                        }
+                      />
+                    )}
+                  </InlineEditCell>
+                </td>
+                <td className="px-4 py-3 align-middle text-gray-600">
+                  <InlineEditCell>
                     <InlineText
-                      value={emp.department ?? ''}
-                      onCommit={(v) => updateEmployee(emp.id, { department: v || null })}
+                      value={emp.title ?? ''}
+                      onCommit={(v) => updateEmployee(emp.id, { title: v || null })}
                       placeholder="—"
-                      listId="roster-dept-list"
                       canEdit={canEdit}
                     />
-                  </div>
+                  </InlineEditCell>
                 </td>
-                <td className="px-3 py-1.5 align-middle text-gray-600">
-                  <InlineText
-                    value={emp.title ?? ''}
-                    onCommit={(v) => updateEmployee(emp.id, { title: v || null })}
-                    placeholder="—"
-                    canEdit={canEdit}
-                  />
-                </td>
-                <td className="px-3 py-1.5 align-middle">
+                <td className="px-4 py-3 align-middle">
                   <OfficeDays days={emp.officeDays} todayLabel={todayLabel} />
                 </td>
-                <td className="px-3 py-1.5 align-middle text-gray-600">
-                  {emp.seatId && emp.floorId ? (
-                    <button
-                      onClick={() => jumpToSeat(emp)}
-                      className="text-blue-600 hover:underline text-left"
-                      title="Show seat on map"
-                    >
-                      {floorMap[emp.floorId] ?? '?'} / {seatLabelMap[emp.seatId] ?? emp.seatId.slice(0, 4)}
-                    </button>
-                  ) : (
-                    <span className="text-gray-400">Unassigned</span>
-                  )}
+                <td className="px-4 py-3 align-middle text-gray-600">
+                  <SeatCell
+                    floorName={emp.floorId ? floorMap[emp.floorId] ?? null : null}
+                    seatLabel={
+                      emp.seatId ? seatLabelMap[emp.seatId] ?? emp.seatId.slice(0, 4) : null
+                    }
+                    onJump={emp.seatId && emp.floorId ? () => jumpToSeat(emp) : null}
+                  />
                 </td>
-                <td className="px-3 py-1.5 align-middle">
+                <td className="px-4 py-3 align-middle">
                   <div className="flex items-center gap-1.5">
                     {canEdit ? (
-                      <select
-                        value={emp.status}
-                        onChange={(e) =>
-                          handleRowSetStatus(emp.id, e.target.value as EmployeeStatus)
-                        }
-                        className="text-xs px-1.5 py-1 border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      >
-                        {EMPLOYEE_STATUSES.map((s) => (
-                          <option key={s} value={s}>{s}</option>
-                        ))}
-                      </select>
+                      // The select keeps its inline-edit behaviour; the
+                      // colored StatusPill is the read-mode sibling that
+                      // renders behind it at viewer role.
+                      <InlineEditCell hidePencil>
+                        <select
+                          value={emp.status}
+                          onChange={(e) =>
+                            handleRowSetStatus(emp.id, e.target.value as EmployeeStatus)
+                          }
+                          className="text-xs px-1.5 py-1 border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          aria-label={`Status for ${emp.name}`}
+                        >
+                          {EMPLOYEE_STATUSES.map((s) => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                        </select>
+                      </InlineEditCell>
                     ) : (
-                      <span className="text-xs text-gray-600">{emp.status}</span>
+                      <StatusPill status={emp.status} />
                     )}
                     <PendingStatusIndicator employee={emp} />
                     <EndingSoonBadge endDate={emp.endDate} />
                     <DepartingSoonBadge departureDate={emp.departureDate} />
                   </div>
                 </td>
-                <td className="px-3 py-1.5 align-middle relative">
+                <td className="px-4 py-3 align-middle relative">
                   {/*
                     For viewers, the row-action menu still has value because
                     of the read-only "Copy email" / "Send invite" entries,
@@ -1615,23 +1654,17 @@ export function RosterPage() {
                   )}
                 </td>
               </tr>
-            ))}
+              )
+            })}
             {sorted.length === 0 && (
               <tr>
-                <td colSpan={canEdit ? 8 : 7} className="px-3 py-12 text-center text-gray-400 text-sm">
-                  {hasAnyFilter ? (
-                    <>
-                      No people match these filters.{' '}
-                      <button
-                        onClick={clearAllFilters}
-                        className="text-blue-600 hover:underline"
-                      >
-                        Clear filters
-                      </button>
-                    </>
-                  ) : (
-                    'No people yet. Click + Add person or Import CSV to get started.'
-                  )}
+                <td colSpan={canEdit ? 8 : 7} className="px-4 py-12">
+                  <RosterEmptyState
+                    filtered={hasAnyFilter}
+                    hasAnyEmployees={allEmployees.length > 0}
+                    onClearFilters={clearAllFilters}
+                    onAdd={canEdit ? handleAdd : null}
+                  />
                 </td>
               </tr>
             )}
@@ -1780,6 +1813,7 @@ function InlineText({
   listId,
   allowEmpty = true,
   canEdit = true,
+  renderDisplay,
 }: {
   value: string
   onCommit: (v: string) => void
@@ -1797,6 +1831,12 @@ function InlineText({
    * tech isn't misled into announcing an editable field.
    */
   canEdit?: boolean
+  /**
+   * Optional renderer for the read-mode label so callers can drop a
+   * richer affordance (e.g. a colored chip) in place of the plain text
+   * span, without losing the click-to-edit interaction.
+   */
+  renderDisplay?: (value: string) => ReactNode
 }) {
   const [editing, setEditing] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -1829,7 +1869,9 @@ function InlineText({
   if (!canEdit) {
     return (
       <span className="block w-full text-left px-1.5 py-1 truncate">
-        {value || <span className="text-gray-400">{placeholder}</span>}
+        {renderDisplay
+          ? renderDisplay(value)
+          : value || <span className="text-gray-400">{placeholder}</span>}
       </span>
     )
   }
@@ -1861,7 +1903,9 @@ function InlineText({
       onClick={() => setEditing(true)}
       className="w-full text-left px-1.5 py-1 rounded hover:bg-white group-hover:bg-white truncate"
     >
-      {value || <span className="text-gray-400">{placeholder}</span>}
+      {renderDisplay
+        ? renderDisplay(value)
+        : value || <span className="text-gray-400">{placeholder}</span>}
     </button>
   )
 }
@@ -1974,18 +2018,23 @@ function StatsBar({
     onClick: () => void,
     tone: 'gray' | 'green' | 'amber' | 'red' | 'blue' = 'gray',
     hint?: string,
+    Icon?: ComponentType<{ size?: number; className?: string; 'aria-hidden'?: boolean }>,
   ) => {
+    // Quiet-chip palette — low-weight borders and soft backgrounds so the
+    // cluster reads as an informational strip rather than a button bar. The
+    // active state flips to a saturated fill so "this axis is narrowing the
+    // list" is still obvious at a glance.
     const toneClasses = {
-      gray: isActive ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50',
-      green: isActive ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50',
-      amber: isActive ? 'bg-amber-600 text-white border-amber-600' : 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50',
-      red: isActive ? 'bg-red-600 text-white border-red-600' : 'bg-white text-red-700 border-red-200 hover:bg-red-50',
-      blue: isActive ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50',
+      gray: isActive ? 'bg-gray-800 text-white border-gray-800' : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100',
+      green: isActive ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-gray-50 text-emerald-700 border-gray-200 hover:bg-emerald-50',
+      amber: isActive ? 'bg-amber-600 text-white border-amber-600' : 'bg-gray-50 text-amber-700 border-gray-200 hover:bg-amber-50',
+      red: isActive ? 'bg-red-600 text-white border-red-600' : 'bg-gray-50 text-red-700 border-gray-200 hover:bg-red-50',
+      blue: isActive ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 text-blue-700 border-gray-200 hover:bg-blue-50',
     }[tone]
     return (
       <button
         onClick={onClick}
-        className={`flex items-baseline gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-colors ${toneClasses}`}
+        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-colors ${toneClasses}`}
         title={hint ?? label}
         aria-pressed={isActive}
         // Explicit aria-label — the default accessible name from the two
@@ -1994,6 +2043,7 @@ function StatsBar({
         // tests and awkward for screen readers.
         aria-label={`${value} ${label}`}
       >
+        {Icon && <Icon size={12} aria-hidden={true} className="opacity-80" />}
         <span className="font-semibold tabular-nums">{value}</span>
         <span className="opacity-80">{label}</span>
       </button>
@@ -2009,13 +2059,15 @@ function StatsBar({
 
   return (
     <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-100 bg-gray-50/60 flex-shrink-0 overflow-x-auto whitespace-nowrap">
-      {chip('Total', stats.total, noChipFilter, onClearChipAxes, 'gray', 'All people (clears chip filters; leaves search/dept/floor alone)')}
+      {chip('Total', stats.total, noChipFilter, onClearChipAxes, 'gray', 'All people (clears chip filters; leaves search/dept/floor alone)', Users)}
       {chip(
         'Active',
         stats.active,
         active.statusFilter === 'active',
         () => onSetFilter('status', active.statusFilter === 'active' ? '' : 'active'),
         'green',
+        undefined,
+        Users,
       )}
       {chip(
         'On leave',
@@ -2023,6 +2075,8 @@ function StatsBar({
         active.statusFilter === 'on-leave',
         () => onSetFilter('status', active.statusFilter === 'on-leave' ? '' : 'on-leave'),
         'amber',
+        undefined,
+        Coffee,
       )}
       {chip(
         'Unassigned',
@@ -2031,6 +2085,7 @@ function StatsBar({
         () => onSetFilter('seat', active.seatFilter === 'unassigned' ? '' : 'unassigned'),
         'red',
         'People without a seat',
+        CircleSlash,
       )}
       {/*
         Render the equipment-pending chip only when someone actually needs
@@ -2234,11 +2289,12 @@ function OfficeDays({ days, todayLabel }: { days: string[]; todayLabel: string }
 
 /**
  * Avatar — photo if we have a URL, otherwise a colored circle with the
- * person's initials. The fallback color is derived from the employee id
- * so it's stable across renders and doesn't flicker when the list resorts,
- * and it avoids colliding with the dept color (which lives on the dot).
+ * person's initials. When a department color is supplied the circle uses
+ * it directly so someone's avatar reads as "that person from Engineering"
+ * at a glance; otherwise we fall back to a stable per-id hue. The 28px
+ * footprint keeps the row density consistent with the new polished list.
  */
-function Avatar({ employee }: { employee: Employee }) {
+function Avatar({ employee, deptColor }: { employee: Employee; deptColor?: string | null }) {
   const initials = useMemo(() => {
     const parts = employee.name.trim().split(/\s+/).filter(Boolean)
     if (parts.length === 0) return '?'
@@ -2265,11 +2321,12 @@ function Avatar({ employee }: { employee: Employee }) {
       />
     )
   }
+  const bg = deptColor ? deptColor : `hsl(${hue}, 45%, 55%)`
   return (
     <div
       aria-hidden="true"
       className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold text-white flex-shrink-0"
-      style={{ background: `hsl(${hue}, 45%, 55%)` }}
+      style={{ background: bg }}
     >
       {initials}
     </div>
@@ -2781,4 +2838,93 @@ function buildInviteMailto(employee: Employee): string {
   lines.push('', 'Reach out if you need anything before then.', '')
   const body = lines.join('\n')
   return `mailto:${encodeURIComponent(employee.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+}
+
+/**
+ * Wrapper for editable roster cells that surfaces a tiny pencil icon on
+ * row hover/focus. The icon sits in the cell's right edge and only appears
+ * while the sibling inline-edit control is in read mode — once the user
+ * enters edit mode the editor itself occupies the cell and the hint would
+ * be redundant. Pass `hidePencil` to skip the glyph on cells whose own
+ * affordance is strong enough (e.g. the status <select> already looks
+ * editable).
+ */
+function InlineEditCell({
+  children,
+  hidePencil,
+}: {
+  children: ReactNode
+  hidePencil?: boolean
+}) {
+  return (
+    <div className="relative pr-5">
+      {children}
+      {!hidePencil && (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 focus-within:opacity-0 transition-opacity text-gray-400"
+        >
+          <Pencil size={12} />
+        </span>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Empty-state cell content used when the filter/search narrowing returns
+ * zero rows, or when the office is truly empty. Renders as a centered
+ * block with a decorative icon, a headline, a subtle hint, and a single
+ * primary action keyed off the current situation:
+ *
+ *   - Filtered to zero → "Clear filters" (ghost button)
+ *   - Office is empty → "+ Add person" (primary button, editors only)
+ */
+function RosterEmptyState({
+  filtered,
+  hasAnyEmployees,
+  onClearFilters,
+  onAdd,
+}: {
+  filtered: boolean
+  hasAnyEmployees: boolean
+  onClearFilters: () => void
+  onAdd: (() => void) | null
+}) {
+  // Decide which of the two states to render. `filtered && hasAnyEmployees`
+  // means the user is narrowing — offer a reset. Otherwise the office
+  // itself is empty (first-run, or every row was deleted).
+  const isFilterMiss = filtered && hasAnyEmployees
+  return (
+    <div className="flex flex-col items-center gap-2 text-center py-8">
+      <Users size={40} aria-hidden="true" className="text-gray-300" />
+      <div className="text-sm font-medium text-gray-700">
+        {isFilterMiss ? 'No matches' : 'Your office is empty'}
+      </div>
+      <div className="text-xs text-gray-500">
+        {isFilterMiss
+          ? 'Try clearing filters or changing your search.'
+          : 'Add your first teammate to start building the roster.'}
+      </div>
+      {isFilterMiss ? (
+        <button
+          type="button"
+          onClick={onClearFilters}
+          className="mt-1 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 border border-gray-200 rounded hover:bg-gray-50"
+        >
+          Clear filters
+        </button>
+      ) : onAdd ? (
+        <button
+          type="button"
+          onClick={onAdd}
+          className="mt-1 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded"
+          // Distinct label from the header's "Add person" button so tests
+          // (and users) can tell them apart; both call the same handler.
+        >
+          <Plus size={12} aria-hidden="true" /> Add your first teammate
+        </button>
+      ) : null}
+    </div>
+  )
 }
