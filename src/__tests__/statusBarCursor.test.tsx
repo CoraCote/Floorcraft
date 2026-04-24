@@ -34,16 +34,21 @@ describe('StatusBar cursor coordinate readout', () => {
   it('does not render an X/Y readout when the cursor is off the canvas', () => {
     render(<StatusBar />)
     // The rest of the status bar still renders (Desks/Zoom/etc), but
-    // no "X:" label should appear.
-    expect(screen.queryByText(/^X:/)).toBeNull()
+    // no "X" label should appear.
+    expect(screen.queryByText('X')).toBeNull()
+    expect(screen.queryByText('Y')).toBeNull()
   })
 
   it('renders the cursor coordinates when the cursor is over the canvas', () => {
     useCursorStore.setState({ x: 42, y: 99 })
     render(<StatusBar />)
     const readout = screen.getByTitle(PX_TITLE)
-    expect(readout).toHaveTextContent('X: 42')
-    expect(readout).toHaveTextContent('Y: 99')
+    // New JSON-Crack layout: labels and values render in separate spans,
+    // so we assert each piece appears inside the cursor readout.
+    expect(readout).toHaveTextContent('X')
+    expect(readout).toHaveTextContent('42')
+    expect(readout).toHaveTextContent('Y')
+    expect(readout).toHaveTextContent('99')
   })
 
   it('removes the readout when the cursor is cleared (pointer leaves canvas)', () => {
