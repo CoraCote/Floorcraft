@@ -174,11 +174,41 @@ export function TopBar() {
     const activeFloorId = useFloorStore.getState().activeFloorId
     const floor = floors.find((f) => f.id === activeFloorId) ?? floors[0]
     if (!floor) return
+    // Gather context for the export chrome (title, scale bar, legend).
+    // Pulled at click time rather than wired through React props because
+    // the export is fire-and-forget — there's no reactive dependency the
+    // caller cares about.
+    const settings = useCanvasStore.getState().settings
+    const allNeighborhoods = useNeighborhoodStore.getState().neighborhoods
+    const neighborhoods = Object.values(allNeighborhoods)
+      .filter((n) => n.floorId === floor.id)
+      .map((n) => ({ id: n.id, name: n.name, color: n.color }))
+    const pxPerUnit =
+      settings.scaleUnit === 'px' || settings.scale <= 0
+        ? null
+        : 1 / settings.scale
+    // Tests stub the stage with just `toDataURL`, so these methods may
+    // be missing — fall back to 0 (the chrome layout still renders, the
+    // canvas area just collapses). At runtime the real Konva.Stage has
+    // both methods; this guard exists purely for the test seam.
+    const stageWidth = typeof stage.width === 'function' ? stage.width() : 0
+    const stageHeight =
+      typeof stage.height === 'function' ? stage.height() : 0
     // Fire-and-forget — the promise only exists for future async variants
     // (see `exportFloorAsPng` doc). Swallow errors to keep parity with the
     // PDF button: the user retrying a click is the simplest recovery.
     void exportFloorAsPng(stage, {
       filename: buildExportFilename(project.name, floor.name, 'png'),
+      chrome: {
+        officeName: project.name,
+        floorName: floor.name,
+        generatedAt: new Date(),
+        pxPerUnit,
+        scaleUnit: settings.scaleUnit,
+        neighborhoods,
+        canvasWidth: stageWidth,
+        canvasHeight: stageHeight,
+      },
     })
   }
 

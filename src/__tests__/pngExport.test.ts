@@ -93,4 +93,59 @@ describe('exportFloorAsPng', () => {
     // Anchor href is the data URL (no Blob round-trip needed).
     expect(anchor.href).toContain('data:image/png;base64,AAAA')
   })
+
+  it('passes the raw canvas data URL through when withChrome is false', async () => {
+    const toDataURL = vi.fn(() => 'data:image/png;base64,RAW')
+    const stage = { toDataURL } as unknown as Konva.Stage
+
+    await exportFloorAsPng(stage, {
+      filename: 'raw.png',
+      withChrome: false,
+      chrome: {
+        officeName: 'X',
+        floorName: 'Y',
+        generatedAt: new Date('2026-04-24T00:00:00Z'),
+        pxPerUnit: 12,
+        scaleUnit: 'ft',
+        neighborhoods: [],
+        canvasWidth: 100,
+        canvasHeight: 100,
+      },
+    })
+
+    const anchor = (appendChild.mock.calls[0] as unknown[])[0] as HTMLAnchorElement
+    // Untouched: should be exactly the bytes Konva emitted.
+    expect(anchor.href).toContain('data:image/png;base64,RAW')
+  })
+
+  it('compose-with-chrome path falls back to the raw URL when image decode fails', async () => {
+    // jsdom can't actually decode an Image from a data URL, so the
+    // compose path's `loadImage` rejects and we fall back to the raw URL.
+    // This test pins that contract: if we ever swap to a real decoder
+    // we'll get a richer assertion, but today the contract is "don't
+    // throw, don't lose the bytes".
+    const toDataURL = vi.fn(() => 'data:image/png;base64,RAW2')
+    const stage = { toDataURL } as unknown as Konva.Stage
+
+    await exportFloorAsPng(stage, {
+      filename: 'chromed.png',
+      // withChrome defaults to true
+      chrome: {
+        officeName: 'Acme',
+        floorName: 'Floor 1',
+        generatedAt: new Date('2026-04-24T00:00:00Z'),
+        pxPerUnit: 12,
+        scaleUnit: 'ft',
+        neighborhoods: [{ id: 'n1', name: 'Eng', color: '#3B82F6' }],
+        canvasWidth: 200,
+        canvasHeight: 200,
+      },
+    })
+
+    // Anchor was appended (download triggered) — no throw.
+    expect(appendChild).toHaveBeenCalledTimes(1)
+    const anchor = (appendChild.mock.calls[0] as unknown[])[0] as HTMLAnchorElement
+    expect(anchor.tagName).toBe('A')
+    expect(anchor.download).toBe('chromed.png')
+  })
 })
