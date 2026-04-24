@@ -8,6 +8,7 @@ const CATEGORY_LABELS: Record<InsightCategory, string> = {
   equipment: 'Equipment',
   trends: 'Trends',
   sensitivity: 'Sensitivity',
+  capacity: 'Capacity',
 }
 
 const SEVERITY_COLORS: Record<Severity, { bg: string; text: string; ring: string }> = {

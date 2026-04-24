@@ -46,6 +46,7 @@ import { CalibrateOverlay } from './CalibrateOverlay'
 import { useCalibrateScaleStore } from '../../../stores/calibrateScaleStore'
 import { NeighborhoodLayer } from './NeighborhoodLayer'
 import { NeighborhoodEditOverlay } from './NeighborhoodEditOverlay'
+import { NeighborhoodOverlay } from './NeighborhoodOverlay'
 import { useNeighborhoodStore } from '../../../stores/neighborhoodStore'
 import { NEIGHBORHOOD_PALETTE } from '../../../types/neighborhood'
 import { useRecentLibraryItems } from '../../../hooks/useRecentLibraryItems'
@@ -73,6 +74,11 @@ export function CanvasStage() {
   const marqueeStartRef = useRef<{ x: number; y: number; shift: boolean } | null>(null)
   const [marquee, setMarquee] = useState<{ x: number; y: number; w: number; h: number } | null>(null)
   const orgChartOverlayEnabled = useUIStore((s) => s.orgChartOverlayEnabled)
+  // Gate the neighborhood occupancy overlay on the layer toggle so users can
+  // hide the chips without losing the underlying neighborhoods themselves.
+  const showNeighborhoodOverlay = useLayerVisibilityStore(
+    (s) => s.visible.neighborhoods,
+  )
   const seatMapColorMode = useUIStore((s) => s.seatMapColorMode)
   const dragAlignmentGuides = useUIStore((s) => s.dragAlignmentGuides)
   const {
@@ -1167,6 +1173,10 @@ export function CanvasStage() {
         />
         <CalibrateOverlay />
         <NeighborhoodEditOverlay preview={neighborhoodPreview} />
+        {/* Occupancy chips render last so they float above the canvas
+            content — the layer is `listening={false}` so they stay
+            purely decorative. */}
+        {showNeighborhoodOverlay && <NeighborhoodOverlay />}
       </Stage>
       <FreeTextEditorOverlay containerRef={containerRef} />
     </div>

@@ -29,6 +29,12 @@ export type LayerCategory =
   | 'rooms' // meeting rooms + phone booths + kitchens
   | 'furniture' // decor + tables + everything else
   | 'annotations' // text + arrows + shapes + measure
+  // Neighborhood occupancy overlay chips. Unlike the others, this toggle
+  // doesn't gate any `CanvasElement` — it controls the dedicated
+  // `NeighborhoodOverlay` layer that paints a small {assigned/capacity}
+  // chip on top of each named zone. Still lives on this store so the
+  // LayerVisibilityPanel has one unified surface for view toggles.
+  | 'neighborhoods'
 
 export const LAYER_CATEGORIES: readonly LayerCategory[] = [
   'walls',
@@ -36,6 +42,7 @@ export const LAYER_CATEGORIES: readonly LayerCategory[] = [
   'rooms',
   'furniture',
   'annotations',
+  'neighborhoods',
 ] as const
 
 export interface LayerVisibilityState {
@@ -57,6 +64,7 @@ const ALL_VISIBLE: Record<LayerCategory, boolean> = {
   rooms: true,
   furniture: true,
   annotations: true,
+  neighborhoods: true,
 }
 
 export const useLayerVisibilityStore = create<LayerVisibilityState>((set) => ({

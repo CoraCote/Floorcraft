@@ -11,6 +11,7 @@ import { InsightFilters } from './InsightFilters'
 import { InsightCard } from './InsightCard'
 import { UtilizationWidgets } from './UtilizationWidgets'
 import { NeighborhoodMetrics } from './NeighborhoodMetrics'
+import { NeighborhoodUtilizationList } from './NeighborhoodUtilizationList'
 import { useNeighborhoodStore } from '../../../stores/neighborhoodStore'
 import { focusElements } from '../../../lib/focusElements'
 
@@ -163,9 +164,14 @@ export function InsightsPanel() {
           right?" is a bigger question than "any issues to fix?". */}
       <UtilizationWidgets />
 
-      {/* Neighborhood headcount — shows one row per named zone. Renders
-          nothing when no neighborhoods are defined, so empty offices
-          keep the existing insights layout unchanged. */}
+      {/* Neighborhood utilization — one clickable row per neighborhood
+          with the health pill + % bar. Renders nothing when no
+          neighborhoods exist. */}
+      <NeighborhoodUtilizationList />
+
+      {/* Legacy neighborhood headcount rollup — kept alongside the
+          utilization list for now; both render nothing on an empty
+          project so they stay invisible until neighborhoods are drawn. */}
       <NeighborhoodMetrics />
 
       {/* Severity summary */}

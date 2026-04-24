@@ -9,6 +9,11 @@ export type InsightCategory =
   | 'equipment'
   | 'trends'
   | 'sensitivity'
+  // Neighborhood-level capacity signals (per-zone over/under-utilization).
+  // Distinct from `utilization`, which covers the project-wide rollup and
+  // zone-string-based analysis — this category is reserved for insights
+  // tied to a named neighborhood.
+  | 'capacity'
 
 export type Severity = 'critical' | 'warning' | 'info'
 

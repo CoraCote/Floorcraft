@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type { Insight, InsightCategory, Severity } from '../types/insights'
 import { runAllAnalyzers, buildAnalyzerInput } from '../lib/analyzers'
 import { analyzeNeighborhoodDepartments } from '../lib/analyzers/neighborhoods'
+import { analyzeNeighborhoodUtilization } from '../lib/analyzers/neighborhoodUtilization'
 import type { CanvasElement } from '../types/elements'
 import type { Employee } from '../types/employee'
 import type { Neighborhood } from '../types/neighborhood'
@@ -36,7 +37,7 @@ interface InsightsState {
   getCounts: () => { critical: number; warning: number; info: number; total: number }
 }
 
-const ALL_CATEGORIES: InsightCategory[] = ['utilization', 'proximity', 'onboarding', 'moves', 'equipment', 'trends', 'sensitivity']
+const ALL_CATEGORIES: InsightCategory[] = ['utilization', 'proximity', 'onboarding', 'moves', 'equipment', 'trends', 'sensitivity', 'capacity']
 const ALL_SEVERITIES: Severity[] = ['critical', 'warning', 'info']
 
 function loadDismissedIds(projectId?: string): Set<string> {
@@ -90,6 +91,21 @@ export const useInsightsStore = create<InsightsState>((set, get) => ({
         employeeById,
       )
       raw.push(...nbInsights)
+
+      // Neighborhood capacity (over/under-occupied pods). Same
+      // standalone-analyzer pattern as above — needs the neighborhood
+      // list plus the element / employee maps, not the flattened
+      // `AnalyzerInput`.
+      const elementsMap: Record<string, CanvasElement> = {}
+      for (const el of elements) elementsMap[el.id] = el
+      const employeesMap: Record<string, Employee> = {}
+      for (const e of employees) employeesMap[e.id] = e
+      const capacityInsights = analyzeNeighborhoodUtilization(
+        neighborhoods,
+        elementsMap,
+        employeesMap,
+      )
+      raw.push(...capacityInsights)
     }
     const dismissed = get().dismissedIds
     const insights = raw.map((insight) => ({

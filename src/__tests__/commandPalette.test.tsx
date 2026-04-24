@@ -38,6 +38,7 @@ function makeEmployee(partial: Partial<Employee> & Pick<Employee, 'id' | 'name'>
     photoUrl: null,
     tags: [],
     accommodations: [],
+    sensitivityTags: [],
     seatId: null,
     floorId: null,
     pendingStatusChanges: [],

@@ -5,6 +5,7 @@ import {
   LAYER_CATEGORIES,
   type LayerCategory,
 } from '../../../stores/layerVisibilityStore'
+import { useNeighborhoodStore } from '../../../stores/neighborhoodStore'
 import { categoryForElement } from '../../../lib/layerCategory'
 
 const CATEGORY_LABELS: Record<LayerCategory, string> = {
@@ -13,6 +14,7 @@ const CATEGORY_LABELS: Record<LayerCategory, string> = {
   rooms: 'Rooms',
   furniture: 'Furniture',
   annotations: 'Annotations',
+  neighborhoods: 'Neighborhoods',
 }
 
 /**
@@ -37,6 +39,11 @@ export function LayerVisibilityPanel() {
   const elements = useElementsStore((s) => s.elements)
   const visible = useLayerVisibilityStore((s) => s.visible)
   const toggle = useLayerVisibilityStore((s) => s.toggle)
+  // Neighborhoods live in a sibling store, so they don't come through the
+  // `categoryForElement` path. Count them directly for the row badge.
+  const neighborhoodCount = useNeighborhoodStore(
+    (s) => Object.keys(s.neighborhoods).length,
+  )
 
   const counts = useMemo(() => {
     const c: Record<LayerCategory, number> = {
@@ -45,12 +52,14 @@ export function LayerVisibilityPanel() {
       rooms: 0,
       furniture: 0,
       annotations: 0,
+      neighborhoods: 0,
     }
     for (const el of Object.values(elements)) {
       c[categoryForElement(el)]++
     }
+    c.neighborhoods = neighborhoodCount
     return c
-  }, [elements])
+  }, [elements, neighborhoodCount])
 
   return (
     <div className="p-3" aria-label="Layer visibility">

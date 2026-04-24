@@ -10,6 +10,12 @@ import { analyzeTrends } from './trends'
 import { analyzeSeatChurn } from './seatChurn'
 import { analyzeAccommodations } from './accommodationAnalyzer'
 import { analyzeAdjacency } from './adjacency'
+// Re-export the neighborhood-scoped analyzers so callers can pull the
+// whole analyzer surface from a single module. Both of these need the
+// neighborhood list — kept off `runAllAnalyzers` intentionally — so the
+// insights store invokes them directly (see `insightsStore.runAnalysis`).
+export { analyzeNeighborhoodDepartments } from './neighborhoods'
+export { analyzeNeighborhoodUtilization } from './neighborhoodUtilization'
 
 const SEVERITY_ORDER = { critical: 0, warning: 1, info: 2 } as const
 
