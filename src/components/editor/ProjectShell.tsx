@@ -11,6 +11,7 @@ import { ExportDialog } from './ExportDialog'
 import { NewProjectModal } from '../dashboard/NewProjectModal'
 import { ShareModal } from './ShareModal'
 import { CalibrateScaleModal } from './CalibrateScaleModal'
+import { RoomBookingDialog } from './Canvas/RoomBookingDialog'
 import { EmployeeDirectory } from '../reports/EmployeeDirectory'
 import { ConflictModal } from './ConflictModal'
 import { Toaster } from '../common/Toaster'
@@ -25,6 +26,8 @@ import { useSeatHistoryStore } from '../../stores/seatHistoryStore'
 import { coerceSeatHistoryEntries } from '../../lib/offices/seatHistoryPersistence'
 import { useReservationsStore } from '../../stores/reservationsStore'
 import { coerceReservations } from '../../lib/offices/reservationsPersistence'
+import { useRoomBookingsStore } from '../../stores/roomBookingsStore'
+import { coerceRoomBookings } from '../../lib/offices/roomBookingsPersistence'
 import { useNeighborhoodStore } from '../../stores/neighborhoodStore'
 import { useAnnotationsStore } from '../../stores/annotationsStore'
 import { useSeatSwapsStore } from '../../stores/seatSwapsStore'
@@ -188,6 +191,13 @@ export function ProjectShell() {
         reservations: coerceReservations(p.reservations),
       })
 
+      // Rehydrate meeting-room bookings. Same legacy-key tolerance as
+      // reservations: a missing `roomBookings` key (old office payload)
+      // normalises to an empty array so nothing else has to branch.
+      useRoomBookingsStore.setState({
+        bookings: coerceRoomBookings(p.roomBookings),
+      })
+
       // Annotations hydrate from a top-level `annotations` key. Legacy
       // payloads predate the feature entirely; `migrateAnnotations`
       // defensively coerces missing / malformed sub-entries so the editor
@@ -287,6 +297,7 @@ export function ProjectShell() {
       <NewProjectModal />
       <ShareModal />
       <CalibrateScaleModal />
+      <RoomBookingDialog />
       {employeeDirectoryOpen && <EmployeeDirectory />}
       <Toaster />
       {conflict && (

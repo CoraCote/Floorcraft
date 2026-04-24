@@ -14,6 +14,7 @@ import { NeighborhoodMetrics } from './NeighborhoodMetrics'
 import { NeighborhoodUtilizationList } from './NeighborhoodUtilizationList'
 import { AnnotationsPanel } from './AnnotationsPanel'
 import { SeatSwapsPanel } from './SeatSwapsPanel'
+import { RoomBookingsPanel } from './RoomBookingsPanel'
 import { useNeighborhoodStore } from '../../../stores/neighborhoodStore'
 import { focusElements } from '../../../lib/focusElements'
 
@@ -183,6 +184,10 @@ export function InsightsPanel() {
 
       {/* Seat-swap requests — managers approve / deny, requesters cancel. */}
       <SeatSwapsPanel />
+
+      {/* Meeting-room bookings — today's holds rolled up per room.
+          Click a row to focus the room. */}
+      <RoomBookingsPanel />
 
       {/* Severity summary */}
       <SeveritySummary

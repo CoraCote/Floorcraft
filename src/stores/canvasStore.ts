@@ -33,6 +33,10 @@ export type ToolType =
   // sticky note; click empty canvas → create a floor-position note. The
   // create-popover is a DOM overlay; see AnnotationPopover.tsx.
   | 'pin'
+  // Meeting-room booking tool. Click a bookable room element (conference
+  // room, phone booth, common area) to open the RoomBookingDialog. The
+  // dialog is a DOM overlay; see RoomBookingDialog.tsx.
+  | 'book'
 
 export type WallDrawStyle = 'solid' | 'dashed' | 'dotted'
 

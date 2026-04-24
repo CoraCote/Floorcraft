@@ -53,6 +53,8 @@ import type Konva from 'konva'
 import { snapToGrid, getSnappedPosition } from '../../../lib/geometry'
 import { elementBounds } from '../../../lib/elementBounds'
 import { ALIGNMENT_THRESHOLD } from '../../../lib/constants'
+import { isBookableRoom } from '../../../lib/roomBookings'
+import { useRoomBookingDialogStore } from '../../../lib/roomBookingDialogStore'
 
 export function ElementRenderer() {
   const elements = useElementsStore((s) => s.elements)
@@ -173,6 +175,13 @@ export function ElementRenderer() {
   const handleClick = useCallback(
     (id: string, e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
       e.cancelBubble = true
+      if (activeTool === 'book') {
+        const el = useElementsStore.getState().elements[id]
+        if (el && isBookableRoom(el)) {
+          useRoomBookingDialogStore.getState().open(id)
+        }
+        return
+      }
       if (activeTool !== 'select') return
       if ('shiftKey' in e.evt && e.evt.shiftKey) {
         toggleSelection(id)

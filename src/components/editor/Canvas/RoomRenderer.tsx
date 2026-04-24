@@ -2,6 +2,7 @@ import { Group, Rect, Text } from 'react-konva'
 import type { ConferenceRoomElement, PhoneBoothElement, CommonAreaElement } from '../../../types/elements'
 import { isConferenceRoomElement, isCommonAreaElement } from '../../../types/elements'
 import { useUIStore } from '../../../stores/uiStore'
+import { RoomBookingBadge } from './RoomBookingBadge'
 
 type RoomElement = ConferenceRoomElement | PhoneBoothElement | CommonAreaElement
 
@@ -70,6 +71,8 @@ function ConferenceRoomRenderer({ element, isSelected }: ConferenceRoomRendererP
         fill="#B45309"
         listening={false}
       />
+
+      <RoomBookingBadge elementId={element.id} width={element.width} height={element.height} />
     </Group>
   )
 }
@@ -106,6 +109,8 @@ function PhoneBoothRenderer({ element, isSelected }: PhoneBoothRendererProps) {
         fill="#166534"
         listening={false}
       />
+
+      <RoomBookingBadge elementId={element.id} width={element.width} height={element.height} />
     </Group>
   )
 }
@@ -143,6 +148,8 @@ function CommonAreaRenderer({ element, isSelected }: CommonAreaRendererProps) {
         fill="#166534"
         listening={false}
       />
+
+      <RoomBookingBadge elementId={element.id} width={element.width} height={element.height} />
     </Group>
   )
 }
