@@ -102,7 +102,12 @@ export function useOfficeSync() {
   const employees = useEmployeeStore((s) => s.employees)
   const departmentColors = useEmployeeStore((s) => s.departmentColors)
   const floors = useFloorStore((s) => s.floors)
-  const activeFloorId = useFloorStore((s) => s.activeFloorId)
+  // NB: we intentionally do NOT subscribe to `activeFloorId`. Switching
+  // which floor the user is looking at is pure UI state, not a content
+  // edit, and should not on its own schedule a debounced save. The
+  // current `activeFloorId` is still read inside `buildCurrentPayload()`
+  // at save time (via `useFloorStore.getState()`), so any save triggered
+  // by a real edit continues to persist the active floor.
   const settings = useCanvasStore((s) => s.settings)
   const neighborhoods = useNeighborhoodStore((s) => s.neighborhoods)
   const reservations = useReservationsStore((s) => s.reservations)
@@ -122,18 +127,33 @@ export function useOfficeSync() {
   // Snapshot on first run so StrictMode's mount→unmount→remount pass
   // doesn't trigger a spurious save of identity-equal store values.
   const initialSnapshotRef = useRef<unknown>(null)
+  // Serialized form of the last snapshot we either captured at mount or
+  // successfully saved. Used as a defensive deep-equal guard: even if a
+  // tracked slice's reference changes (StrictMode remount, store
+  // rehydrate, focus-driven re-renders), we only debounce a save when
+  // the serialized payload actually differs from what's already on the
+  // server.
+  const lastSavedSnapshotRef = useRef<string | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const retryIndex = useRef(0)
 
   useEffect(() => {
     if (!officeId || !loadedVersion) return
-    const snapshot = { elements, employees, departmentColors, floors, activeFloorId, settings, seatHistory, neighborhoods, reservations, annotations, seatSwaps, roomBookings, shareLinks }
+    const snapshot = { elements, employees, departmentColors, floors, settings, seatHistory, neighborhoods, reservations, annotations, seatSwaps, roomBookings, shareLinks }
 
     if (initialSnapshotRef.current === null) {
       initialSnapshotRef.current = snapshot
+      lastSavedSnapshotRef.current = JSON.stringify(snapshot)
       return
     }
+
+    // Defensive edits-only guard: compare the serialized snapshot to
+    // the last-saved baseline. Identity changes that don't alter the
+    // actual payload (e.g. a `setElements` call with a shallow clone
+    // of the same map) must not schedule a save.
+    const currentSnapshotStr = JSON.stringify(snapshot)
+    if (currentSnapshotStr === lastSavedSnapshotRef.current) return
 
     if (debounceRef.current) clearTimeout(debounceRef.current)
 
@@ -156,6 +176,25 @@ export function useOfficeSync() {
         setLoadedVersion(res.updated_at)
         setLastSavedAt(res.updated_at)
         setSaveState('saved')
+        // Record the baseline against the snapshot that was actually
+        // serialized. Re-derive the edit-slice subset from the current
+        // store contents (matching the effect's snapshot shape) so a
+        // retry fired well after the debounce settles still updates the
+        // guard against the data we truly persisted.
+        lastSavedSnapshotRef.current = JSON.stringify({
+          elements: useElementsStore.getState().elements,
+          employees: useEmployeeStore.getState().employees,
+          departmentColors: useEmployeeStore.getState().departmentColors,
+          floors: useFloorStore.getState().floors,
+          settings: useCanvasStore.getState().settings,
+          seatHistory: useSeatHistoryStore.getState().entries,
+          neighborhoods: useNeighborhoodStore.getState().neighborhoods,
+          reservations: useReservationsStore.getState().reservations,
+          annotations: useAnnotationsStore.getState().annotations,
+          seatSwaps: useSeatSwapsStore.getState().requests,
+          roomBookings: useRoomBookingsStore.getState().bookings,
+          shareLinks: useShareLinksStore.getState().links,
+        })
         return
       }
       if (res.reason === 'conflict') {
@@ -185,7 +224,6 @@ export function useOfficeSync() {
     employees,
     departmentColors,
     floors,
-    activeFloorId,
     settings,
     seatHistory,
     neighborhoods,
