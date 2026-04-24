@@ -13,6 +13,7 @@ import { Minimap } from './Minimap'
 import { CanvasActionDock } from './Canvas/CanvasActionDock'
 import { CanvasScaleBar } from './Canvas/CanvasScaleBar'
 import { NorthArrow } from './Canvas/NorthArrow'
+import { AlignDistributeToolbar } from './Canvas/AlignDistributeToolbar'
 import { FirstRunCoach } from './FirstRunCoach'
 import { useUIStore } from '../../stores/uiStore'
 import { useFloorStore } from '../../stores/floorStore'
@@ -176,6 +177,7 @@ export function MapView() {
           <CanvasStage />
           <StatusBar />
           <Minimap />
+          <AlignDistributeToolbar />
           <CanvasActionDock />
           <CanvasScaleBar />
           <NorthArrow />
