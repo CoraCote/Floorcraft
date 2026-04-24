@@ -26,6 +26,7 @@ import { coerceSeatHistoryEntries } from '../../lib/offices/seatHistoryPersisten
 import { useReservationsStore } from '../../stores/reservationsStore'
 import { coerceReservations } from '../../lib/offices/reservationsPersistence'
 import { useNeighborhoodStore } from '../../stores/neighborhoodStore'
+import { useAnnotationsStore } from '../../stores/annotationsStore'
 import type { Neighborhood } from '../../types/neighborhood'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 import { useUndoDataLossToast } from '../../hooks/useUndoDataLossToast'
@@ -35,7 +36,10 @@ import { currentUserOfficeRole } from '../../lib/offices/currentUserOfficeRole'
 import { useOfficeSync } from '../../lib/offices/useOfficeSync'
 import { useSession } from '../../lib/auth/session'
 import { isEmployeeStatus, type Employee } from '../../types/employee'
-import { migrateEmployees } from '../../lib/offices/loadFromLegacyPayload'
+import {
+  migrateAnnotations,
+  migrateEmployees,
+} from '../../lib/offices/loadFromLegacyPayload'
 import { commitDueStatusChanges } from '../../lib/commitDueStatusChanges'
 import { todayIsoDate } from '../../lib/time'
 import { useEffectiveDateTick } from '../../hooks/useEffectiveDateTick'
@@ -180,6 +184,14 @@ export function ProjectShell() {
       // normalises undefined / malformed blobs to an empty array.
       useReservationsStore.setState({
         reservations: coerceReservations(p.reservations),
+      })
+
+      // Annotations hydrate from a top-level `annotations` key. Legacy
+      // payloads predate the feature entirely; `migrateAnnotations`
+      // defensively coerces missing / malformed sub-entries so the editor
+      // never crashes on a hand-edited blob.
+      useAnnotationsStore.setState({
+        annotations: migrateAnnotations(p.annotations),
       })
 
       // Seed the project facade so UI that reads `currentProject` (share

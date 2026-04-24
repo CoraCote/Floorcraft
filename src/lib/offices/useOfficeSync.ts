@@ -7,6 +7,7 @@ import { useProjectStore } from '../../stores/projectStore'
 import { useSeatHistoryStore } from '../../stores/seatHistoryStore'
 import { useNeighborhoodStore } from '../../stores/neighborhoodStore'
 import { useReservationsStore } from '../../stores/reservationsStore'
+import { useAnnotationsStore } from '../../stores/annotationsStore'
 import { saveOffice, saveOfficeForce } from './officeRepository'
 
 /**
@@ -51,6 +52,11 @@ function buildCurrentPayload(): Record<string, unknown> {
   const seatHistory = useSeatHistoryStore.getState().entries
   const neighborhoods = useNeighborhoodStore.getState().neighborhoods
   const reservations = useReservationsStore.getState().reservations
+  // Annotations are kept at the top level (same reasoning as
+  // `neighborhoods`) — they carry either a floorId (position-anchored) or
+  // only an elementId (element-anchored), and the flat Record shape
+  // round-trips cleanly through `migrateAnnotations` on load.
+  const annotations = useAnnotationsStore.getState().annotations
   return {
     version: 2,
     elements,
@@ -69,6 +75,7 @@ function buildCurrentPayload(): Record<string, unknown> {
     // load path (`ProjectShell`) treats a missing key as `[]`, so this
     // round-trips through older payloads without breaking them.
     reservations,
+    annotations,
   }
 }
 
@@ -81,6 +88,7 @@ export function useOfficeSync() {
   const settings = useCanvasStore((s) => s.settings)
   const neighborhoods = useNeighborhoodStore((s) => s.neighborhoods)
   const reservations = useReservationsStore((s) => s.reservations)
+  const annotations = useAnnotationsStore((s) => s.annotations)
 
   const seatHistory = useSeatHistoryStore((s) => s.entries)
 
@@ -99,7 +107,7 @@ export function useOfficeSync() {
 
   useEffect(() => {
     if (!officeId || !loadedVersion) return
-    const snapshot = { elements, employees, departmentColors, floors, activeFloorId, settings, seatHistory, neighborhoods, reservations }
+    const snapshot = { elements, employees, departmentColors, floors, activeFloorId, settings, seatHistory, neighborhoods, reservations, annotations }
 
     if (initialSnapshotRef.current === null) {
       initialSnapshotRef.current = snapshot
@@ -161,6 +169,7 @@ export function useOfficeSync() {
     seatHistory,
     neighborhoods,
     reservations,
+    annotations,
     setSaveState,
     setLastSavedAt,
     setLoadedVersion,

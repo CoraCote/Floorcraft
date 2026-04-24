@@ -47,6 +47,12 @@ import { useCalibrateScaleStore } from '../../../stores/calibrateScaleStore'
 import { NeighborhoodLayer } from './NeighborhoodLayer'
 import { NeighborhoodEditOverlay } from './NeighborhoodEditOverlay'
 import { NeighborhoodOverlay } from './NeighborhoodOverlay'
+import { AnnotationLayer } from './AnnotationLayer'
+import {
+  AnnotationPopover,
+  setLastPinAnchor,
+} from './AnnotationPopover'
+import { useAnnotationsStore } from '../../../stores/annotationsStore'
 import { useNeighborhoodStore } from '../../../stores/neighborhoodStore'
 import { NEIGHBORHOOD_PALETTE } from '../../../types/neighborhood'
 import { useRecentLibraryItems } from '../../../hooks/useRecentLibraryItems'
@@ -67,6 +73,12 @@ export function CanvasStage() {
   const { stageX, stageY, stageScale, setStagePosition, activeTool } = useCanvasStore(useShallow((s) => ({ stageX: s.stageX, stageY: s.stageY, stageScale: s.stageScale, setStagePosition: s.setStagePosition, activeTool: s.activeTool })))
   const { clearSelection, setContextMenu } = useUIStore(useShallow((s) => ({ clearSelection: s.clearSelection, setContextMenu: s.setContextMenu })))
   const canEdit = useCan('editMap')
+  // Annotations are explicitly `editMap || editRoster` — HR editors should
+  // be able to leave notes on the map even though they can't move elements.
+  // Read both permissions unconditionally so the hook call order is stable
+  // (`useCan('a') || useCan('b')` would short-circuit the second call).
+  const canEditRosterForAnnotations = useCan('editRoster')
+  const canAnnotate = canEdit || canEditRosterForAnnotations
   // Marquee (drag-rectangle) selection — only active when the select tool is
   // active, the user presses on empty stage space, and they start dragging.
   // `marqueeStartRef` holds the canvas-space anchor + whether shift was held
@@ -487,6 +499,48 @@ export function CanvasStage() {
         return
       }
 
+      // Annotation pin tool. Left-click anywhere drops a create-popover:
+      // on an element → element-anchored; on empty canvas → floor-position
+      // anchored. The popover is a DOM overlay (AnnotationPopover); we
+      // just stash the anchor + screen-space coords and let it mount.
+      //
+      // Gate on editMap || editRoster at the click site — ToolSelector
+      // still shows the tool to viewers technically, but defensive
+      // gating here prevents any silent-write path if a lower-role user
+      // forced the tool active via state fiddling.
+      if (activeTool === 'pin' && e.evt.button === 0 && canAnnotate) {
+        const stage = stageRef.current
+        if (!stage) return
+        const pointer = stage.getPointerPosition()
+        if (!pointer) return
+        const canvasX = (pointer.x - stageX) / stageScale
+        const canvasY = (pointer.y - stageY) / stageScale
+
+        // Resolve element under cursor via the same ancestor-group walk
+        // the assignment-click path uses. `target === getStage()` means
+        // empty canvas; anything else is inside an element's group.
+        const target = e.target
+        const ancestorGroup = target.findAncestor('Group', true)
+        const elementId =
+          target === target.getStage() ? null : ancestorGroup?.id() || null
+
+        const floorId = useFloorStore.getState().activeFloorId
+        // Element anchor when we hit one, else floor-position anchor.
+        const anchor: import('../../../types/annotations').AnnotationAnchor =
+          elementId
+            ? { type: 'element', elementId }
+            : { type: 'floor-position', floorId, x: canvasX, y: canvasY }
+        useAnnotationsStore.getState().setDraft({
+          anchor,
+          screenX: pointer.x,
+          screenY: pointer.y,
+        })
+        // Return to select after opening the popover so the user isn't
+        // stuck in pin-mode if they dismiss without saving.
+        useCanvasStore.getState().setActiveTool('select')
+        return
+      }
+
       if ((activeTool === 'door' || activeTool === 'window') && e.evt.button === 0) {
         const stage = stageRef.current
         if (!stage) return
@@ -597,7 +651,7 @@ export function CanvasStage() {
         setContextMenu(null)
       }
     },
-    [activeTool, canEdit, clearSelection, setContextMenu, stageX, stageY, stageScale, onWallMouseDown]
+    [activeTool, canEdit, canAnnotate, clearSelection, setContextMenu, stageX, stageY, stageScale, onWallMouseDown]
   )
 
   const handleMouseMove = useCallback(
@@ -1019,6 +1073,7 @@ export function CanvasStage() {
   if (activeTool === 'measure') cursor = 'crosshair'
   if (activeTool === 'calibrate-scale') cursor = 'crosshair'
   if (activeTool === 'neighborhood') cursor = 'crosshair'
+  if (activeTool === 'pin') cursor = 'crosshair'
 
   // Accept employee drags from PeoplePanel and assign the dropped employee
   // to whatever assignable element is under the cursor.
@@ -1177,8 +1232,17 @@ export function CanvasStage() {
             content — the layer is `listening={false}` so they stay
             purely decorative. */}
         {showNeighborhoodOverlay && <NeighborhoodOverlay />}
+        {/* Annotation pins render on their own layer above the element
+            layer so a pin never disappears behind a wall or furniture. */}
+        <AnnotationLayer
+          onPinClick={(id, sx, sy) => {
+            setLastPinAnchor({ x: sx, y: sy })
+            useAnnotationsStore.getState().setActiveAnnotationId(id)
+          }}
+        />
       </Stage>
       <FreeTextEditorOverlay containerRef={containerRef} />
+      <AnnotationPopover containerRef={containerRef} />
     </div>
   )
 }

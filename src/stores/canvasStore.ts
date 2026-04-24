@@ -29,6 +29,10 @@ export type ToolType =
   // Neighborhood tool. Click-drag on empty canvas to paint a labeled
   // zone; click an existing neighborhood to select it for resize/rename.
   | 'neighborhood'
+  // Annotation pin tool. Click an element → create an element-anchored
+  // sticky note; click empty canvas → create a floor-position note. The
+  // create-popover is a DOM overlay; see AnnotationPopover.tsx.
+  | 'pin'
 
 export type WallDrawStyle = 'solid' | 'dashed' | 'dotted'
 

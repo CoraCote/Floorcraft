@@ -1,5 +1,12 @@
 import { useMemo, useRef, useState } from 'react'
-import { ChevronDown, ChevronRight, Star, Upload, X } from 'lucide-react'
+import {
+  ChevronDown,
+  ChevronRight,
+  MessageSquarePlus,
+  Star,
+  Upload,
+  X,
+} from 'lucide-react'
 import { TABLE_SEAT_DEFAULTS, getDefaults } from '../../../lib/constants'
 import { LibraryPreview } from './LibraryPreview'
 import { useRecentLibraryItems } from '../../../hooks/useRecentLibraryItems'
@@ -411,6 +418,16 @@ function LibrarySection({
 
 export function ElementLibrary() {
   const canEdit = useCan('editMap')
+  // Annotations are gated on `editRoster || editMap` — the same rule
+  // CanvasStage applies when the pin-tool click lands. HR editors can
+  // leave notes on the map even though they can't move elements, so we
+  // show the pin button when either permission grants access.
+  // Read the second permission unconditionally so React-hooks rules stay
+  // happy (`useCan('a') || useCan('b')` would short-circuit).
+  const canEditRosterForAnnotations = useCan('editRoster')
+  const canAnnotate = canEdit || canEditRosterForAnnotations
+  const activeTool = useCanvasStore((s) => s.activeTool)
+  const setActiveTool = useCanvasStore((s) => s.setActiveTool)
   const addElement = useElementsStore((s) => s.addElement)
   const getMaxZIndex = useElementsStore((s) => s.getMaxZIndex)
   const stageScale = useCanvasStore((s) => s.stageScale)
@@ -554,9 +571,29 @@ export function ElementLibrary() {
   // the entire tile grid (instead of disabling each tile) keeps the UI
   // honest: a panel that looks interactive but silently ignores clicks is
   // worse than an obvious view-only placard.
+  //
+  // HR-editors (who have `editRoster` but not `editMap`) DON'T have the
+  // library surface either, but they DO get the annotation pin so they
+  // can leave notes tied to desks/people without needing map privileges.
   if (!canEdit) {
     return (
-      <div className="p-4 text-xs text-gray-500 space-y-1">
+      <div className="p-4 text-xs text-gray-500 space-y-2">
+        {canAnnotate && (
+          <button
+            type="button"
+            onClick={() => setActiveTool(activeTool === 'pin' ? 'select' : 'pin')}
+            aria-pressed={activeTool === 'pin'}
+            title="Click an element or empty canvas to add a sticky note (280 chars max)"
+            className={`w-full flex items-center gap-2 px-2.5 py-1.5 text-xs rounded border transition-colors ${
+              activeTool === 'pin'
+                ? 'bg-amber-50 text-amber-800 border-amber-300'
+                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+            }`}
+          >
+            <MessageSquarePlus size={14} />
+            <span className="flex-1 text-left">Annotation pin</span>
+          </button>
+        )}
         <div className="font-medium text-gray-600">View-only</div>
         <div>You don't have permission to add elements to this office.</div>
       </div>
@@ -573,6 +610,29 @@ export function ElementLibrary() {
         onChange={(e) => setQuery(e.target.value)}
         className="w-full mb-3 px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
       />
+      {canAnnotate && (
+        // Pin tool: a one-off entry here (rather than a LibraryItem)
+        // because it's a canvas *tool*, not an element factory. Sets
+        // `canvasStore.activeTool` so the next CanvasStage click lands
+        // through the pin-tool branch in handleMouseDown.
+        <button
+          type="button"
+          onClick={() => setActiveTool(activeTool === 'pin' ? 'select' : 'pin')}
+          aria-pressed={activeTool === 'pin'}
+          title="Click an element or empty canvas to add a sticky note (280 chars max)"
+          className={`w-full mb-3 flex items-center gap-2 px-2.5 py-1.5 text-xs rounded border transition-colors ${
+            activeTool === 'pin'
+              ? 'bg-amber-50 text-amber-800 border-amber-300'
+              : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+          }`}
+        >
+          <MessageSquarePlus size={14} />
+          <span className="flex-1 text-left">Annotation pin</span>
+          {activeTool === 'pin' && (
+            <span className="text-[10px] font-mono text-amber-600">ESC</span>
+          )}
+        </button>
+      )}
       {isSearching ? (
         <LibrarySection
           id="search-results"

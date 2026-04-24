@@ -12,6 +12,8 @@ import {
   type PendingStatusChange,
 } from '../../types/employee'
 import { WALL_TYPES, type WallType } from '../../types/elements'
+import type { Annotation, AnnotationAnchor } from '../../types/annotations'
+import { ANNOTATION_BODY_MAX } from '../../types/annotations'
 
 /**
  * Legacy-payload migration helpers.
@@ -273,6 +275,75 @@ export function migrateEmployees(
     }
   }
   return out as ReturnType<typeof useEmployeeStore.getState>['employees']
+}
+
+/**
+ * Migrate a deserialized annotations map. Legacy payloads predate the
+ * annotations feature and simply omit the `annotations` key; callers fall
+ * back to `{}` before invoking this helper. Entries that don't match the
+ * expected shape (missing id, bad anchor discriminant, non-string body)
+ * are dropped with a `console.warn` rather than crashing the editor.
+ *
+ * The migration is defensive by design: a partially-saved or hand-crafted
+ * payload should load as a clean (possibly empty) annotations map, never
+ * as a crashed app.
+ */
+export function migrateAnnotations(
+  raw: unknown,
+): Record<string, Annotation> {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
+  const out: Record<string, Annotation> = {}
+  for (const [id, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (!value || typeof value !== 'object') continue
+    const a = value as Record<string, unknown>
+    if (!isNonEmptyString(a.id)) {
+      console.warn('[annotation migration] dropping entry with missing id', a)
+      continue
+    }
+    if (typeof a.body !== 'string') {
+      console.warn(`[annotation migration] dropping ${a.id}: non-string body`)
+      continue
+    }
+    const rawAnchor = a.anchor as Record<string, unknown> | null | undefined
+    if (!rawAnchor || typeof rawAnchor !== 'object') {
+      console.warn(`[annotation migration] dropping ${a.id}: missing anchor`)
+      continue
+    }
+    let anchor: AnnotationAnchor | null = null
+    if (rawAnchor.type === 'element' && isNonEmptyString(rawAnchor.elementId)) {
+      anchor = { type: 'element', elementId: rawAnchor.elementId }
+    } else if (
+      rawAnchor.type === 'floor-position' &&
+      isNonEmptyString(rawAnchor.floorId) &&
+      typeof rawAnchor.x === 'number' &&
+      typeof rawAnchor.y === 'number' &&
+      Number.isFinite(rawAnchor.x) &&
+      Number.isFinite(rawAnchor.y)
+    ) {
+      anchor = {
+        type: 'floor-position',
+        floorId: rawAnchor.floorId,
+        x: rawAnchor.x,
+        y: rawAnchor.y,
+      }
+    }
+    if (!anchor) {
+      console.warn(`[annotation migration] dropping ${a.id}: invalid anchor`)
+      continue
+    }
+    const body = a.body.slice(0, ANNOTATION_BODY_MAX)
+    out[id] = {
+      id: a.id,
+      body,
+      authorName: isNonEmptyString(a.authorName) ? a.authorName : 'Unknown',
+      createdAt: isNonEmptyString(a.createdAt)
+        ? a.createdAt
+        : new Date(0).toISOString(),
+      resolvedAt: isNonEmptyString(a.resolvedAt) ? a.resolvedAt : null,
+      anchor,
+    }
+  }
+  return out
 }
 
 /**

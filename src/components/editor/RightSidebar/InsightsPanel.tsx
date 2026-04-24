@@ -12,6 +12,7 @@ import { InsightCard } from './InsightCard'
 import { UtilizationWidgets } from './UtilizationWidgets'
 import { NeighborhoodMetrics } from './NeighborhoodMetrics'
 import { NeighborhoodUtilizationList } from './NeighborhoodUtilizationList'
+import { AnnotationsPanel } from './AnnotationsPanel'
 import { useNeighborhoodStore } from '../../../stores/neighborhoodStore'
 import { focusElements } from '../../../lib/focusElements'
 
@@ -173,6 +174,11 @@ export function InsightsPanel() {
           utilization list for now; both render nothing on an empty
           project so they stay invisible until neighborhoods are drawn. */}
       <NeighborhoodMetrics />
+
+      {/* Annotations — sticky notes pinned to elements or floor positions.
+          Click a row to focus the anchor. Resolved notes collapse under
+          the open list. */}
+      <AnnotationsPanel />
 
       {/* Severity summary */}
       <SeveritySummary
