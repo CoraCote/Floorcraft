@@ -1,6 +1,15 @@
 import type { OfficeRole } from './offices/permissionsRepository'
 
-export type Role = OfficeRole
+/**
+ * `shareViewer` is the synthetic role issued to anonymous visitors who land
+ * on a D6 view-only share link. It isn't persisted to `office_permissions`
+ * — it lives in-memory on the client once the share token has been
+ * validated by `shareLinksStore.isTokenValid` — and it grants nothing
+ * except `viewMap`. In particular it explicitly denies `viewPII` so the
+ * roster is redacted, and every write action (editMap, editRoster, etc.)
+ * returns `false` via the empty matrix entry.
+ */
+export type Role = OfficeRole | 'shareViewer'
 export type Action =
   | 'editRoster'
   | 'editMap'
@@ -10,6 +19,10 @@ export type Action =
   | 'viewSeatHistory'
   | 'manageBilling'
   | 'generateShareLink'
+  // Lowest-privilege read: "may see the map + the redacted roster". A
+  // share-link visitor gets exactly this and nothing else. Roles that
+  // already have `editMap` implicitly get `viewMap` (see MATRIX below).
+  | 'viewMap'
   // GDPR / dignity gate. Roles without `viewPII` see a reduced employee
   // projection (initials, blanked email/manager/schedule/tags/photo). Any
   // role that can mutate the roster (editRoster) necessarily has it so the
@@ -32,12 +45,17 @@ const MATRIX: Record<Role, Action[]> = {
   owner: [
     'editRoster', 'editMap', 'manageTeam',
     'viewAuditLog', 'viewReports', 'viewSeatHistory',
-    'manageBilling', 'generateShareLink', 'viewPII',
+    'manageBilling', 'generateShareLink', 'viewMap', 'viewPII',
   ],
-  editor: ['editRoster', 'editMap', 'viewReports', 'viewSeatHistory', 'viewPII'],
-  'hr-editor': ['editRoster', 'viewAuditLog', 'viewReports', 'viewSeatHistory', 'viewPII'],
-  'space-planner': ['editMap', 'viewReports', 'viewSeatHistory'],
-  viewer: [],
+  editor: ['editRoster', 'editMap', 'viewReports', 'viewSeatHistory', 'viewMap', 'viewPII'],
+  'hr-editor': ['editRoster', 'viewAuditLog', 'viewReports', 'viewSeatHistory', 'viewMap', 'viewPII'],
+  'space-planner': ['editMap', 'viewReports', 'viewSeatHistory', 'viewMap'],
+  viewer: ['viewMap'],
+  // Anonymous share-link visitor: literally the map. No PII, no reports,
+  // no seat history, and certainly no edits. The `useCan` gates on every
+  // mutating surface are what actually enforce the read-only contract —
+  // leaving this role with an array of one action is intentional.
+  shareViewer: ['viewMap'],
 }
 
 export function can(role: Role | null, action: Action): boolean {

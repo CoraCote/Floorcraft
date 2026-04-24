@@ -31,7 +31,9 @@ import { coerceRoomBookings } from '../../lib/offices/roomBookingsPersistence'
 import { useNeighborhoodStore } from '../../stores/neighborhoodStore'
 import { useAnnotationsStore } from '../../stores/annotationsStore'
 import { useSeatSwapsStore } from '../../stores/seatSwapsStore'
+import { useShareLinksStore } from '../../stores/shareLinksStore'
 import type { Neighborhood } from '../../types/neighborhood'
+import type { ShareLink } from '../../types/shareLinks'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 import { useUndoDataLossToast } from '../../hooks/useUndoDataLossToast'
 import { supabase } from '../../lib/supabase'
@@ -211,6 +213,19 @@ export function ProjectShell() {
       // entirely; `migrateSeatSwaps` returns `{}` in that case.
       useSeatSwapsStore.setState({
         requests: migrateSeatSwaps(p.seatSwaps),
+      })
+
+      // D6 view-only share links. Legacy payloads have no `shareLinks` key
+      // — coerce to `{}` so the previous office's links don't bleed into
+      // a freshly-loaded one. We keep this shallow (no per-field coercion)
+      // because the store only ever writes through its own typed helpers;
+      // a hand-edited blob that doesn't match is a bug worth surfacing.
+      const rawShareLinks = p.shareLinks
+      useShareLinksStore.setState({
+        links:
+          rawShareLinks && typeof rawShareLinks === 'object'
+            ? (rawShareLinks as Record<string, ShareLink>)
+            : {},
       })
 
       // Seed the project facade so UI that reads `currentProject` (share

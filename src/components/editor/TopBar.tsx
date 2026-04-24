@@ -25,6 +25,7 @@ import { TeamSwitcher } from '../team/TeamSwitcher'
 import { UserMenu } from '../team/UserMenu'
 import { ScaleSettingsPopover } from './ScaleSettingsPopover'
 import { ViewAsMenu } from './ViewAsMenu'
+import { ShareLinkDialog } from './ShareLinkDialog'
 
 export function TopBar() {
   const project = useProjectStore((s) => s.currentProject)
@@ -61,6 +62,11 @@ export function TopBar() {
   const { canUndo, canRedo } = useTemporalState()
   const canViewAudit = useCan('viewAuditLog')
   const canViewReports = useCan('viewReports')
+  // Gate the share-link dialog behind `editMap` — editors/owners can hand
+  // out read-only links to their work, but a viewer (or a shareViewer who
+  // somehow lands here) cannot.
+  const canShareMap = useCan('editMap')
+  const [shareLinkOpen, setShareLinkOpen] = useState(false)
 
   const [editing, setEditing] = useState(false)
   const [nameValue, setNameValue] = useState('')
@@ -427,6 +433,24 @@ export function TopBar() {
         <Share2 size={14} />
         Share
       </button>
+
+      {/* D6 view-only share link dialog. Separate surface from the existing
+          collaborator Share modal because this is the "anonymous, time-
+          boxed, read-only" flow — conceptually different from "invite a
+          teammate to edit". Gated behind editMap so viewers can't mint
+          links out of their own read-only access. */}
+      {canShareMap && (
+        <button
+          onClick={() => setShareLinkOpen(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded"
+          aria-label="Share link"
+          title="Create a view-only share link"
+        >
+          <Share2 size={14} />
+          Share link
+        </button>
+      )}
+      <ShareLinkDialog open={shareLinkOpen} onClose={() => setShareLinkOpen(false)} />
 
       {/*
         Wayfinding PDF — a print-ready handout with a legend. Separate from

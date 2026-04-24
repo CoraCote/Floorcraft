@@ -4,6 +4,7 @@ import type { Project } from '../types/project'
 import { DEFAULT_CANVAS_SETTINGS } from '../types/project'
 import { generateSlug } from '../lib/slug'
 import type { OfficeRole } from '../lib/offices/permissionsRepository'
+import type { Role } from '../lib/permissions'
 
 /**
  * Save-cycle state surfaced by `useOfficeSync` so the TopBar can show a
@@ -37,7 +38,7 @@ interface ProjectState {
   // "unknown" — either no office is loaded yet, or the role lookup failed.
   // Consumers treat `null` permissively (same as editor) so transient
   // outages don't lock operators out.
-  currentOfficeRole: OfficeRole | null
+  currentOfficeRole: Role | null
   // Owner-only "view as role" impersonation. Client-side UI-gating only —
   // the server still sees the owner token, so this is a reversible preview,
   // not a real privilege downgrade. `null` when not impersonating.
@@ -59,7 +60,7 @@ interface ProjectState {
   setOfficeId: (id: string | null) => void
   setLoadedVersion: (v: string | null) => void
   setConflict: (c: ProjectConflict) => void
-  setCurrentOfficeRole: (role: OfficeRole | null) => void
+  setCurrentOfficeRole: (role: Role | null) => void
   setImpersonatedRole: (role: OfficeRole | null) => void
   setCurrentTeamId: (id: string | null) => void
   setCurrentUserId: (id: string | null) => void

@@ -93,6 +93,11 @@ const SharedProjectView = lazy(() =>
     default: m.SharedProjectView,
   })),
 )
+const ShareView = lazy(() =>
+  import('./components/editor/ShareView').then((m) => ({
+    default: m.ShareView,
+  })),
+)
 
 function Loading() {
   return (
@@ -137,6 +142,11 @@ function App() {
             {/* Read-only share links — intentionally unauthenticated.
                 RLS policies on share_tokens + offices are the gate. */}
             <Route path="/shared/:projectId/:token" element={<SharedProjectView />} />
+            {/* D6 view-only share links. Token validation happens client
+                side in `ShareView` against the in-memory shareLinks store;
+                the route is intentionally public so anonymous visitors
+                don't bounce through auth. */}
+            <Route path="/share/:officeSlug" element={<ShareView />} />
             {/* Help is intentionally public — an unauth'd user can read
                 the guide before signing up, and an auth'd one doesn't
                 have to bounce through a team to get to it. */}

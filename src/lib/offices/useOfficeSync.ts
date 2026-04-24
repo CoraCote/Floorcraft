@@ -10,6 +10,7 @@ import { useReservationsStore } from '../../stores/reservationsStore'
 import { useRoomBookingsStore } from '../../stores/roomBookingsStore'
 import { useAnnotationsStore } from '../../stores/annotationsStore'
 import { useSeatSwapsStore } from '../../stores/seatSwapsStore'
+import { useShareLinksStore } from '../../stores/shareLinksStore'
 import { saveOffice, saveOfficeForce } from './officeRepository'
 
 /**
@@ -68,6 +69,9 @@ function buildCurrentPayload(): Record<string, unknown> {
   // top-level `seatSwaps` key whose absence on legacy payloads falls
   // through the hydration path as an empty map.
   const seatSwaps = useSeatSwapsStore.getState().requests
+  // D6 view-only share links. Persisted as a top-level Record so they
+  // survive reloads and co-editors see each other's tokens + revocations.
+  const shareLinks = useShareLinksStore.getState().links
   return {
     version: 2,
     elements,
@@ -89,6 +93,7 @@ function buildCurrentPayload(): Record<string, unknown> {
     roomBookings,
     annotations,
     seatSwaps,
+    shareLinks,
   }
 }
 
@@ -104,6 +109,7 @@ export function useOfficeSync() {
   const roomBookings = useRoomBookingsStore((s) => s.bookings)
   const annotations = useAnnotationsStore((s) => s.annotations)
   const seatSwaps = useSeatSwapsStore((s) => s.requests)
+  const shareLinks = useShareLinksStore((s) => s.links)
 
   const seatHistory = useSeatHistoryStore((s) => s.entries)
 
@@ -122,7 +128,7 @@ export function useOfficeSync() {
 
   useEffect(() => {
     if (!officeId || !loadedVersion) return
-    const snapshot = { elements, employees, departmentColors, floors, activeFloorId, settings, seatHistory, neighborhoods, reservations, annotations, seatSwaps, roomBookings }
+    const snapshot = { elements, employees, departmentColors, floors, activeFloorId, settings, seatHistory, neighborhoods, reservations, annotations, seatSwaps, roomBookings, shareLinks }
 
     if (initialSnapshotRef.current === null) {
       initialSnapshotRef.current = snapshot
@@ -187,6 +193,7 @@ export function useOfficeSync() {
     roomBookings,
     annotations,
     seatSwaps,
+    shareLinks,
     setSaveState,
     setLastSavedAt,
     setLoadedVersion,
