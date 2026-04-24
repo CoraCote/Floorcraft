@@ -12,6 +12,14 @@ export interface CanvasSettings {
    * default so the canvas stays uncluttered for new plans.
    */
   showDimensions: boolean
+  /**
+   * Heading (in degrees, 0-360) of the on-canvas north arrow. 0 means the
+   * arrow points straight up. The user can drag the floating compass to
+   * reorient the plan for wayfinding/exports. Optional for backward
+   * compatibility with persisted projects that predate the field — readers
+   * should treat `undefined` as `0`.
+   */
+  northRotation?: number
 }
 
 export interface Project {
@@ -34,4 +42,5 @@ export const DEFAULT_CANVAS_SETTINGS: CanvasSettings = {
   scaleUnit: 'ft',
   showGrid: true,
   showDimensions: false,
+  northRotation: 0,
 }
