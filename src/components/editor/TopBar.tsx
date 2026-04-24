@@ -257,6 +257,20 @@ export function TopBar() {
               Reports
             </NavLink>
           )}
+          {canViewReports && (
+            <NavLink
+              to={`/t/${teamSlug}/o/${officeSlug}/org-chart`}
+              className={({ isActive }) =>
+                `px-3 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
+                  isActive
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-800'
+                }`
+              }
+            >
+              Org Chart
+            </NavLink>
+          )}
         </nav>
       )}
 

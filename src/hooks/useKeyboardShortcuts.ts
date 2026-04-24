@@ -268,6 +268,13 @@ export function useKeyboardShortcuts() {
           navigate(`/t/${teamSlug}/o/${officeSlug}/roster`)
           return
         }
+        // O → Org chart. Mirrors the M / R jump-keys so HR users don't
+        // have to leave the keyboard when triaging reporting data.
+        if ((e.key === 'o' || e.key === 'O') && teamSlug && officeSlug) {
+          e.preventDefault()
+          navigate(`/t/${teamSlug}/o/${officeSlug}/org-chart`)
+          return
+        }
       }
     }
 

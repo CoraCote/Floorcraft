@@ -68,6 +68,11 @@ const ReportsPage = lazy(() =>
     default: m.ReportsPage,
   })),
 )
+const OrgChartPage = lazy(() =>
+  import('./components/editor/OrgChartPage').then((m) => ({
+    default: m.OrgChartPage,
+  })),
+)
 const SharedProjectView = lazy(() =>
   import('./components/shared/SharedProjectView').then((m) => ({
     default: m.SharedProjectView,
@@ -193,6 +198,7 @@ function App() {
               <Route path="roster" element={<RosterPage />} />
               <Route path="audit" element={<AuditLogPage />} />
               <Route path="reports" element={<ReportsPage />} />
+              <Route path="org-chart" element={<OrgChartPage />} />
             </Route>
 
             {/* Legacy routes — Phases 0-5 mounted the editor at
