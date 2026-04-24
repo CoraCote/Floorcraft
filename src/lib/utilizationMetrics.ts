@@ -28,6 +28,7 @@ import {
   isCommonAreaElement,
 } from '../types/elements'
 import type { Employee } from '../types/employee'
+import type { Floor } from '../types/floor'
 
 export interface UtilizationMetrics {
   /** Total seat capacity across desks + workstations + private offices. */
@@ -142,6 +143,66 @@ export function computeUtilizationMetrics(
     phoneBoothsPerPerson,
     commonAreas,
   }
+}
+
+/**
+ * Per-floor breakdown of utilization metrics. The single-floor reducer
+ * (`computeUtilizationMetrics`) merges every element regardless of floor,
+ * which is the right answer for the "overall insights" panel but is useless
+ * when a manager asks "which of my 6 floors is overcrowded?". This helper
+ * runs the same reducer once per floor so the Floor Compare report can
+ * render one row per floor.
+ *
+ * Inputs:
+ *   - `floors` — the source of truth for which elements belong to which
+ *     floor. Each `Floor.elements` is the authoritative per-floor element
+ *     map; the returned object has exactly one entry per floor in `floors`.
+ *   - `elements` — a flat element map used to OVERRIDE the per-floor snapshot
+ *     for elements that are currently live on the active canvas (i.e., the
+ *     editor hasn't flushed them back into `floor.elements` yet). Any element
+ *     id in this map that appears in some `floor.elements` replaces the
+ *     stored version. Elements in this map that don't match any floor are
+ *     excluded — we have no way to attribute them.
+ *   - `employees` — headcount/status is a global signal, so every floor gets
+ *     the same `activeEmployees` denominator. This matches how facilities
+ *     managers think: "5 floors, 200 people across all of them".
+ *
+ * Pure: no store access, no date calls.
+ */
+export function computeUtilizationMetricsByFloor(
+  floors: Floor[],
+  elements: Record<string, CanvasElement>,
+  employees: Record<string, Employee>,
+): Record<string, UtilizationMetrics> {
+  const out: Record<string, UtilizationMetrics> = {}
+
+  // Build a reverse index: which floor does each element id belong to?
+  // Walk floors once so an element present in two floor snapshots resolves
+  // to whichever floor was iterated last — in practice every element lives
+  // on exactly one floor, but we guard anyway.
+  const floorIdByElementId = new Map<string, string>()
+  for (const floor of floors) {
+    for (const id of Object.keys(floor.elements)) {
+      floorIdByElementId.set(id, floor.id)
+    }
+  }
+
+  for (const floor of floors) {
+    // Start from the stored snapshot. For the active floor, any live
+    // element in `elements` whose id matches an element in this floor
+    // replaces the stored copy. We ONLY honour ids that the reverse index
+    // resolves to this floor — an element with a missing floorId (i.e.
+    // not in any floor.elements) is excluded.
+    const merged: Record<string, CanvasElement> = { ...floor.elements }
+    for (const [id, live] of Object.entries(elements)) {
+      if (floorIdByElementId.get(id) === floor.id) {
+        merged[id] = live
+      }
+    }
+    out[floor.id] = computeUtilizationMetrics(merged, employees)
+  }
+
+  return out
 }
 
 /**

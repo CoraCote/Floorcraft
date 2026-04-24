@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { BarChart2 } from 'lucide-react'
 import { useFloorStore } from '../../stores/floorStore'
 import { useVisibleEmployees } from '../../hooks/useVisibleEmployees'
 import { useCan } from '../../hooks/useCan'
@@ -30,20 +31,35 @@ export function ReportsPage() {
     return <div className="p-6 text-gray-600">Not authorized to view reports.</div>
   }
 
+  const floorCompareHref =
+    teamSlug && officeSlug
+      ? `/t/${teamSlug}/o/${officeSlug}/reports/floor-compare`
+      : null
+
   return (
     <div className="p-6 space-y-6 max-w-5xl">
       {/* Reports cross-links. Keeps discovery of the sibling report pages
           easy without introducing a full sidebar layout component — the
           office editor's top bar handles primary navigation, and the
-          sub-reports (Scenarios, future siblings) chain in from here. */}
+          sub-reports (Scenarios, Floor Compare, future siblings) chain
+          in from here. */}
       {teamSlug && officeSlug && (
-        <nav className="flex items-center gap-2 text-sm">
+        <nav aria-label="Reports navigation" className="flex flex-wrap items-center gap-2 text-sm">
           <Link
             to={`/t/${teamSlug}/o/${officeSlug}/reports/scenarios`}
             className="px-3 py-1.5 border border-gray-200 rounded bg-white hover:bg-gray-50"
           >
             Capacity scenarios →
           </Link>
+          {floorCompareHref && (
+            <Link
+              to={floorCompareHref}
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 border border-gray-200 rounded bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-300"
+            >
+              <BarChart2 size={14} />
+              Floor compare
+            </Link>
+          )}
         </nav>
       )}
       <Card

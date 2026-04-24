@@ -73,6 +73,11 @@ const ScenariosPage = lazy(() =>
     default: m.ScenariosPage,
   })),
 )
+const FloorComparePage = lazy(() =>
+  import('./components/reports/FloorComparePage').then((m) => ({
+    default: m.FloorComparePage,
+  })),
+)
 const OrgChartPage = lazy(() =>
   import('./components/editor/OrgChartPage').then((m) => ({
     default: m.OrgChartPage,
@@ -209,6 +214,7 @@ function App() {
               <Route path="audit" element={<AuditLogPage />} />
               <Route path="reports" element={<ReportsPage />} />
               <Route path="reports/scenarios" element={<ScenariosPage />} />
+              <Route path="reports/floor-compare" element={<FloorComparePage />} />
               <Route path="org-chart" element={<OrgChartPage />} />
               <Route path="reservations" element={<ReservationsPage />} />
             </Route>
