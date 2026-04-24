@@ -14,6 +14,14 @@ import { useState, useRef, useEffect, type KeyboardEvent } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 
 /**
+ * Wave 9C: drag-to-reorder mime. Distinct from `application/floocraft-element-type`
+ * (ElementLibrary tile drags) and `application/employee-id` (PeoplePanel
+ * drags) so the canvas drop handler doesn't accidentally try to spawn an
+ * element when the user releases a floor tab over the canvas.
+ */
+const FLOOR_DRAG_MIME = 'application/floocraft-floor-id'
+
+/**
  * Count employees currently seated on a floor by summing the per-element
  * assignee lists. Powers the "you'll unassign N people" warning on the
  * floor-delete confirm dialog — seeing the number makes the consequence
@@ -38,6 +46,8 @@ export function FloorSwitcher() {
   )
   const addFloor = useFloorStore((s) => s.addFloor)
   const renameFloor = useFloorStore((s) => s.renameFloor)
+  const reorderFloors = useFloorStore((s) => s.reorderFloors)
+  const duplicateFloor = useFloorStore((s) => s.duplicateFloor)
   const getFloorElements = useFloorStore((s) => s.getFloorElements)
 
   const elements = useElementsStore((s) => s.elements)
@@ -54,6 +64,14 @@ export function FloorSwitcher() {
     | null
     | { floorId: string; floorName: string; elementCount: number; seatedCount: number }
   >(null)
+
+  // Wave 9C drag state. `draggingFloorId` is the floor currently being
+  // dragged; `dropIndex` is the gap index where it would land (0..N).
+  // Both stay null when nothing is being dragged so the caret renders only
+  // during an actual drag.
+  const [draggingFloorId, setDraggingFloorId] = useState<string | null>(null)
+  const [dropIndex, setDropIndex] = useState<number | null>(null)
+
   const renameInputRef = useRef<HTMLInputElement>(null)
   const contextMenuRef = useRef<HTMLDivElement>(null)
 
@@ -117,6 +135,23 @@ export function FloorSwitcher() {
     setRenamingFloorId(null)
   }
 
+  const handleDuplicate = (floorId: string) => {
+    setContextMenuFloorId(null)
+    if (!canEdit) return
+    // For the active floor the live elements live in elementsStore — pass
+    // the snapshot so the clone reflects what the user sees, not whatever
+    // was last persisted to floorStore.
+    const sourceElements =
+      floorId === activeFloorId ? elements : getFloorElements(floorId)
+    const result = duplicateFloor(floorId, sourceElements)
+    if (!result) return
+    switchToFloor(result.newId)
+    void emit('floor.duplicate', 'floor', result.newId, {
+      sourceId: floorId,
+      name: result.newName,
+    })
+  }
+
   const openDeleteConfirm = (floorId: string) => {
     setContextMenuFloorId(null)
     if (floors.length <= 1) return
@@ -167,6 +202,82 @@ export function FloorSwitcher() {
     handleSwitchFloor(nextId)
   }
 
+  // Drag handlers. We use HTML5 DnD with a unique mime so the canvas drop
+  // handler ignores these — and so the browser's default tab-as-link drag
+  // ghost is replaced with our payload. `dragOver` tracks the gap index
+  // (left vs right half of the hovered tab) so the caret renders in the
+  // correct slot before drop. Drop reads the floorId from dataTransfer
+  // (rather than relying on `draggingFloorId` state) so cross-frame drags
+  // would still work if anyone ever wires this up beyond the strip.
+  const handleDragStart = (e: React.DragEvent<HTMLButtonElement>, floorId: string) => {
+    if (!canEdit) return
+    e.dataTransfer.setData(FLOOR_DRAG_MIME, floorId)
+    e.dataTransfer.effectAllowed = 'move'
+    setDraggingFloorId(floorId)
+  }
+
+  const handleTabDragOver = (
+    e: React.DragEvent<HTMLDivElement>,
+    targetIndex: number,
+  ) => {
+    // Only react to floor-tab drags. Without this guard, an employee or
+    // element-library drag passing over the strip would move the caret.
+    if (!e.dataTransfer.types.includes(FLOOR_DRAG_MIME)) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+
+    // Decide left- vs right-half so we can drop "before" or "after" the
+    // hovered tab. Dropping over a tab's right half means insert at
+    // targetIndex+1.
+    const rect = e.currentTarget.getBoundingClientRect()
+    const isAfter = e.clientX - rect.left > rect.width / 2
+    const insertIndex = isAfter ? targetIndex + 1 : targetIndex
+
+    // No-op when hovering over self (either side of the moving tab is
+    // already where it sits in the sorted order).
+    if (draggingFloorId) {
+      const fromIndex = sortedFloors.findIndex((f) => f.id === draggingFloorId)
+      if (fromIndex === insertIndex || fromIndex + 1 === insertIndex) {
+        setDropIndex(null)
+        return
+      }
+    }
+    setDropIndex(insertIndex)
+  }
+
+  const handleTabDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    const floorId = e.dataTransfer.getData(FLOOR_DRAG_MIME)
+    if (!floorId) return
+    e.preventDefault()
+    if (dropIndex === null) {
+      setDraggingFloorId(null)
+      setDropIndex(null)
+      return
+    }
+    // Adjust target index because removing the source from the array
+    // shifts everything after it left by one. `reorderFloors` performs
+    // this same splice internally, so we just feed it the post-removal
+    // index.
+    const fromIndex = sortedFloors.findIndex((f) => f.id === floorId)
+    let toIndex = dropIndex
+    if (fromIndex >= 0 && fromIndex < dropIndex) toIndex = dropIndex - 1
+
+    const result = reorderFloors(floorId, toIndex)
+    if (result) {
+      void emit('floor.reorder', 'floor', floorId, {
+        fromIndex: result.fromIndex,
+        toIndex: result.toIndex,
+      })
+    }
+    setDraggingFloorId(null)
+    setDropIndex(null)
+  }
+
+  const handleDragEnd = () => {
+    setDraggingFloorId(null)
+    setDropIndex(null)
+  }
+
   return (
     <div className="h-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center px-4 gap-1">
       <div
@@ -174,9 +285,24 @@ export function FloorSwitcher() {
         aria-label="Floors"
         className="flex items-center gap-1"
         onKeyDown={onTablistKeyDown}
+        aria-dropeffect={draggingFloorId ? 'move' : undefined}
       >
-        {sortedFloors.map((floor) => (
-          <div key={floor.id} className="relative">
+        {sortedFloors.map((floor, idx) => (
+          <div
+            key={floor.id}
+            className="relative flex items-center"
+            onDragOver={(e) => handleTabDragOver(e, idx)}
+            onDrop={handleTabDrop}
+          >
+            {/* Insertion caret — renders before this tab when dropIndex
+                points at the gap to its left. */}
+            {dropIndex === idx && (
+              <div
+                data-testid="floor-drop-caret"
+                aria-hidden="true"
+                className="bg-blue-500 w-0.5 h-6 mr-1"
+              />
+            )}
             {renamingFloorId === floor.id ? (
               <input
                 ref={renameInputRef}
@@ -196,16 +322,28 @@ export function FloorSwitcher() {
                 role="tab"
                 aria-selected={floor.id === activeFloorId}
                 tabIndex={floor.id === activeFloorId ? 0 : -1}
+                draggable={canEdit}
+                onDragStart={(e) => handleDragStart(e, floor.id)}
+                onDragEnd={handleDragEnd}
                 className={`px-3 py-1.5 text-sm font-medium rounded-t cursor-pointer transition-colors ${
                   floor.id === activeFloorId
                     ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 bg-blue-50 dark:bg-blue-950/40'
                     : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800/50'
-                }`}
+                } ${draggingFloorId === floor.id ? 'opacity-50' : ''}`}
                 onClick={() => handleSwitchFloor(floor.id)}
                 onContextMenu={(e) => handleContextMenu(e, floor.id)}
               >
                 {floor.name}
               </button>
+            )}
+            {/* Trailing caret only on the last tab — when dropIndex points
+                past every tab (insert at end). */}
+            {idx === sortedFloors.length - 1 && dropIndex === sortedFloors.length && (
+              <div
+                data-testid="floor-drop-caret"
+                aria-hidden="true"
+                className="bg-blue-500 w-0.5 h-6 ml-1"
+              />
             )}
           </div>
         ))}
@@ -234,6 +372,12 @@ export function FloorSwitcher() {
             onClick={() => handleRenameStart(contextMenuFloorId)}
           >
             Rename
+          </button>
+          <button
+            className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+            onClick={() => handleDuplicate(contextMenuFloorId)}
+          >
+            Duplicate
           </button>
           {floors.length > 1 && (
             <button
