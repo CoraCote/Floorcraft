@@ -1,1 +1,49 @@
 @import "tailwindcss";
+
+/*
+ * Design-token extensions. Tailwind v4 consumes theme config via the
+ * `@theme` CSS directive instead of a `tailwind.config.{js,ts}` file.
+ * We only *extend* (new tokens) — existing blue-/gray-/red- scales and
+ * the default spacing/fontSize scales remain untouched.
+ */
+@theme {
+  --color-muted: #6B7280;        /* gray-500 — secondary text            */
+  --color-muted-strong: #374151; /* gray-700 — emphasized secondary      */
+  --color-muted-subtle: #9CA3AF; /* gray-400 — tertiary / placeholder    */
+
+  --spacing-panel: 0.75rem;      /* 12px — sidebar panel inner padding   */
+  --spacing-card: 1rem;          /* 16px — card inner padding            */
+  --spacing-section: 1.5rem;     /* 24px — section / modal padding       */
+
+  --text-icon-sm: 0.875rem;      /* 14px */
+  --text-icon-sm--line-height: 1rem;
+  --text-icon-md: 1rem;          /* 16px */
+  --text-icon-md--line-height: 1.25rem;
+}
+
+/*
+ * Global focus-ring + motion base. The app-wide default focus outline
+ * (browser default) is near-invisible on our blue-600 primaries, so we
+ * swap to `focus-visible` rings provided by each primitive/utility and
+ * add a subtle color transition for interactive elements.
+ */
+@layer base {
+  button,
+  a,
+  input,
+  select,
+  textarea,
+  [role="button"],
+  [role="menuitem"],
+  [role="tab"] {
+    @apply focus-visible:outline-none;
+  }
+
+  button,
+  a,
+  [role="button"],
+  [role="menuitem"],
+  [role="tab"] {
+    @apply transition-colors duration-150;
+  }
+}
