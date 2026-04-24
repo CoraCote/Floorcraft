@@ -2,6 +2,7 @@ import { Outlet, useLocation, useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { TopBar } from './TopBar'
 import { ImpersonationBanner } from './ImpersonationBanner'
+import { NarrowScreenBanner } from './NarrowScreenBanner'
 import { ContextMenu } from './ContextMenu'
 import { KeyboardShortcutsOverlay } from './KeyboardShortcutsOverlay'
 import { CommandPalette } from './CommandPalette'
@@ -297,9 +298,13 @@ export function ProjectShell() {
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-gray-50">
-      {/* Impersonation banner sits ABOVE the TopBar so the amber strip is
-          literally the topmost pixel on screen — impossible to miss, and
-          it can't be scrolled or stage-zoomed away. */}
+      {/* NarrowScreenBanner sits at the very top so the map view's
+          "editor works best on a larger screen" warning is visible
+          before the operator tries to use the canvas. Only renders on
+          the map route and when narrower than the lg breakpoint.
+          Impersonation banner sits below it so the amber "you're
+          impersonating" strip is still prominent when present. */}
+      <NarrowScreenBanner />
       <ImpersonationBanner />
       <TopBar />
       <Outlet />

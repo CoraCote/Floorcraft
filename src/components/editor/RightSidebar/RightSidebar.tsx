@@ -1,4 +1,5 @@
-import { useMemo } from 'react'
+import { useMemo, type ReactNode } from 'react'
+import { AlertTriangle, BarChart3, Settings, Users } from 'lucide-react'
 import { useInsightsStore } from '../../../stores/insightsStore'
 import { useUIStore } from '../../../stores/uiStore'
 import { InsightsPanel } from './InsightsPanel'
@@ -22,11 +23,11 @@ export function RightSidebar() {
     return critical + warning
   }, [insights])
 
-  const tabs = [
-    { id: 'properties' as const, label: 'Properties' },
-    { id: 'people' as const, label: 'People' },
-    { id: 'reports' as const, label: 'Reports' },
-    { id: 'insights' as const, label: 'Insights' },
+  const tabs: { id: 'properties' | 'people' | 'reports' | 'insights'; label: string; icon: ReactNode }[] = [
+    { id: 'properties', label: 'Properties', icon: <Settings size={14} /> },
+    { id: 'people', label: 'People', icon: <Users size={14} /> },
+    { id: 'reports', label: 'Reports', icon: <BarChart3 size={14} /> },
+    { id: 'insights', label: 'Insights', icon: <AlertTriangle size={14} /> },
   ]
 
   return (
@@ -36,13 +37,14 @@ export function RightSidebar() {
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`flex-1 px-2 py-2.5 text-xs font-medium transition-colors relative ${
+            className={`flex-1 px-2 py-2.5 text-xs font-medium transition-colors relative flex items-center justify-center gap-1.5 ${
               tab === t.id
                 ? 'text-blue-700 border-b-2 border-blue-700'
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            {t.label}
+            {t.icon}
+            <span>{t.label}</span>
             {t.id === 'insights' && badgeCount > 0 && (
               <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 flex items-center justify-center text-[9px] font-bold text-white bg-red-500 rounded-full">
                 {badgeCount}

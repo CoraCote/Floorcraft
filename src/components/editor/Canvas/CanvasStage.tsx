@@ -56,6 +56,7 @@ import {
   AnnotationPopover,
   setLastPinAnchor,
 } from './AnnotationPopover'
+import { EmptyCanvasHint } from './EmptyCanvasHint'
 import { useAnnotationsStore } from '../../../stores/annotationsStore'
 import { useNeighborhoodStore } from '../../../stores/neighborhoodStore'
 import { NEIGHBORHOOD_PALETTE } from '../../../types/neighborhood'
@@ -1246,7 +1247,7 @@ export function CanvasStage() {
   return (
     <div
       ref={containerRef}
-      className="w-full h-full"
+      className="w-full h-full relative"
       style={{ cursor }}
       onDragOver={handleDragOver}
       onDragLeave={(e) => {
@@ -1324,6 +1325,7 @@ export function CanvasStage() {
       </Stage>
       <FreeTextEditorOverlay containerRef={containerRef} />
       <AnnotationPopover containerRef={containerRef} />
+      <EmptyCanvasHint />
     </div>
   )
 }

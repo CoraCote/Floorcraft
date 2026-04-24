@@ -13,6 +13,7 @@ import { Minimap } from './Minimap'
 import { useUIStore } from '../../stores/uiStore'
 import { useFloorStore } from '../../stores/floorStore'
 import { useNeighborhoodStore } from '../../stores/neighborhoodStore'
+import { useToastStore } from '../../stores/toastStore'
 import { switchToFloor } from '../../lib/seatAssignment'
 import { focusOnElement } from '../../lib/canvasFocus'
 
@@ -96,6 +97,26 @@ export function MapView() {
     setSearchParams(next, { replace: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // First-run onboarding toast for presentation mode: the Esc/P exit
+  // shortcut isn't documented in the mode itself beyond the small
+  // "Exit" button, so surface it once per device the first time the
+  // operator enters presentation. Localstorage key gates subsequent
+  // entries; wrapped in try/catch so a private-mode / disabled-storage
+  // browser just skips the hint rather than crashing.
+  useEffect(() => {
+    if (!presentationMode) return
+    try {
+      if (localStorage.getItem('presentationModeHintSeen') === '1') return
+      localStorage.setItem('presentationModeHintSeen', '1')
+    } catch {
+      return
+    }
+    useToastStore.getState().push({
+      tone: 'info',
+      title: 'Press Esc or P to exit presentation mode.',
+    })
+  }, [presentationMode])
 
   if (presentationMode) {
     return (
