@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { ShareView } from '../components/editor/ShareView'
@@ -8,6 +8,19 @@ import { useFloorStore } from '../stores/floorStore'
 import { useElementsStore } from '../stores/elementsStore'
 import { useProjectStore } from '../stores/projectStore'
 import type { Employee } from '../types/employee'
+
+// Konva isn't friendly to jsdom (no real canvas, no requestAnimationFrame
+// timing) so we replace the Stage with a div the test can assert against.
+// See findOnMap.test.tsx for the same pattern at the MapView level.
+vi.mock('../components/editor/Canvas/CanvasStage', () => ({
+  CanvasStage: () => <div data-testid="canvas-stage" />,
+}))
+vi.mock('../components/editor/Canvas/CanvasActionDock', () => ({
+  CanvasActionDock: () => <div data-testid="canvas-action-dock" />,
+}))
+vi.mock('../components/editor/Minimap', () => ({
+  Minimap: () => <div data-testid="minimap" />,
+}))
 
 function mount(path: string) {
   return render(
@@ -83,19 +96,18 @@ describe('ShareView', () => {
     expect(screen.getByText(/link expired or invalid/i)).toBeInTheDocument()
   })
 
-  it('renders the read-only map + redacted roster for a valid token', () => {
+  it('renders the canvas-rendered floor plan for a valid token', () => {
     const { link } = useShareLinksStore
       .getState()
       .create('office-1', 3600, 'pilot')
     mount(`/share/hq?t=${link.token}`)
-    expect(screen.getByRole('heading', { name: /shared read-only map/i })).toBeInTheDocument()
-    // PII redaction: the full name must not appear — only the initials
-    // projection from `redactEmployeeMap`.
-    expect(screen.queryByText('Ada Lovelace')).not.toBeInTheDocument()
-    expect(screen.getByText('A.L.')).toBeInTheDocument()
-    // Non-PII department/title still render.
-    expect(screen.getByText('Engineering')).toBeInTheDocument()
-    expect(screen.getByText('Engineer')).toBeInTheDocument()
+    // Canvas-mode share view: the live `<CanvasStage />` is mounted
+    // (so the operator sees the actual floor plan, not a placeholder).
+    expect(screen.getByTestId('canvas-stage')).toBeInTheDocument()
+    // Header surfaces the office slug and a "Read-only" badge.
+    expect(screen.getByText('Floorcraft')).toBeInTheDocument()
+    expect(screen.getByText('hq')).toBeInTheDocument()
+    expect(screen.getByText(/read-only/i)).toBeInTheDocument()
   })
 
   it('installs the shareViewer role on a valid token', () => {

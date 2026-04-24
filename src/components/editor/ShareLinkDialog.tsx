@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useShareLinksStore, SHARE_LINK_TTL_OPTIONS } from '../../stores/shareLinksStore'
 import { useProjectStore } from '../../stores/projectStore'
-import { buildShareUrl } from '../../lib/shareLinkUrl'
+import { buildShareUrl, buildEmbedSnippet } from '../../lib/shareLinkUrl'
 import { Button, Modal, ModalBody } from '../ui'
 
 /**
@@ -30,6 +30,14 @@ export function ShareLinkDialog({ open, onClose }: Props) {
   const [ttlSeconds, setTtlSeconds] = useState<number>(SHARE_LINK_TTL_OPTIONS[1].seconds)
   const [label, setLabel] = useState('')
   const [justCopied, setJustCopied] = useState<string | null>(null)
+  // Per-link expansion of the embed panel. We key by link id so toggling
+  // one row's panel doesn't collapse another. `Set<string>` is simpler than
+  // a Record-of-bools and round-trips through `useState` cleanly.
+  const [embedOpen, setEmbedOpen] = useState<Set<string>>(() => new Set())
+  // Two flavours of "just copied" feedback: a separate state key per
+  // link id keeps the share-URL copy and the embed-snippet copy from
+  // racing each other (one toast clobbering the other).
+  const [justCopiedSnippet, setJustCopiedSnippet] = useState<string | null>(null)
   // Track the current wall-clock time in state so expiry countdowns can be
   // computed from a stable value in render (React Compiler's `impure-call`
   // rule forbids `Date.now()` inside the render body). The interval below
@@ -66,6 +74,37 @@ export function ShareLinkDialog({ open, onClose }: Props) {
     setJustCopied(token)
     setTimeout(() => setJustCopied((t) => (t === token ? null : t)), 1500)
   }
+
+  // The clipboard API is async + permission-gated; we don't await the
+  // promise (the toast feedback fires regardless). Tests stub
+  // `navigator.clipboard.writeText` and assert on the snippet payload.
+  const handleCopySnippet = (linkId: string, snippet: string) => {
+    void navigator.clipboard?.writeText(snippet)
+    setJustCopiedSnippet(linkId)
+    setTimeout(
+      () => setJustCopiedSnippet((id) => (id === linkId ? null : id)),
+      1500,
+    )
+  }
+
+  const toggleEmbed = (linkId: string) => {
+    setEmbedOpen((prev) => {
+      const next = new Set(prev)
+      if (next.has(linkId)) next.delete(linkId)
+      else next.add(linkId)
+      return next
+    })
+  }
+
+  // Origin used to build absolute embed snippets. Read once per render so
+  // SSR / non-DOM contexts (the modal isn't mounted there, but TS doesn't
+  // know that) don't crash on `window.location`. `useMemo` only because
+  // the read is genuinely free — the cost here is the readability win
+  // of keeping snippet + URL builders source-of-truth in one place.
+  const origin = useMemo(
+    () => (typeof window !== 'undefined' ? window.location.origin : ''),
+    [],
+  )
 
   return (
     <Modal open={open} onClose={onClose} title="Share view-only link" size="lg">
@@ -126,41 +165,126 @@ export function ShareLinkDialog({ open, onClose }: Props) {
                 : expired
                   ? 'Expired'
                   : `Expires in ${formatDuration(expiresMs)}`
+              const isEmbedOpen = embedOpen.has(l.id)
+              const canEmbed = !l.revokedAt && !expired
+              const snippet = canEmbed
+                ? buildEmbedSnippet({
+                    origin,
+                    officeSlug: slug,
+                    token: l.token,
+                  })
+                : ''
               return (
                 <li
                   key={l.id}
-                  className="border border-gray-200 dark:border-gray-800 rounded p-2 flex items-start justify-between gap-2"
+                  className="border border-gray-200 dark:border-gray-800 rounded p-2"
                 >
-                  <div className="min-w-0 flex-1">
-                    {l.label && (
-                      <div className="text-sm font-medium truncate">{l.label}</div>
-                    )}
-                    <div className="text-xs text-gray-500 dark:text-gray-400 truncate" title={url}>
-                      {url}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      {l.label && (
+                        <div className="text-sm font-medium truncate">{l.label}</div>
+                      )}
+                      <div className="text-xs text-gray-500 dark:text-gray-400 truncate" title={url}>
+                        {url}
+                      </div>
+                      <div className="text-xs mt-0.5 text-gray-500 dark:text-gray-400">{status}</div>
                     </div>
-                    <div className="text-xs mt-0.5 text-gray-500 dark:text-gray-400">{status}</div>
-                  </div>
-                  <div className="flex flex-col gap-1 items-end">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => handleCopy(l.token)}
-                      disabled={!!l.revokedAt || expired}
-                    >
-                      {justCopied === l.token ? 'Copied' : 'Copy'}
-                    </Button>
-                    {!l.revokedAt && !expired && (
+                    <div className="flex flex-col gap-1 items-end">
                       <Button
                         type="button"
-                        variant="danger"
+                        variant="secondary"
                         size="sm"
-                        onClick={() => revokeLink(l.id)}
+                        onClick={() => handleCopy(l.token)}
+                        disabled={!canEmbed}
                       >
-                        Revoke
+                        {justCopied === l.token ? 'Copied' : 'Copy'}
                       </Button>
-                    )}
+                      {canEmbed && (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => toggleEmbed(l.id)}
+                          aria-expanded={isEmbedOpen}
+                          aria-controls={`embed-panel-${l.id}`}
+                          data-testid={`embed-toggle-${l.id}`}
+                        >
+                          {isEmbedOpen ? 'Hide embed' : 'Embed'}
+                        </Button>
+                      )}
+                      {canEmbed && (
+                        <Button
+                          type="button"
+                          variant="danger"
+                          size="sm"
+                          onClick={() => revokeLink(l.id)}
+                        >
+                          Revoke
+                        </Button>
+                      )}
+                    </div>
                   </div>
+                  {/*
+                    Embed panel. Renders inline under the link row when
+                    expanded. The textarea is read-only so we can show the
+                    snippet without it accidentally re-encoding (a quoted
+                    `&` in `embed=1` would render as `&amp;` in a contentEditable);
+                    a textarea round-trips raw HTML perfectly and gives
+                    keyboard users a Ctrl+A handle as a clipboard fallback.
+                  */}
+                  {canEmbed && isEmbedOpen && (
+                    <div
+                      id={`embed-panel-${l.id}`}
+                      data-testid={`embed-panel-${l.id}`}
+                      className="mt-3 pt-3 border-t border-dashed border-gray-200 dark:border-gray-800 space-y-2"
+                    >
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        Embed in your wiki — paste this iframe snippet
+                        anywhere that accepts HTML (Notion / Confluence /
+                        a dashboard). The view adapts to the iframe size;
+                        600–800px tall reads best.
+                      </div>
+                      <textarea
+                        readOnly
+                        value={snippet}
+                        rows={6}
+                        data-testid={`embed-snippet-${l.id}`}
+                        className="w-full font-mono text-[11px] bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded p-2 resize-y"
+                        aria-label="Iframe embed snippet"
+                        onFocus={(e) => e.currentTarget.select()}
+                      />
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="primary"
+                          size="sm"
+                          onClick={() => handleCopySnippet(l.id, snippet)}
+                          data-testid={`embed-copy-${l.id}`}
+                        >
+                          {justCopiedSnippet === l.id
+                            ? 'Snippet copied'
+                            : 'Copy snippet'}
+                        </Button>
+                        <a
+                          href={
+                            new URL(
+                              buildShareUrl({
+                                officeSlug: slug,
+                                token: l.token,
+                                embed: true,
+                              }),
+                              origin || 'http://localhost',
+                            ).toString()
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-600 dark:text-blue-300 hover:underline"
+                        >
+                          Open in new tab ↗
+                        </a>
+                      </div>
+                    </div>
+                  )}
                 </li>
               )
             })}

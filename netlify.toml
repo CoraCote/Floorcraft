@@ -24,3 +24,24 @@
     X-Content-Type-Options = "nosniff"
     X-Frame-Options = "SAMEORIGIN"
     Permissions-Policy = "geolocation=(), microphone=(), camera=()"
+
+# /share/* is intentionally embeddable. The Wave 7C iframe-embed mode
+# (`/share/<slug>?t=<token>&embed=1`) is meant to be dropped into Notion,
+# Confluence, dashboards, etc. — so we override the global X-Frame-Options
+# on this path and emit a permissive `frame-ancestors *` CSP. Netlify
+# stacks per-path header rules ON TOP of the more general ones, so we
+# reissue the rest of the safety hat (referrer-policy, content-type) and
+# explicitly drop X-Frame-Options by setting it to an empty string.
+#
+# Token entropy + expiry + the per-office revocation surface are the
+# actual access control here; the CSP only governs WHO can frame the
+# page, not WHO can view it. If you ever want to lock embedding to a
+# specific allow-list, swap `frame-ancestors *` for the exact origins.
+[[headers]]
+  for = "/share/*"
+  [headers.values]
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = ""
+    Content-Security-Policy = "frame-ancestors *"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=()"
