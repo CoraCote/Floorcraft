@@ -57,6 +57,10 @@ const EXPECTED: Record<ElementType, LayerCategory> = {
   arrow: 'annotations',
   'free-text': 'annotations',
   'custom-svg': 'furniture',
+  sofa: 'furniture',
+  plant: 'furniture',
+  printer: 'furniture',
+  whiteboard: 'furniture',
 }
 
 describe('categoryForElement', () => {

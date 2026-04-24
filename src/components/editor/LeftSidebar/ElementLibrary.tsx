@@ -90,6 +90,13 @@ const LIBRARY_ITEMS: LibraryItem[] = [
   { type: 'decor',             label: 'Whiteboard',      category: 'Facilities', shape: 'whiteboard' },
   { type: 'counter',           label: 'Counter',         category: 'Facilities' },
 
+  // Furniture — decorative/context props (non-assignable). See
+  // `src/types/elements.ts` for the discriminated-union members.
+  { type: 'sofa',              label: 'Sofa',            category: 'Furniture' },
+  { type: 'plant',             label: 'Plant',           category: 'Furniture' },
+  { type: 'printer',           label: 'Printer',         category: 'Furniture' },
+  { type: 'whiteboard',        label: 'Whiteboard',      category: 'Furniture' },
+
   // Other
   { type: 'custom-shape',      label: 'Custom Shape',    category: 'Other' },
   { type: 'text-label',        label: 'Text Label',      category: 'Other' },

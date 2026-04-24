@@ -83,6 +83,13 @@ export const ELEMENT_DEFAULTS: Record<string, { width: number; height: number; f
   'phone-booth': { width: 60, height: 60, fill: '#F0FDF4', stroke: '#16A34A' },
   'common-area': { width: 160, height: 120, fill: '#DCFCE7', stroke: '#16A34A' },
   'decor': { width: 60, height: 60, fill: '#E5E7EB', stroke: '#6B7280' },
+  // Furniture catalog — see `src/types/elements.ts`. Sizes are load-bearing:
+  // they're asserted in `furnitureCatalog.test.ts` and drive the default
+  // drop size from the library.
+  'sofa':       { width: 200, height: 80, fill: '#C4A57B', stroke: '#6B4423' },
+  'plant':      { width: 40,  height: 40, fill: '#86EFAC', stroke: '#166534' },
+  'printer':    { width: 60,  height: 50, fill: '#E2E8F0', stroke: '#475569' },
+  'whiteboard': { width: 180, height: 20, fill: '#FFFFFF', stroke: '#111827' },
 }
 
 export const TABLE_SEAT_DEFAULTS: Record<string, number> = {

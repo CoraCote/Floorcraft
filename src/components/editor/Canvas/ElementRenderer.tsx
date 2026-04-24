@@ -22,6 +22,10 @@ import {
   isArrowElement,
   isFreeTextElement,
   isCustomSvgElement,
+  isSofaElement,
+  isPlantElement,
+  isPrinterElement,
+  isWhiteboardElement,
   type ConferenceRoomElement,
   type PhoneBoothElement,
   type CommonAreaElement,
@@ -40,6 +44,10 @@ import { LineShapeRenderer } from './primitives/LineShapeRenderer'
 import { ArrowRenderer } from './primitives/ArrowRenderer'
 import { FreeTextRenderer } from './primitives/FreeTextRenderer'
 import { CustomSvgRenderer } from './primitives/CustomSvgRenderer'
+import { SofaRenderer } from './SofaRenderer'
+import { PlantRenderer } from './PlantRenderer'
+import { PrinterRenderer } from './PrinterRenderer'
+import { WhiteboardRenderer } from './WhiteboardRenderer'
 import { useCallback } from 'react'
 import type Konva from 'konva'
 import { snapToGrid, getSnappedPosition } from '../../../lib/geometry'
@@ -272,6 +280,17 @@ export function ElementRenderer() {
                 return <CustomSvgRenderer element={el} />
               if (isDecorElement(el))
                 return <FurnitureRenderer element={el} />
+              // Furniture catalog — see SofaRenderer et al. Each has a
+              // distinct silhouette, so they can't share FurnitureRenderer
+              // (which is a generic rounded rect fallback).
+              if (isSofaElement(el))
+                return <SofaRenderer element={el} />
+              if (isPlantElement(el))
+                return <PlantRenderer element={el} />
+              if (isPrinterElement(el))
+                return <PrinterRenderer element={el} />
+              if (isWhiteboardElement(el))
+                return <WhiteboardRenderer element={el} />
               return <FurnitureRenderer element={el} />
             })()}
           </Group>

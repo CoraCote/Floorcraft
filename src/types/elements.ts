@@ -23,6 +23,15 @@ export type ElementType =
   | 'text-label'
   | 'background-image'
   | 'decor'             // NEW
+  // Furniture catalog — non-assignable decorative/context props. Kept as
+  // top-level discriminated union members (not `decor` shapes) so the
+  // catalog can evolve independent defaults, renderers, and analyzer
+  // exclusions without re-homing legacy decor data. See
+  // `src/components/editor/Canvas/SofaRenderer.tsx` et al.
+  | 'sofa'
+  | 'plant'
+  | 'printer'
+  | 'whiteboard'
   // Drawing primitives (Feature A)
   | 'rect-shape'
   | 'ellipse'
@@ -204,6 +213,28 @@ export interface DecorElement extends BaseElement {
   shape: DecorShape
 }
 
+// Furniture catalog — purely visual props. No extra payload beyond the
+// BaseElement fields; everything that differs between them (default size,
+// silhouette) lives in `ELEMENT_DEFAULTS` and the per-type Konva renderer.
+// Keeping the interfaces minimal (rather than folding them into a single
+// `FurnitureElement` with a discriminator) preserves the "one element type
+// → one renderer" mapping in ElementRenderer's switch.
+export interface SofaElement extends BaseElement {
+  type: 'sofa'
+}
+
+export interface PlantElement extends BaseElement {
+  type: 'plant'
+}
+
+export interface PrinterElement extends BaseElement {
+  type: 'printer'
+}
+
+export interface WhiteboardElement extends BaseElement {
+  type: 'whiteboard'
+}
+
 // Drawing primitives ---------------------------------------------------------
 
 export interface RectShapeElement extends BaseElement {
@@ -255,6 +286,10 @@ export type CanvasElement =
   | PhoneBoothElement
   | CommonAreaElement
   | DecorElement           // NEW
+  | SofaElement
+  | PlantElement
+  | PrinterElement
+  | WhiteboardElement
   | RectShapeElement
   | EllipseElement
   | LineShapeElement
@@ -338,4 +373,23 @@ export function isFreeTextElement(el: CanvasElement): el is FreeTextElement {
 
 export function isCustomSvgElement(el: CanvasElement): el is CustomSvgElement {
   return el.type === 'custom-svg'
+}
+
+// Furniture catalog — non-assignable decorative/context elements. Kept out
+// of `isAssignableElement` on purpose so insight analyzers (utilisation,
+// accommodations, seat churn) never count them.
+export function isSofaElement(el: CanvasElement): el is SofaElement {
+  return el.type === 'sofa'
+}
+
+export function isPlantElement(el: CanvasElement): el is PlantElement {
+  return el.type === 'plant'
+}
+
+export function isPrinterElement(el: CanvasElement): el is PrinterElement {
+  return el.type === 'printer'
+}
+
+export function isWhiteboardElement(el: CanvasElement): el is WhiteboardElement {
+  return el.type === 'whiteboard'
 }
