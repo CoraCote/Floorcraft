@@ -24,7 +24,10 @@ import { isAssignableElement } from '../../../types/elements'
 import { elementsIntersectingRect } from '../../../lib/marquee'
 import { useLayerVisibilityStore } from '../../../stores/layerVisibilityStore'
 import { categoryForElement } from '../../../lib/layerCategory'
-import { assignEmployee } from '../../../lib/seatAssignment'
+import { assignEmployee, swapEmployees } from '../../../lib/seatAssignment'
+import { useSeatDragStore, useSeatDetailStore } from '../../../stores/seatDragStore'
+import { useEmployeeStore } from '../../../stores/employeeStore'
+import { SeatDetailPopover } from './SeatDetailPopover'
 import { consumeQueueAtElement } from '../../../lib/multiSeatAssign'
 import { useToastStore } from '../../../stores/toastStore'
 import { findNearestStraightWallHit } from '../../../lib/wallAttachment'
@@ -133,6 +136,56 @@ export function CanvasStage() {
     setActiveStage(stage)
     return () => {
       setActiveStage(null)
+    }
+  }, [])
+
+  // Seat-detail popover: react to selection changes. When exactly one
+  // element is selected AND it's an assigned single-desk, open the
+  // popover anchored at the desk's current stage-space position. Any
+  // other selection state (multi-select, empty, non-desk, unassigned
+  // desk) closes an open popover. Uses `subscribe` instead of a hook
+  // selector so we can read multiple stores in one place and avoid the
+  // re-render churn of a derived selector. Keep the listener cheap —
+  // it's invoked on every UI store update.
+  useEffect(() => {
+    const tryOpen = () => {
+      const ui = useUIStore.getState()
+      if (ui.selectedIds.length !== 1) {
+        useSeatDetailStore.getState().close()
+        return
+      }
+      const id = ui.selectedIds[0]
+      const el = useElementsStore.getState().elements[id]
+      if (!el) {
+        useSeatDetailStore.getState().close()
+        return
+      }
+      const isSingleDesk = el.type === 'desk' || el.type === 'hot-desk'
+      const assignedId =
+        isSingleDesk && 'assignedEmployeeId' in el
+          ? (el as unknown as { assignedEmployeeId: string | null }).assignedEmployeeId
+          : null
+      if (!isSingleDesk || !assignedId) {
+        useSeatDetailStore.getState().close()
+        return
+      }
+      // Compute screen-space coords from stage transform. `el.x/el.y` are
+      // canvas coords (center), so apply the current stage transform.
+      const cs = useCanvasStore.getState()
+      const sx = el.x * cs.stageScale + cs.stageX
+      const sy = el.y * cs.stageScale + cs.stageY
+      useSeatDetailStore.getState().open(id, sx, sy)
+    }
+    tryOpen()
+    const unsubUI = useUIStore.subscribe((state, prev) => {
+      if (state.selectedIds !== prev.selectedIds) tryOpen()
+    })
+    const unsubEls = useElementsStore.subscribe((state, prev) => {
+      if (state.elements !== prev.elements) tryOpen()
+    })
+    return () => {
+      unsubUI()
+      unsubEls()
     }
   }, [])
 
@@ -1088,6 +1141,36 @@ export function CanvasStage() {
     if (e.dataTransfer.types.includes('application/employee-id')) {
       e.preventDefault()
       e.dataTransfer.dropEffect = 'move'
+      // Track the seat under the cursor so DeskRenderer can paint the
+      // "currently hovered drop target" outline. Hit-test in canvas space
+      // the same way handleDrop does, then publish the element id.
+      const stage = stageRef.current
+      if (stage) {
+        stage.setPointersPositions(e.nativeEvent)
+        const pointer = stage.getPointerPosition()
+        if (pointer) {
+          const cx = (pointer.x - stageX) / stageScale
+          const cy = (pointer.y - stageY) / stageScale
+          const elements = useElementsStore.getState().elements
+          let hitId: string | null = null
+          let hitZ = -Infinity
+          for (const el of Object.values(elements)) {
+            if (!isAssignableElement(el)) continue
+            if (el.locked) continue
+            if (el.visible === false) continue
+            const hw = el.width / 2
+            const hh = el.height / 2
+            if (cx >= el.x - hw && cx <= el.x + hw && cy >= el.y - hh && cy <= el.y + hh) {
+              if (el.zIndex > hitZ) {
+                hitZ = el.zIndex
+                hitId = el.id
+              }
+            }
+          }
+          const prev = useSeatDragStore.getState().hoveredSeatId
+          if (prev !== hitId) useSeatDragStore.getState().setHoveredSeat(hitId)
+        }
+      }
       return
     }
     if (e.dataTransfer.types.includes(LIBRARY_DRAG_MIME)) {
@@ -1096,7 +1179,7 @@ export function CanvasStage() {
       // the user a "+" cursor showing the drop is valid.
       e.dataTransfer.dropEffect = 'copy'
     }
-  }, [canEdit])
+  }, [canEdit, stageX, stageY, stageScale])
 
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     if (!canEdit) return
@@ -1174,8 +1257,41 @@ export function CanvasStage() {
     }
 
     if (hitId) {
+      // Swap-on-drop: when the dragged employee is already seated AND the
+      // drop target is a single-desk already occupied by someone else,
+      // swap the two rather than evicting the incumbent. A single-seat
+      // desk is the only case where swap semantics are unambiguous —
+      // workstations/private-offices have multi-capacity slots, so a
+      // drop there still goes through plain assignEmployee (which adds
+      // the new body without displacing existing ones).
+      const employees = useEmployeeStore.getState().employees
+      const dragged = employees[empId]
+      const elements = useElementsStore.getState().elements
+      const target = elements[hitId]
+      const isSingleDesk =
+        target && (target.type === 'desk' || target.type === 'hot-desk')
+      const targetOccupant =
+        isSingleDesk && 'assignedEmployeeId' in target
+          ? target.assignedEmployeeId
+          : null
+      if (
+        isSingleDesk &&
+        dragged?.seatId &&
+        targetOccupant &&
+        targetOccupant !== empId
+      ) {
+        const swapped = swapEmployees(empId, targetOccupant)
+        if (swapped) {
+          // Reset drag state so the outlines clear immediately — otherwise
+          // React waits for onDragEnd which browsers sometimes skip after
+          // a successful drop.
+          useSeatDragStore.getState().reset()
+          return
+        }
+      }
       assignEmployee(empId, hitId, useFloorStore.getState().activeFloorId)
     }
+    useSeatDragStore.getState().reset()
   }, [stageX, stageY, stageScale, canEdit])
 
   return (
@@ -1184,6 +1300,15 @@ export function CanvasStage() {
       className="w-full h-full"
       style={{ cursor }}
       onDragOver={handleDragOver}
+      onDragLeave={(e) => {
+        // Clear hover-outline state when the drag leaves the canvas —
+        // browsers fire `dragleave` per child too, so only reset when
+        // the relatedTarget is outside this container.
+        const related = e.relatedTarget as Node | null
+        if (!related || !e.currentTarget.contains(related)) {
+          useSeatDragStore.getState().setHoveredSeat(null)
+        }
+      }}
       onDrop={handleDrop}
       onMouseLeave={handleMouseLeave}
     >
@@ -1250,6 +1375,7 @@ export function CanvasStage() {
       </Stage>
       <FreeTextEditorOverlay containerRef={containerRef} />
       <AnnotationPopover containerRef={containerRef} />
+      <SeatDetailPopover containerRef={containerRef} />
     </div>
   )
 }

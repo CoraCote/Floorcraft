@@ -3,9 +3,35 @@ import type { DeskElement, WorkstationElement, PrivateOfficeElement } from '../.
 import { isDeskElement, isWorkstationElement } from '../../../types/elements'
 import { useUIStore } from '../../../stores/uiStore'
 import { useEmployeeStore } from '../../../stores/employeeStore'
+import { useSeatDragStore } from '../../../stores/seatDragStore'
 import { useVisibleEmployees } from '../../../hooks/useVisibleEmployees'
 import { deriveSeatStatus } from '../../../lib/seatStatus'
 import type { Accommodation } from '../../../types/employee'
+
+/** Visual palette for the drop-target outline painted while the user is
+ *  dragging an employee chip over the canvas. Green = open desk, amber =
+ *  occupied (drop will reassign / swap). A separate colour for the
+ *  currently-hovered desk gives a cursor-follow affordance. */
+const DROP_OPEN_STROKE = '#10B981'   // emerald-500
+const DROP_BUSY_STROKE = '#F59E0B'   // amber-500
+const DROP_HOVER_STROKE = '#2563EB'  // blue-600
+
+/**
+ * Truncate a string so it fits a given width at the given font size.
+ * Konva doesn't do CSS-style ellipsis natively; we approximate it with
+ * the rough heuristic "1 char ≈ 0.55 * fontSize" so long names don't
+ * bleed past the seat bounds. Not pixel-perfect, but load-bearing enough
+ * to keep the overlap bug (name colliding with desk-id) fixed without
+ * pulling in a canvas measurement pass on every render.
+ */
+function truncateToWidth(text: string, widthPx: number, fontSize: number): string {
+  if (!text) return ''
+  const charPx = fontSize * 0.55
+  const maxChars = Math.max(1, Math.floor(widthPx / charPx))
+  if (text.length <= maxChars) return text
+  if (maxChars <= 1) return text[0] + '…'
+  return text.slice(0, Math.max(1, maxChars - 1)) + '…'
+}
 
 /**
  * Minimum shape needed to render a seat badge — we deliberately don't
@@ -120,16 +146,97 @@ export function DeskRenderer({ element }: DeskRendererProps) {
   // remains visible — it's not PII and it's load-bearing for wayfinding.
   const employees = useVisibleEmployees()
   const getDepartmentColor = useEmployeeStore((s) => s.getDepartmentColor)
+  // Drag-in-flight outline: when an employee is being dragged from
+  // PeoplePanel, paint every assignable desk with an affordance outline
+  // so the user can see where they can drop. `hoveredSeatId` bumps the
+  // outline to a brighter colour on the desk currently under the cursor.
+  const draggingEmployeeId = useSeatDragStore((s) => s.draggingEmployeeId)
+  const hoveredSeatId = useSeatDragStore((s) => s.hoveredSeatId)
+  const dragState = draggingEmployeeId
+    ? { isHovered: hoveredSeatId === element.id }
+    : null
 
   if (isDeskElement(element)) {
-    return <DeskElementRenderer element={element} isSelected={isSelected} employees={employees} getDepartmentColor={getDepartmentColor} />
+    return (
+      <DeskElementRenderer
+        element={element}
+        isSelected={isSelected}
+        employees={employees}
+        getDepartmentColor={getDepartmentColor}
+        dragState={dragState}
+      />
+    )
   }
 
   if (isWorkstationElement(element)) {
-    return <WorkstationRenderer element={element} isSelected={isSelected} employees={employees} getDepartmentColor={getDepartmentColor} />
+    return (
+      <WorkstationRenderer
+        element={element}
+        isSelected={isSelected}
+        employees={employees}
+        getDepartmentColor={getDepartmentColor}
+        dragState={dragState}
+      />
+    )
   }
 
-  return <PrivateOfficeRenderer element={element as PrivateOfficeElement} isSelected={isSelected} employees={employees} getDepartmentColor={getDepartmentColor} />
+  return (
+    <PrivateOfficeRenderer
+      element={element as PrivateOfficeElement}
+      isSelected={isSelected}
+      employees={employees}
+      getDepartmentColor={getDepartmentColor}
+      dragState={dragState}
+    />
+  )
+}
+
+/**
+ * Shared drop-target outline painted on top of the seat's existing border
+ * while an employee drag is in progress. Colour keys off whether the seat
+ * is currently occupied and whether it's the one under the cursor:
+ *
+ *   - hovered               → bright blue (primary affordance)
+ *   - occupied (not hover)  → amber      ("will reassign / swap")
+ *   - open (not hover)      → green      ("drop to assign")
+ *
+ * Rendered as an outline-only rect slightly outside the element so it
+ * reads as an overlay rather than competing with the seat's own stroke.
+ * `listening={false}` so it never swallows the drop event.
+ */
+function DropTargetOutline({
+  width,
+  height,
+  isOccupied,
+  isHovered,
+}: {
+  width: number
+  height: number
+  isOccupied: boolean
+  isHovered: boolean
+}) {
+  const stroke = isHovered
+    ? DROP_HOVER_STROKE
+    : isOccupied
+      ? DROP_BUSY_STROKE
+      : DROP_OPEN_STROKE
+  // Pull the outline 3 px outside the seat bounds so it doesn't collide
+  // with the main body stroke. A dashed stroke reads as "drop here"
+  // — solid would look like a selected state.
+  return (
+    <Rect
+      x={-width / 2 - 3}
+      y={-height / 2 - 3}
+      width={width + 6}
+      height={height + 6}
+      fill="transparent"
+      stroke={stroke}
+      strokeWidth={isHovered ? 2.5 : 1.5}
+      dash={[6, 3]}
+      cornerRadius={6}
+      listening={false}
+    />
+  )
 }
 
 // --- Desk / Hot-Desk ---
@@ -139,9 +246,11 @@ interface DeskElementRendererProps {
   isSelected: boolean
   employees: Record<string, { id: string; name: string; department: string | null; accommodations?: Accommodation[] }>
   getDepartmentColor: (department: string) => string
+  /** Active while an employee drag is in flight — null otherwise. */
+  dragState: { isHovered: boolean } | null
 }
 
-function DeskElementRenderer({ element, isSelected, employees, getDepartmentColor }: DeskElementRendererProps) {
+function DeskElementRenderer({ element, isSelected, employees, getDepartmentColor, dragState }: DeskElementRendererProps) {
   const employee = element.assignedEmployeeId ? employees[element.assignedEmployeeId] : null
   const departmentColor = employee?.department ? getDepartmentColor(employee.department) : null
   const isHotDesk = element.type === 'hot-desk'
@@ -151,6 +260,27 @@ function DeskElementRenderer({ element, isSelected, employees, getDepartmentColo
     ? '#3B82F6'
     : (overrideStroke || departmentColor || '#9CA3AF')
   const borderDash = employee ? undefined : [4, 4]
+
+  // Layout contract: the desk-id sits as a tiny top-left badge, and the
+  // employee chip lives on a pill centered on the remaining real estate
+  // below it. The pill-row starts below the id-badge band (9px + 2px) so
+  // the two text layers never overlap. When the seat is too narrow to
+  // fit the id badge + a legible chip we drop the badge and keep only
+  // the chip — the chip is the load-bearing piece for wayfinding.
+  const ID_BAND_H = 11
+  const TOO_SMALL_FOR_ID = element.width < 48 || element.height < 28
+  const showIdBadge = !TOO_SMALL_FOR_ID
+  const contentTop = showIdBadge ? -element.height / 2 + ID_BAND_H : -element.height / 2 + 4
+  const contentH = element.height - (showIdBadge ? ID_BAND_H : 4) - 4
+  // Employee name truncated to fit the chip width; department similarly
+  // truncated at a smaller font so long dept names don't overflow.
+  const chipInnerPadX = 6
+  const chipW = Math.max(20, element.width - 8)
+  const nameMaxPx = chipW - chipInnerPadX * 2
+  const displayName = employee ? truncateToWidth(employee.name, nameMaxPx, 11) : ''
+  const displayDept = employee?.department
+    ? truncateToWidth(employee.department, nameMaxPx, 9)
+    : ''
 
   return (
     <Group rotation={element.rotation} listening={!element.locked}>
@@ -167,49 +297,74 @@ function DeskElementRenderer({ element, isSelected, employees, getDepartmentColo
         opacity={element.style.opacity * opacityMul}
       />
 
-      {/* Desk ID */}
-      <Text
-        text={element.deskId}
-        x={-element.width / 2 + 4}
-        y={-element.height / 2 + 3}
-        width={element.width - 8}
-        align="left"
-        fontSize={9}
-        fill="#9CA3AF"
-        listening={false}
-      />
+      {/* Desk-id corner badge. Rendered in its own reserved band at the
+          top-left so the employee chip below can center without risking
+          overlap. Hidden when the desk is too small to fit both. A
+          `title`-equivalent tooltip isn't available on Konva Text but
+          selection in the canvas already surfaces `element.deskId` in the
+          Properties panel — same info, one click away. */}
+      {showIdBadge && (
+        <Text
+          text={element.deskId}
+          x={-element.width / 2 + 4}
+          y={-element.height / 2 + 3}
+          width={Math.max(20, element.width / 2 - 4)}
+          align="left"
+          fontSize={9}
+          fontStyle="bold"
+          fill="#6B7280"
+          listening={false}
+        />
+      )}
 
       {employee ? (
-        <>
-          {/* Employee name */}
+        // Employee chip — a pill centered on the content band. The pill
+        // sits behind the name so the department colour reads as a
+        // gentle department tint, not a flat block. `clip` on the outer
+        // Group would also work but the pill-and-truncate combo keeps
+        // the chip from ever bleeding outside the seat.
+        <Group clipX={-element.width / 2} clipY={contentTop} clipWidth={element.width} clipHeight={contentH}>
+          {departmentColor && (
+            <Rect
+              x={-chipW / 2}
+              y={contentTop + contentH / 2 - 10}
+              width={chipW}
+              height={20}
+              fill={departmentColor}
+              opacity={0.18}
+              cornerRadius={10}
+              listening={false}
+            />
+          )}
           <Text
-            text={employee.name}
-            x={-element.width / 2 + 4}
-            y={-5}
-            width={element.width - 8}
+            text={displayName}
+            x={-chipW / 2}
+            y={contentTop + contentH / 2 - 6}
+            width={chipW}
             align="center"
             fontSize={11}
             fontStyle="bold"
             fill="#1F2937"
             listening={false}
           />
-          {/* Department */}
-          <Text
-            text={employee.department || ''}
-            x={-element.width / 2 + 4}
-            y={8}
-            width={element.width - 8}
-            align="center"
-            fontSize={9}
-            fill="#6B7280"
-            listening={false}
-          />
-        </>
+          {displayDept && element.height >= 44 && (
+            <Text
+              text={displayDept}
+              x={-chipW / 2}
+              y={contentTop + contentH / 2 + 7}
+              width={chipW}
+              align="center"
+              fontSize={9}
+              fill="#6B7280"
+              listening={false}
+            />
+          )}
+        </Group>
       ) : (
         <Text
           text="Open"
           x={-element.width / 2 + 4}
-          y={-4}
+          y={contentTop + contentH / 2 - 6}
           width={element.width - 8}
           align="center"
           fontSize={11}
@@ -223,6 +378,14 @@ function DeskElementRenderer({ element, isSelected, employees, getDepartmentColo
         elementWidth={element.width}
         elementHeight={element.height}
       />
+      {dragState && (
+        <DropTargetOutline
+          width={element.width}
+          height={element.height}
+          isOccupied={!!employee}
+          isHovered={dragState.isHovered}
+        />
+      )}
     </Group>
   )
 }
@@ -234,9 +397,10 @@ interface WorkstationRendererProps {
   isSelected: boolean
   employees: Record<string, { id: string; name: string; department: string | null; accommodations?: Accommodation[] }>
   getDepartmentColor: (department: string) => string
+  dragState: { isHovered: boolean } | null
 }
 
-function WorkstationRenderer({ element, isSelected, employees, getDepartmentColor }: WorkstationRendererProps) {
+function WorkstationRenderer({ element, isSelected, employees, getDepartmentColor, dragState }: WorkstationRendererProps) {
   const slotWidth = element.width / element.positions
   const { opacityMul, overrideStroke } = seatStatusVisuals(element)
   const borderColor = isSelected
@@ -323,7 +487,11 @@ function WorkstationRenderer({ element, isSelected, employees, getDepartmentColo
               />
             )}
             <Text
-              text={employee ? employee.name.split(' ')[0] : 'Open'}
+              text={
+                employee
+                  ? truncateToWidth(employee.name.split(' ')[0], slotWidth - 4, 10)
+                  : 'Open'
+              }
               x={slotX}
               y={-2}
               width={slotWidth}
@@ -336,6 +504,16 @@ function WorkstationRenderer({ element, isSelected, employees, getDepartmentColo
           </Group>
         )
       })}
+      {dragState && (
+        <DropTargetOutline
+          width={element.width}
+          height={element.height}
+          // A workstation counts as occupied if ANY position is filled —
+          // dropping on it will push the employee into the next slot.
+          isOccupied={element.assignedEmployeeIds.some((id) => !!id)}
+          isHovered={dragState.isHovered}
+        />
+      )}
     </Group>
   )
 }
@@ -347,9 +525,10 @@ interface PrivateOfficeRendererProps {
   isSelected: boolean
   employees: Record<string, { id: string; name: string; department: string | null; accommodations?: Accommodation[] }>
   getDepartmentColor: (department: string) => string
+  dragState: { isHovered: boolean } | null
 }
 
-function PrivateOfficeRenderer({ element, isSelected, employees, getDepartmentColor }: PrivateOfficeRendererProps) {
+function PrivateOfficeRenderer({ element, isSelected, employees, getDepartmentColor, dragState }: PrivateOfficeRendererProps) {
   const assignedEmployees = element.assignedEmployeeIds
     .map((id) => employees[id])
     .filter(Boolean)
@@ -394,7 +573,7 @@ function PrivateOfficeRenderer({ element, isSelected, employees, getDepartmentCo
           {assignedEmployees.map((emp, i) => (
             <Text
               key={emp.id}
-              text={emp.name}
+              text={truncateToWidth(emp.name, element.width - 16, 12)}
               x={-element.width / 2 + 8}
               y={-8 + i * 16}
               width={element.width - 16}
@@ -432,6 +611,14 @@ function PrivateOfficeRenderer({ element, isSelected, employees, getDepartmentCo
           />
         )
       })()}
+      {dragState && (
+        <DropTargetOutline
+          width={element.width}
+          height={element.height}
+          isOccupied={assignedEmployees.length > 0}
+          isHovered={dragState.isHovered}
+        />
+      )}
     </Group>
   )
 }

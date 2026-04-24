@@ -119,7 +119,15 @@ export function MapView() {
     <>
       <FloorSwitcher />
       <div className="flex flex-1 overflow-hidden">
-        <div className="w-[260px] flex-shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-y-auto">
+        {/*
+          The sidebar is a vertical flex column capped at the viewport height.
+          `min-h-0` lets the flex children shrink below their intrinsic size
+          so the ElementLibrary (which owns its own `overflow-y-auto`) can
+          scroll within its flex slot instead of spilling past the bottom
+          of the column. Without `min-h-0` the column would auto-size to
+          the library's full natural height and clip the last tiles.
+        */}
+        <div className="w-[260px] flex-shrink-0 bg-white border-r border-gray-200 flex flex-col min-h-0">
           <ToolSelector />
           <div className="border-t border-gray-200" />
           <LayerVisibilityPanel />

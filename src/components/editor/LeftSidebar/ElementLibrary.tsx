@@ -577,7 +577,7 @@ export function ElementLibrary() {
   // can leave notes tied to desks/people without needing map privileges.
   if (!canEdit) {
     return (
-      <div className="p-4 text-xs text-gray-500 space-y-2">
+      <div className="p-4 text-xs text-gray-500 space-y-2 flex-1 min-h-0 overflow-y-auto">
         {canAnnotate && (
           <button
             type="button"
@@ -601,7 +601,12 @@ export function ElementLibrary() {
   }
 
   return (
-    <div className="p-3 flex-1 overflow-y-auto">
+    // `min-h-0` lets this flex child shrink below its content height so the
+    // `overflow-y-auto` actually scrolls (otherwise flex min-content keeps
+    // the library at its natural height and the last tiles get clipped at
+    // the bottom of the sidebar). `pb-6` gives the final row visible
+    // breathing room when the user scrolls to the bottom.
+    <div className="p-3 pb-6 flex-1 min-h-0 overflow-y-auto">
       <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Elements</div>
       <input
         type="search"

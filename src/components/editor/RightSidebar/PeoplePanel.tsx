@@ -1,5 +1,6 @@
 import { useEmployeeStore } from '../../../stores/employeeStore'
 import { useUIStore } from '../../../stores/uiStore'
+import { useSeatDragStore } from '../../../stores/seatDragStore'
 import { useCan } from '../../../hooks/useCan'
 import { useVisibleEmployees } from '../../../hooks/useVisibleEmployees'
 import { redactEmployee } from '../../../lib/redactEmployee'
@@ -267,6 +268,16 @@ export function PeoplePanel() {
                             onDragStart={(e) => {
                               e.dataTransfer.setData('application/employee-id', employee.id)
                               e.dataTransfer.effectAllowed = 'move'
+                              // Publish the in-flight drag so CanvasStage /
+                              // DeskRenderer can paint drop-target outlines
+                              // (green for open desks, amber for occupied).
+                              useSeatDragStore.getState().setDraggingEmployee(employee.id)
+                            }}
+                            onDragEnd={() => {
+                              // Reset regardless of success — both "drop landed
+                              // on a desk" and "drop fell through to nothing"
+                              // end the gesture and should clear the outlines.
+                              useSeatDragStore.getState().reset()
                             }}
                           >
                             {/* Avatar */}

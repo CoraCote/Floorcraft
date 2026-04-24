@@ -185,6 +185,49 @@ function doAssignEmployee(employeeId: string, targetElementId: string, floorId: 
 }
 
 /**
+ * Swap two employees' seats. Both must be currently seated (otherwise the
+ * operation falls back to a plain `assignEmployee` of `aId → bId's seat`,
+ * i.e. reassignment with eviction). Wrapped in a single history-recording
+ * frame so undo treats the whole swap as one step, matching user intent
+ * ("I moved Alice and Bob" is one action, not two).
+ *
+ * Returns the two element ids that were swapped, or `null` when no swap
+ * could be performed (either employee missing, or one wasn't seated to
+ * begin with — callers should handle the single-assign case separately).
+ */
+export function swapEmployees(aId: string, bId: string): { aSeat: string; bSeat: string } | null {
+  if (aId === bId) return null
+  const employees = useEmployeeStore.getState().employees
+  const a = employees[aId]
+  const b = employees[bId]
+  if (!a || !b) return null
+  const aSeat = a.seatId
+  const bSeat = b.seatId
+  const aFloor = a.floorId
+  const bFloor = b.floorId
+  if (!aSeat || !bSeat || !aFloor || !bFloor) return null
+  if (aSeat === bSeat) return null
+
+  // Record the entire swap as one history frame. Internally each
+  // `doAssignEmployee` call evicts the other party, but by freezing the
+  // starting snapshot we avoid the intermediate "nobody at either desk"
+  // state — both assignments compose atomically from the caller's view.
+  withHistoryRecording(() => {
+    // Step 1: unseat A to break the tie. Without this, assigning A → bSeat
+    // would evict B and immediately clear bSeat on B's employee record
+    // — then we'd be unable to find B's old seat for the second call.
+    doUnassignEmployee(aId)
+    // Step 2: move B to A's old seat first. B is still seated at bSeat
+    // here; assignEmployee will clear them from bSeat and place them at
+    // aSeat.
+    doAssignEmployee(bId, aSeat, aFloor)
+    // Step 3: finally place A at bSeat (now empty).
+    doAssignEmployee(aId, bSeat, bFloor)
+  })
+  return { aSeat, bSeat }
+}
+
+/**
  * Unassign an employee from whatever seat they currently occupy.
  */
 export function unassignEmployee(employeeId: string): void {
