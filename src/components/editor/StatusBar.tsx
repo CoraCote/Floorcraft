@@ -4,12 +4,13 @@ import { useCanvasStore } from '../../stores/canvasStore'
 import { useCursorStore } from '../../stores/cursorStore'
 import { useMemo } from 'react'
 import type { ReactNode } from 'react'
+import { formatLength, toRealLength, LENGTH_UNIT_SUFFIX } from '../../lib/units'
+import { computeRosterStats } from '../../lib/rosterStats'
 import {
   isDeskElement,
   isWorkstationElement,
   isPrivateOfficeElement,
 } from '../../types/elements'
-import { formatLength, toRealLength, LENGTH_UNIT_SUFFIX } from '../../lib/units'
 import { deriveSeatStatus } from '../../lib/seatStatus'
 
 /**
@@ -61,7 +62,9 @@ export function StatusBar() {
     }
 
     const openDesks = totalDesks - assignedDesks
-    const occupancyPct = totalDesks > 0 ? Math.round((assignedDesks / totalDesks) * 100) : 0
+    // Delegate the occupancy ratio to the shared helper so this surface
+    // and the roster summary chip can't drift on what counts as "occupied".
+    const { occupancyPct } = computeRosterStats([], elements)
 
     return { totalDesks, assignedDesks, openDesks, occupancyPct, elementCount }
   }, [elements])

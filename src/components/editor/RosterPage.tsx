@@ -17,6 +17,7 @@ import {
   MoreHorizontal,
   Pencil,
   Plus,
+  SearchX,
   SlidersHorizontal,
   Upload,
   Users,
@@ -40,6 +41,8 @@ import { RosterBulkEditPopover } from './RosterBulkEditPopover'
 import { RosterFilterPresetsMenu } from './RosterFilterPresetsMenu'
 import { ConfirmDialog } from './ConfirmDialog'
 import { downloadCSV, employeesToCSV } from '../../lib/employeeCsv'
+import { computeRosterStats } from '../../lib/rosterStats'
+import { prefersReducedMotion } from '../../lib/prefersReducedMotion'
 
 type SortColumn = 'name' | 'department' | 'title' | 'seat' | 'status'
 type SortDir = 'asc' | 'desc'
@@ -790,6 +793,156 @@ export function RosterPage() {
     }
   }
 
+  // Merged element soup across every floor — the summary chip's occupancy
+  // figure should reflect the whole office, not just the active floor.
+  // (When the Floor filter is set, the chip's "X of Y" narrows people, but
+  // occupancy stays a global signal so the user has a stable reference.)
+  const allElements = useMemo(() => {
+    const merged: Record<string, (typeof floors)[number]['elements'][string]> = {}
+    for (const f of floors) {
+      Object.assign(merged, f.elements)
+    }
+    return merged
+  }, [floors])
+
+  // Pure-helper read of headcount + occupancy for the summary chip above
+  // the table. `floorFilter` narrows `visible` / `unassigned` so the chip
+  // matches what the table is showing.
+  const rosterStats = useMemo(
+    () => computeRosterStats(allEmployees, allElements, floorFilter || undefined),
+    [allEmployees, allElements, floorFilter],
+  )
+
+  /**
+   * Quick-filter pills — preset shortcuts that map to one or more URL
+   * params. Each entry declares which fields it inspects so we only
+   * render presets whose backing fields actually exist on the Employee
+   * type (defensive: a future trim of `Employee` would silently hide
+   * the affected pill instead of throwing). The `apply` callback writes
+   * the URL params; `match` is reused to compute the count chip.
+   */
+  type QuickFilterId = 'all' | 'unassigned' | 'on-leave' | 'recent-joins' | 'missing-equipment'
+  const quickFilters = useMemo(() => {
+    // Field probes — read the first row (if any) and confirm the field
+    // is part of the type. We can't actually drop a typed field at
+    // runtime, but this keeps the pill list robust against future
+    // schema migrations and makes the spec's "only render if backing
+    // field exists" requirement explicit.
+    const sample = allEmployees[0]
+    const hasStartDate = !sample || 'startDate' in sample
+    const hasEquipmentStatus = !sample || 'equipmentStatus' in sample
+
+    const now = Date.now()
+    const RECENT_DAYS = 30
+
+    const defs: Array<{
+      id: QuickFilterId
+      label: string
+      match: (e: Employee) => boolean
+      isActive: boolean
+      apply: () => void
+    }> = []
+
+    defs.push({
+      id: 'all',
+      label: 'All',
+      match: () => true,
+      isActive: !hasAnyFilter,
+      apply: clearAllFilters,
+    })
+
+    defs.push({
+      id: 'unassigned',
+      label: 'Unassigned',
+      match: (e) => e.status === 'active' && !e.seatId,
+      isActive: statusFilter === 'active' && seatFilter === 'unassigned',
+      apply: () => {
+        const next = new URLSearchParams()
+        const currentView = searchParams.get('view')
+        if (currentView) next.set('view', currentView)
+        next.set('status', 'active')
+        next.set('seat', 'unassigned')
+        setSearchParams(next, { replace: true })
+        setSelected(new Set())
+      },
+    })
+
+    defs.push({
+      id: 'on-leave',
+      label: 'On leave',
+      match: (e) => e.status === 'on-leave',
+      isActive: statusFilter === 'on-leave' && !seatFilter && !presetFilter && !equipFilter,
+      apply: () => {
+        const next = new URLSearchParams()
+        const currentView = searchParams.get('view')
+        if (currentView) next.set('view', currentView)
+        next.set('status', 'on-leave')
+        setSearchParams(next, { replace: true })
+        setSelected(new Set())
+      },
+    })
+
+    if (hasStartDate) {
+      defs.push({
+        id: 'recent-joins',
+        label: 'Recent joins',
+        match: (e) => {
+          if (!e.startDate) return false
+          const t = Date.parse(e.startDate)
+          if (Number.isNaN(t)) return false
+          const delta = t - now
+          return delta <= 0 && delta >= -RECENT_DAYS * MS_PER_DAY
+        },
+        isActive: presetFilter === 'new-hires',
+        apply: () => {
+          const next = new URLSearchParams()
+          const currentView = searchParams.get('view')
+          if (currentView) next.set('view', currentView)
+          next.set('preset', 'new-hires')
+          setSearchParams(next, { replace: true })
+          setSelected(new Set())
+        },
+      })
+    }
+
+    if (hasEquipmentStatus) {
+      defs.push({
+        id: 'missing-equipment',
+        label: 'Missing equipment',
+        match: (e) => e.equipmentStatus === 'pending',
+        isActive: equipFilter === 'pending' && !statusFilter && !seatFilter && !presetFilter,
+        apply: () => {
+          const next = new URLSearchParams()
+          const currentView = searchParams.get('view')
+          if (currentView) next.set('view', currentView)
+          next.set('equip', 'pending')
+          setSearchParams(next, { replace: true })
+          setSelected(new Set())
+        },
+      })
+    }
+
+    // Compute counts in a single pass so 5 pills don't iterate 5 times.
+    const counts: Record<string, number> = {}
+    for (const d of defs) counts[d.id] = 0
+    for (const e of allEmployees) {
+      for (const d of defs) {
+        if (d.match(e)) counts[d.id]++
+      }
+    }
+    return defs.map((d) => ({ ...d, count: counts[d.id] }))
+  }, [
+    allEmployees,
+    hasAnyFilter,
+    statusFilter,
+    seatFilter,
+    presetFilter,
+    equipFilter,
+    searchParams,
+    setSearchParams,
+    clearAllFilters,
+  ])
+
   const handleExportAll = () => {
     const csv = employeesToCSV(allEmployees, employees)
     downloadCSV(`roster-${new Date().toISOString().slice(0, 10)}.csv`, csv)
@@ -1168,19 +1321,52 @@ export function RosterPage() {
         onClearAll={clearAllFilters}
       />
 
-      {/* Bulk-action bar — only visible with selection; hidden for viewers */}
-      {canEdit && selected.size > 0 && (
-        <div className="flex items-center gap-3 px-5 py-2 bg-blue-50 dark:bg-blue-950/40 border-b border-blue-100 flex-shrink-0 text-sm overflow-x-auto whitespace-nowrap">
-          <span className="font-medium text-blue-900 flex-shrink-0">
-            {selected.size} selected
-          </span>
+      {/*
+        Quick-filter pills. Common preset queries surfaced as a single
+        row — clicking one rewrites the URL params and clears any
+        in-flight selection (so a "show me unassigned people" pivot
+        doesn't carry stale row-selections from the previous view). The
+        pills sit between the filter bar and the table so they read as
+        an alternate path to narrowing the list, not a replacement for
+        the dropdowns above.
+      */}
+      <QuickFilterPills pills={quickFilters} />
 
-          {/*
-            Bulk "Set dept" — the empty value doubles as the control's label
-            so the select acts like a menu: picking a dept applies it to
-            every selected row and snaps the picker back to the label,
-            ready for another pick.
-          */}
+      {/*
+        Summary chip. A subtle row showing "Showing X of Y · N
+        unassigned · OCC% occupancy" — pulled from the same pure helper
+        the canvas StatusBar uses, so the two surfaces stay in sync.
+        `aria-live="polite"` so screen readers announce when filters
+        change the visible count.
+      */}
+      <RosterSummaryChip
+        shown={sorted.length}
+        total={rosterStats.total}
+        unassigned={rosterStats.unassigned}
+        occupancyPct={rosterStats.occupancyPct}
+        scopedToFloor={Boolean(floorFilter)}
+        scopedFloorName={floorFilter ? floorMap[floorFilter] ?? null : null}
+      />
+
+      {/*
+        Bulk-action toolbar. Sticks to the top of the scrolling region
+        when rows are selected, with a backdrop blur + soft shadow so
+        the underlying table is still legible behind it. Slides + fades
+        in on first selection (skipped under prefers-reduced-motion).
+        Reordered: [X selected chip] [Delete] [Unassign] [Export
+        selection] with hairline separators, plus the existing Edit /
+        Assign-to / Set-dept / Set-status controls grouped after.
+      */}
+      {canEdit && selected.size > 0 && (
+        <BulkActionToolbar
+          selectedCount={selected.size}
+          onClearSelection={() => setSelected(new Set())}
+          onDelete={requestBulkDelete}
+          onUnassign={handleBulkUnassign}
+          onExportSelection={handleExportSelection}
+        >
+          <span className="w-px h-4 bg-blue-200" />
+
           <select
             value=""
             onChange={(e) => {
@@ -1220,8 +1406,6 @@ export function RosterPage() {
             ))}
           </select>
 
-          <span className="w-px h-4 bg-blue-200" />
-
           <div className="relative">
             <button
               type="button"
@@ -1241,9 +1425,9 @@ export function RosterPage() {
           <button
             type="button"
             onClick={() => {
-              const employees = useEmployeeStore.getState().employees
+              const employeesNow = useEmployeeStore.getState().employees
               const ordered = Array.from(selected)
-                .map((id) => employees[id])
+                .map((id) => employeesNow[id])
                 .filter((e): e is Employee => !!e)
                 .sort((a, b) => a.name.localeCompare(b.name))
                 .map((e) => e.id)
@@ -1262,32 +1446,7 @@ export function RosterPage() {
           >
             Assign to…
           </button>
-
-          <button
-            onClick={handleBulkUnassign}
-            className="px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-gray-900 rounded"
-          >
-            Unassign
-          </button>
-          <button
-            onClick={handleExportSelection}
-            className="px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-gray-900 rounded"
-          >
-            Export selection
-          </button>
-          <button
-            onClick={requestBulkDelete}
-            className="px-2 py-1 text-xs font-medium text-red-700 dark:text-red-300 hover:bg-red-100 rounded"
-          >
-            Delete
-          </button>
-          <button
-            onClick={() => setSelected(new Set())}
-            className="ml-auto flex items-center gap-1 px-2 py-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 flex-shrink-0"
-          >
-            <X size={12} /> Clear
-          </button>
-        </div>
+        </BulkActionToolbar>
       )}
 
       {/* Table OR card grid, based on `view` URL param */}
@@ -1350,6 +1509,7 @@ export function RosterPage() {
                 hasAnyEmployees={allEmployees.length > 0}
                 onClearFilters={clearAllFilters}
                 onAdd={canEdit ? handleAdd : null}
+                onImport={canEdit ? () => setCsvImportOpen(true) : null}
               />
             </div>
           ) : (
@@ -1664,6 +1824,7 @@ export function RosterPage() {
                     hasAnyEmployees={allEmployees.length > 0}
                     onClearFilters={clearAllFilters}
                     onAdd={canEdit ? handleAdd : null}
+                    onImport={canEdit ? () => setCsvImportOpen(true) : null}
                   />
                 </td>
               </tr>
@@ -2885,46 +3046,292 @@ function RosterEmptyState({
   hasAnyEmployees,
   onClearFilters,
   onAdd,
+  onImport,
 }: {
   filtered: boolean
   hasAnyEmployees: boolean
   onClearFilters: () => void
   onAdd: (() => void) | null
+  onImport?: (() => void) | null
 }) {
   // Decide which of the two states to render. `filtered && hasAnyEmployees`
   // means the user is narrowing — offer a reset. Otherwise the office
   // itself is empty (first-run, or every row was deleted).
   const isFilterMiss = filtered && hasAnyEmployees
+  const Icon = isFilterMiss ? SearchX : Users
   return (
-    <div className="flex flex-col items-center gap-2 text-center py-8">
-      <Users size={40} aria-hidden="true" className="text-gray-300" />
-      <div className="text-sm font-medium text-gray-700 dark:text-gray-200">
-        {isFilterMiss ? 'No matches' : 'Your office is empty'}
+    <div className="flex flex-col items-center gap-2 text-center py-12">
+      <div className="flex items-center justify-center w-14 h-14 rounded-full bg-gray-100 dark:bg-gray-800/60 text-gray-400 dark:text-gray-500 mb-1">
+        <Icon size={28} aria-hidden="true" />
       </div>
-      <div className="text-xs text-gray-500 dark:text-gray-400">
+      <div className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+        {isFilterMiss ? 'No employees match these filters' : 'Your office is empty'}
+      </div>
+      <div className="text-xs text-gray-500 dark:text-gray-400 max-w-sm">
         {isFilterMiss
-          ? 'Try clearing filters or changing your search.'
-          : 'Add your first teammate to start building the roster.'}
+          ? 'Try removing a filter or clearing them all to see more people.'
+          : 'Add your first teammate, or import a roster CSV to get started.'}
       </div>
       {isFilterMiss ? (
         <button
           type="button"
           onClick={onClearFilters}
-          className="mt-1 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-800 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50"
+          className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded hover:bg-blue-50 dark:hover:bg-blue-950/40"
         >
           Clear filters
         </button>
-      ) : onAdd ? (
+      ) : (
+        <div className="mt-2 inline-flex items-center gap-2">
+          {onAdd && (
+            <button
+              type="button"
+              onClick={onAdd}
+              data-testid="roster-empty-add"
+              // Distinct label from the header's "Add person" button so
+              // tests (and screen readers) can tell them apart; both
+              // call the same handler.
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded"
+            >
+              <Plus size={12} aria-hidden="true" /> Add your first teammate
+            </button>
+          )}
+          {onImport && (
+            <button
+              type="button"
+              onClick={onImport}
+              data-testid="roster-empty-import"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-800 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50"
+            >
+              <Upload size={12} aria-hidden="true" /> Import CSV
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Quick-filter pills row. Sits below the filter bar; each pill is a
+ * `<button>` with `aria-pressed` reflecting whether the underlying URL
+ * params currently match its preset. The list is computed by the
+ * parent (RosterPage) so we only render presets whose backing fields
+ * exist on the Employee type today.
+ *
+ * Accessibility: wrapped in `role="group"` with an aria-label so screen
+ * reader users can navigate to the cluster as a unit. Hidden when there
+ * are no presets (e.g. employees lack any of the optional fields).
+ */
+function QuickFilterPills({
+  pills,
+}: {
+  pills: Array<{
+    id: string
+    label: string
+    count: number
+    isActive: boolean
+    apply: () => void
+  }>
+}) {
+  if (pills.length === 0) return null
+  return (
+    <div
+      role="group"
+      aria-label="Quick filters"
+      className="flex items-center gap-1.5 px-5 py-2 flex-shrink-0 overflow-x-auto whitespace-nowrap border-b border-gray-100 dark:border-gray-800"
+    >
+      {pills.map((p) => {
+        const cls = p.isActive
+          ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'
+          : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-gray-100'
+        return (
+          <button
+            key={p.id}
+            type="button"
+            onClick={p.apply}
+            aria-pressed={p.isActive}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium transition-colors ${cls}`}
+            data-testid={`quick-filter-${p.id}`}
+          >
+            <span>{p.label}</span>
+            {p.id !== 'all' && (
+              <span
+                className={`tabular-nums text-[11px] font-semibold ${
+                  p.isActive
+                    ? 'text-blue-100'
+                    : 'text-gray-400 dark:text-gray-500'
+                }`}
+              >
+                ({p.count})
+              </span>
+            )}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+/**
+ * Small read-only summary line above the table. Uses `aria-live="polite"`
+ * so screen readers announce when the visible count changes (e.g. after
+ * applying a quick-filter). The display is intentionally minimalist —
+ * one row of dot-separated counts, no border, so it reads as metadata
+ * rather than a control.
+ */
+function RosterSummaryChip({
+  shown,
+  total,
+  unassigned,
+  occupancyPct,
+  scopedToFloor,
+  scopedFloorName,
+}: {
+  shown: number
+  total: number
+  unassigned: number
+  occupancyPct: number
+  scopedToFloor: boolean
+  scopedFloorName: string | null
+}) {
+  // No employees at all means the chip would read "Showing 0 of 0" which
+  // adds noise to the empty state — skip rendering in that case.
+  if (total === 0) return null
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      data-testid="roster-summary-chip"
+      className="px-5 pt-2 pb-0 flex-shrink-0 text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-2 flex-wrap"
+    >
+      <span>
+        Showing{' '}
+        <span className="tabular-nums font-semibold text-gray-700 dark:text-gray-200">
+          {shown.toLocaleString()}
+        </span>
+        {' '}of{' '}
+        <span className="tabular-nums font-semibold text-gray-700 dark:text-gray-200">
+          {total.toLocaleString()}
+        </span>
+        {' '}{total === 1 ? 'employee' : 'employees'}
+        {scopedToFloor && scopedFloorName ? ` on ${scopedFloorName}` : ''}
+      </span>
+      <span aria-hidden className="text-gray-300 dark:text-gray-700">·</span>
+      <span>
+        <span className="tabular-nums font-semibold text-gray-700 dark:text-gray-200">
+          {unassigned.toLocaleString()}
+        </span>{' '}
+        unassigned
+      </span>
+      <span aria-hidden className="text-gray-300 dark:text-gray-700">·</span>
+      <span>
+        <span className="tabular-nums font-semibold text-gray-700 dark:text-gray-200">
+          {occupancyPct}%
+        </span>{' '}
+        occupancy
+      </span>
+    </div>
+  )
+}
+
+/**
+ * Sticky bulk-action toolbar. Renders only when rows are selected.
+ * Pinned to the top of the scrolling container with `sticky` + a
+ * backdrop blur so the table beneath stays legible. Slides + fades in
+ * on mount unless the user has set `prefers-reduced-motion: reduce`.
+ *
+ * Layout (left → right):
+ *   [✕ N selected] [Delete] [Unassign] [Export selection] | <extra controls>
+ *
+ * The lead chip clears the selection when clicked — a faster path than
+ * hunting for the trailing "Clear" button the previous bar exposed.
+ */
+function BulkActionToolbar({
+  selectedCount,
+  onClearSelection,
+  onDelete,
+  onUnassign,
+  onExportSelection,
+  children,
+}: {
+  selectedCount: number
+  onClearSelection: () => void
+  onDelete: () => void
+  onUnassign: () => void
+  onExportSelection: () => void
+  children?: ReactNode
+}) {
+  // One-shot mount animation. We compute the reduced-motion preference
+  // *once* on mount (the helper itself doesn't subscribe to media-query
+  // changes) so toggling the OS preference mid-session won't retroactively
+  // unwind any in-flight animation. `useState` with an initializer
+  // function avoids re-reading on every render.
+  const [reduced] = useState<boolean>(() => prefersReducedMotion())
+  const animClass = reduced
+    ? ''
+    : 'animate-[rosterBulkSlideIn_180ms_ease-out]'
+
+  return (
+    <>
+      {/* Keyframes are kept colocated with the only consumer so this
+          component stays self-contained — no Tailwind config edit
+          required. The `display: none`-style media query nukes the
+          animation under reduced motion as a belt-and-braces measure
+          on top of the runtime check above. */}
+      <style>{`
+        @keyframes rosterBulkSlideIn {
+          0%   { opacity: 0; transform: translateY(-6px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .roster-bulk-anim { animation: none !important; }
+        }
+      `}</style>
+      <div
+        role="region"
+        aria-label="Bulk actions"
+        data-testid="roster-bulk-toolbar"
+        className={`roster-bulk-anim sticky top-0 z-20 flex items-center gap-3 px-5 py-2 bg-blue-50/90 dark:bg-blue-950/80 backdrop-blur border-b border-blue-200/80 dark:border-blue-800/60 shadow-sm flex-shrink-0 text-sm overflow-x-auto whitespace-nowrap ${animClass}`}
+      >
         <button
           type="button"
-          onClick={onAdd}
-          className="mt-1 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded"
-          // Distinct label from the header's "Add person" button so tests
-          // (and users) can tell them apart; both call the same handler.
+          onClick={onClearSelection}
+          aria-label={`Clear selection (${selectedCount} selected)`}
+          title="Clear selection"
+          data-testid="roster-bulk-clear"
+          className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 flex-shrink-0"
         >
-          <Plus size={12} aria-hidden="true" /> Add your first teammate
+          <X size={12} aria-hidden />
+          <span className="tabular-nums">{selectedCount}</span>
+          <span>selected</span>
         </button>
-      ) : null}
-    </div>
+
+        <span aria-hidden className="w-px h-4 bg-blue-200 dark:bg-blue-800" />
+
+        <button
+          type="button"
+          onClick={onDelete}
+          className="px-2 py-1 text-xs font-medium text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-950/40 rounded"
+        >
+          Delete
+        </button>
+        <button
+          type="button"
+          onClick={onUnassign}
+          className="px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-gray-900 rounded"
+        >
+          Unassign
+        </button>
+        <button
+          type="button"
+          onClick={onExportSelection}
+          className="px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-gray-900 rounded"
+        >
+          Export selection
+        </button>
+
+        {children}
+      </div>
+    </>
   )
 }
