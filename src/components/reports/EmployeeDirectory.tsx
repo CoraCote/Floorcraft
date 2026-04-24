@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { X, ArrowUpDown } from 'lucide-react'
-import { useEmployeeStore } from '../../stores/employeeStore'
+import { useVisibleEmployees } from '../../hooks/useVisibleEmployees'
 import { useFloorStore } from '../../stores/floorStore'
 import { useUIStore } from '../../stores/uiStore'
 import { useShallow } from 'zustand/react/shallow'
@@ -22,7 +22,10 @@ type SortColumn =
 type SortDirection = 'asc' | 'desc'
 
 export function EmployeeDirectory() {
-  const employees = useEmployeeStore((s) => s.employees)
+  // Directory is a viewer-first surface — it's often the first page a
+  // viewer-role user sees. Route through the redaction hook so names show
+  // as initials and email/manager/office-days empty out.
+  const employees = useVisibleEmployees()
   const floors = useFloorStore((s) => s.floors)
   const { setEmployeeDirectoryOpen, setSelectedIds, setActiveReport } = useUIStore(
     useShallow((s) => ({

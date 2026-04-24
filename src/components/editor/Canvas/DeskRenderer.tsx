@@ -3,6 +3,7 @@ import type { DeskElement, WorkstationElement, PrivateOfficeElement } from '../.
 import { isDeskElement, isWorkstationElement } from '../../../types/elements'
 import { useUIStore } from '../../../stores/uiStore'
 import { useEmployeeStore } from '../../../stores/employeeStore'
+import { useVisibleEmployees } from '../../../hooks/useVisibleEmployees'
 import { deriveSeatStatus } from '../../../lib/seatStatus'
 import type { Accommodation } from '../../../types/employee'
 
@@ -114,7 +115,10 @@ interface DeskRendererProps {
 export function DeskRenderer({ element }: DeskRendererProps) {
   const selectedIds = useUIStore((s) => s.selectedIds)
   const isSelected = selectedIds.includes(element.id)
-  const employees = useEmployeeStore((s) => s.employees)
+  // Seat labels go through `useVisibleEmployees` so viewers without PII
+  // access see initials on the map, not full names. Department colour
+  // remains visible — it's not PII and it's load-bearing for wayfinding.
+  const employees = useVisibleEmployees()
   const getDepartmentColor = useEmployeeStore((s) => s.getDepartmentColor)
 
   if (isDeskElement(element)) {

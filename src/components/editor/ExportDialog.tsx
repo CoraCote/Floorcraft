@@ -9,6 +9,8 @@ import { exportEmployeeCSV } from '../../lib/employeeCsv'
 import { exportPdf } from '../../lib/exportPdf'
 import { exportPng } from '../../lib/exportPng'
 import { getActiveStage } from '../../lib/stageRegistry'
+import { useCan } from '../../hooks/useCan'
+import { redactEmployeeMap } from '../../lib/redactEmployee'
 import { FileText, Table, FileJson, Image as ImageIcon, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
@@ -17,9 +19,16 @@ export function ExportDialog() {
   const setOpen = useUIStore((s) => s.setExportDialogOpen)
   const project = useProjectStore((s) => s.currentProject)
   const elements = useElementsStore((s) => s.elements)
-  const employees = useEmployeeStore((s) => s.employees)
+  const rawEmployees = useEmployeeStore((s) => s.employees)
   const settings = useCanvasStore((s) => s.settings)
   const floors = useFloorStore((s) => s.floors)
+  const canViewPII = useCan('viewPII')
+  // CSV export of the roster: when the viewer lacks `viewPII` the CSV
+  // must mirror the on-screen redaction — name collapses to initials,
+  // email/manager/dates/tags blank out. Headcount-level aggregates are
+  // still useful for space planning, so we emit the redacted projection
+  // rather than blocking the export entirely.
+  const employees = canViewPII ? rawEmployees : redactEmployeeMap(rawEmployees)
   const [error, setError] = useState<string | null>(null)
 
   const close = () => {

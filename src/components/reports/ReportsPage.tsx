@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useFloorStore } from '../../stores/floorStore'
-import { useEmployeeStore } from '../../stores/employeeStore'
+import { useVisibleEmployees } from '../../hooks/useVisibleEmployees'
 import { useCan } from '../../hooks/useCan'
 import {
   floorUtilization,
@@ -13,7 +13,11 @@ import { UtilizationBar } from './UtilizationBar'
 export function ReportsPage() {
   const canView = useCan('viewReports')
   const floors = useFloorStore((s) => s.floors)
-  const employees = useEmployeeStore((s) => s.employees)
+  // Headcount still counts accurately (redaction preserves id/seatId/
+  // department/status), but the unassigned table renders initials + blank
+  // email so a viewer-role report consumer sees the same GDPR-safe view
+  // as on the roster.
+  const employees = useVisibleEmployees()
 
   const utilRows = useMemo(() => floorUtilization(floors), [floors])
   const deptRows = useMemo(() => departmentHeadcount(employees), [employees])

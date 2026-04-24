@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useEmployeeStore } from '../../stores/employeeStore'
+import { useVisibleEmployees } from '../../hooks/useVisibleEmployees'
 import { useAllFloorElements } from '../../hooks/useActiveFloorElements'
 import {
   isDeskElement,
@@ -29,7 +30,9 @@ function countAssignableSeats(elements: Record<string, CanvasElement>): number {
 }
 
 export function OccupancyDashboard() {
-  const employees = useEmployeeStore((s) => s.employees)
+  // Seat counts and department aggregates survive redaction; routing
+  // through the hook keeps the read-side rule uniform.
+  const employees = useVisibleEmployees()
   const getDepartmentColor = useEmployeeStore((s) => s.getDepartmentColor)
   const floorsWithElements = useAllFloorElements()
 

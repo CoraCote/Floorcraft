@@ -1,6 +1,9 @@
 import { useState, useMemo, useCallback } from 'react'
 import { User, Monitor } from 'lucide-react'
 import { useEmployeeStore } from '../../stores/employeeStore'
+import { useVisibleEmployees } from '../../hooks/useVisibleEmployees'
+import { useCan } from '../../hooks/useCan'
+import { redactEmployee } from '../../lib/redactEmployee'
 import { useShallow } from 'zustand/react/shallow'
 import { useAllFloorElements } from '../../hooks/useActiveFloorElements'
 import { assignEmployee } from '../../lib/seatAssignment'
@@ -27,26 +30,38 @@ function getOpenDesks(
 }
 
 export function UnassignedReport() {
-  const { employees, getUnassignedEmployees } = useEmployeeStore(
+  const { getUnassignedEmployees } = useEmployeeStore(
     useShallow((s) => ({
-      employees: s.employees,
       getUnassignedEmployees: s.getUnassignedEmployees,
     }))
   )
+  // Display paths route through the redaction projection; the raw
+  // `getUnassignedEmployees` selector still runs against the full store so
+  // the filter (status=active && no seat) is accurate, then we project
+  // each result through `redactEmployee` when the viewer lacks PII access.
+  const employees = useVisibleEmployees()
+  const canViewPII = useCan('viewPII')
   const floorsWithElements = useAllFloorElements()
 
   const [highlightedEmpId, setHighlightedEmpId] = useState<string | null>(null)
 
   const unassigned = useMemo(() => {
     const list = getUnassignedEmployees()
-    // Sort by start date ascending (upcoming new hires first)
-    return [...list].sort((a, b) => {
+    // Sort by start date ascending (upcoming new hires first) on the raw
+    // records so the order doesn't collapse when startDate is redacted to
+    // null for every entry.
+    const sorted = [...list].sort((a, b) => {
       if (!a.startDate && !b.startDate) return a.name.localeCompare(b.name)
       if (!a.startDate) return 1
       if (!b.startDate) return -1
       return new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
     })
-  }, [getUnassignedEmployees, employees])
+    return canViewPII ? sorted : sorted.map(redactEmployee)
+    // `employees` is a reactive snapshot from the store — including it in
+    // the deps forces the memo to re-run when assignments change, since
+    // `getUnassignedEmployees` itself is a stable selector reference.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [getUnassignedEmployees, employees, canViewPII])
 
   // Build set of seatIds that have assigned employees
   const assignedSeatIds = useMemo(() => {

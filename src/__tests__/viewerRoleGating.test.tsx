@@ -69,11 +69,13 @@ describe('Roster viewer gating', () => {
   it('viewer cannot activate inline-editable Name cell', () => {
     useProjectStore.setState({ currentOfficeRole: 'viewer' } as any)
     renderRoster()
-    // Name is shown as plain text (no button / no input) for viewers.
-    // The employee name still appears on screen, but no editable widget
-    // exists: no <input>, no clickable edit trigger whose accessible
-    // name is the employee's name.
-    expect(screen.getByText('Jane')).toBeInTheDocument()
+    // Name is shown as plain text (no button / no input) for viewers. A
+    // viewer also lacks `viewPII`, so the visible label is the redacted
+    // initial ('J.') rather than the raw name — but the principle is the
+    // same: no editable widget exists that would let the viewer commit an
+    // edit.
+    expect(screen.getByText('J.')).toBeInTheDocument()
+    expect(screen.queryByText('Jane')).not.toBeInTheDocument()
     expect(screen.queryByDisplayValue('Jane')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Jane' })).not.toBeInTheDocument()
   })

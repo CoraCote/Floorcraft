@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { History } from 'lucide-react'
 import { useUIStore } from '../../../stores/uiStore'
 import { useElementsStore } from '../../../stores/elementsStore'
-import { useEmployeeStore } from '../../../stores/employeeStore'
+import { useVisibleEmployees } from '../../../hooks/useVisibleEmployees'
 import { useNeighborhoodStore } from '../../../stores/neighborhoodStore'
 import { NeighborhoodPropertiesPanel } from './NeighborhoodPropertiesPanel'
 import { unassignEmployee, deleteElements } from '../../../lib/seatAssignment'
@@ -163,7 +163,9 @@ export function PropertiesPanel() {
   const selectedIds = useUIStore((s) => s.selectedIds)
   const elements = useElementsStore((s) => s.elements)
   const updateElement = useElementsStore((s) => s.updateElement)
-  const employees = useEmployeeStore((s) => s.employees)
+  // Display-layer read — the assigned-employee name preview in the Desk
+  // section should go through redaction when the viewer lacks `viewPII`.
+  const employees = useVisibleEmployees()
   const neighborhoods = useNeighborhoodStore((s) => s.neighborhoods)
   const canEdit = useCan('editMap')
   const canViewHistory = useCan('viewSeatHistory')

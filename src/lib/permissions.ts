@@ -10,6 +10,11 @@ export type Action =
   | 'viewSeatHistory'
   | 'manageBilling'
   | 'generateShareLink'
+  // GDPR / dignity gate. Roles without `viewPII` see a reduced employee
+  // projection (initials, blanked email/manager/schedule/tags/photo). Any
+  // role that can mutate the roster (editRoster) necessarily has it so the
+  // edit surface doesn't hand out write access to data the user can't see.
+  | 'viewPII'
 
 /**
  * Pilot-era permissions matrix. Legacy `editor` = hr-editor ∪ space-planner
@@ -27,10 +32,10 @@ const MATRIX: Record<Role, Action[]> = {
   owner: [
     'editRoster', 'editMap', 'manageTeam',
     'viewAuditLog', 'viewReports', 'viewSeatHistory',
-    'manageBilling', 'generateShareLink',
+    'manageBilling', 'generateShareLink', 'viewPII',
   ],
-  editor: ['editRoster', 'editMap', 'viewReports', 'viewSeatHistory'],
-  'hr-editor': ['editRoster', 'viewAuditLog', 'viewReports', 'viewSeatHistory'],
+  editor: ['editRoster', 'editMap', 'viewReports', 'viewSeatHistory', 'viewPII'],
+  'hr-editor': ['editRoster', 'viewAuditLog', 'viewReports', 'viewSeatHistory', 'viewPII'],
   'space-planner': ['editMap', 'viewReports', 'viewSeatHistory'],
   viewer: [],
 }

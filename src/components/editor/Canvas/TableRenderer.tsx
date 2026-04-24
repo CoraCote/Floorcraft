@@ -2,6 +2,7 @@ import { Group, Rect, Circle, Text } from 'react-konva'
 import type { TableElement } from '../../../types/elements'
 import { useUIStore } from '../../../stores/uiStore'
 import { useEmployeeStore } from '../../../stores/employeeStore'
+import { useVisibleEmployees } from '../../../hooks/useVisibleEmployees'
 import { UNASSIGNED_SEAT_FILL, UNASSIGNED_SEAT_STROKE } from '../../../lib/constants'
 
 interface TableRendererProps {
@@ -11,7 +12,9 @@ interface TableRendererProps {
 export function TableRenderer({ element }: TableRendererProps) {
   const selectedIds = useUIStore((s) => s.selectedIds)
   const isSelected = selectedIds.includes(element.id)
-  const employees = useEmployeeStore((s) => s.employees)
+  // Display-layer read — PII is redacted for viewers. Occupant labels on
+  // conference/team tables should show initials, not full names.
+  const employees = useVisibleEmployees()
   const getDepartmentColor = useEmployeeStore((s) => s.getDepartmentColor)
 
   return (

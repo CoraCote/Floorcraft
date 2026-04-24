@@ -1,7 +1,7 @@
 import { useEffect, useCallback, useRef, useMemo } from 'react'
 import { RefreshCw, CheckCircle } from 'lucide-react'
 import { useInsightsStore } from '../../../stores/insightsStore'
-import { useEmployeeStore } from '../../../stores/employeeStore'
+import { useVisibleEmployees } from '../../../hooks/useVisibleEmployees'
 import { useAllFloorElements } from '../../../hooks/useActiveFloorElements'
 import type { CanvasElement } from '../../../types/elements'
 import type { Insight, InsightAction } from '../../../types/insights'
@@ -28,7 +28,12 @@ export function InsightsPanel() {
       ),
     [floorsWithElements]
   )
-  const employees = useEmployeeStore((s) => s.employees)
+  // Feed the analyzers the redacted employee map when the viewer lacks
+  // `viewPII`. Analyzer outputs often embed the employee's name in card
+  // titles ("Jane Doe sits away from their team"); passing redacted
+  // records means those titles read as "J.D." automatically — we don't
+  // need to rewrite analyzer outputs after the fact.
+  const employees = useVisibleEmployees()
   const neighborhoods = useNeighborhoodStore((s) => s.neighborhoods)
 
   const {

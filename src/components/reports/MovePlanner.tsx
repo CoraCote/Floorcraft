@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { X, ArrowRight, Check, Trash2, Plus } from 'lucide-react'
-import { useEmployeeStore } from '../../stores/employeeStore'
+import { useVisibleEmployees } from '../../hooks/useVisibleEmployees'
 import { useFloorStore } from '../../stores/floorStore'
 import { useUIStore } from '../../stores/uiStore'
 import { useShallow } from 'zustand/react/shallow'
@@ -21,7 +21,10 @@ interface PendingMove {
 }
 
 export function MovePlanner() {
-  const employees = useEmployeeStore((s) => s.employees)
+  // Display-layer read — the planner lists employees to pick from, so
+  // names need the same redaction every other surface uses. Mutations
+  // (`assignEmployee`) are already editor-only.
+  const employees = useVisibleEmployees()
   const floors = useFloorStore((s) => s.floors)
   const floorsWithElements = useAllFloorElements()
   const { setMovePlannerActive, setActiveReport } = useUIStore(

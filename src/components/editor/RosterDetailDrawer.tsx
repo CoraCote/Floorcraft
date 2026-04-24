@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { AlertCircle, X, Trash2 } from 'lucide-react'
+import { AlertCircle, EyeOff, X, Trash2 } from 'lucide-react'
 import { nanoid } from 'nanoid'
 import { useEmployeeStore } from '../../stores/employeeStore'
 import { useFloorStore } from '../../stores/floorStore'
 import { useUIStore } from '../../stores/uiStore'
 import { useToastStore } from '../../stores/toastStore'
 import { useCan } from '../../hooks/useCan'
+import { useVisibleEmployees } from '../../hooks/useVisibleEmployees'
 import type {
   Accommodation,
   AccommodationType,
@@ -73,14 +74,25 @@ const OFFICE_DAY_PRESETS: Array<{ id: string; label: string; days: string[] }> =
  * previous record lingers until the user focuses each field.
  */
 export function RosterDetailDrawer({ employeeId, onClose }: Props) {
-  const employee = useEmployeeStore((s) => s.employees[employeeId])
-  const employees = useEmployeeStore((s) => s.employees)
+  // `useVisibleEmployees` applies the PII projection for viewers without
+  // the `viewPII` capability. The drawer renders the redacted record in
+  // that case (blank email/dates/tags, initials for names), plus a notice
+  // + disables every PII input so a viewer can't even type into a field
+  // they can't see the current value of.
+  const visibleEmployees = useVisibleEmployees()
+  const employee = visibleEmployees[employeeId]
+  const employees = visibleEmployees
   const updateEmployee = useEmployeeStore((s) => s.updateEmployee)
   const floors = useFloorStore((s) => s.floors)
   const registerModalOpen = useUIStore((s) => s.registerModalOpen)
   const registerModalClose = useUIStore((s) => s.registerModalClose)
   const canEdit = useCan('editRoster')
   const canViewHistory = useCan('viewSeatHistory')
+  const canViewPII = useCan('viewPII')
+  // A PII field is editable only when the caller can BOTH edit and view
+  // PII. An editor-role user always has both; the combined flag keeps
+  // the guard consistent across every input.
+  const canEditPII = canEdit && canViewPII
   const [historyOpen, setHistoryOpen] = useState(false)
 
   const drawerRef = useRef<HTMLElement>(null)
@@ -236,6 +248,16 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
         </header>
 
         <div className="flex-1 px-5 py-4 space-y-4">
+          {!canViewPII && (
+            <div
+              role="status"
+              className="flex items-start gap-2 px-3 py-2 border border-gray-200 bg-gray-50 rounded text-xs text-gray-600"
+              data-testid="pii-redaction-banner"
+            >
+              <EyeOff size={14} className="mt-0.5 flex-shrink-0 text-gray-500" />
+              <span>Viewing a redacted record — personal details hidden.</span>
+            </div>
+          )}
           {/*
             Name is the first — and required — field. The old drawer
             started at Email, which meant `+ Add person` routed the user
@@ -261,7 +283,7 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
               }}
               required
               aria-required="true"
-              disabled={!canEdit}
+              disabled={!canEditPII}
             />
           </Field>
           <Field label="Email">
@@ -272,7 +294,7 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
                 updateEmployee(employee.id, { email: e.target.value.trim() })
               }
               type="email"
-              disabled={!canEdit}
+              disabled={!canEditPII}
             />
           </Field>
 
@@ -331,7 +353,7 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
                   }
                   updateEmployee(employee.id, { managerId: candidate })
                 }}
-                disabled={!canEdit}
+                disabled={!canEditPII}
               >
                 <option value="">— none —</option>
                 {managerCandidates.map((c) => (
@@ -368,7 +390,7 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
                       key={day}
                       type="button"
                       onClick={() => toggleOfficeDay(day)}
-                      disabled={!canEdit}
+                      disabled={!canEditPII}
                       className={`px-2 py-1 text-xs font-medium rounded border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                         active
                           ? 'bg-blue-600 text-white border-blue-600'
@@ -398,7 +420,7 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
                       onClick={() =>
                         updateEmployee(employee.id, { officeDays: preset.days })
                       }
-                      disabled={!canEdit}
+                      disabled={!canEditPII}
                       className={`px-1.5 py-0.5 text-[10px] rounded border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                         matches
                           ? 'bg-blue-100 text-blue-800 border-blue-300'
@@ -427,7 +449,7 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
                 onBlur={(e) =>
                   updateEmployee(employee.id, { startDate: e.target.value || null })
                 }
-                disabled={!canEdit}
+                disabled={!canEditPII}
               />
             </Field>
             <Field label="End date">
@@ -438,7 +460,7 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
                 onBlur={(e) =>
                   updateEmployee(employee.id, { endDate: e.target.value || null })
                 }
-                disabled={!canEdit}
+                disabled={!canEditPII}
               />
             </Field>
             <Field label="Departure date">
@@ -449,7 +471,7 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
                 onBlur={(e) =>
                   updateEmployee(employee.id, { departureDate: e.target.value || null })
                 }
-                disabled={!canEdit}
+                disabled={!canEditPII}
               />
             </Field>
           </div>
@@ -459,7 +481,7 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
               className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
               defaultValue={employee.tags.join(', ')}
               onBlur={(e) => onTagsBlur(e.target.value)}
-              disabled={!canEdit}
+              disabled={!canEditPII}
             />
           </Field>
 
@@ -499,7 +521,7 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
               onBlur={(e) =>
                 updateEmployee(employee.id, { photoUrl: e.target.value.trim() || null })
               }
-              disabled={!canEdit}
+              disabled={!canEditPII}
             />
           </Field>
 
@@ -531,7 +553,7 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
                       leaveType: (e.target.value || null) as LeaveType | null,
                     })
                   }
-                  disabled={!canEdit}
+                  disabled={!canEditPII}
                 >
                   <option value="">—</option>
                   {LEAVE_TYPES.map((t) => (
@@ -550,7 +572,7 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
                       expectedReturnDate: e.target.value || null,
                     })
                   }
-                  disabled={!canEdit}
+                  disabled={!canEditPII}
                 />
               </Field>
 
@@ -566,7 +588,7 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
                       : null
                     updateEmployee(employee.id, { coverageEmployeeId: matched?.id ?? null })
                   }}
-                  disabled={!canEdit}
+                  disabled={!canEditPII}
                   placeholder="Search by name"
                 />
                 <datalist id="coverage-employees">
@@ -585,7 +607,7 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
                   onBlur={(e) =>
                     updateEmployee(employee.id, { leaveNotes: e.target.value || null })
                   }
-                  disabled={!canEdit}
+                  disabled={!canEditPII}
                   rows={3}
                 />
               </Field>

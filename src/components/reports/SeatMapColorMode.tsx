@@ -1,9 +1,9 @@
 import { useMemo } from 'react'
 import { Layer, Rect, Text } from 'react-konva'
 import { useEmployeeStore } from '../../stores/employeeStore'
+import { useVisibleEmployees } from '../../hooks/useVisibleEmployees'
 import { useFloorStore } from '../../stores/floorStore'
 import { useUIStore } from '../../stores/uiStore'
-import { useShallow } from 'zustand/react/shallow'
 import { useFloorElements } from '../../hooks/useActiveFloorElements'
 import {
   isDeskElement,
@@ -49,12 +49,11 @@ export function SeatMapColorMode() {
   const seatMapColorMode = useUIStore((s) => s.seatMapColorMode)
   const activeFloorId = useFloorStore((s) => s.activeFloorId)
   const floorElements = useFloorElements(activeFloorId)
-  const { employees, getDepartmentColor } = useEmployeeStore(
-    useShallow((s) => ({
-      employees: s.employees,
-      getDepartmentColor: s.getDepartmentColor,
-    }))
-  )
+  // Color overlays are department/team/employmentType driven, all of which
+  // survive redaction. Routing through `useVisibleEmployees` keeps the
+  // rule "display layer = redacted" easy to audit.
+  const employees = useVisibleEmployees()
+  const getDepartmentColor = useEmployeeStore((s) => s.getDepartmentColor)
 
   const { overlays, legend } = useMemo(() => {
     if (!seatMapColorMode) return { overlays: [], legend: [] }

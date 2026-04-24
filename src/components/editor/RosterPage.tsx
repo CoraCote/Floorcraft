@@ -21,6 +21,7 @@ import { useFloorStore } from '../../stores/floorStore'
 import { useUIStore } from '../../stores/uiStore'
 import { useToastStore } from '../../stores/toastStore'
 import { useCan } from '../../hooks/useCan'
+import { useVisibleEmployees } from '../../hooks/useVisibleEmployees'
 import { deleteEmployee, unassignEmployee } from '../../lib/seatAssignment'
 import type { Employee, EmployeeStatus } from '../../types/employee'
 import { EMPLOYEE_STATUSES, EMPLOYEE_STATUS_PILL_CLASSES } from '../../types/employee'
@@ -119,7 +120,11 @@ function matchesPreset(employee: Employee, presetId: string): boolean {
  * Filter state is URL-synced so deep-links share roster views.
  */
 export function RosterPage() {
-  const employees = useEmployeeStore((s) => s.employees)
+  // `useVisibleEmployees` redacts PII for roles without `viewPII`. The
+  // mutation helpers (`addEmployee`, `updateEmployee`) still come from the
+  // raw store — they're gated on `canEdit` and write-path role checks, and
+  // never touch the redacted projection.
+  const employees = useVisibleEmployees()
   const floors = useFloorStore((s) => s.floors)
   const departmentColors = useEmployeeStore((s) => s.departmentColors)
   const getDepartmentColor = useEmployeeStore((s) => s.getDepartmentColor)
@@ -127,6 +132,7 @@ export function RosterPage() {
   const updateEmployee = useEmployeeStore((s) => s.updateEmployee)
   const setCsvImportOpen = useUIStore((s) => s.setCsvImportOpen)
   const canEdit = useCan('editRoster')
+  const canViewPII = useCan('viewPII')
 
   const navigate = useNavigate()
   // Post Phase 6: the roster always lives under
@@ -708,6 +714,20 @@ export function RosterPage() {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-white">
+      {/* Redacted-mode notice. Explains why names read as initials and
+          why email/office-days columns are empty — without it the UI
+          looks broken to a viewer-role user seeing a colleague's roster
+          for the first time. */}
+      {!canViewPII && (
+        <div
+          role="status"
+          className="px-5 py-2 border-b border-gray-200 bg-gray-50 text-xs text-gray-600 flex-shrink-0"
+          data-testid="pii-redaction-banner"
+        >
+          Viewing in redacted mode — personal details hidden.
+        </div>
+      )}
+
       {/* Stats bar — at-a-glance office pulse, chips are click-to-filter */}
       <StatsBar
         stats={stats}

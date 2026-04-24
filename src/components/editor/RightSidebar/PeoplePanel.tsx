@@ -1,6 +1,8 @@
 import { useEmployeeStore } from '../../../stores/employeeStore'
 import { useUIStore } from '../../../stores/uiStore'
 import { useCan } from '../../../hooks/useCan'
+import { useVisibleEmployees } from '../../../hooks/useVisibleEmployees'
+import { redactEmployee } from '../../../lib/redactEmployee'
 import { useState } from 'react'
 import { Search, Plus, Upload, Users, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
@@ -42,13 +44,23 @@ export function PeoplePanel() {
 
   const setCsvImportOpen = useUIStore((s) => s.setCsvImportOpen)
   const canEdit = useCan('editRoster')
+  const canViewPII = useCan('viewPII')
+  // Touch the visible-employees hook so the panel re-renders when role or
+  // redaction status changes — downstream filters still run against the
+  // raw store (the search query matches name/email strings the user typed
+  // themselves), but every displayed record is projected through
+  // `redactEmployee` when the capability is missing.
+  useVisibleEmployees()
   // Post Phase 6: the PeoplePanel only ever mounts inside an office
   // route, so both params are guaranteed present.
   const { teamSlug, officeSlug } = useParams<{ teamSlug: string; officeSlug: string }>()
   const rosterHref =
     teamSlug && officeSlug ? `/t/${teamSlug}/o/${officeSlug}/roster` : null
 
-  const filteredEmployees = getFilteredEmployees()
+  const filteredEmployeesRaw = getFilteredEmployees()
+  const filteredEmployees = canViewPII
+    ? filteredEmployeesRaw
+    : filteredEmployeesRaw.map(redactEmployee)
   const totalCount = Object.keys(employees).length
   const unassignedCount = getUnassignedEmployees().length
   const newHiresCount = getNewHires().length
