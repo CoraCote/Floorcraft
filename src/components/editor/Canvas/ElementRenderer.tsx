@@ -3,6 +3,7 @@ import { useElementsStore } from '../../../stores/elementsStore'
 import { useUIStore } from '../../../stores/uiStore'
 import { useCanvasStore } from '../../../stores/canvasStore'
 import { useLayerVisibilityStore } from '../../../stores/layerVisibilityStore'
+import { useCanvasFinderStore } from '../../../stores/canvasFinderStore'
 import { categoryForElement } from '../../../lib/layerCategory'
 import { useShallow } from 'zustand/react/shallow'
 import {
@@ -84,6 +85,19 @@ export function ElementRenderer() {
   // the existing per-element `visible` flag via AND — either "off" wins,
   // so there's no way for a hidden category to leak an element through.
   const categoryVisible = useLayerVisibilityStore((s) => s.visible)
+  // Canvas finder integration: when the user opens Cmd+F and types a
+  // query, we dim every element that isn't a match so the floor plan
+  // visually narrows in on the result set. Implemented in the renderer
+  // (rather than as a Konva overlay layer painting rectangles over each
+  // non-match) because we already wrap every element in a Group whose
+  // opacity is a free knob — adding ~3 lines here is cheaper than a
+  // parallel "dim layer" that would need to mirror the same z-order +
+  // points-vs-rect logic. The active match keeps full opacity to draw
+  // the eye to the focus target.
+  const finderMatches = useCanvasFinderStore((s) => s.matches)
+  const finderMatchIds = finderMatches.length > 0
+    ? new Set(finderMatches.map((m) => m.anchorId))
+    : null
 
   const sorted = Object.values(elements)
     .filter((el) => el.visible)
@@ -244,12 +258,24 @@ export function ElementRenderer() {
         // coords, so we disable drag on attached elements. Repositioning is
         // done in the properties panel (positionOnWall slider).
         const groupDraggable = draggable && !isAttached
+        // Finder dim: when matches are active and this element isn't one
+        // of them, drop opacity to 0.25. The active match stays at 1; all
+        // other matches stay at 1 too so the user can spot the cluster.
+        // When `finderMatchIds` is null (finder closed or empty query)
+        // the opacity falls through to undefined and Konva uses the
+        // default (1), so nothing changes for the common case.
+        const finderOpacity = finderMatchIds
+          ? finderMatchIds.has(el.id)
+            ? 1
+            : 0.25
+          : undefined
         return (
           <Group
             key={el.id}
             id={`element-${el.id}`}
             x={ownsPosition ? 0 : el.x}
             y={ownsPosition ? 0 : el.y}
+            opacity={finderOpacity}
             draggable={groupDraggable}
             onDragMove={(e) => handleDragMove(el.id, e)}
             onDragEnd={(e) => handleDragEnd(el.id, e)}

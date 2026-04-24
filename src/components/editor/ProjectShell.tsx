@@ -6,6 +6,7 @@ import { NarrowScreenBanner } from './NarrowScreenBanner'
 import { ContextMenu } from './ContextMenu'
 import { KeyboardShortcutsOverlay } from './KeyboardShortcutsOverlay'
 import { CommandPalette } from './CommandPalette'
+import { CanvasFinder } from './CanvasFinder'
 import { CSVImportDialog } from './RightSidebar/CSVImportDialog'
 import { CSVImportSummaryModal } from './CSVImportSummaryModal'
 import { ExportDialog } from './ExportDialog'
@@ -323,6 +324,7 @@ export function ProjectShell() {
       <ContextMenu />
       <KeyboardShortcutsOverlay />
       <CommandPalette />
+      <CanvasFinder />
       <CSVImportDialog />
       <CSVImportSummaryModal />
       <ExportDialog />

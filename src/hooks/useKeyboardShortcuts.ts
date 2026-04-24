@@ -1,10 +1,11 @@
 import { useCallback, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useElementsStore } from '../stores/elementsStore'
 import { useNeighborhoodStore } from '../stores/neighborhoodStore'
 import { useCanvasStore, type ToolType } from '../stores/canvasStore'
 import { useUIStore } from '../stores/uiStore'
 import { useProjectStore } from '../stores/projectStore'
+import { useCanvasFinderStore } from '../stores/canvasFinderStore'
 import { useShallow } from 'zustand/react/shallow'
 import { deleteElements } from '../lib/seatAssignment'
 import { isWallElement } from '../types/elements'
@@ -14,6 +15,10 @@ export function useKeyboardShortcuts() {
   // Post Phase 6: editor is mounted exclusively at
   // `/t/:teamSlug/o/:officeSlug/*`.
   const { teamSlug, officeSlug } = useParams<{ teamSlug: string; officeSlug: string }>()
+  // Pathname drives the map-route gate for Cmd+F (the canvas finder is
+  // only meaningful when the floor plan is visible). Other shortcuts
+  // either work everywhere inside the project shell or self-gate.
+  const { pathname } = useLocation()
   const { selectedIds, clearSelection, setPresentationMode, presentationMode, setShortcutsOverlayOpen } = useUIStore(useShallow((s) => ({ selectedIds: s.selectedIds, clearSelection: s.clearSelection, setPresentationMode: s.setPresentationMode, presentationMode: s.presentationMode, setShortcutsOverlayOpen: s.setShortcutsOverlayOpen })))
   const { duplicateElements, moveElements, groupElements, ungroupElements } = useElementsStore(useShallow((s) => ({ duplicateElements: s.duplicateElements, moveElements: s.moveElements, groupElements: s.groupElements, ungroupElements: s.ungroupElements })))
   const elements = useElementsStore((s) => s.elements)
@@ -103,6 +108,21 @@ export function useKeyboardShortcuts() {
         e.preventDefault()
         useUIStore.getState().setCommandPaletteOpen(true)
         return
+      }
+
+      // Cmd+F / Ctrl+F → canvas finder. Map route only — on the roster /
+      // reports views the native browser find still applies (operators
+      // expect to be able to search a long list of names). preventDefault
+      // suppresses the browser's built-in find-in-page so the overlay
+      // gets the keystroke. The finder owns its own Escape/Enter
+      // handlers via the input's keydown, so we only need to open it.
+      if (mod && (e.key === 'f' || e.key === 'F')) {
+        const onMap = pathname.endsWith('/map') || pathname.includes('/map?') || pathname.includes('/map/')
+        if (onMap) {
+          e.preventDefault()
+          useCanvasFinderStore.getState().openFinder()
+          return
+        }
       }
 
       // Everything below this line is a global editor shortcut — skip
@@ -337,6 +357,6 @@ export function useKeyboardShortcuts() {
     clearSelection, duplicateElements, moveElements,
     groupElements, ungroupElements, setActiveTool, toggleGrid, toggleDimensions,
     zoomIn, zoomOut, resetZoom, setPresentationMode, setShortcutsOverlayOpen,
-    undo, redo, navigate, teamSlug, officeSlug,
+    undo, redo, navigate, teamSlug, officeSlug, pathname,
   ])
 }
