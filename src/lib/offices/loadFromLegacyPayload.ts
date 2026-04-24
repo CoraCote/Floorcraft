@@ -64,6 +64,35 @@ type AutoSavePayload = {
  * `.length === points.length/2 - 1` without first checking for undefined.
  * Unknown properties are preserved — this is a forward-compatible migration.
  */
+/**
+ * Seat-bearing element types carry an optional `equipment: string[]`
+ * that the equipment-needs overlay reads. Older payloads predate the
+ * field; normalise it here so the overlay/renderer can assume any
+ * present value is already a `string[]` (each entry non-empty and
+ * trimmed). Absent → `[]`. Non-array → `[]`. Non-string entries are
+ * dropped silently; empty/whitespace-only tags are dropped because the
+ * overlay comparator is case-insensitive-trimmed and those collapse to
+ * noise anyway.
+ */
+function migrateEquipment(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return []
+  const out: string[] = []
+  for (const entry of raw) {
+    if (typeof entry !== 'string') continue
+    const trimmed = entry.trim()
+    if (trimmed.length === 0) continue
+    out.push(trimmed)
+  }
+  return out
+}
+
+const EQUIPPABLE_TYPES = new Set([
+  'desk',
+  'hot-desk',
+  'workstation',
+  'private-office',
+])
+
 function migrateElements(
   elements: Record<string, unknown>,
 ): ReturnType<typeof useElementsStore.getState>['elements'] {
@@ -98,6 +127,14 @@ function migrateElements(
           ? el.connectedWallIds
           : [],
         wallType,
+      }
+    } else if (typeof el.type === 'string' && EQUIPPABLE_TYPES.has(el.type)) {
+      // Back-fill the optional `equipment: string[]` on every seat-bearing
+      // element so the equipment-needs overlay can treat it as an invariant
+      // `string[]` without first nulling-out. See `migrateEquipment`.
+      out[id] = {
+        ...el,
+        equipment: migrateEquipment(el.equipment),
       }
     } else {
       out[id] = el

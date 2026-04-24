@@ -47,6 +47,8 @@ import { useCalibrateScaleStore } from '../../../stores/calibrateScaleStore'
 import { NeighborhoodLayer } from './NeighborhoodLayer'
 import { NeighborhoodEditOverlay } from './NeighborhoodEditOverlay'
 import { NeighborhoodOverlay } from './NeighborhoodOverlay'
+import { EquipmentOverlayLayer } from './EquipmentOverlayLayer'
+import { useOverlaysStore } from '../../../stores/overlaysStore'
 import { AnnotationLayer } from './AnnotationLayer'
 import {
   AnnotationPopover,
@@ -91,6 +93,7 @@ export function CanvasStage() {
   const showNeighborhoodOverlay = useLayerVisibilityStore(
     (s) => s.visible.neighborhoods,
   )
+  const showEquipmentOverlay = useOverlaysStore((s) => s.equipment)
   const seatMapColorMode = useUIStore((s) => s.seatMapColorMode)
   const dragAlignmentGuides = useUIStore((s) => s.dragAlignmentGuides)
   const {
@@ -1232,6 +1235,10 @@ export function CanvasStage() {
             content — the layer is `listening={false}` so they stay
             purely decorative. */}
         {showNeighborhoodOverlay && <NeighborhoodOverlay />}
+        {/* Equipment-needs overlay: translucent tint per assigned desk
+            showing whether the seated employee's equipmentNeeds are met.
+            Gated on overlaysStore.equipment (default off). */}
+        {showEquipmentOverlay && <EquipmentOverlayLayer />}
         {/* Annotation pins render on their own layer above the element
             layer so a pin never disappears behind a wall or furniture. */}
         <AnnotationLayer

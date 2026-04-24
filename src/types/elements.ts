@@ -162,6 +162,15 @@ export interface DeskElement extends BaseElement {
    * See `deriveSeatStatus` in `src/lib/seatStatus.ts`.
    */
   seatStatus?: SeatStatus
+  /**
+   * Equipment provisioned at this desk (free-form tag strings such as
+   * `"monitor"`, `"standing-desk"`, `"docking-station"`). Compared against
+   * the seated employee's `equipmentNeeds` by the equipment-needs overlay
+   * (`src/lib/equipmentOverlay.ts`). Legacy payloads are back-filled to
+   * `[]` in `migrateElements`; always safe to treat as an array when
+   * present, and absent/undefined is equivalent to `[]` (no equipment).
+   */
+  equipment?: string[]
 }
 
 export interface WorkstationElement extends BaseElement {
@@ -170,6 +179,8 @@ export interface WorkstationElement extends BaseElement {
   positions: number        // how many positions (N seats)
   assignedEmployeeIds: string[]
   seatStatus?: SeatStatus
+  /** See `DeskElement.equipment`. */
+  equipment?: string[]
 }
 
 export interface PrivateOfficeElement extends BaseElement {
@@ -179,6 +190,8 @@ export interface PrivateOfficeElement extends BaseElement {
   capacity: 1 | 2
   assignedEmployeeIds: string[]
   seatStatus?: SeatStatus
+  /** See `DeskElement.equipment`. */
+  equipment?: string[]
 }
 
 // Non-assignable space elements

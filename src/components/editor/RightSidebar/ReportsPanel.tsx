@@ -1,4 +1,5 @@
 import { useUIStore } from '../../../stores/uiStore'
+import { useOverlaysStore } from '../../../stores/overlaysStore'
 import {
   BarChart3,
   Search,
@@ -9,6 +10,7 @@ import {
   Download,
   ArrowLeft,
   CheckCircle,
+  Cpu,
 } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { OccupancyDashboard } from '../../reports/OccupancyDashboard'
@@ -23,6 +25,7 @@ const REPORT_ICONS: Record<string, React.ElementType> = {
   AlertTriangle,
   Map,
   Download,
+  Cpu,
 }
 
 const REPORTS = [
@@ -32,6 +35,7 @@ const REPORTS = [
   { id: 'move-planner', icon: 'ArrowLeftRight', title: 'Move Planner', desc: 'Draft seat changes before committing' },
   { id: 'unassigned', icon: 'AlertTriangle', title: 'Unassigned Report', desc: 'Employees without seats + open desks' },
   { id: 'seat-map', icon: 'Map', title: 'Seat Map', desc: 'Color-coded floor plan by department/team' },
+  { id: 'equipment-overlay', icon: 'Cpu', title: 'Equipment Needs Overlay', desc: 'Color desks by whether seated equipment needs are met' },
   { id: 'export', icon: 'Download', title: 'Export', desc: 'PDF floor plans, CSV roster, JSON data' },
 ] as const
 
@@ -61,6 +65,12 @@ export function ReportsPanel() {
       setEmployeeDirectoryOpen: s.setEmployeeDirectoryOpen,
     }))
   )
+  // Equipment-needs overlay flag lives on `overlaysStore`, not uiStore —
+  // see that file for the rationale. Pulled as its own hook call so the
+  // render only re-runs when THIS flag changes rather than on every
+  // uiStore mutation.
+  const equipmentOverlay = useOverlaysStore((s) => s.equipment)
+  const toggleEquipmentOverlay = useOverlaysStore((s) => s.toggleEquipment)
 
   const handleReportClick = (reportId: string) => {
     switch (reportId) {
@@ -84,6 +94,11 @@ export function ReportsPanel() {
       case 'move-planner':
         setMovePlannerActive(!movePlannerActive)
         setActiveReport(movePlannerActive ? null : reportId)
+        break
+      case 'equipment-overlay':
+        // Pure toggle — overlay is purely visual, doesn't own the
+        // active-report slot so the user can stack it with another view.
+        toggleEquipmentOverlay()
         break
       case 'export':
         setExportDialogOpen(true)
@@ -196,7 +211,8 @@ export function ReportsPanel() {
         const isActive =
           (report.id === 'org-chart' && orgChartOverlayEnabled) ||
           (report.id === 'seat-map' && seatMapColorMode !== null) ||
-          (report.id === 'move-planner' && movePlannerActive)
+          (report.id === 'move-planner' && movePlannerActive) ||
+          (report.id === 'equipment-overlay' && equipmentOverlay)
 
         return (
           <button
