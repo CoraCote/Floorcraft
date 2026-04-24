@@ -1,20 +1,41 @@
 import { BrowserRouter, Routes, Route, Navigate, useOutletContext } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
-import { LandingPage } from './components/landing/LandingPage'
 import { AuthProvider } from './lib/auth/AuthProvider'
-import { LoginPage } from './components/auth/LoginPage'
-import { SignupPage } from './components/auth/SignupPage'
-import { AuthVerifyPage } from './components/auth/AuthVerifyPage'
-import { AuthResetPage } from './components/auth/AuthResetPage'
-import { ForgotPasswordPage } from './components/auth/ForgotPasswordPage'
+// RequireAuth/RequireTeam stay eager: they are synchronous guards that
+// only redirect or render their children, and are referenced by almost
+// every protected route. Wrapping them in a lazy boundary would just
+// add a pointless Suspense flush on every navigation.
 import { RequireAuth } from './components/auth/RequireAuth'
 import { RequireTeam } from './components/auth/RequireTeam'
-import { InvitePage } from './components/team/InvitePage'
+import { RouteLoadingFallback } from './components/ui/RouteLoadingFallback'
 import type { Team } from './types/team'
 
 // Editor chunks pull in react-konva and the whole Canvas tree. Auth and
 // team pages are cheap by comparison but still gated behind the router
 // so the landing page (the entry point) ships the minimum possible JS.
+const LandingPage = lazy(() =>
+  import('./components/landing/LandingPage').then((m) => ({ default: m.LandingPage })),
+)
+const LoginPage = lazy(() =>
+  import('./components/auth/LoginPage').then((m) => ({ default: m.LoginPage })),
+)
+const SignupPage = lazy(() =>
+  import('./components/auth/SignupPage').then((m) => ({ default: m.SignupPage })),
+)
+const ForgotPasswordPage = lazy(() =>
+  import('./components/auth/ForgotPasswordPage').then((m) => ({
+    default: m.ForgotPasswordPage,
+  })),
+)
+const AuthVerifyPage = lazy(() =>
+  import('./components/auth/AuthVerifyPage').then((m) => ({ default: m.AuthVerifyPage })),
+)
+const AuthResetPage = lazy(() =>
+  import('./components/auth/AuthResetPage').then((m) => ({ default: m.AuthResetPage })),
+)
+const InvitePage = lazy(() =>
+  import('./components/team/InvitePage').then((m) => ({ default: m.InvitePage })),
+)
 const ProjectShell = lazy(() =>
   import('./components/editor/ProjectShell').then((m) => ({ default: m.ProjectShell })),
 )
@@ -99,14 +120,6 @@ const ShareView = lazy(() =>
   })),
 )
 
-function Loading() {
-  return (
-    <div className="flex items-center justify-center h-screen w-screen bg-gray-50 text-sm text-gray-500">
-      Loading…
-    </div>
-  )
-}
-
 /**
  * Bridge components that pull `{ team, isAdmin }` from the parent
  * `TeamSettingsPage` `<Outlet context>` and hand them to the leaf pages
@@ -129,7 +142,7 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Suspense fallback={<Loading />}>
+        <Suspense fallback={<RouteLoadingFallback />}>
           <Routes>
             {/* Public */}
             <Route path="/" element={<LandingPage />} />
