@@ -601,12 +601,12 @@ export function ElementLibrary() {
   }
 
   return (
-    // `min-h-0` lets this flex child shrink below its content height so the
-    // `overflow-y-auto` actually scrolls (otherwise flex min-content keeps
-    // the library at its natural height and the last tiles get clipped at
-    // the bottom of the sidebar). `pb-6` gives the final row visible
-    // breathing room when the user scrolls to the bottom.
-    <div className="p-3 pb-6 flex-1 min-h-0 overflow-y-auto">
+    // The outer sidebar (`MapView.tsx`) now owns the scrollbar for the
+    // whole left column, so the library renders at its natural height
+    // and stacks cleanly below ToolSelector + LayerVisibilityPanel.
+    // `pb-6` keeps visible breathing room under the final row when the
+    // user scrolls to the bottom of the sidebar.
+    <div className="p-3 pb-6">
       <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Elements</div>
       <input
         type="search"

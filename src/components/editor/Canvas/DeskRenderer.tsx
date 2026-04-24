@@ -6,6 +6,7 @@ import { useEmployeeStore } from '../../../stores/employeeStore'
 import { useSeatDragStore } from '../../../stores/seatDragStore'
 import { useVisibleEmployees } from '../../../hooks/useVisibleEmployees'
 import { deriveSeatStatus } from '../../../lib/seatStatus'
+import { truncateToWidth } from '../../../lib/textTruncate'
 import type { Accommodation } from '../../../types/employee'
 
 /** Visual palette for the drop-target outline painted while the user is
@@ -15,23 +16,6 @@ import type { Accommodation } from '../../../types/employee'
 const DROP_OPEN_STROKE = '#10B981'   // emerald-500
 const DROP_BUSY_STROKE = '#F59E0B'   // amber-500
 const DROP_HOVER_STROKE = '#2563EB'  // blue-600
-
-/**
- * Truncate a string so it fits a given width at the given font size.
- * Konva doesn't do CSS-style ellipsis natively; we approximate it with
- * the rough heuristic "1 char ≈ 0.55 * fontSize" so long names don't
- * bleed past the seat bounds. Not pixel-perfect, but load-bearing enough
- * to keep the overlap bug (name colliding with desk-id) fixed without
- * pulling in a canvas measurement pass on every render.
- */
-function truncateToWidth(text: string, widthPx: number, fontSize: number): string {
-  if (!text) return ''
-  const charPx = fontSize * 0.55
-  const maxChars = Math.max(1, Math.floor(widthPx / charPx))
-  if (text.length <= maxChars) return text
-  if (maxChars <= 1) return text[0] + '…'
-  return text.slice(0, Math.max(1, maxChars - 1)) + '…'
-}
 
 /**
  * Minimum shape needed to render a seat badge — we deliberately don't
