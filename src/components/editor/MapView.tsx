@@ -4,6 +4,7 @@ import { FloorSwitcher } from './FloorSwitcher'
 import { ToolSelector } from './LeftSidebar/ToolSelector'
 import { LayerVisibilityPanel } from './LeftSidebar/LayerVisibilityPanel'
 import { ElementLibrary } from './LeftSidebar/ElementLibrary'
+import { CollapsibleSection } from './LeftSidebar/CollapsibleSection'
 import { RightSidebar } from './RightSidebar/RightSidebar'
 import { StatusBar } from './StatusBar'
 import { CanvasStage } from './Canvas/CanvasStage'
@@ -129,11 +130,15 @@ export function MapView() {
           column, which clipped tiles when its siblings took more space.
         */}
         <div className="w-[260px] flex-shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-y-auto">
-          <ToolSelector />
-          <div className="border-t border-gray-200" />
-          <LayerVisibilityPanel />
-          <div className="border-t border-gray-200" />
-          <ElementLibrary />
+          <CollapsibleSection title="Tools" defaultOpen storageKey="tools">
+            <ToolSelector />
+          </CollapsibleSection>
+          <CollapsibleSection title="Layers" defaultOpen storageKey="layers">
+            <LayerVisibilityPanel />
+          </CollapsibleSection>
+          <CollapsibleSection title="Library" defaultOpen storageKey="library">
+            <ElementLibrary />
+          </CollapsibleSection>
         </div>
         <div className="flex-1 relative bg-gray-100 overflow-hidden">
           <CanvasStage />

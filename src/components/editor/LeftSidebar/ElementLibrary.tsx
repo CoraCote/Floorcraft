@@ -607,7 +607,6 @@ export function ElementLibrary() {
     // `pb-6` keeps visible breathing room under the final row when the
     // user scrolls to the bottom of the sidebar.
     <div className="p-3 pb-6">
-      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Elements</div>
       <input
         type="search"
         placeholder="Search shapes…"

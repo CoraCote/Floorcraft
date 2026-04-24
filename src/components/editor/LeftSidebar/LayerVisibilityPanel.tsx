@@ -63,9 +63,6 @@ export function LayerVisibilityPanel() {
 
   return (
     <div className="p-3" aria-label="Layer visibility">
-      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-        Layers
-      </div>
       <div className="flex flex-col gap-0.5">
         {LAYER_CATEGORIES.map((cat) => {
           const isOn = visible[cat]

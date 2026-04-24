@@ -64,7 +64,6 @@ export function ToolSelector() {
 
   return (
     <div className="p-3">
-      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Tools</div>
       <div className="flex flex-col gap-0.5">
         {visibleTools.map((tool) => (
           <div key={tool.id}>
