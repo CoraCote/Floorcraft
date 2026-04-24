@@ -18,6 +18,8 @@ import { useCanvasStore } from '../../stores/canvasStore'
 import { useFloorStore } from '../../stores/floorStore'
 import { useEmployeeStore } from '../../stores/employeeStore'
 import { useInsightsStore } from '../../stores/insightsStore'
+import { useSeatHistoryStore } from '../../stores/seatHistoryStore'
+import { coerceSeatHistoryEntries } from '../../lib/offices/seatHistoryPersistence'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 import { useUndoDataLossToast } from '../../hooks/useUndoDataLossToast'
 import { supabase } from '../../lib/supabase'
@@ -132,6 +134,12 @@ export function ProjectShell() {
           settings: p.settings as ReturnType<typeof useCanvasStore.getState>['settings'],
         })
       }
+
+      // Rehydrate the seat-history log. `coerceSeatHistoryEntries` is
+      // defensive — it walks the raw payload shape and discards anything
+      // that doesn't look like a `SeatHistoryEntry`, so a partially-saved
+      // or hand-edited blob can't crash the drawer. Missing key → `{}`.
+      useSeatHistoryStore.setState({ entries: coerceSeatHistoryEntries(p.seatHistory) })
 
       // Seed the project facade so UI that reads `currentProject` (share
       // modal link, TopBar name) keeps working. The full `Project` shape

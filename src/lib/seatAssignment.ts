@@ -1,6 +1,12 @@
 import { useEmployeeStore } from '../stores/employeeStore'
 import { useElementsStore } from '../stores/elementsStore'
 import { useFloorStore } from '../stores/floorStore'
+import { useProjectStore } from '../stores/projectStore'
+import {
+  useSeatHistoryStore,
+  withHistoryRecording,
+  isOuterRecordingFrame,
+} from '../stores/seatHistoryStore'
 import { emit } from './audit'
 import type { CanvasElement, DoorElement, WindowElement } from '../types/elements'
 import {
@@ -11,6 +17,53 @@ import {
   isTableElement,
   isWallElement,
 } from '../types/elements'
+import type { SeatHistoryAction } from '../types/seatHistory'
+
+/**
+ * Log a single history entry, tagged with the current session actor. Safe
+ * to call with only `employeeId` (assign), only `previousEmployeeId`
+ * (unassign), or both (reassign) — the action is inferred. Gated on
+ * `isOuterRecordingFrame` so nested helpers (e.g. `clearEmployeeFromElement`
+ * invoked from within `assignEmployee`) don't double-log.
+ */
+function recordHistory(args: {
+  elementId: string
+  seatId?: string
+  employeeId: string | null
+  previousEmployeeId: string | null
+}): void {
+  if (!isOuterRecordingFrame()) return
+  const { elementId, employeeId, previousEmployeeId } = args
+  const seatId = args.seatId ?? elementId
+
+  // Derive the action from before/after. An unassign (`employeeId === null`
+  // and there was a predecessor) is distinct from a reassign (both sides
+  // non-null AND different) and from a plain assign (no predecessor).
+  let action: SeatHistoryAction
+  if (employeeId === null && previousEmployeeId !== null) {
+    action = 'unassign'
+  } else if (
+    employeeId !== null &&
+    previousEmployeeId !== null &&
+    employeeId !== previousEmployeeId
+  ) {
+    action = 'reassign'
+  } else {
+    action = 'assign'
+  }
+
+  const actorUserId = useProjectStore.getState().currentUserId
+  useSeatHistoryStore.getState().recordAssignment({
+    seatId,
+    elementId,
+    employeeId,
+    previousEmployeeId,
+    action,
+    timestamp: new Date().toISOString(),
+    actorUserId,
+    note: null,
+  })
+}
 
 /**
  * Assign an employee to a desk/workstation/private-office element.
@@ -19,6 +72,10 @@ import {
  * single-capacity), evicts them.
  */
 export function assignEmployee(employeeId: string, targetElementId: string, floorId: string): void {
+  withHistoryRecording(() => doAssignEmployee(employeeId, targetElementId, floorId))
+}
+
+function doAssignEmployee(employeeId: string, targetElementId: string, floorId: string): void {
   const employeeStore = useEmployeeStore.getState()
   const elementsStore = useElementsStore.getState()
   const floorStore = useFloorStore.getState()
@@ -63,12 +120,24 @@ export function assignEmployee(employeeId: string, targetElementId: string, floo
   const target = targetElements[targetElementId]
   if (!target || !isAssignableElement(target)) return
 
+  // Capture the previous desk occupant *before* the eviction write so the
+  // history entry can tag this call as a reassignment rather than a bare
+  // assign. Multi-capacity elements (workstation, private-office) don't
+  // evict on add, so `previousEmployeeId` stays null for them — the
+  // interesting predecessor there is the employee's OLD seat, which we
+  // capture separately (below) for the employee-centric history view.
+  const previousDeskOccupant =
+    isDeskElement(target) &&
+    target.assignedEmployeeId &&
+    target.assignedEmployeeId !== employeeId
+      ? target.assignedEmployeeId
+      : null
+
   // 3. Evict previous occupant(s) if needed
-  if (isDeskElement(target) && target.assignedEmployeeId && target.assignedEmployeeId !== employeeId) {
-    const previousEmpId = target.assignedEmployeeId
-    const prev = employeeStore.employees[previousEmpId]
+  if (previousDeskOccupant) {
+    const prev = employeeStore.employees[previousDeskOccupant]
     if (prev) {
-      employeeStore.updateEmployee(previousEmpId, { seatId: null, floorId: null })
+      employeeStore.updateEmployee(previousDeskOccupant, { seatId: null, floorId: null })
     }
   }
 
@@ -92,20 +161,52 @@ export function assignEmployee(employeeId: string, targetElementId: string, floo
   employeeStore.updateEmployee(employeeId, { seatId: targetElementId, floorId })
 
   void emit('seat.assign', 'employee', employeeId, { seatId: targetElementId })
+
+  // 6. Append history. If the assigned employee was previously seated
+  //    somewhere else, that earlier desk also gets an unassign entry so
+  //    the old seat's timeline reflects the vacancy. The desk-level
+  //    reassignment (previous occupant ← new occupant on the target) is
+  //    the primary entry for this call.
+  const oldEmployeeSeat = employee.seatId && employee.seatId !== targetElementId
+    ? employee.seatId
+    : null
+  if (oldEmployeeSeat) {
+    recordHistory({
+      elementId: oldEmployeeSeat,
+      employeeId: null,
+      previousEmployeeId: employeeId,
+    })
+  }
+  recordHistory({
+    elementId: targetElementId,
+    employeeId,
+    previousEmployeeId: previousDeskOccupant,
+  })
 }
 
 /**
  * Unassign an employee from whatever seat they currently occupy.
  */
 export function unassignEmployee(employeeId: string): void {
+  withHistoryRecording(() => doUnassignEmployee(employeeId))
+}
+
+function doUnassignEmployee(employeeId: string): void {
   const employeeStore = useEmployeeStore.getState()
   const employee = employeeStore.employees[employeeId]
   if (!employee || !employee.seatId || !employee.floorId) return
 
+  const clearedElementId = employee.seatId
   clearEmployeeFromElement(employee.seatId, employeeId, employee.floorId)
   employeeStore.updateEmployee(employeeId, { seatId: null, floorId: null })
 
   void emit('seat.unassign', 'employee', employeeId, {})
+
+  recordHistory({
+    elementId: clearedElementId,
+    employeeId: null,
+    previousEmployeeId: employeeId,
+  })
 }
 
 /**

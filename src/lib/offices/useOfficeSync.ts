@@ -4,6 +4,7 @@ import { useEmployeeStore } from '../../stores/employeeStore'
 import { useFloorStore } from '../../stores/floorStore'
 import { useCanvasStore } from '../../stores/canvasStore'
 import { useProjectStore } from '../../stores/projectStore'
+import { useSeatHistoryStore } from '../../stores/seatHistoryStore'
 import { saveOffice, saveOfficeForce } from './officeRepository'
 
 /**
@@ -40,6 +41,12 @@ function buildCurrentPayload(): Record<string, unknown> {
   const { employees, departmentColors } = useEmployeeStore.getState()
   const { floors, activeFloorId } = useFloorStore.getState()
   const settings = useCanvasStore.getState().settings
+  // `seatHistory` is append-only and lives under a dedicated top-level
+  // key rather than hanging off the elements/employees maps — it's a
+  // cross-cutting log, and keeping it separate means legacy payloads
+  // without history still round-trip cleanly. Stored as the raw
+  // Record<id, entry> so the load path doesn't have to reverse an array.
+  const seatHistory = useSeatHistoryStore.getState().entries
   return {
     version: 2,
     elements,
@@ -48,6 +55,7 @@ function buildCurrentPayload(): Record<string, unknown> {
     floors,
     activeFloorId,
     settings,
+    seatHistory,
   }
 }
 
@@ -58,6 +66,8 @@ export function useOfficeSync() {
   const floors = useFloorStore((s) => s.floors)
   const activeFloorId = useFloorStore((s) => s.activeFloorId)
   const settings = useCanvasStore((s) => s.settings)
+
+  const seatHistory = useSeatHistoryStore((s) => s.entries)
 
   const officeId = useProjectStore((s) => s.officeId)
   const loadedVersion = useProjectStore((s) => s.loadedVersion)
@@ -74,7 +84,7 @@ export function useOfficeSync() {
 
   useEffect(() => {
     if (!officeId || !loadedVersion) return
-    const snapshot = { elements, employees, departmentColors, floors, activeFloorId, settings }
+    const snapshot = { elements, employees, departmentColors, floors, activeFloorId, settings, seatHistory }
 
     if (initialSnapshotRef.current === null) {
       initialSnapshotRef.current = snapshot
@@ -133,6 +143,7 @@ export function useOfficeSync() {
     floors,
     activeFloorId,
     settings,
+    seatHistory,
     setSaveState,
     setLastSavedAt,
     setLoadedVersion,

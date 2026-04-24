@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { History } from 'lucide-react'
 import { useUIStore } from '../../../stores/uiStore'
 import { useElementsStore } from '../../../stores/elementsStore'
 import { useEmployeeStore } from '../../../stores/employeeStore'
@@ -6,6 +7,7 @@ import { unassignEmployee, deleteElements } from '../../../lib/seatAssignment'
 import { alignElements, distributeElements } from '../../../lib/alignment'
 import { validateDeskId } from '../../../lib/deskIdValidation'
 import { useCan } from '../../../hooks/useCan'
+import { SeatHistoryDrawer } from '../SeatHistoryDrawer'
 import {
   AlignHorizontalJustifyStart,
   AlignHorizontalJustifyCenter,
@@ -161,7 +163,11 @@ export function PropertiesPanel() {
   const updateElement = useElementsStore((s) => s.updateElement)
   const employees = useEmployeeStore((s) => s.employees)
   const canEdit = useCan('editMap')
+  const canViewHistory = useCan('viewSeatHistory')
   const inputDisabled = !canEdit
+  // Locally owned drawer target — the panel unmounts on selection change
+  // (key'd by element id higher up), which cleans this up automatically.
+  const [historyTargetId, setHistoryTargetId] = useState<string | null>(null)
 
   if (selectedIds.length === 0) {
     return <div className="text-sm text-gray-400 text-center py-8">Select an element to see its properties</div>
@@ -699,6 +705,18 @@ export function PropertiesPanel() {
         Locked
       </label>
 
+      {canViewHistory &&
+        (isDeskElement(el) || isWorkstationElement(el) || isPrivateOfficeElement(el)) && (
+          <button
+            type="button"
+            onClick={() => setHistoryTargetId(el.id)}
+            className="mt-2 w-full px-3 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50 transition-colors inline-flex items-center justify-center gap-1.5"
+            data-testid="properties-history-button"
+          >
+            <History size={14} aria-hidden="true" /> History
+          </button>
+        )}
+
       {canEdit && selectedIds.length >= 1 && (
         <button
           type="button"
@@ -710,6 +728,13 @@ export function PropertiesPanel() {
         >
           {selectedIds.length === 1 ? 'Delete element' : `Delete ${selectedIds.length} elements`}
         </button>
+      )}
+
+      {historyTargetId && (
+        <SeatHistoryDrawer
+          target={{ kind: 'seat', seatId: historyTargetId }}
+          onClose={() => setHistoryTargetId(null)}
+        />
       )}
     </div>
   )

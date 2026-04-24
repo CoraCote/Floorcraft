@@ -7,6 +7,7 @@ export type Action =
   | 'manageTeam'
   | 'viewAuditLog'
   | 'viewReports'
+  | 'viewSeatHistory'
   | 'manageBilling'
   | 'generateShareLink'
 
@@ -14,15 +15,23 @@ export type Action =
  * Pilot-era permissions matrix. Legacy `editor` = hr-editor ∪ space-planner
  * so existing office_permissions rows keep their current capabilities.
  * New assignments should prefer the narrower roles.
+ *
+ * `viewSeatHistory` gates the append-only seat-assignment timeline. HR
+ * admins own the seating records (that's their audit trail), and the
+ * legacy editor / space-planner roles are granted access because they
+ * already see the *current* assignment on the map — hiding the past from
+ * the people who edit the present would be surprising. Viewers stay
+ * opted-out: they can read the layout but not the churn behind it.
  */
 const MATRIX: Record<Role, Action[]> = {
   owner: [
     'editRoster', 'editMap', 'manageTeam',
-    'viewAuditLog', 'viewReports', 'manageBilling', 'generateShareLink',
+    'viewAuditLog', 'viewReports', 'viewSeatHistory',
+    'manageBilling', 'generateShareLink',
   ],
-  editor: ['editRoster', 'editMap', 'viewReports'],
-  'hr-editor': ['editRoster', 'viewAuditLog', 'viewReports'],
-  'space-planner': ['editMap', 'viewReports'],
+  editor: ['editRoster', 'editMap', 'viewReports', 'viewSeatHistory'],
+  'hr-editor': ['editRoster', 'viewAuditLog', 'viewReports', 'viewSeatHistory'],
+  'space-planner': ['editMap', 'viewReports', 'viewSeatHistory'],
   viewer: [],
 }
 

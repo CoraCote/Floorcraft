@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AlertCircle, X } from 'lucide-react'
 import { useEmployeeStore } from '../../stores/employeeStore'
 import { useFloorStore } from '../../stores/floorStore'
@@ -8,6 +8,7 @@ import { useCan } from '../../hooks/useCan'
 import type { Employee, EmployeeStatus, LeaveType } from '../../types/employee'
 import { EMPLOYEE_STATUSES, EMPLOYMENT_TYPES, LEAVE_TYPES } from '../../types/employee'
 import { findManagerCycle } from '../../lib/managerChain'
+import { SeatHistoryDrawer } from './SeatHistoryDrawer'
 
 interface Props {
   employeeId: string
@@ -63,6 +64,8 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
   const registerModalOpen = useUIStore((s) => s.registerModalOpen)
   const registerModalClose = useUIStore((s) => s.registerModalClose)
   const canEdit = useCan('editRoster')
+  const canViewHistory = useCan('viewSeatHistory')
+  const [historyOpen, setHistoryOpen] = useState(false)
 
   const drawerRef = useRef<HTMLElement>(null)
   const firstFieldRef = useRef<HTMLInputElement>(null)
@@ -579,9 +582,25 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
                 ? `${seatFloor.name} / ${seatLabel ?? employee.seatId.slice(0, 4)}`
                 : 'Unassigned'}
             </div>
+            {canViewHistory && (
+              <button
+                type="button"
+                onClick={() => setHistoryOpen(true)}
+                className="mt-1 text-xs text-blue-600 hover:text-blue-800 underline-offset-2 hover:underline"
+                data-testid="roster-seat-history-link"
+              >
+                Seat history
+              </button>
+            )}
           </Field>
         </div>
       </aside>
+      {historyOpen && (
+        <SeatHistoryDrawer
+          target={{ kind: 'employee', employeeId: employee.id }}
+          onClose={() => setHistoryOpen(false)}
+        />
+      )}
     </div>
   )
 }
