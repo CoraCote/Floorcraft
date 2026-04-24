@@ -10,6 +10,7 @@ import { StatusBar } from './StatusBar'
 import { CanvasStage } from './Canvas/CanvasStage'
 import { KeyboardShortcutsOverlay } from './KeyboardShortcutsOverlay'
 import { Minimap } from './Minimap'
+import { FirstRunCoach } from './FirstRunCoach'
 import { useUIStore } from '../../stores/uiStore'
 import { useFloorStore } from '../../stores/floorStore'
 import { useNeighborhoodStore } from '../../stores/neighborhoodStore'
@@ -172,6 +173,7 @@ export function MapView() {
           <CanvasStage />
           <StatusBar />
           <Minimap />
+          <FirstRunCoach />
         </div>
         {rightSidebarOpen && (
           <div className="w-[320px] flex-shrink-0 bg-white border-l border-gray-200 overflow-y-auto">
