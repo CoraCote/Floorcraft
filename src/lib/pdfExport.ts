@@ -5,6 +5,7 @@ import type { Floor } from '../types/floor'
 import type { Employee } from '../types/employee'
 import type { CanvasSettings } from '../types/project'
 import { categoryForElement } from './layerCategory'
+import { buildExportFilename } from './exportFilename'
 
 /**
  * Wayfinding PDF export — a one-page A4 landscape hand-out with title,
@@ -102,37 +103,18 @@ export function buildLegend(
   return entries
 }
 
-function slugify(input: string): string {
-  return input
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-}
-
-function isoDate(d: Date): string {
-  // Use UTC to avoid timezone drift in filenames — two managers in
-  // different TZs printing within the same minute should get the same name.
-  const y = d.getUTCFullYear()
-  const m = String(d.getUTCMonth() + 1).padStart(2, '0')
-  const day = String(d.getUTCDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
-
 /**
- * `<project-slug>-<floor-name>-<yyyy-mm-dd>.pdf`. Both name components
- * are slugified. If both slugify to empty we fall back to `"floorplan"`
- * so the download still has a sensible name.
+ * `<project-slug>-<floor-name>-<yyyy-mm-dd>.pdf`. Thin wrapper around
+ * `buildExportFilename` preserved for the existing PDF-export callers —
+ * the slug/date logic was lifted into `./exportFilename` when the PNG
+ * export landed so both raster and vector exports share one implementation.
  */
 export function buildFileName(
   projectName: string,
   floorName: string,
   now: Date = new Date(),
 ): string {
-  const parts = [slugify(projectName), slugify(floorName)].filter((p) => p.length > 0)
-  const base = parts.length > 0 ? parts.join('-') : 'floorplan'
-  return `${base}-${isoDate(now)}.pdf`
+  return buildExportFilename(projectName, floorName, 'pdf', now)
 }
 
 export interface BuildWayfindingPdfOptions {

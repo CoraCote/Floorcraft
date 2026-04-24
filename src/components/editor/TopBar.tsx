@@ -10,9 +10,11 @@ import {
   Undo2, Redo2, ZoomIn, ZoomOut, Share2, Download,
   Maximize2, Minimize2, PanelRightOpen, PanelRightClose,
   Cloud, CloudOff, UploadCloud, X as XIcon,
-  Ruler, Grid3x3, Printer,
+  Ruler, Grid3x3, Printer, Image as ImageIcon,
 } from 'lucide-react'
 import { buildWayfindingPdf, buildFileName } from '../../lib/pdfExport'
+import { exportFloorAsPng } from '../../lib/pngExport'
+import { buildExportFilename } from '../../lib/exportFilename'
 import { getActiveStage } from '../../lib/stageRegistry'
 import { useState, useRef, useEffect } from 'react'
 import { NavLink, useParams } from 'react-router-dom'
@@ -114,6 +116,21 @@ export function TopBar() {
       updateName(nameValue.trim())
     }
     setEditing(false)
+  }
+
+  const handleExportPng = () => {
+    const stage = getActiveStage()
+    if (!stage || !project) return
+    const floors = useFloorStore.getState().floors
+    const activeFloorId = useFloorStore.getState().activeFloorId
+    const floor = floors.find((f) => f.id === activeFloorId) ?? floors[0]
+    if (!floor) return
+    // Fire-and-forget — the promise only exists for future async variants
+    // (see `exportFloorAsPng` doc). Swallow errors to keep parity with the
+    // PDF button: the user retrying a click is the simplest recovery.
+    void exportFloorAsPng(stage, {
+      filename: buildExportFilename(project.name, floor.name, 'png'),
+    })
   }
 
   const handleExportWayfindingPdf = () => {
@@ -414,6 +431,25 @@ export function TopBar() {
         >
           <Printer size={14} />
           Export PDF
+        </button>
+      )}
+
+      {/*
+        PNG raster — same audience as the wayfinding PDF but for lighter
+        handoffs (Slack, email, internal wikis). Sits next to the PDF
+        button because they share the "one-click, download now" mental
+        model; the blue Export button to the right still owns the
+        multi-format dialog for power users.
+      */}
+      {canViewReports && (
+        <button
+          onClick={handleExportPng}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded"
+          title="Download a PNG image of this floor"
+          aria-label="Export PNG"
+        >
+          <ImageIcon size={14} />
+          Export PNG
         </button>
       )}
 
