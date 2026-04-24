@@ -622,6 +622,14 @@ export function RosterDetailDrawer({ employeeId, onClose }: Props) {
             }
           />
 
+          <SensitivityTagsField
+            employee={employee}
+            canEdit={canEdit}
+            onChange={(sensitivityTags) =>
+              updateEmployee(employee.id, { sensitivityTags })
+            }
+          />
+
           <ScheduledStatusChanges
             employee={employee}
             canEdit={canEdit}
@@ -782,6 +790,96 @@ function AccommodationsField({
           </button>
         </div>
       )}
+    </div>
+  )
+}
+
+/**
+ * Sensitivity-tag editor. Free-text, space- OR comma-separated on blur
+ * (e.g. `"audit legal insider-risk"` or `"audit, legal"`). The live list
+ * renders as chips with an inline × remove control; the adjacency
+ * analyzer consumes the same array to flag adjacent sensitive-role
+ * pairs in the Insights Panel.
+ *
+ * Deliberately kept PLAIN: no type-ahead, no vocabulary enforcement —
+ * the signal is whatever HR chooses to tag. The input gates edits
+ * behind `editRoster`, so a viewer-role user sees the chips read-only.
+ */
+function SensitivityTagsField({
+  employee,
+  canEdit,
+  onChange,
+}: {
+  employee: Employee
+  canEdit: boolean
+  onChange: (tags: string[]) => void
+}) {
+  const existing = employee.sensitivityTags ?? []
+
+  const handleBlur = (value: string) => {
+    // Space OR comma separator — HR muscle memory varies and normalising
+    // both keeps the free-text input from feeling finicky. Dedupe to
+    // avoid rendering two identical chips if someone types "audit audit".
+    const parts = value
+      .split(/[\s,]+/)
+      .map((t) => t.trim())
+      .filter(Boolean)
+    const deduped = Array.from(new Set(parts))
+    onChange(deduped)
+  }
+
+  const handleRemove = (tag: string) => {
+    onChange(existing.filter((t) => t !== tag))
+  }
+
+  return (
+    <div>
+      <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+        Sensitivity tags
+      </div>
+
+      {existing.length > 0 ? (
+        <div
+          className="flex flex-wrap gap-1.5 mb-2"
+          data-testid="sensitivity-tags-list"
+        >
+          {existing.map((tag) => (
+            <span
+              key={tag}
+              data-testid={`sensitivity-tag-chip-${tag}`}
+              className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-amber-50 text-amber-800 border border-amber-200 rounded-full"
+            >
+              <span>{tag}</span>
+              {canEdit && (
+                <button
+                  type="button"
+                  aria-label={`Remove sensitivity tag ${tag}`}
+                  onClick={() => handleRemove(tag)}
+                  className="ml-0.5 text-amber-700 hover:text-amber-900"
+                >
+                  <X size={10} />
+                </button>
+              )}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <div className="text-xs text-gray-400 italic mb-2">None</div>
+      )}
+
+      <input
+        aria-label="Sensitivity tags"
+        className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+        placeholder="e.g. audit, legal, insider-risk"
+        // `key`s the tag list so re-seeding the employee (navigation
+        // between rows, or after a remove) refreshes the uncontrolled
+        // input's `defaultValue`. Mirrors the drawer's other
+        // submit-on-blur fields.
+        key={existing.join(',')}
+        defaultValue={existing.join(', ')}
+        onBlur={(e) => handleBlur(e.target.value)}
+        disabled={!canEdit}
+      />
     </div>
   )
 }

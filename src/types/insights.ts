@@ -8,6 +8,7 @@ export type InsightCategory =
   | 'moves'
   | 'equipment'
   | 'trends'
+  | 'sensitivity'
 
 export type Severity = 'critical' | 'warning' | 'info'
 

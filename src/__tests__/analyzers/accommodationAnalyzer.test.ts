@@ -30,7 +30,7 @@ function makeEmployee(overrides: Partial<Employee> = {}): Employee {
     email: '', department: null, team: null, title: null,
     managerId: null, employmentType: 'full-time', officeDays: [],
     startDate: null, endDate: null, equipmentNeeds: [], equipmentStatus: 'not-needed',
-    photoUrl: null, tags: [], accommodations: [],
+    photoUrl: null, tags: [], accommodations: [], sensitivityTags: [],
     pendingStatusChanges: [],
     seatId: null, floorId: null,
     status: 'active',

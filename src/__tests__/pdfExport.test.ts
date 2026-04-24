@@ -140,6 +140,7 @@ function emp(id: string, overrides: Partial<Employee> = {}): Employee {
     photoUrl: null,
     tags: [],
     accommodations: [],
+    sensitivityTags: [],
     seatId: null,
     floorId: null,
     pendingStatusChanges: [],

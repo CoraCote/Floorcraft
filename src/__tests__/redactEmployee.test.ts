@@ -29,6 +29,7 @@ function buildEmployee(overrides: Partial<Employee> = {}): Employee {
     floorId: 'f1',
     createdAt: '2024-01-01T00:00:00.000Z',
     accommodations: [],
+    sensitivityTags: [],
     pendingStatusChanges: [],
     ...overrides,
   }

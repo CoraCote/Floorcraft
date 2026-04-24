@@ -198,6 +198,18 @@ export interface Employee {
    * first nulling-out.
    */
   accommodations: Accommodation[]
+  /**
+   * Free-text sensitivity tags used by the adjacency conflict analyzer —
+   * e.g. `"audit"`, `"legal"`, `"compensation"`, `"insider-risk"`,
+   * `"founder"`. Any pair of adjacent employees sharing a tag trips a
+   * `category: 'sensitivity'` warning in the Insights Panel.
+   *
+   * Invariant: always an array (default `[]`). Legacy payloads missing
+   * the field are back-filled by `migrateEmployees`. We deliberately do
+   * NOT enumerate the vocabulary — the signal is user-supplied, and any
+   * closed enum would rot as policies evolve.
+   */
+  sensitivityTags: string[]
   seatId: string | null
   floorId: string | null
   /**

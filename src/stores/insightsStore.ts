@@ -36,7 +36,7 @@ interface InsightsState {
   getCounts: () => { critical: number; warning: number; info: number; total: number }
 }
 
-const ALL_CATEGORIES: InsightCategory[] = ['utilization', 'proximity', 'onboarding', 'moves', 'equipment', 'trends']
+const ALL_CATEGORIES: InsightCategory[] = ['utilization', 'proximity', 'onboarding', 'moves', 'equipment', 'trends', 'sensitivity']
 const ALL_SEVERITIES: Severity[] = ['critical', 'warning', 'info']
 
 function loadDismissedIds(projectId?: string): Set<string> {

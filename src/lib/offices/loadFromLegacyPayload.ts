@@ -229,6 +229,22 @@ function migrateAccommodations(raw: unknown): Accommodation[] {
   return out
 }
 
+/**
+ * Back-fill `sensitivityTags` for legacy payloads. The field was
+ * introduced alongside the adjacency-conflict analyzer. We accept any
+ * array of non-empty strings and drop everything else (including raw
+ * strings and malformed entries). `null` / `undefined` / non-arrays
+ * default to `[]` so `.includes(...)` / `.some(...)` is always safe.
+ */
+function migrateSensitivityTags(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return []
+  const out: string[] = []
+  for (const entry of raw) {
+    if (isNonEmptyString(entry)) out.push(entry)
+  }
+  return out
+}
+
 export function migrateEmployees(
   employees: Record<string, unknown>,
 ): ReturnType<typeof useEmployeeStore.getState>['employees'] {
@@ -249,6 +265,7 @@ export function migrateEmployees(
       leaveNotes: isNonEmptyString(e.leaveNotes) ? e.leaveNotes : null,
       departureDate: isNonEmptyString(e.departureDate) ? e.departureDate : null,
       accommodations: migrateAccommodations(e.accommodations),
+      sensitivityTags: migrateSensitivityTags(e.sensitivityTags),
       pendingStatusChanges: migratePendingStatusChanges(
         e.pendingStatusChanges,
         id,

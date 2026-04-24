@@ -35,6 +35,7 @@ function emp(id: string, managerId: string | null = null, extra: Partial<Employe
     seatId: null,
     floorId: null,
     pendingStatusChanges: [],
+    sensitivityTags: [],
     createdAt: new Date().toISOString(),
     ...extra,
   }

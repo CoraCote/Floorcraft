@@ -9,6 +9,7 @@ import { analyzeEquipment } from './equipment'
 import { analyzeTrends } from './trends'
 import { analyzeSeatChurn } from './seatChurn'
 import { analyzeAccommodations } from './accommodationAnalyzer'
+import { analyzeAdjacency } from './adjacency'
 
 const SEVERITY_ORDER = { critical: 0, warning: 1, info: 2 } as const
 
@@ -43,6 +44,7 @@ export function runAllAnalyzers(
     ...analyzeTrends(input),
     ...analyzeSeatChurn(input),
     ...analyzeAccommodations(input),
+    ...analyzeAdjacency(input),
   ]
 
   // Deduplicate by id (keep first occurrence)

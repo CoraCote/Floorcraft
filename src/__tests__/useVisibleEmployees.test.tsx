@@ -33,6 +33,7 @@ function emp(overrides: Partial<Employee> = {}): Employee {
     floorId: null,
     createdAt: new Date().toISOString(),
     accommodations: [],
+    sensitivityTags: [],
     pendingStatusChanges: [],
     ...overrides,
   }

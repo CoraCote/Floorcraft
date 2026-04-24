@@ -94,6 +94,7 @@ export function buildDemoOfficePayload(
       photoUrl: null,
       tags: [],
       accommodations: [],
+      sensitivityTags: [],
       seatId: seat ? seat.id : null,
       floorId: seat ? floorId : null,
       leaveType: null,

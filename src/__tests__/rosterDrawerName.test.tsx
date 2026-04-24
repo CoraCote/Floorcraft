@@ -47,7 +47,7 @@ beforeEach(() => {
         id: 'e1', name: 'Alice', email: 'alice@example.com', department: 'Eng', team: null,
         title: null, managerId: null, employmentType: 'full-time', status: 'active',
         officeDays: [], startDate: null, endDate: null,
-        equipmentNeeds: [], equipmentStatus: 'not-needed', photoUrl: null, tags: [], accommodations: [],
+        equipmentNeeds: [], equipmentStatus: 'not-needed', photoUrl: null, tags: [], accommodations: [], sensitivityTags: [],
         seatId: null, floorId: null, leaveType: null, expectedReturnDate: null,
         coverageEmployeeId: null, leaveNotes: null, departureDate: null,
         pendingStatusChanges: [],

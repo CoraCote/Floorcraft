@@ -50,6 +50,7 @@ function emp(id: string, department: string | null): Employee {
     photoUrl: null,
     tags: [],
     accommodations: [],
+    sensitivityTags: [],
     pendingStatusChanges: [],
     seatId: null,
     floorId: null,

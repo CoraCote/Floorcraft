@@ -26,6 +26,7 @@ function emp(id: string, managerId: string | null = null): Employee {
     photoUrl: null,
     tags: [],
     accommodations: [],
+    sensitivityTags: [],
     seatId: null,
     floorId: null,
     pendingStatusChanges: [],

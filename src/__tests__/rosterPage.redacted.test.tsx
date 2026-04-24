@@ -59,6 +59,7 @@ beforeEach(() => {
         floorId: null,
         createdAt: new Date().toISOString(),
         accommodations: [],
+        sensitivityTags: [],
         pendingStatusChanges: [],
       },
     },

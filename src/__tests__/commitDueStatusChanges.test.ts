@@ -36,6 +36,7 @@ function baseEmployee(overrides: Partial<Employee> = {}): Employee {
     floorId: null,
     pendingStatusChanges: [],
     accommodations: [],
+    sensitivityTags: [],
     createdAt: '2020-01-01T00:00:00.000Z',
     ...overrides,
   }
