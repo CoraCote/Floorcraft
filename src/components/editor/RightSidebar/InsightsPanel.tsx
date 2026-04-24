@@ -9,6 +9,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { SeveritySummary } from './SeveritySummary'
 import { InsightFilters } from './InsightFilters'
 import { InsightCard } from './InsightCard'
+import { UtilizationWidgets } from './UtilizationWidgets'
 import { focusElements } from '../../../lib/focusElements'
 
 export function InsightsPanel() {
@@ -148,6 +149,11 @@ export function InsightsPanel() {
 
   return (
     <div className="flex flex-col h-full gap-3">
+      {/* Utilization KPIs — the "is this office healthy?" scan facilities
+          asked for. Sits above the severity summary because "are we sized
+          right?" is a bigger question than "any issues to fix?". */}
+      <UtilizationWidgets />
+
       {/* Severity summary */}
       <SeveritySummary
         critical={counts.critical}
