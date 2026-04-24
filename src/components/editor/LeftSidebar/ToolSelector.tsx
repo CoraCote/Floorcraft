@@ -33,14 +33,14 @@ const tools: ToolDef[] = [
     label: 'Select',
     icon: <MousePointer2 size={18} aria-hidden="true" />,
     shortcut: 'V',
-    description: 'Click an element to select. Drag to move, or lasso to multi-select.',
+    description: 'Click an element to select, drag empty canvas to pan, Shift+drag to lasso.',
   },
   {
     id: 'pan',
     label: 'Pan',
     icon: <Hand size={18} aria-hidden="true" />,
     shortcut: 'Space',
-    description: 'Drag the canvas to reposition the view. Hold Space to pan temporarily.',
+    description: 'Dedicated pan mode. Hold Space anywhere for a temporary pan instead.',
   },
   {
     id: 'wall',

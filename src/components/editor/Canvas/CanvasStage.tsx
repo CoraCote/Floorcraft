@@ -70,6 +70,14 @@ const PRIMITIVE_TOOLS = new Set(['rect-shape', 'ellipse', 'line-shape', 'arrow',
 /** Max canvas-unit distance a click can be from a wall to still snap to it. */
 const DOOR_WINDOW_SNAP_PX = 24
 
+/**
+ * Distance (in CSS pixels) the cursor must travel during a select-tool
+ * press on empty canvas before we commit to "this is a pan" instead of
+ * "this is a click that should deselect." Matches the typical browser
+ * click-vs-drag tolerance so a slightly shaky click still deselects.
+ */
+const PAN_CLICK_THRESHOLD_PX = 4
+
 export function CanvasStage() {
   const stageRef = useRef<Konva.Stage>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -282,6 +290,19 @@ export function CanvasStage() {
 
   const isPanning = useRef(false)
   const lastPointer = useRef({ x: 0, y: 0 })
+  // Press-origin + movement tracking for the Miro-style "click empty canvas
+  // and drag to pan" behaviour on the select tool. When a select-tool press
+  // on empty stage doesn't move past `PAN_CLICK_THRESHOLD_PX`, we treat the
+  // mouseup as a plain background click and clear the selection (the same
+  // outcome as the previous marquee-zero-area path). When it does move, we
+  // pan and skip the deselect.
+  const panOriginRef = useRef<{ x: number; y: number; fromSelect: boolean } | null>(null)
+  const panMovedRef = useRef(false)
+  // Render-time signal that we're actively panning, used only to flip the
+  // cursor to `grabbing`. The ref above is the source of truth for the
+  // hot path (mousemove); this state changes once at press and once at
+  // release so it doesn't thrash renders.
+  const [panActive, setPanActive] = useState(false)
 
   // Cursor position in canvas-space coords, tracked for the door/window
   // ghost preview. Null when the cursor has left the canvas so the ghost
@@ -331,6 +352,40 @@ export function CanvasStage() {
       if (e.evt.button === 1 || activeTool === 'pan') {
         isPanning.current = true
         lastPointer.current = { x: e.evt.clientX, y: e.evt.clientY }
+        panOriginRef.current = {
+          x: e.evt.clientX,
+          y: e.evt.clientY,
+          fromSelect: false,
+        }
+        panMovedRef.current = false
+        setPanActive(true)
+        return
+      }
+
+      // Miro/Google-Maps-style click-and-drag pan from the select tool.
+      // Pressing the primary button on empty canvas with no Shift modifier
+      // pans the view — the most common navigation request from new users.
+      // Shift+drag is reserved for the original marquee-select (handled
+      // below). Anything that lands on an existing element drops through
+      // to the normal element-drag / click-to-select path further down.
+      if (
+        activeTool === 'select' &&
+        e.evt.button === 0 &&
+        !e.evt.shiftKey &&
+        e.target === e.target.getStage()
+      ) {
+        isPanning.current = true
+        lastPointer.current = { x: e.evt.clientX, y: e.evt.clientY }
+        panOriginRef.current = {
+          x: e.evt.clientX,
+          y: e.evt.clientY,
+          fromSelect: true,
+        }
+        panMovedRef.current = false
+        setPanActive(true)
+        // Suppress any open context menu just like the previous marquee
+        // branch did — pressing on the stage always dismisses it.
+        setContextMenu(null)
         return
       }
 
@@ -627,13 +682,17 @@ export function CanvasStage() {
         return
       }
 
-      // Marquee drag-select: only on empty stage, in select tool, left click.
-      // When shift is held we preserve the existing selection so the marquee
-      // augments it. Without shift we clear first so the final selection is
-      // just the newly marqueed set.
+      // Marquee drag-select: Shift + primary-button on empty stage in the
+      // select tool. The unshifted equivalent now triggers click-and-drag
+      // pan (handled at the top of this callback) — Miro/Linear-style.
+      // Marquee always augments the current selection here because the
+      // user explicitly held Shift; preserving that semantics matches the
+      // previous "shift = additive" behaviour for power users who relied
+      // on it.
       if (
         activeTool === 'select' &&
         e.evt.button === 0 &&
+        e.evt.shiftKey &&
         e.target === e.target.getStage()
       ) {
         const stage = stageRef.current
@@ -645,9 +704,8 @@ export function CanvasStage() {
         marqueeStartRef.current = {
           x: canvasX,
           y: canvasY,
-          shift: e.evt.shiftKey,
+          shift: true,
         }
-        if (!e.evt.shiftKey) clearSelection()
         setContextMenu(null)
         return
       }
@@ -667,6 +725,16 @@ export function CanvasStage() {
         const dy = e.evt.clientY - lastPointer.current.y
         lastPointer.current = { x: e.evt.clientX, y: e.evt.clientY }
         setStagePosition(stageX + dx, stageY + dy)
+        // Track whether the press has travelled past the click threshold
+        // so mouseup can distinguish "click → deselect" from "drag → pan"
+        // when we entered pan from the select tool.
+        if (panOriginRef.current && !panMovedRef.current) {
+          const totalDx = e.evt.clientX - panOriginRef.current.x
+          const totalDy = e.evt.clientY - panOriginRef.current.y
+          if (Math.hypot(totalDx, totalDy) >= PAN_CLICK_THRESHOLD_PX) {
+            panMovedRef.current = true
+          }
+        }
       }
 
       // Publish cursor position in world (pre-transform) coordinates so
@@ -813,6 +881,16 @@ export function CanvasStage() {
   // Clear the ghost when the cursor leaves the canvas so it doesn't linger.
   const handleMouseLeave = useCallback(() => {
     if (ghostCursor) setGhostCursor(null)
+    // If the user dragged out of the canvas mid-pan, reset our pan state so
+    // the next mouseup outside the canvas doesn't leave the cursor stuck on
+    // `grabbing`. The pointer is no longer over the stage anyway, so any
+    // continued movement would be lost.
+    if (isPanning.current) {
+      isPanning.current = false
+      panOriginRef.current = null
+      panMovedRef.current = false
+      setPanActive(false)
+    }
     // Hide the cursor readout when the pointer isn't over the canvas —
     // otherwise the status bar shows stale coordinates that don't
     // correspond to where the user is actually pointing.
@@ -949,7 +1027,24 @@ export function CanvasStage() {
   }, [activeTool, handleCanvasDoubleClick])
 
   const handleMouseUp = useCallback(() => {
+    const wasPanning = isPanning.current
+    const panOrigin = panOriginRef.current
+    const panMoved = panMovedRef.current
     isPanning.current = false
+    panOriginRef.current = null
+    panMovedRef.current = false
+    if (wasPanning) setPanActive(false)
+
+    // Select-tool click-without-drag on empty canvas → deselect (matches
+    // the prior marquee-zero-area behaviour). When the press travelled past
+    // the threshold we treat it as a pan and skip the deselect so the user
+    // doesn't lose their selection just for nudging the view.
+    if (wasPanning && panOrigin?.fromSelect && !panMoved) {
+      clearSelection()
+      setContextMenu(null)
+      return
+    }
+
     // Commit the marquee: hit-test every element's AABB against the final
     // rect and set / append the selection. A zero-area marquee (click without
     // dragging) is treated as a plain background click — the initial mouse
@@ -1064,7 +1159,7 @@ export function CanvasStage() {
       useUIStore.getState().setSelectedIds([element.id])
       useCanvasStore.getState().setActiveTool('select')
     }
-  }, [activeTool, stageX, stageY, stageScale, onWallMouseUp, marquee, shapePreview, neighborhoodPreview])
+  }, [activeTool, stageX, stageY, stageScale, onWallMouseUp, marquee, shapePreview, neighborhoodPreview, clearSelection, setContextMenu])
 
   // Base cursor per tool. For door/window we additionally flip to
   // `not-allowed` when the cursor is NOT over a wall in snap range — so the
@@ -1080,6 +1175,10 @@ export function CanvasStage() {
   if (activeTool === 'calibrate-scale') cursor = 'crosshair'
   if (activeTool === 'neighborhood') cursor = 'crosshair'
   if (activeTool === 'pin') cursor = 'crosshair'
+  // Active pan (any source: pan tool, middle-click, or select-tool drag)
+  // wins over the per-tool cursor so users get the unambiguous "I'm
+  // grabbing the canvas" affordance during the gesture.
+  if (panActive) cursor = 'grabbing'
 
   // Accept employee drags from PeoplePanel and assign the dropped employee
   // to whatever assignable element is under the cursor.

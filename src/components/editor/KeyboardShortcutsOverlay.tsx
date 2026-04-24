@@ -17,13 +17,14 @@ const shortcutGroups: ShortcutGroup[] = [
       { keys: 'Ctrl+G', action: 'Group' },
       { keys: 'Ctrl+Shift+G', action: 'Ungroup' },
       { keys: 'Ctrl+L', action: 'Lock / unlock' },
-      { keys: 'Drag', action: 'Marquee-select (on empty canvas)' },
+      { keys: 'Shift + Drag', action: 'Marquee-select (on empty canvas)' },
       { keys: 'Arrows', action: 'Nudge 1px (Shift = 10px)' },
     ],
   },
   {
     title: 'Navigation',
     rows: [
+      { keys: 'Drag empty canvas', action: 'Pan (Select tool)' },
       { keys: 'Space + Drag', action: 'Pan canvas (hold Space)' },
       { keys: 'Shift + Wheel', action: 'Pan horizontally' },
       { keys: 'Two-finger Drag', action: 'Pan (trackpad)' },
