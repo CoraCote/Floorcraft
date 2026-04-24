@@ -11,7 +11,7 @@ import {
   Maximize2, Minimize2, PanelRightOpen, PanelRightClose,
   Cloud, CloudOff, UploadCloud, X as XIcon,
   Ruler, Grid3x3, Printer, Image as ImageIcon,
-  ChevronDown, Link2,
+  ChevronDown, Link2, Eye, Check,
 } from 'lucide-react'
 import { buildWayfindingPdf, buildFileName } from '../../lib/pdfExport'
 import { exportFloorAsPng } from '../../lib/pngExport'
@@ -69,16 +69,18 @@ export function TopBar() {
   const canShareMap = useCan('editMap')
   const [shareLinkOpen, setShareLinkOpen] = useState(false)
 
-  // Share + Export dropdown menus. Both follow the same lightweight
-  // pattern as ViewAsMenu / UserMenu — a ref on the wrapper, a single
-  // click-outside listener, and Escape to close. Kept inline rather than
-  // extracted because these menus are tightly coupled to TopBar state
+  // Share + Export + View dropdown menus. All three follow the same
+  // lightweight pattern as ViewAsMenu / UserMenu — a ref on the wrapper, a
+  // single click-outside listener, and Escape to close. Kept inline rather
+  // than extracted because these menus are tightly coupled to TopBar state
   // (permission gates + the handlers defined below) and abstracting would
-  // add indirection for two call sites.
+  // add indirection for three call sites.
   const [shareMenuOpen, setShareMenuOpen] = useState(false)
   const [exportMenuOpen, setExportMenuOpen] = useState(false)
+  const [viewMenuOpen, setViewMenuOpen] = useState(false)
   const shareMenuRef = useRef<HTMLDivElement>(null)
   const exportMenuRef = useRef<HTMLDivElement>(null)
+  const viewMenuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     function onPointer(e: MouseEvent) {
@@ -88,11 +90,15 @@ export function TopBar() {
       if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
         setExportMenuOpen(false)
       }
+      if (viewMenuRef.current && !viewMenuRef.current.contains(e.target as Node)) {
+        setViewMenuOpen(false)
+      }
     }
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') {
         setShareMenuOpen(false)
         setExportMenuOpen(false)
+        setViewMenuOpen(false)
       }
     }
     document.addEventListener('mousedown', onPointer)
@@ -204,11 +210,11 @@ export function TopBar() {
 
   return (
     <div className="h-14 bg-white border-b border-gray-200 flex items-center px-4 gap-3 flex-shrink-0">
-      {/* Team switcher sits at the far left so users can jump between
-          offices in different teams without leaving the editor. */}
+      {/* ───── Identity cluster ─────
+          Who am I, what file, is it saved, can I undo? These answer the
+          "where am I" and "am I safe" mental-model questions that precede
+          any action, so they sit at the far left. */}
       <TeamSwitcher currentSlug={teamSlug} />
-
-      <div className="w-px h-6 bg-gray-200" />
 
       <div className="flex-shrink-0">
         {editing ? (
@@ -237,85 +243,7 @@ export function TopBar() {
         )}
       </div>
 
-      <div className="w-px h-6 bg-gray-200" />
-
-      {/* MAP / ROSTER view toggle. React Router owns the active state so
-          we don't need UI-store bookkeeping. Rendered only when the route
-          has both params (which is always the case under /t/:teamSlug/o/
-          :officeSlug/*, but the guard keeps this component resilient if
-          it's ever mounted elsewhere). */}
-      {teamSlug && officeSlug && (
-        <nav aria-label="Project views" className="flex items-center bg-gray-100 rounded-md p-0.5">
-          <NavLink
-            to={`/t/${teamSlug}/o/${officeSlug}/map`}
-            className={({ isActive }) =>
-              `px-3 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
-                isActive
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-800'
-              }`
-            }
-          >
-            Map
-          </NavLink>
-          <NavLink
-            to={`/t/${teamSlug}/o/${officeSlug}/roster`}
-            className={({ isActive }) =>
-              `px-3 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
-                isActive
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-800'
-              }`
-            }
-          >
-            Roster
-          </NavLink>
-          {canViewAudit && (
-            <NavLink
-              to={`/t/${teamSlug}/o/${officeSlug}/audit`}
-              className={({ isActive }) =>
-                `px-3 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
-                  isActive
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-800'
-                }`
-              }
-            >
-              Audit
-            </NavLink>
-          )}
-          {canViewReports && (
-            <NavLink
-              to={`/t/${teamSlug}/o/${officeSlug}/reports`}
-              className={({ isActive }) =>
-                `px-3 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
-                  isActive
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-800'
-                }`
-              }
-            >
-              Reports
-            </NavLink>
-          )}
-          {canViewReports && (
-            <NavLink
-              to={`/t/${teamSlug}/o/${officeSlug}/org-chart`}
-              className={({ isActive }) =>
-                `px-3 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
-                  isActive
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-800'
-                }`
-              }
-            >
-              Org Chart
-            </NavLink>
-          )}
-        </nav>
-      )}
-
-      <div className="w-px h-6 bg-gray-200" />
+      <SaveIndicator saveState={saveState} lastSavedAt={lastSavedAt} />
 
       <div className="flex items-center gap-1">
         <button
@@ -340,72 +268,135 @@ export function TopBar() {
 
       <div className="w-px h-6 bg-gray-200" />
 
-      <div className="flex items-center gap-1">
-        <button onClick={zoomOut} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" title="Zoom Out" aria-label="Zoom out">
-          <ZoomOut size={16} />
-        </button>
+      {/* ───── Viewport cluster ─────
+          Everything that changes how the canvas LOOKS without changing its
+          content — zoom level, grid, dimension labels, scale+units. The
+          zoom/grid/dimensions toggles collapsed into the View dropdown so
+          the TopBar no longer reads as a row of twenty identical icons;
+          the scale popover and numeric grid-size stepper stay inline
+          because they hold persistent values the user wants to see. */}
+      <div className="relative" ref={viewMenuRef}>
         <button
-          onClick={resetZoom}
-          className="text-xs font-medium text-gray-600 hover:bg-gray-100 px-2 py-1 rounded min-w-[48px] text-center"
-          title="Reset Zoom"
+          onClick={() => setViewMenuOpen((o) => !o)}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded"
+          aria-haspopup="menu"
+          aria-expanded={viewMenuOpen}
         >
-          {Math.round(stageScale * 100)}%
+          <Eye size={14} />
+          View
+          <ChevronDown size={14} />
         </button>
-        <button onClick={zoomIn} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" title="Zoom In" aria-label="Zoom in">
-          <ZoomIn size={16} />
-        </button>
+        {viewMenuOpen && (
+          <div
+            role="menu"
+            className="absolute left-0 mt-1 w-56 bg-white border rounded shadow z-30 py-1"
+          >
+            <button
+              role="menuitem"
+              onClick={() => {
+                setViewMenuOpen(false)
+                zoomIn()
+              }}
+              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
+            >
+              <ZoomIn size={14} />
+              Zoom in
+              <kbd className="ml-auto text-[10px] text-gray-400 font-mono">+</kbd>
+            </button>
+            <button
+              role="menuitem"
+              onClick={() => {
+                setViewMenuOpen(false)
+                zoomOut()
+              }}
+              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
+            >
+              <ZoomOut size={14} />
+              Zoom out
+              <kbd className="ml-auto text-[10px] text-gray-400 font-mono">−</kbd>
+            </button>
+            <button
+              role="menuitem"
+              onClick={() => {
+                setViewMenuOpen(false)
+                resetZoom()
+              }}
+              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
+            >
+              <span className="inline-block w-[14px] text-center text-xs font-mono">
+                {Math.round(stageScale * 100)}
+              </span>
+              Reset zoom
+              <kbd className="ml-auto text-[10px] text-gray-400 font-mono">0</kbd>
+            </button>
+            <div className="my-1 border-t border-gray-100" />
+            <button
+              role="menuitem"
+              onClick={() => {
+                setViewMenuOpen(false)
+                toggleGrid()
+              }}
+              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
+              aria-pressed={settings.showGrid}
+            >
+              {settings.showGrid ? (
+                <Check size={14} />
+              ) : (
+                <span className="inline-block w-[14px]" />
+              )}
+              <Grid3x3 size={14} />
+              Toggle grid
+              <kbd className="ml-auto text-[10px] text-gray-400 font-mono">G</kbd>
+            </button>
+            <button
+              role="menuitem"
+              onClick={() => {
+                setViewMenuOpen(false)
+                toggleDimensions()
+              }}
+              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
+              aria-pressed={settings.showDimensions}
+            >
+              {settings.showDimensions ? (
+                <Check size={14} />
+              ) : (
+                <span className="inline-block w-[14px]" />
+              )}
+              <Ruler size={14} />
+              Toggle dimensions
+              <kbd className="ml-auto text-[10px] text-gray-400 font-mono">D</kbd>
+            </button>
+          </div>
+        )}
       </div>
 
-      <div className="w-px h-6 bg-gray-200" />
+      {/* Grid-size stepper stays inline: it holds a persistent numeric
+          value the user wants to see at a glance (12px vs 48px changes
+          visibly on the canvas), so burying it in a dropdown would hide
+          state. */}
+      <input
+        type="number"
+        min={4}
+        max={200}
+        step={2}
+        value={settings.gridSize}
+        onChange={(e) => setSettings({ gridSize: Number(e.target.value) })}
+        className="w-[60px] text-xs border border-gray-200 rounded px-1 py-1 focus:outline-none focus:border-blue-400"
+        title="Grid size"
+        aria-label="Grid size"
+      />
 
-      {/* Grid + dimension controls. Grouped with the viewport controls
-          because they share the "how do I see the canvas" mental model. */}
-      <div className="flex items-center gap-1">
-        <button
-          onClick={toggleGrid}
-          className={`p-1.5 rounded ${
-            settings.showGrid
-              ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-              : 'hover:bg-gray-100 text-gray-600'
-          }`}
-          title="Toggle grid (G)"
-          aria-label="Toggle grid"
-          aria-pressed={settings.showGrid}
-        >
-          <Grid3x3 size={16} />
-        </button>
-        <input
-          type="number"
-          min={4}
-          max={200}
-          step={2}
-          value={settings.gridSize}
-          onChange={(e) => setSettings({ gridSize: Number(e.target.value) })}
-          className="w-[60px] text-xs border border-gray-200 rounded px-1 py-1 focus:outline-none focus:border-blue-400"
-          title="Grid size"
-          aria-label="Grid size"
-        />
-        <button
-          onClick={toggleDimensions}
-          className={`p-1.5 rounded ${
-            settings.showDimensions
-              ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-              : 'hover:bg-gray-100 text-gray-600'
-          }`}
-          title="Show/Hide dimensions (D)"
-          aria-label="Toggle dimensions"
-          aria-pressed={settings.showDimensions}
-        >
-          <Ruler size={16} />
-        </button>
-        {/* Scale + unit picker. Sits next to the Ruler/Grid controls
-            because it belongs to the same "how does the canvas read" mental
-            model — the Measure tool and dimension labels both consume these
-            settings. */}
-        <ScaleSettingsPopover />
-      </div>
+      {/* Scale + unit picker. Same rationale as the grid-size stepper —
+          the active scale (1:100, feet vs meters) drives every dimension
+          label on the canvas, so keeping it visible avoids round-trips
+          into a menu. */}
+      <ScaleSettingsPopover />
 
       <div className="flex-1" />
+
+      {/* ───── Action cluster ─────
+          Things the user does TO the canvas or with the office: select,
+          present, share, export, navigate between views, manage account. */}
 
       {/* Selection chip — clickable to clear, makes it obvious why
           Delete/Duplicate shortcuts are live. */}
@@ -419,8 +410,6 @@ export function TopBar() {
           <XIcon size={12} />
         </button>
       )}
-
-      <SaveIndicator saveState={saveState} lastSavedAt={lastSavedAt} />
 
       {/*
         Toggles presentation (fullscreen) mode. Critical: when presentation
@@ -577,7 +566,81 @@ export function TopBar() {
         )}
       </div>
 
-      <div className="w-px h-6 bg-gray-200" />
+      {/* MAP / ROSTER view toggle. React Router owns the active state so
+          we don't need UI-store bookkeeping. Moved to the action cluster
+          alongside Share/Export because jumping between Map and Roster is
+          a navigation action, not part of identity. Guarded on both
+          params so the hotkeys are inert outside the editor routes. */}
+      {teamSlug && officeSlug && (
+        <nav aria-label="Project views" className="flex items-center bg-gray-100 rounded-md p-0.5">
+          <NavLink
+            to={`/t/${teamSlug}/o/${officeSlug}/map`}
+            className={({ isActive }) =>
+              `px-3 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
+                isActive
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-800'
+              }`
+            }
+          >
+            Map
+          </NavLink>
+          <NavLink
+            to={`/t/${teamSlug}/o/${officeSlug}/roster`}
+            className={({ isActive }) =>
+              `px-3 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
+                isActive
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-800'
+              }`
+            }
+          >
+            Roster
+          </NavLink>
+          {canViewAudit && (
+            <NavLink
+              to={`/t/${teamSlug}/o/${officeSlug}/audit`}
+              className={({ isActive }) =>
+                `px-3 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
+                  isActive
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-800'
+                }`
+              }
+            >
+              Audit
+            </NavLink>
+          )}
+          {canViewReports && (
+            <NavLink
+              to={`/t/${teamSlug}/o/${officeSlug}/reports`}
+              className={({ isActive }) =>
+                `px-3 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
+                  isActive
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-800'
+                }`
+              }
+            >
+              Reports
+            </NavLink>
+          )}
+          {canViewReports && (
+            <NavLink
+              to={`/t/${teamSlug}/o/${officeSlug}/org-chart`}
+              className={({ isActive }) =>
+                `px-3 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
+                  isActive
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-800'
+                }`
+              }
+            >
+              Org Chart
+            </NavLink>
+          )}
+        </nav>
+      )}
 
       {/* Quick jump to the user guide. Opens in a new tab so the user
           doesn't lose their canvas state. */}
@@ -604,6 +667,17 @@ export function TopBar() {
   )
 }
 
+/**
+ * Persistent save-state chip. The text label is always rendered next to
+ * the icon so color-blind users (and anyone glancing at a small monitor)
+ * get an unambiguous status without hovering. Relative timestamp updates
+ * piggyback on the TopBar's existing 10s `forceTick` interval — no new
+ * timer, see the comment on `forceTick` in TopBar above.
+ *
+ * - saved  → green cloud + "Saved Xs ago"
+ * - saving → gray cloud  + "Saving…"
+ * - error  → red cloud-off + "Save failed — click to retry"
+ */
 function SaveIndicator({
   saveState,
   lastSavedAt,
@@ -613,27 +687,39 @@ function SaveIndicator({
 }) {
   if (saveState === 'saving') {
     return (
-      <span className="flex items-center gap-1 text-xs text-gray-500" title="Saving to Supabase">
+      <span
+        className="flex items-center gap-1 text-xs text-gray-500 whitespace-nowrap"
+        title="Saving to Supabase"
+      >
         <UploadCloud size={14} className="animate-pulse" />
         Saving…
       </span>
     )
   }
   if (saveState === 'error') {
+    // useOfficeSync already retries on its own exponential backoff
+    // (2s → 5s → 15s → 30s), so there's no user-triggered retry action
+    // to wire here. The hint text still names retry as the recovery so
+    // the user understands the app is actively working on it — without
+    // this, a red "Save failed" chip with no further context reads as a
+    // dead end.
     return (
       <span
-        className="flex items-center gap-1 text-xs text-red-600"
-        title="Save failed — we'll retry; check your connection if this persists"
+        className="flex items-center gap-1 text-xs text-red-600 whitespace-nowrap"
+        title="Save failed — we're retrying automatically; check your connection if this persists"
       >
         <CloudOff size={14} />
-        Save failed
+        Save failed — retrying
       </span>
     )
   }
   const relative = formatRelative(lastSavedAt)
   if (!relative) return null
   return (
-    <span className="flex items-center gap-1 text-xs text-gray-500" title={`Saved at ${lastSavedAt}`}>
+    <span
+      className="flex items-center gap-1 text-xs text-green-600 whitespace-nowrap"
+      title={`Saved at ${lastSavedAt}`}
+    >
       <Cloud size={14} />
       Saved {relative}
     </span>
