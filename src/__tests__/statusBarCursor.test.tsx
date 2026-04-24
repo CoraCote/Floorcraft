@@ -6,13 +6,23 @@ import { useCursorStore } from '../stores/cursorStore'
 import { useElementsStore } from '../stores/elementsStore'
 import { useUIStore } from '../stores/uiStore'
 import { useCanvasStore } from '../stores/canvasStore'
+import { DEFAULT_CANVAS_SETTINGS } from '../types/project'
 
 beforeEach(() => {
   useCursorStore.setState({ x: null, y: null })
   useElementsStore.setState({ elements: {} } as any)
   useUIStore.setState({ selectedIds: [] } as any)
-  useCanvasStore.setState({ stageScale: 1, activeTool: 'select' } as any)
+  // Pin the canvas to pixel-mode so the readout's tooltip is deterministic —
+  // real-world units would interpolate `scale`/`scaleUnit` into the title.
+  useCanvasStore.setState({
+    stageScale: 1,
+    activeTool: 'select',
+    settings: { ...DEFAULT_CANVAS_SETTINGS, scaleUnit: 'px' },
+  } as any)
 })
+
+const PX_TITLE =
+  'Cursor position in canvas units (pixels). Calibrate a real-world scale from Project Settings.'
 
 /**
  * The coordinate readout is the visible half of the cursor store. The
@@ -31,7 +41,7 @@ describe('StatusBar cursor coordinate readout', () => {
   it('renders the cursor coordinates when the cursor is over the canvas', () => {
     useCursorStore.setState({ x: 42, y: 99 })
     render(<StatusBar />)
-    const readout = screen.getByTitle('Cursor position in canvas units (pixels). 1 grid square = 20 units by default.')
+    const readout = screen.getByTitle(PX_TITLE)
     expect(readout).toHaveTextContent('X: 42')
     expect(readout).toHaveTextContent('Y: 99')
   })
@@ -39,10 +49,10 @@ describe('StatusBar cursor coordinate readout', () => {
   it('removes the readout when the cursor is cleared (pointer leaves canvas)', () => {
     useCursorStore.setState({ x: 10, y: 20 })
     const { rerender } = render(<StatusBar />)
-    expect(screen.getByTitle('Cursor position in canvas units (pixels). 1 grid square = 20 units by default.')).toBeInTheDocument()
+    expect(screen.getByTitle(PX_TITLE)).toBeInTheDocument()
 
     useCursorStore.setState({ x: null, y: null })
     rerender(<StatusBar />)
-    expect(screen.queryByTitle('Cursor position in canvas units (pixels). 1 grid square = 20 units by default.')).toBeNull()
+    expect(screen.queryByTitle(PX_TITLE)).toBeNull()
   })
 })

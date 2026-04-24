@@ -8,6 +8,7 @@ import {
   isWorkstationElement,
   isPrivateOfficeElement,
 } from '../../types/elements'
+import { formatLength, toRealLength, LENGTH_UNIT_SUFFIX } from '../../lib/units'
 
 /**
  * Thin status bar pinned to the bottom of the canvas. Surfaces:
@@ -22,6 +23,8 @@ export function StatusBar() {
   const selectedIds = useUIStore((s) => s.selectedIds)
   const activeTool = useCanvasStore((s) => s.activeTool)
   const stageScale = useCanvasStore((s) => s.stageScale)
+  const scale = useCanvasStore((s) => s.settings.scale)
+  const scaleUnit = useCanvasStore((s) => s.settings.scaleUnit)
   const cursorX = useCursorStore((s) => s.x)
   const cursorY = useCursorStore((s) => s.y)
 
@@ -76,9 +79,18 @@ export function StatusBar() {
         adjacent status-bar items from shuffling as the digits change.
       */}
       {cursorX !== null && cursorY !== null && (
-        <span className="tabular-nums" title="Cursor position in canvas units (pixels). 1 grid square = 20 units by default.">
-          X: <strong>{cursorX}</strong> · Y: <strong>{cursorY}</strong>{' '}
-          <span className="text-gray-400">px</span>
+        <span
+          className="tabular-nums"
+          title={
+            scaleUnit === 'px'
+              ? 'Cursor position in canvas units (pixels). Calibrate a real-world scale from Project Settings.'
+              : `Cursor position in ${LENGTH_UNIT_SUFFIX[scaleUnit]}. Scale: 1 canvas px = ${scale} ${LENGTH_UNIT_SUFFIX[scaleUnit]}.`
+          }
+        >
+          X: <strong>{formatLength(toRealLength(cursorX, scale, scaleUnit), scaleUnit)}</strong>
+          {' · '}
+          Y: <strong>{formatLength(toRealLength(cursorY, scale, scaleUnit), scaleUnit)}</strong>{' '}
+          <span className="text-gray-400">{LENGTH_UNIT_SUFFIX[scaleUnit]}</span>
         </span>
       )}
 
@@ -102,6 +114,8 @@ function toolHint(tool: string): string | null {
       return 'Hover a wall to preview — click to place a window — Esc to cancel'
     case 'pan':
       return 'Drag to pan the canvas'
+    case 'measure':
+      return 'Click to add ruler points, double-click to finish — Esc to clear'
     default:
       return null
   }

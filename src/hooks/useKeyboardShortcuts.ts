@@ -210,6 +210,13 @@ export function useKeyboardShortcuts() {
           e.preventDefault()
           setActiveTool('window'); return
         }
+        // Shift+M activates the ruler. Plain M is already "jump to Map
+        // view" on project routes, so shift-lock mirrors the door/window
+        // Shift+D / Shift+N pattern.
+        if (e.shiftKey && (e.key === 'M' || e.key === 'm')) {
+          e.preventDefault()
+          setActiveTool('measure'); return
+        }
         if (!e.shiftKey && (e.key === 'r' || e.key === 'R') && !(teamSlug && officeSlug)) {
           setActiveTool('rect-shape'); return
         }

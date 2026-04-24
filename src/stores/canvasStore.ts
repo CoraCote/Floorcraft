@@ -15,6 +15,10 @@ export type ToolType =
   | 'line-shape'
   | 'arrow'
   | 'free-text'
+  // Measurement tools. `measure` is a polyline-style ruler: click to add
+  // vertices, double-click or Enter to finish. The running total is shown
+  // live; the final polyline is a persistent overlay until dismissed.
+  | 'measure'
 
 export type WallDrawStyle = 'solid' | 'dashed' | 'dotted'
 

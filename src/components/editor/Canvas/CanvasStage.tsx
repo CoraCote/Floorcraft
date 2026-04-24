@@ -39,6 +39,7 @@ import {
 } from '../../../lib/primitives/buildPrimitive'
 import { ShapeDrawingOverlay, type ShapeDrawingPreview } from './primitives/ShapeDrawingOverlay'
 import { FreeTextEditorOverlay } from './primitives/FreeTextEditorOverlay'
+import { MeasureOverlay, type MeasureSession } from './MeasureOverlay'
 import { useRecentLibraryItems } from '../../../hooks/useRecentLibraryItems'
 import { setActiveStage } from '../../../lib/stageRegistry'
 import { useCursorStore } from '../../../stores/cursorStore'
@@ -266,6 +267,19 @@ export function CanvasStage() {
   const shapeDragRef = useRef<{ startX: number; startY: number } | null>(null)
   const [shapePreview, setShapePreview] = useState<ShapeDrawingPreview | null>(null)
 
+  // Measure-tool session. Committed vertices live here as a flat array;
+  // the active cursor position lives in React state (so the overlay
+  // re-renders as the pointer moves). Cleared on Escape, tool switch, or
+  // double-click/Enter. Project scale/unit also read here so the overlay
+  // can compose its labels from one call site.
+  const [measureSession, setMeasureSession] = useState<MeasureSession>({
+    points: [],
+    cursor: null,
+    finalised: false,
+  })
+  const projectScale = useCanvasStore((s) => s.settings.scale)
+  const projectScaleUnit = useCanvasStore((s) => s.settings.scaleUnit)
+
   const handleMouseDown = useCallback(
     (e: Konva.KonvaEventObject<MouseEvent>) => {
       if (e.evt.button === 2) {
@@ -332,6 +346,37 @@ export function CanvasStage() {
           clearSelection()
           setContextMenu(null)
         }
+        return
+      }
+
+      // Measure tool: each left-click commits a new vertex. A session
+      // with a single vertex shows the "live length" out to the cursor;
+      // double-click (handled separately) finalises. The tool sits
+      // OUTSIDE the `creationTool` guard above because measuring is a
+      // read-only operation — viewers get to use it too.
+      if (activeTool === 'measure' && e.evt.button === 0) {
+        const stage = stageRef.current
+        if (!stage) return
+        const pointer = stage.getPointerPosition()
+        if (!pointer) return
+        const canvasX = (pointer.x - stageX) / stageScale
+        const canvasY = (pointer.y - stageY) / stageScale
+        setMeasureSession((prev) => {
+          // Clicking AFTER a finalised session starts fresh — the user
+          // is effectively saying "new measurement" by clicking again.
+          if (prev.finalised) {
+            return {
+              points: [canvasX, canvasY],
+              cursor: { x: canvasX, y: canvasY },
+              finalised: false,
+            }
+          }
+          return {
+            points: [...prev.points, canvasX, canvasY],
+            cursor: { x: canvasX, y: canvasY },
+            finalised: false,
+          }
+        })
         return
       }
 
@@ -542,6 +587,23 @@ export function CanvasStage() {
         handleCanvasMouseMove(canvasX, canvasY)
       }
 
+      // Measure-tool live tracking. Only commit the cursor position
+      // after the first vertex exists — before that there's nothing to
+      // measure TO, so the overlay stays hidden.
+      if (activeTool === 'measure') {
+        const stage = stageRef.current
+        if (!stage) return
+        const pointer = stage.getPointerPosition()
+        if (!pointer) return
+        const canvasX = (pointer.x - stageX) / stageScale
+        const canvasY = (pointer.y - stageY) / stageScale
+        setMeasureSession((prev) =>
+          prev.points.length === 0 || prev.finalised
+            ? prev
+            : { ...prev, cursor: { x: canvasX, y: canvasY } },
+        )
+      }
+
       // Primitive drag: update preview rectangle / line every move while
       // pressed. No anchor ref means the user isn't dragging (press
       // happened on a non-canvas element or outside the stage) — bail.
@@ -605,6 +667,10 @@ export function CanvasStage() {
       shapeDragRef.current = null
       setShapePreview(null)
     }
+    // Measure-tool: keep committed vertices visible, but drop the cursor
+    // trail since its last-known value would be stale the moment the
+    // pointer re-enters somewhere else.
+    setMeasureSession((prev) => (prev.cursor ? { ...prev, cursor: null } : prev))
   }, [ghostCursor])
 
   // Global Escape handling for the marquee: cancel the drag and leave the
@@ -622,10 +688,32 @@ export function CanvasStage() {
         shapeDragRef.current = null
         setShapePreview(null)
       }
+      setMeasureSession((prev) =>
+        prev.points.length > 0 || prev.cursor || prev.finalised
+          ? { points: [], cursor: null, finalised: false }
+          : prev,
+      )
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
+
+  // Tool-switch cleanup for the measure session — leaving the tool should
+  // dismiss any lingering overlay. (Points alone survive an accidental
+  // mouseleave, but switching tools is an explicit "I'm done" signal.)
+  // The functional setter is a no-op when the session is already empty so
+  // this doesn't cascade-render — same shape as the ghost-cursor cleanup
+  // below.
+  useEffect(() => {
+    if (activeTool !== 'measure') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setMeasureSession((prev) =>
+        prev.points.length > 0 || prev.cursor || prev.finalised
+          ? { points: [], cursor: null, finalised: false }
+          : prev,
+      )
+    }
+  }, [activeTool])
 
   // Clear the ghost when the tool switches away from door/window. Keeps
   // state in sync without waiting for the next mousemove. The functional
@@ -637,6 +725,24 @@ export function CanvasStage() {
       setGhostCursor((g) => (g ? null : g))
     }
   }, [activeTool])
+
+  // Double-click router: the wall tool uses dblclick to commit the in-flight
+  // polyline, and the measure tool uses it to finalise the ruler. Without
+  // this router the store-level `onDblClick={handleCanvasDoubleClick}` would
+  // fire only the wall handler, leaving the measure tool unable to finish.
+  const handleStageDoubleClick = useCallback(() => {
+    if (activeTool === 'wall') {
+      handleCanvasDoubleClick()
+      return
+    }
+    if (activeTool === 'measure') {
+      setMeasureSession((prev) =>
+        prev.points.length > 0
+          ? { points: prev.points, cursor: null, finalised: true }
+          : prev,
+      )
+    }
+  }, [activeTool, handleCanvasDoubleClick])
 
   const handleMouseUp = useCallback(() => {
     isPanning.current = false
@@ -714,6 +820,7 @@ export function CanvasStage() {
     cursor = ghostHasHit ? 'crosshair' : 'not-allowed'
   }
   if (PRIMITIVE_TOOLS.has(activeTool)) cursor = 'crosshair'
+  if (activeTool === 'measure') cursor = 'crosshair'
 
   // Accept employee drags from PeoplePanel and assign the dropped employee
   // to whatever assignable element is under the cursor.
@@ -832,7 +939,7 @@ export function CanvasStage() {
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
-        onDblClick={handleCanvasDoubleClick}
+        onDblClick={handleStageDoubleClick}
         onContextMenu={(e) => e.evt.preventDefault()}
       >
         <GridLayer width={size.width} height={size.height} />
@@ -854,6 +961,11 @@ export function CanvasStage() {
         />
         <MarqueeOverlay rect={marquee} />
         <ShapeDrawingOverlay preview={shapePreview} />
+        <MeasureOverlay
+          session={measureSession}
+          scale={projectScale}
+          scaleUnit={projectScaleUnit}
+        />
       </Stage>
       <FreeTextEditorOverlay containerRef={containerRef} />
     </div>

@@ -1,9 +1,10 @@
 import type { Floor } from './floor'
+import type { LengthUnit } from '../lib/units'
 
 export interface CanvasSettings {
   gridSize: number
   scale: number
-  scaleUnit: 'ft' | 'm' | 'cm' | 'in'
+  scaleUnit: LengthUnit
   showGrid: boolean
   /**
    * When true, a label appears at the midpoint of each wall segment showing

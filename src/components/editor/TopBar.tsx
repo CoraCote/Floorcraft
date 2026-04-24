@@ -16,6 +16,7 @@ import { formatRelative } from '../../lib/time'
 import { useCan } from '../../hooks/useCan'
 import { TeamSwitcher } from '../team/TeamSwitcher'
 import { UserMenu } from '../team/UserMenu'
+import { ScaleSettingsPopover } from './ScaleSettingsPopover'
 
 export function TopBar() {
   const project = useProjectStore((s) => s.currentProject)
@@ -282,6 +283,11 @@ export function TopBar() {
         >
           <Ruler size={16} />
         </button>
+        {/* Scale + unit picker. Sits next to the Ruler/Grid controls
+            because it belongs to the same "how does the canvas read" mental
+            model — the Measure tool and dimension labels both consume these
+            settings. */}
+        <ScaleSettingsPopover />
       </div>
 
       <div className="flex-1" />

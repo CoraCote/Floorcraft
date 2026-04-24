@@ -11,6 +11,7 @@ import {
   Slash,
   ArrowRight,
   Type,
+  Ruler,
 } from 'lucide-react'
 
 const tools: { id: ToolType; label: string; icon: React.ReactNode; shortcut: string }[] = [
@@ -29,6 +30,10 @@ const tools: { id: ToolType; label: string; icon: React.ReactNode; shortcut: str
   { id: 'line-shape', label: 'Line', icon: <Slash size={18} />, shortcut: 'L' },
   { id: 'arrow', label: 'Arrow', icon: <ArrowRight size={18} />, shortcut: 'A' },
   { id: 'free-text', label: 'Text', icon: <Type size={18} />, shortcut: 'T' },
+  // Measure is a read-only tool — architects and facilities managers use
+  // it often to check corridor widths and room sizes, so we expose it
+  // alongside the primitives. Shift+M because plain M jumps to Map view.
+  { id: 'measure', label: 'Measure', icon: <Ruler size={18} />, shortcut: '⇧M' },
 ]
 
 const WALL_STYLES: { id: WallDrawStyle; label: string }[] = [
@@ -47,9 +52,11 @@ export function ToolSelector() {
   // Viewers only get the navigation tools (select, pan). The creation tools
   // would be silently no-ops against CanvasStage's canEdit guard — hiding
   // them keeps the picker from implying capabilities the role doesn't have.
+  // Viewers keep Select, Pan, and Measure — the first two are navigation,
+  // the third is read-only, so none expand the viewer's capability surface.
   const visibleTools = canEdit
     ? tools
-    : tools.filter((t) => t.id === 'select' || t.id === 'pan')
+    : tools.filter((t) => t.id === 'select' || t.id === 'pan' || t.id === 'measure')
 
   return (
     <div className="p-3">
