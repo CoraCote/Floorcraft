@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { MessageCircle, X } from 'lucide-react'
 import { useAnnotationsStore } from '../../../stores/annotationsStore'
 import { useCan } from '../../../hooks/useCan'
 import { useProjectStore } from '../../../stores/projectStore'
@@ -17,6 +18,12 @@ import { ANNOTATION_BODY_MAX, type Annotation } from '../../../types/annotations
  * opened-state precondition. That also sidesteps the lint rule against
  * setState-in-effect by letting each body own its own local text state,
  * unconditionally initialised from props at mount.
+ *
+ * Wave 11C — visual polish to match the JSON-Crack/Linear aesthetic used
+ * by FileMenu, ContextMenu, and PropertiesPanel: thin sticky header with
+ * a type icon and close affordance, uppercase section labels, shared
+ * input/button idioms, dark-mode classes, focus trap, and Esc/Enter
+ * keyboard polish.
  */
 interface Props {
   /** Canvas container (same ref CanvasStage uses) for screen-space math. */
@@ -106,6 +113,104 @@ interface InnerProps {
   canEdit: boolean
 }
 
+/**
+ * Shared visual constants — kept aligned with PropertiesPanel's idiom so
+ * the popover slots into the editor chrome without drifting. We don't
+ * import PropertiesPanel's local constants (they aren't exported); we
+ * just match the visual rhythm.
+ */
+const SECTION_LABEL_CLASS =
+  'text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400'
+const TEXTAREA_CLASS =
+  'w-full text-xs border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 ' +
+  'focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/30 ' +
+  'bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 resize-y'
+const PRIMARY_BTN_CLASS =
+  'bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed ' +
+  'text-white px-3 py-1.5 text-xs rounded focus:outline-none focus:ring-2 focus:ring-blue-400'
+const SECONDARY_BTN_CLASS =
+  'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 ' +
+  'text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 ' +
+  'px-3 py-1.5 text-xs rounded focus:outline-none focus:ring-2 focus:ring-blue-400'
+const DELETE_BTN_CLASS =
+  'text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 ' +
+  'px-3 py-1.5 text-xs rounded focus:outline-none focus:ring-2 focus:ring-red-400'
+const POPOVER_SHELL_CLASS =
+  'rounded-lg shadow-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-xs'
+
+/**
+ * Trap focus inside the popover while it's open so Tab cycles through
+ * inputs and buttons rather than escaping into the canvas behind it.
+ * Returns nothing — wires up a keydown listener scoped to the popover
+ * root via the supplied ref.
+ */
+function useFocusTrap(rootRef: React.RefObject<HTMLDivElement | null>) {
+  useEffect(() => {
+    const root = rootRef.current
+    if (!root) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== 'Tab') return
+      const node = rootRef.current
+      if (!node) return
+      const focusables = node.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      )
+      if (focusables.length === 0) return
+      const first = focusables[0]
+      const last = focusables[focusables.length - 1]
+      const active = document.activeElement as HTMLElement | null
+      if (e.shiftKey) {
+        if (active === first || !node.contains(active)) {
+          e.preventDefault()
+          last.focus()
+        }
+      } else {
+        if (active === last) {
+          e.preventDefault()
+          first.focus()
+        }
+      }
+    }
+    root.addEventListener('keydown', onKey)
+    return () => root.removeEventListener('keydown', onKey)
+  }, [rootRef])
+}
+
+/**
+ * Sticky header used by both Create and View popovers. Type icon +
+ * uppercase type-name label + close button, hairline divider below.
+ */
+function PopoverHeader({
+  titleId,
+  label,
+  onClose,
+}: {
+  titleId: string
+  label: string
+  onClose: () => void
+}) {
+  return (
+    <div className="sticky top-0 flex items-center gap-2 px-3 py-2 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 rounded-t-lg">
+      <MessageCircle
+        size={14}
+        aria-hidden="true"
+        className="text-gray-500 dark:text-gray-400 flex-shrink-0"
+      />
+      <span id={titleId} className={`${SECTION_LABEL_CLASS} flex-1 truncate`}>
+        {label}
+      </span>
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Close annotation editor"
+        className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded p-0.5 focus:outline-none focus:ring-2 focus:ring-blue-400"
+      >
+        <X size={14} aria-hidden="true" />
+      </button>
+    </div>
+  )
+}
+
 function CreatePopover({ containerRef, canEdit }: InnerProps) {
   const draft = useAnnotationsStore((s) => s.draft)
   const addAnnotation = useAnnotationsStore((s) => s.addAnnotation)
@@ -118,11 +223,15 @@ function CreatePopover({ containerRef, canEdit }: InnerProps) {
   )
   const [body, setBody] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const titleId = 'annotation-popover-title-create'
 
   useEffect(() => {
     const raf = requestAnimationFrame(() => textareaRef.current?.focus())
     return () => cancelAnimationFrame(raf)
   }, [])
+
+  useFocusTrap(rootRef)
 
   if (!draft) return null
   if (!canEdit) {
@@ -149,96 +258,75 @@ function CreatePopover({ containerRef, canEdit }: InnerProps) {
 
   return (
     <div
+      ref={rootRef}
       role="dialog"
-      aria-label="Create annotation"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      className={POPOVER_SHELL_CLASS}
       style={{
         position: 'fixed',
         left: pos.left,
         top: pos.top,
-        width: 260,
-        background: '#fff',
-        border: '1px solid #E5E7EB',
-        borderRadius: 6,
-        boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
-        padding: 10,
+        width: 280,
         zIndex: 30,
-        fontSize: 12,
       }}
       onMouseDown={(e) => e.stopPropagation()}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          e.preventDefault()
+          cancel()
+        }
+      }}
     >
-      <div style={{ fontWeight: 600, marginBottom: 6, color: '#374151' }}>
-        Add annotation
-      </div>
-      <textarea
-        ref={textareaRef}
-        value={body}
-        maxLength={ANNOTATION_BODY_MAX}
-        onChange={(e) => setBody(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Escape') {
-            e.preventDefault()
-            cancel()
-          } else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-            e.preventDefault()
-            save()
-          }
-        }}
-        placeholder="Add a note (max 280 chars)…"
-        style={{
-          width: '100%',
-          minHeight: 72,
-          padding: 6,
-          border: '1px solid #D1D5DB',
-          borderRadius: 4,
-          fontSize: 12,
-          fontFamily: 'inherit',
-          resize: 'vertical',
-          outline: 'none',
-          boxSizing: 'border-box',
-        }}
-      />
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginTop: 6,
-        }}
-      >
-        <span style={{ color: '#9CA3AF', fontSize: 10 }}>
-          {body.length}/{ANNOTATION_BODY_MAX}
-        </span>
-        <div style={{ display: 'flex', gap: 6 }}>
-          <button
-            type="button"
-            onClick={cancel}
-            style={{
-              padding: '4px 10px',
-              background: '#fff',
-              border: '1px solid #D1D5DB',
-              borderRadius: 4,
-              fontSize: 12,
-              cursor: 'pointer',
+      <PopoverHeader titleId={titleId} label="New annotation" onClose={cancel} />
+      <div className="flex flex-col gap-3 px-3 py-3">
+        <section className="flex flex-col gap-1.5">
+          <h3 className={SECTION_LABEL_CLASS}>Content</h3>
+          <textarea
+            ref={textareaRef}
+            value={body}
+            maxLength={ANNOTATION_BODY_MAX}
+            onChange={(e) => setBody(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                e.preventDefault()
+                cancel()
+              } else if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                save()
+              }
             }}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={save}
-            disabled={body.trim().length === 0}
-            style={{
-              padding: '4px 10px',
-              background: body.trim().length === 0 ? '#93C5FD' : '#2563EB',
-              color: '#fff',
-              border: 0,
-              borderRadius: 4,
-              fontSize: 12,
-              cursor: body.trim().length === 0 ? 'not-allowed' : 'pointer',
-            }}
-          >
-            Save
-          </button>
+            placeholder="Add a note (max 280 chars)…"
+            className={`${TEXTAREA_CLASS} min-h-[72px]`}
+          />
+          <div className="flex justify-end">
+            <span className="text-[10px] text-gray-400 dark:text-gray-500 tabular-nums">
+              {body.length}/{ANNOTATION_BODY_MAX}
+            </span>
+          </div>
+        </section>
+        <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800">
+          <div />
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={cancel}
+              className={SECONDARY_BTN_CLASS}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={save}
+              disabled={body.trim().length === 0}
+              className={PRIMARY_BTN_CLASS}
+            >
+              Save
+            </button>
+          </div>
+        </div>
+        <div className="text-[10px] text-gray-400 dark:text-gray-500 -mt-1">
+          Esc to close · Enter to save · Shift+Enter for newline
         </div>
       </div>
     </div>
@@ -284,6 +372,9 @@ function ViewPopoverBody({
   // Seed the draft directly from the entry body. The component is keyed on
   // `entry.id` by the gate so a different entry remounts with a fresh draft.
   const [draftBody, setDraftBody] = useState(entry.body)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const editTextareaRef = useRef<HTMLTextAreaElement>(null)
+  const titleId = `annotation-popover-title-${entry.id}`
 
   // Read the last known screen-space anchor during render. `getLastPinAnchor`
   // is a module-level ref populated by the layer's onPinClick. If there's
@@ -309,6 +400,16 @@ function ViewPopoverBody({
   // might also inform view positioning.
   void popoverAnchor
 
+  useFocusTrap(rootRef)
+
+  // When entering edit mode, hand focus to the textarea so the user can
+  // start typing immediately. Mirrors CreatePopover's auto-focus behavior.
+  useEffect(() => {
+    if (!editMode) return
+    const raf = requestAnimationFrame(() => editTextareaRef.current?.focus())
+    return () => cancelAnimationFrame(raf)
+  }, [editMode])
+
   const close = () => {
     setActive(null)
     setEditMode(false)
@@ -332,150 +433,168 @@ function ViewPopoverBody({
     setEditMode(false)
   }
 
+  const onDelete = () => {
+    removeAnnotation(entry.id)
+    close()
+  }
+
   const createdAtLabel = formatCreatedAt(entry.createdAt)
+  const headerLabel = entry.resolvedAt ? 'Resolved annotation' : 'Annotation'
 
   return (
     <div
+      ref={rootRef}
       role="dialog"
-      aria-label="Annotation"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      className={POPOVER_SHELL_CLASS}
       style={{
         position: 'fixed',
         left: pos.left,
         top: pos.top,
-        width: 280,
-        background: '#fff',
-        border: '1px solid #E5E7EB',
-        borderRadius: 6,
-        boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
-        padding: 10,
+        width: 300,
         zIndex: 30,
-        fontSize: 12,
       }}
       onMouseDown={(e) => e.stopPropagation()}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          // In edit mode, Escape reverts the draft; otherwise it closes.
+          if (editMode) {
+            e.preventDefault()
+            setEditMode(false)
+            setDraftBody(entry.body)
+          } else {
+            e.preventDefault()
+            close()
+          }
+        }
+      }}
     >
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 6,
-        }}
-      >
-        <span style={{ fontWeight: 600, color: '#374151' }}>
-          {entry.authorName}
-        </span>
-        <span style={{ color: '#9CA3AF', fontSize: 10 }}>{createdAtLabel}</span>
-      </div>
+      <PopoverHeader titleId={titleId} label={headerLabel} onClose={close} />
 
-      {editMode && canEdit ? (
-        <textarea
-          value={draftBody}
-          maxLength={ANNOTATION_BODY_MAX}
-          onChange={(e) => setDraftBody(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') {
-              e.preventDefault()
-              setEditMode(false)
-              setDraftBody(entry.body)
-            } else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-              e.preventDefault()
-              commitEdit()
-            }
-          }}
-          style={{
-            width: '100%',
-            minHeight: 72,
-            padding: 6,
-            border: '1px solid #D1D5DB',
-            borderRadius: 4,
-            fontSize: 12,
-            fontFamily: 'inherit',
-            resize: 'vertical',
-            outline: 'none',
-            boxSizing: 'border-box',
-          }}
-        />
-      ) : (
-        <div
-          style={{
-            whiteSpace: 'pre-wrap',
-            color: entry.resolvedAt ? '#9CA3AF' : '#111827',
-            textDecoration: entry.resolvedAt ? 'line-through' : 'none',
-            lineHeight: 1.4,
-          }}
-        >
-          {entry.body}
+      <div className="flex flex-col gap-3 px-3 py-3">
+        <section className="flex flex-col gap-1.5">
+          <div className="flex items-center justify-between">
+            <h3 className={SECTION_LABEL_CLASS}>Content</h3>
+            <span className="text-[10px] text-gray-400 dark:text-gray-500">
+              {createdAtLabel}
+            </span>
+          </div>
+          {editMode && canEdit ? (
+            <>
+              <textarea
+                ref={editTextareaRef}
+                value={draftBody}
+                maxLength={ANNOTATION_BODY_MAX}
+                onChange={(e) => setDraftBody(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    commitEdit()
+                  }
+                }}
+                className={`${TEXTAREA_CLASS} min-h-[72px]`}
+              />
+              <div className="flex justify-end">
+                <span className="text-[10px] text-gray-400 dark:text-gray-500 tabular-nums">
+                  {draftBody.length}/{ANNOTATION_BODY_MAX}
+                </span>
+              </div>
+            </>
+          ) : (
+            <div
+              className={`whitespace-pre-wrap leading-snug ${
+                entry.resolvedAt
+                  ? 'text-gray-400 dark:text-gray-500 line-through'
+                  : 'text-gray-900 dark:text-gray-100'
+              }`}
+            >
+              {entry.body}
+            </div>
+          )}
+        </section>
+
+        <section className="flex flex-col gap-1">
+          <h3 className={SECTION_LABEL_CLASS}>Author</h3>
+          <span className="text-xs text-gray-700 dark:text-gray-300 truncate">
+            {entry.authorName}
+          </span>
+        </section>
+
+        <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800">
+          <div>
+            {canEdit && !editMode && (
+              <button
+                type="button"
+                onClick={onDelete}
+                className={DELETE_BTN_CLASS}
+              >
+                Delete
+              </button>
+            )}
+          </div>
+          <div className="flex gap-2">
+            {editMode ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditMode(false)
+                    setDraftBody(entry.body)
+                  }}
+                  className={SECONDARY_BTN_CLASS}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={commitEdit}
+                  className={PRIMARY_BTN_CLASS}
+                >
+                  Save
+                </button>
+              </>
+            ) : (
+              <>
+                {canEdit && (
+                  <button
+                    type="button"
+                    onClick={() => setEditMode(true)}
+                    className={SECONDARY_BTN_CLASS}
+                  >
+                    Edit
+                  </button>
+                )}
+                {canEdit && (
+                  <button
+                    type="button"
+                    onClick={toggleResolve}
+                    className={PRIMARY_BTN_CLASS}
+                  >
+                    {entry.resolvedAt ? 'Reopen' : 'Resolve'}
+                  </button>
+                )}
+                {!canEdit && (
+                  <button
+                    type="button"
+                    onClick={close}
+                    className={SECONDARY_BTN_CLASS}
+                  >
+                    Close
+                  </button>
+                )}
+              </>
+            )}
+          </div>
         </div>
-      )}
-
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-          gap: 6,
-          marginTop: 8,
-        }}
-      >
-        <button
-          type="button"
-          onClick={close}
-          style={buttonStyle('secondary')}
-        >
-          Close
-        </button>
-        {canEdit && !editMode && (
-          <button
-            type="button"
-            onClick={() => setEditMode(true)}
-            style={buttonStyle('secondary')}
-          >
-            Edit
-          </button>
-        )}
-        {canEdit && editMode && (
-          <button
-            type="button"
-            onClick={commitEdit}
-            style={buttonStyle('primary')}
-          >
-            Save
-          </button>
-        )}
-        {canEdit && !editMode && (
-          <button
-            type="button"
-            onClick={toggleResolve}
-            style={buttonStyle('primary')}
-          >
-            {entry.resolvedAt ? 'Reopen' : 'Resolve'}
-          </button>
-        )}
+        <div className="text-[10px] text-gray-400 dark:text-gray-500 -mt-1">
+          {editMode
+            ? 'Esc to cancel · Enter to save · Shift+Enter for newline'
+            : 'Esc to close'}
+        </div>
       </div>
     </div>
   )
-}
-
-function buttonStyle(kind: 'primary' | 'secondary'): React.CSSProperties {
-  if (kind === 'primary') {
-    return {
-      padding: '4px 10px',
-      background: '#2563EB',
-      color: '#fff',
-      border: 0,
-      borderRadius: 4,
-      fontSize: 12,
-      cursor: 'pointer',
-    }
-  }
-  return {
-    padding: '4px 10px',
-    background: '#fff',
-    color: '#374151',
-    border: '1px solid #D1D5DB',
-    borderRadius: 4,
-    fontSize: 12,
-    cursor: 'pointer',
-  }
 }
 
 function formatCreatedAt(iso: string): string {
