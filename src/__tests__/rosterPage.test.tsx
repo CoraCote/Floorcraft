@@ -136,13 +136,17 @@ describe('RosterPage', () => {
     expect(screen.getByText('Bob')).toBeTruthy()
   })
 
-  it('shows Clear filters button once a filter is active and resets on click', () => {
+  it('shows a removable active-filter pill when a filter is active and clearing it restores all rows', () => {
     renderAtRoute('/t/acme/o/hq/roster?status=active')
     // Alice is active, Bob is on-leave → only Alice is visible.
     expect(screen.getByText('Alice')).toBeTruthy()
     expect(screen.queryByText('Bob')).toBeNull()
-    const clear = screen.getByTitle('Clear all filters')
-    act(() => { fireEvent.click(clear) })
+    // The single active filter now lives as a removable pill between the
+    // filter bar and the table (the old top-level "Clear filters" button
+    // collapsed into the pill's ✕ since a single filter doesn't justify
+    // a separate "Clear all" control).
+    const removePill = screen.getByLabelText(/Remove filter: Status: active/i)
+    act(() => { fireEvent.click(removePill) })
     // Both rows should be back.
     expect(screen.getByText('Alice')).toBeTruthy()
     expect(screen.getByText('Bob')).toBeTruthy()
@@ -225,7 +229,9 @@ describe('RosterPage', () => {
   })
 
   it('clearing filters in cards view keeps view=cards', () => {
-    renderAtRoute('/t/acme/o/hq/roster?view=cards&status=active')
+    // Seed two filters so the pill row renders its "Clear all" shortcut
+    // (single-filter case is covered above via the pill's × button).
+    renderAtRoute('/t/acme/o/hq/roster?view=cards&status=active&dept=Engineering')
     // Sanity: we're in cards and the filter narrowed the list to Alice.
     expect(screen.getByTestId('roster-cards')).toBeTruthy()
     expect(screen.queryByText('Bob')).toBeNull()
@@ -249,6 +255,10 @@ describe('RosterPage', () => {
       }))
     })
     renderAtRoute('/t/acme/o/hq/roster')
+    // Preset picker now lives behind the "More filters" popover — open it
+    // before querying for the select.
+    const moreFilters = screen.getByRole('button', { name: /More filters/i })
+    act(() => { fireEvent.click(moreFilters) })
     const presetSelect = screen.getByLabelText('Preset view') as HTMLSelectElement
     act(() => {
       fireEvent.change(presetSelect, { target: { value: 'missing-email' } })
@@ -329,13 +339,13 @@ describe('RosterPage', () => {
         departmentColors: { ...s.departmentColors, Engineering: '#000' },
       }))
     })
-    const deptPill = screen.getByLabelText(/Remove filter: Dept: Engineering/i)
+    const deptPill = screen.getByLabelText(/Remove filter: Department: Engineering/i)
     const statusPill = screen.getByLabelText(/Remove filter: Status: active/i)
     expect(deptPill).toBeTruthy()
     expect(statusPill).toBeTruthy()
     // Removing just the status pill should preserve the dept pill.
     act(() => { fireEvent.click(statusPill) })
-    expect(screen.getByLabelText(/Remove filter: Dept: Engineering/i)).toBeTruthy()
+    expect(screen.getByLabelText(/Remove filter: Department: Engineering/i)).toBeTruthy()
     expect(screen.queryByLabelText(/Remove filter: Status: active/i)).toBeNull()
   })
 

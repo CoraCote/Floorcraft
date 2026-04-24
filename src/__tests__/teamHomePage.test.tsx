@@ -46,7 +46,7 @@ describe('TeamHomePage', () => {
       </MemoryRouter>,
     )
     await screen.findByText('HQ')
-    fireEvent.click(screen.getByRole('button', { name: /new office/i }))
+    fireEvent.click(screen.getByRole('button', { name: /create office/i }))
     await waitFor(() => expect(createOffice).toHaveBeenCalled())
     expect(await screen.findByText('map-view')).toBeInTheDocument()
   })

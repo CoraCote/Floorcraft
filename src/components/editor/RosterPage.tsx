@@ -13,6 +13,7 @@ import {
   Mail,
   MoreHorizontal,
   Plus,
+  SlidersHorizontal,
   Upload,
   X,
 } from 'lucide-react'
@@ -299,6 +300,57 @@ export function RosterPage() {
   const [swapRequestEmployeeId, setSwapRequestEmployeeId] = useState<string | null>(null)
 
   const searchInputRef = useRef<HTMLInputElement>(null)
+
+  // "More filters" popover — collapses the secondary axes (floor, seat,
+  // day, equipment, preset) behind a single button so the primary filter
+  // bar reads as search + status + department + view + actions. Mirrors
+  // the inline dropdown idiom used by TopBar's Share/Export menus: ref
+  // on the wrapper, click-outside + Escape close, anchor the panel to
+  // the trigger. No portal needed — the header scrolls with the page,
+  // but the panel is DOM-absolute to the trigger and position-fixed at
+  // the viewport coordinates we compute on open.
+  const [moreFiltersOpen, setMoreFiltersOpen] = useState(false)
+  const moreFiltersRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!moreFiltersOpen) return
+    function onPointer(e: MouseEvent) {
+      if (
+        moreFiltersRef.current &&
+        !moreFiltersRef.current.contains(e.target as Node)
+      ) {
+        setMoreFiltersOpen(false)
+      }
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setMoreFiltersOpen(false)
+    }
+    document.addEventListener('mousedown', onPointer)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onPointer)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [moreFiltersOpen])
+
+  // Reset just the secondary-filter axes (floor/seat/day/equip/preset).
+  // Leaves search, dept, status, and view alone so opening the popover
+  // and hitting Reset doesn't nuke the user's primary narrowing.
+  const resetSecondaryFilters = useCallback(() => {
+    const next = new URLSearchParams(searchParams)
+    next.delete('floor')
+    next.delete('seat')
+    next.delete('day')
+    next.delete('equip')
+    next.delete('preset')
+    setSearchParams(next, { replace: true })
+  }, [searchParams, setSearchParams])
+
+  const secondaryFilterCount =
+    (floorFilter ? 1 : 0) +
+    (seatFilter ? 1 : 0) +
+    (dayFilter ? 1 : 0) +
+    (equipFilter ? 1 : 0) +
+    (presetFilter ? 1 : 0)
 
   const floorMap = useMemo(() => {
     const m: Record<string, string> = {}
@@ -768,7 +820,10 @@ export function RosterPage() {
         </div>
       )}
 
-      {/* Stats bar — at-a-glance office pulse, chips are click-to-filter */}
+      {/* Stats bar — at-a-glance office pulse, chips are click-to-filter.
+          Now sits above the filter bar so reading order is
+          "here's what's in view → here's how to narrow it → here are the
+          rows" rather than "filters first, then what you're filtering". */}
       <StatsBar
         stats={stats}
         todayLabel={todayLabel}
@@ -801,7 +856,15 @@ export function RosterPage() {
         />
       </div>
 
-      {/* Filters bar */}
+      {/*
+        Primary filter bar. Six filter axes used to live side-by-side here,
+        which buried the secondary ones (floor/seat/day/equipment/preset)
+        and made it impossible to see at a glance what was narrowing the
+        list. We now keep only the high-frequency axes inline — search,
+        status, department — plus the view toggle and the action cluster.
+        Everything else collapses behind a "More filters" popover, and a
+        row of active-filter pills below makes narrowing explicit.
+      */}
       <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-200 flex-shrink-0">
         <div className="relative flex-1 max-w-md">
           <input
@@ -841,18 +904,6 @@ export function RosterPage() {
         </div>
 
         <select
-          value={deptFilter}
-          onChange={(e) => setFilter('dept', e.target.value)}
-          className="px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          aria-label="Filter by department"
-        >
-          <option value="">All depts</option>
-          {allDepartments.map((d) => (
-            <option key={d} value={d}>{d}</option>
-          ))}
-        </select>
-
-        <select
           value={statusFilter}
           onChange={(e) => setFilter('status', e.target.value)}
           className="px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -865,51 +916,142 @@ export function RosterPage() {
         </select>
 
         <select
-          value={floorFilter}
-          onChange={(e) => setFilter('floor', e.target.value)}
+          value={deptFilter}
+          onChange={(e) => setFilter('dept', e.target.value)}
           className="px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          aria-label="Filter by floor"
+          aria-label="Filter by department"
         >
-          <option value="">All floors</option>
-          {floors.map((f) => (
-            <option key={f.id} value={f.id}>{f.name}</option>
+          <option value="">All depts</option>
+          {allDepartments.map((d) => (
+            <option key={d} value={d}>{d}</option>
           ))}
         </select>
 
         {/*
-          Preset views — one-click shortcuts for the recurring office-ops
-          questions (who started this month? whose contract is ending?
-          which active people still need a seat?). Stored in the URL so they
-          share-link cleanly and survive a reload.
+          "More filters" popover. Hosts the secondary axes so the primary
+          bar stays calm. Badge in the label surfaces how many secondary
+          filters are live, so a narrowed list never feels mysterious when
+          the popover is closed.
         */}
-        <select
-          value={presetFilter}
-          onChange={(e) => setFilter('preset', e.target.value)}
-          className="px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          aria-label="Preset view"
-          title={
-            presetFilter
-              ? ROSTER_PRESETS.find((p) => p.id === presetFilter)?.hint
-              : 'Pre-baked roster views'
-          }
-        >
-          <option value="">All people</option>
-          {ROSTER_PRESETS.map((p) => (
-            <option key={p.id} value={p.id} title={p.hint}>
-              {p.label}
-            </option>
-          ))}
-        </select>
-
-        {hasAnyFilter && (
+        <div className="relative" ref={moreFiltersRef}>
           <button
-            onClick={clearAllFilters}
-            className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded"
-            title="Clear all filters"
+            type="button"
+            onClick={() => setMoreFiltersOpen((o) => !o)}
+            className={`flex items-center gap-1.5 px-2 py-1.5 text-sm border rounded ${
+              secondaryFilterCount > 0
+                ? 'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100'
+                : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+            }`}
+            aria-haspopup="dialog"
+            aria-expanded={moreFiltersOpen}
+            title="More filters"
           >
-            <X size={12} /> Clear filters
+            <SlidersHorizontal size={14} />
+            More filters
+            {secondaryFilterCount > 0 ? ` (${secondaryFilterCount})` : ''}
           </button>
-        )}
+          {moreFiltersOpen && (
+            <div
+              role="dialog"
+              aria-label="More filters"
+              className="fixed sm:absolute left-auto mt-1 w-[280px] bg-white border border-gray-200 rounded shadow-lg z-30 p-3"
+              style={{ top: 'auto' }}
+            >
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-xs text-gray-600">
+                  <span className="w-20 flex-shrink-0">Preset</span>
+                  <select
+                    value={presetFilter}
+                    onChange={(e) => setFilter('preset', e.target.value)}
+                    className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    aria-label="Preset view"
+                    title={
+                      presetFilter
+                        ? ROSTER_PRESETS.find((p) => p.id === presetFilter)?.hint
+                        : 'Pre-baked roster views'
+                    }
+                  >
+                    <option value="">All people</option>
+                    {ROSTER_PRESETS.map((p) => (
+                      <option key={p.id} value={p.id} title={p.hint}>
+                        {p.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="flex items-center gap-2 text-xs text-gray-600">
+                  <span className="w-20 flex-shrink-0">Floor</span>
+                  <select
+                    value={floorFilter}
+                    onChange={(e) => setFilter('floor', e.target.value)}
+                    className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    aria-label="Filter by floor"
+                  >
+                    <option value="">All floors</option>
+                    {floors.map((f) => (
+                      <option key={f.id} value={f.id}>{f.name}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="flex items-center gap-2 text-xs text-gray-600">
+                  <span className="w-20 flex-shrink-0">Seat</span>
+                  <select
+                    value={seatFilter}
+                    onChange={(e) => setFilter('seat', e.target.value)}
+                    className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    aria-label="Filter by seat assignment"
+                  >
+                    <option value="">All seats</option>
+                    <option value="assigned">Assigned</option>
+                    <option value="unassigned">Unassigned</option>
+                  </select>
+                </label>
+
+                <label className="flex items-center gap-2 text-xs text-gray-600">
+                  <span className="w-20 flex-shrink-0">Day</span>
+                  <select
+                    value={dayFilter}
+                    onChange={(e) => setFilter('day', e.target.value)}
+                    className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    aria-label="Filter by office day"
+                  >
+                    <option value="">All days</option>
+                    {OFFICE_DAYS_ORDER.map((d) => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="flex items-center gap-2 text-xs text-gray-600">
+                  <span className="w-20 flex-shrink-0">Equipment</span>
+                  <select
+                    value={equipFilter}
+                    onChange={(e) => setFilter('equip', e.target.value)}
+                    className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    aria-label="Filter by equipment status"
+                  >
+                    <option value="">All equipment</option>
+                    <option value="pending">Pending</option>
+                  </select>
+                </label>
+              </div>
+
+              <div className="flex items-center justify-end pt-3 mt-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={resetSecondaryFilters}
+                  disabled={secondaryFilterCount === 0}
+                  className="px-2 py-1 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded disabled:text-gray-300 disabled:hover:bg-transparent"
+                  title="Reset secondary filters"
+                >
+                  Reset
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
 
         <div className="flex-1" />
 
@@ -987,16 +1129,16 @@ export function RosterPage() {
       </div>
 
       {/*
-        Active-filter pills. When filters are spread across four dropdowns
-        + a stats chip + a preset picker, it's hard to know "why am I only
-        seeing these 3 rows?" at a glance. A single row of removable
-        chips makes the current narrowing explicit and gives one-click
-        removal next to every label.
+        Active-filter pills. When filters are spread across three inline
+        dropdowns, a "More filters" popover, a stats chip, and a preset
+        picker, it's hard to know "why am I only seeing these 3 rows?" at
+        a glance. A single row of removable chips makes the current
+        narrowing explicit and gives one-click removal next to every label.
       */}
       <ActiveFilterPills
         pills={[
-          q ? { key: 'q', label: `Search: ${q}` } : null,
-          deptFilter ? { key: 'dept', label: `Dept: ${deptFilter}` } : null,
+          q ? { key: 'q', label: `"${q}"` } : null,
+          deptFilter ? { key: 'dept', label: `Department: ${deptFilter}` } : null,
           statusFilter ? { key: 'status', label: `Status: ${statusFilter}` } : null,
           floorFilter
             ? {
@@ -1743,19 +1885,21 @@ function ActiveFilterPills({
   onRemove: (key: string) => void
   onClearAll: () => void
 }) {
+  // Empty row collapses to nothing — no visible spacing when no filters
+  // are active. A previous iteration kept a faint bg-blue-50 bar around
+  // so the "Filtered by" label never appeared to pop in; but the bar
+  // still consumed ~36px of vertical rhythm between the filter row and
+  // the table, which made "no filters" feel unnecessarily crowded.
   if (pills.length === 0) return null
   return (
     <div
-      className="flex items-center gap-1.5 px-5 py-1.5 border-b border-gray-100 bg-blue-50/40 flex-shrink-0 overflow-x-auto whitespace-nowrap"
+      className="flex items-center gap-1.5 px-5 py-2 flex-shrink-0 overflow-x-auto whitespace-nowrap"
       aria-label="Active filters"
     >
-      <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider flex-shrink-0">
-        Filtered by
-      </span>
       {pills.map((p) => (
         <span
           key={p.key}
-          className="inline-flex items-center gap-1 pl-2 pr-0.5 py-0.5 bg-white border border-blue-200 rounded-full text-xs text-blue-800"
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-medium"
         >
           {p.label}
           <button
@@ -1769,7 +1913,7 @@ function ActiveFilterPills({
           </button>
         </span>
       ))}
-      {pills.length > 1 && (
+      {pills.length >= 2 && (
         <button
           type="button"
           onClick={onClearAll}

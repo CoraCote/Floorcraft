@@ -15,7 +15,7 @@ import { useMyTeams } from '../../lib/teams/useMyTeams'
  *     /onboarding/team (via `DashboardRedirect` + `RequireTeam`).
  *
  * Templates are intentionally dropped from the hero for now. The
- * product direction is to pick a template from the "New office" modal
+ * product direction is to pick a template from the "Create office" modal
  * inside a team, not from a public page; keeping the old template tiles
  * here would invite users into a flow that no longer exists.
  */

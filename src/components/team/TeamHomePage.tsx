@@ -149,9 +149,10 @@ export function TeamHomePage() {
           <button
             onClick={onNew}
             disabled={creating}
+            aria-label="Create office"
             className="px-3 py-1.5 bg-blue-600 text-white rounded text-sm disabled:opacity-50"
           >
-            New office
+            Create office
           </button>
           <Link
             to={`/t/${team.slug}/settings`}
@@ -172,8 +173,8 @@ export function TeamHomePage() {
         Demo office moved out of the primary CTA row and into a
         disclosure. New-to-Floorcraft operators usually want a blank
         workspace to load their own data into — the demo was confusing
-        as a same-weight peer of "New office". Still one click away for
-        anyone who actually wants to explore the feature surface.
+        as a same-weight peer of "Create office". Still one click away
+        for anyone who actually wants to explore the feature surface.
       */}
       <details className="mb-4 text-xs">
         <summary className="cursor-pointer text-gray-500 hover:text-gray-700 select-none">
@@ -207,9 +208,10 @@ export function TeamHomePage() {
                 <button
                   onClick={onNew}
                   disabled={creating}
+                  aria-label="Create office"
                   className="px-3 py-1.5 bg-blue-600 text-white rounded text-sm disabled:opacity-50"
                 >
-                  Create your first office
+                  Create office
                 </button>
                 <button
                   onClick={onNewDemo}

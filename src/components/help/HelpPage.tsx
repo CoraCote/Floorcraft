@@ -75,7 +75,7 @@ const sections: Section[] = [
         <h3 className="font-semibold text-gray-900">Creating offices</h3>
         <ul className="list-disc pl-6 space-y-1.5 text-gray-700">
           <li>
-            <strong>New office</strong> — blank canvas, empty roster. Good if
+            <strong>Create office</strong> — blank canvas, empty roster. Good if
             you want to draw from scratch.
           </li>
           <li>
@@ -453,7 +453,7 @@ const sections: Section[] = [
       <div className="space-y-5">
         <FaqItem q="How do I create my first office?">
           After signing up, you'll be guided to create a team. On the team home
-          page, click <strong>New office</strong> for a blank canvas or{' '}
+          page, click <strong>Create office</strong> for a blank canvas or{' '}
           <strong>Demo office</strong> for a pre-populated example with real
           employees and seat assignments.
         </FaqItem>
