@@ -30,7 +30,20 @@ describe('Reports permissions', () => {
 
   it('space-planner can view', () => {
     useProjectStore.setState({ currentOfficeRole: 'space-planner' } as never)
+    // Seed a minimal non-empty project so ReportsPage renders the full
+    // surface (tab bar) instead of the empty state.
+    useFloorStore.setState({
+      floors: [{ id: 'f1', name: 'HQ', order: 0, elements: {} }],
+      activeFloorId: 'f1',
+    } as never)
+    useEmployeeStore.setState({
+      employees: {
+        e1: { id: 'e1', name: 'Alice', department: 'Eng', status: 'active', seatId: null, email: '', officeDays: [], equipmentNeeds: [], tags: [], employmentType: 'full-time' } as never,
+      },
+      departmentColors: {},
+    } as never)
     mount()
-    expect(screen.getByRole('heading', { name: /floor utilization/i })).toBeInTheDocument()
+    expect(screen.getByRole('tablist', { name: /reports sections/i })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /floor utilization/i })).toBeInTheDocument()
   })
 })

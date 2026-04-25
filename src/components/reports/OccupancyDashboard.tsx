@@ -9,10 +9,29 @@ import {
 } from '../../types/elements'
 import type { CanvasElement } from '../../types/elements'
 
-function getOccupancyColor(pct: number): string {
-  if (pct >= 80) return '#10B981'
-  if (pct >= 60) return '#F59E0B'
-  return '#EF4444'
+/**
+ * Wave 13C typography polish: swapped the raw hex-colour occupancy ramp
+ * for a three-step Tailwind class pair (fill + text) so the bars respect
+ * the theme and dark-mode variants without colour-hex sprinkled through
+ * render. The math is unchanged from Wave 10-era — only the presentation
+ * moved. Section headers use the same uppercase `text-[10px]` tracking
+ * label the rest of the Reports chrome now uses.
+ */
+function occupancyTone(pct: number): { fill: string; text: string } {
+  if (pct >= 80)
+    return {
+      fill: 'bg-emerald-500 dark:bg-emerald-400',
+      text: 'text-emerald-600 dark:text-emerald-400',
+    }
+  if (pct >= 60)
+    return {
+      fill: 'bg-amber-500 dark:bg-amber-400',
+      text: 'text-amber-600 dark:text-amber-400',
+    }
+  return {
+    fill: 'bg-rose-500 dark:bg-rose-400',
+    text: 'text-rose-600 dark:text-rose-400',
+  }
 }
 
 function countAssignableSeats(elements: Record<string, CanvasElement>): number {
@@ -70,54 +89,55 @@ export function OccupancyDashboard() {
       .map(([name, data]) => ({ name, ...data }))
   }, [allEmployees])
 
+  const overallTone = occupancyTone(overall.pct)
+
   return (
     <div className="flex flex-col gap-5">
       {/* Overall occupancy */}
       <div className="text-center">
         <div
-          style={{
-            fontSize: 36,
-            fontWeight: 700,
-            color: getOccupancyColor(overall.pct),
-            lineHeight: 1,
-          }}
+          className={`text-4xl font-bold tabular-nums leading-none ${overallTone.text}`}
         >
           {overall.pct}%
         </div>
-        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 tabular-nums">
           {overall.assigned} / {overall.totalSeats} seats occupied
         </div>
       </div>
 
       {/* Per-floor breakdown */}
       <div>
-        <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">By Floor</div>
+        <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+          By floor
+        </div>
         <div className="flex flex-col gap-2">
-          {perFloor.map((f) => (
-            <div key={f.id}>
-              <div className="flex items-center justify-between text-xs mb-0.5">
-                <span className="text-gray-700 dark:text-gray-200 font-medium">{f.name}</span>
-                <span className="text-gray-500 dark:text-gray-400">
-                  {f.pct}% ({f.assigned}/{f.seats})
-                </span>
+          {perFloor.map((f) => {
+            const tone = occupancyTone(f.pct)
+            return (
+              <div key={f.id}>
+                <div className="flex items-center justify-between text-xs mb-0.5">
+                  <span className="text-gray-700 dark:text-gray-200 font-medium">{f.name}</span>
+                  <span className="text-gray-500 dark:text-gray-400 tabular-nums">
+                    {f.pct}% ({f.assigned}/{f.seats})
+                  </span>
+                </div>
+                <div className="w-full h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${tone.fill}`}
+                    style={{ width: `${Math.min(f.pct, 100)}%` }}
+                  />
+                </div>
               </div>
-              <div className="w-full h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all"
-                  style={{
-                    width: `${Math.min(f.pct, 100)}%`,
-                    backgroundColor: getOccupancyColor(f.pct),
-                  }}
-                />
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
 
       {/* Per-department breakdown */}
       <div>
-        <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">By Department</div>
+        <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+          By department
+        </div>
         <div className="flex flex-col gap-1.5">
           {perDepartment.map((dept) => (
             <div key={dept.name} className="flex items-center gap-2 text-xs">
@@ -129,7 +149,7 @@ export function OccupancyDashboard() {
                 }}
               />
               <span className="text-gray-700 dark:text-gray-200 flex-1 truncate">{dept.name}</span>
-              <span className="text-gray-500 dark:text-gray-400 flex-shrink-0">
+              <span className="text-gray-500 dark:text-gray-400 flex-shrink-0 tabular-nums">
                 {dept.assigned}/{dept.total} seats
               </span>
             </div>
