@@ -1,8 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Sparkles, X } from 'lucide-react'
 import { useUIStore } from '../../stores/uiStore'
+import { useElementsStore } from '../../stores/elementsStore'
+import { useEmployeeStore } from '../../stores/employeeStore'
+import { useFloorStore } from '../../stores/floorStore'
+import { useCanvasStore } from '../../stores/canvasStore'
+import { useProjectStore } from '../../stores/projectStore'
+import { useNeighborhoodStore } from '../../stores/neighborhoodStore'
+import { useAnnotationsStore } from '../../stores/annotationsStore'
+import { useToastStore } from '../../stores/toastStore'
+import { buildDemoOfficePayload } from '../../lib/demo/createDemoOffice'
+import { saveOffice } from '../../lib/offices/officeRepository'
+import { emit } from '../../lib/audit'
+import { prefersReducedMotion } from '../../lib/prefersReducedMotion'
 
 const STORAGE_KEY = 'firstRunWelcomeSeen'
+const DEMO_DISMISSED_KEY = 'floocraft.firstRunDemoDismissed'
 
 function readInitialSeen(): boolean {
   try {
@@ -20,6 +33,22 @@ function writeSeen(): void {
   }
 }
 
+function readDemoDismissed(): boolean {
+  try {
+    return localStorage.getItem(DEMO_DISMISSED_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function writeDemoDismissed(): void {
+  try {
+    localStorage.setItem(DEMO_DISMISSED_KEY, '1')
+  } catch {
+    // Ignore — state still flips locally.
+  }
+}
+
 interface CoachStep {
   // Used as the heading for each step. `aria-labelledby` on the dialog
   // also points at the active step's id so the screen reader announces
@@ -30,19 +59,219 @@ interface CoachStep {
 }
 
 /**
- * First-run coach. Walks new editors through the editor's main moves
- * (pan, tools, command palette, shortcut sheet, MAP/ROSTER tabs) in a
- * compact step-by-step popover. Persists "seen" via localStorage under
- * `firstRunWelcomeSeen` so it never re-pops once dismissed; an Escape
- * dismiss is ALSO honored as a session-level suppression so a remount
- * inside the same tab can't bring it back even before the storage write
- * lands.
+ * First-run coach composite. Two surfaces live here:
+ *
+ *   1. `FirstRunCoachTour` — a step-by-step popover teaching the editor's
+ *      main moves (pan, tools, command palette, shortcut sheet, MAP/ROSTER
+ *      tabs). Persists "seen" via localStorage under `firstRunWelcomeSeen`.
+ *      Unchanged from Wave 12C apart from being extracted so the demo
+ *      seeder can render alongside without wrestling for z-index.
+ *
+ *   2. `FirstRunDemoSeeder` — a small inline card shown ONLY when the
+ *      active office is empty (zero elements on the active floor, zero
+ *      employees). Offers a one-click "Load sample content" CTA that
+ *      builds `buildDemoOfficePayload()`, persists it via `saveOffice`,
+ *      and rehydrates every store so the canvas reflects the seed without
+ *      a reload. Persists its own dismiss under
+ *      `floocraft.firstRunDemoDismissed`.
+ *
+ * Both are opt-in to dismissal independently — a user who dismissed the
+ * tour on a previous office still sees the "Load sample content" card on
+ * a freshly-created empty office, and vice versa. That way the two
+ * affordances don't get tangled by a single blanket "seen" flag.
+ */
+export function FirstRunCoach() {
+  return (
+    <>
+      <FirstRunDemoSeeder />
+      <FirstRunCoachTour />
+    </>
+  )
+}
+
+/**
+ * Inline "Load sample content" card. Parked top-right above the existing
+ * coach popover so both can coexist on an empty office. Disappears the
+ * moment content arrives (the seeder CTA was clicked, or the user
+ * started building manually).
+ *
+ * The copy leans marketing-forward on purpose: an empty canvas is the
+ * single lowest-signal moment in the app, and a concrete "50 people,
+ * two floors, neighborhoods" promise is what converts "I poked at this
+ * for 30s and bounced" into "I see what this tool is for".
+ */
+function FirstRunDemoSeeder() {
+  const [dismissed, setDismissed] = useState<boolean>(() => readDemoDismissed())
+  const [loading, setLoading] = useState(false)
+  const reducedMotion = useRef(prefersReducedMotion()).current
+
+  // Emptiness check: zero elements in the elements store AND zero
+  // employees. The roster can legitimately have people before any desks
+  // exist (CSV import), so "employees AND elements both empty" is the
+  // only safe "untouched canvas" signal.
+  const elementCount = useElementsStore((s) => Object.keys(s.elements).length)
+  const employeeCount = useEmployeeStore((s) => Object.keys(s.employees).length)
+  const isEmpty = elementCount === 0 && employeeCount === 0
+
+  const officeId = useProjectStore((s) => s.officeId)
+  const loadedVersion = useProjectStore((s) => s.loadedVersion)
+
+  const handleDismiss = useCallback(() => {
+    writeDemoDismissed()
+    setDismissed(true)
+  }, [])
+
+  const handleLoad = useCallback(async () => {
+    if (loading) return
+    setLoading(true)
+    try {
+      const payload = buildDemoOfficePayload()
+
+      // Best-effort server-side persist. If the office doesn't yet have a
+      // known loadedVersion (brand-new empty row), skip the save and seed
+      // stores only — the next debounced save from useOfficeSync will push
+      // the content up. Failing to save is not fatal for the onboarding
+      // path; the user sees the content immediately either way.
+      if (officeId && loadedVersion) {
+        try {
+          const res = await saveOffice(
+            officeId,
+            payload as unknown as Record<string, unknown>,
+            loadedVersion,
+          )
+          if (res.ok) {
+            // Bump the project store's loadedVersion so subsequent edits
+            // save cleanly against the new server-side timestamp.
+            useProjectStore.setState({
+              loadedVersion: res.updated_at,
+              lastSavedAt: res.updated_at,
+              saveState: 'saved',
+            })
+          } else {
+            console.warn('[FirstRunDemoSeeder] initial demo save failed', res)
+          }
+        } catch (err) {
+          console.warn('[FirstRunDemoSeeder] saveOffice threw; seeding stores anyway', err)
+        }
+      }
+
+      // Hydrate local stores so the canvas reflects the seed immediately.
+      // This mirrors the ProjectShell load path without going through a
+      // full reload.
+      useElementsStore.setState({ elements: payload.elements })
+      useEmployeeStore.setState({
+        employees: payload.employees,
+        departmentColors: payload.departmentColors,
+      })
+      useFloorStore.setState({
+        floors: payload.floors,
+        activeFloorId: payload.activeFloorId,
+      })
+      useCanvasStore.setState({ settings: payload.settings })
+      useNeighborhoodStore.setState({ neighborhoods: payload.neighborhoods })
+      useAnnotationsStore.setState({ annotations: payload.annotations })
+
+      // Best-effort audit trail — skips if the user isn't authenticated
+      // or we're in a hosted-share context without a team id.
+      void emit('demo.load', 'office', officeId, {
+        floors: payload.floors.length,
+        employees: Object.keys(payload.employees).length,
+      })
+
+      useToastStore.getState().push({
+        tone: 'success',
+        title: 'Sample office loaded — welcome to Floorcraft',
+        body: 'Three floors, 45 people, neighborhoods, and annotations are ready to explore.',
+      })
+
+      writeDemoDismissed()
+      setDismissed(true)
+    } finally {
+      setLoading(false)
+    }
+  }, [loading, officeId, loadedVersion])
+
+  if (dismissed || !isEmpty) return null
+
+  return (
+    <div
+      role="region"
+      aria-labelledby="first-run-demo-title"
+      // Slot the card in the top-right — high enough to be noticed, not
+      // so high it clobbers the TopBar. The existing tour popover lives
+      // bottom-right; keeping this one top-right means a user who sees
+      // BOTH (fresh empty office, tour not yet dismissed) can act on
+      // either without either covering the other.
+      className={`absolute top-4 right-4 w-[340px] bg-white dark:bg-gray-900 shadow-xl rounded-xl border border-gray-200 dark:border-gray-800 p-4 z-40 ${
+        reducedMotion ? '' : 'animate-in fade-in slide-in-from-top-2 duration-300'
+      }`}
+    >
+      <div className="flex items-start gap-3">
+        <div
+          aria-hidden="true"
+          className="bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-full w-9 h-9 flex items-center justify-center flex-shrink-0"
+        >
+          <Sparkles size={18} aria-hidden="true" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div
+            id="first-run-demo-title"
+            className="font-semibold text-gray-900 dark:text-gray-100 text-sm"
+          >
+            New to Floorcraft?
+          </div>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-300 leading-snug">
+            Load a sample office with{' '}
+            <span className="tabular-nums font-medium">45 people</span>, three
+            floors, and neighborhoods to see how it all fits together.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleDismiss}
+          className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0 -mr-1 -mt-1 p-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          aria-label="Dismiss sample-content card"
+        >
+          <X size={16} aria-hidden="true" />
+        </button>
+      </div>
+
+      <div className="mt-3 flex items-center gap-3">
+        <button
+          type="button"
+          onClick={handleLoad}
+          disabled={loading}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+        >
+          <Sparkles size={14} aria-hidden="true" />
+          {loading ? 'Loading…' : 'Load sample content'}
+        </button>
+        <button
+          type="button"
+          onClick={handleDismiss}
+          className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+        >
+          Start from scratch
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Step-by-step first-run tour. Walks new editors through the editor's
+ * main moves (pan, tools, command palette, shortcut sheet, MAP/ROSTER
+ * tabs) in a compact step-by-step popover. Persists "seen" via
+ * localStorage under `firstRunWelcomeSeen` so it never re-pops once
+ * dismissed; an Escape dismiss is ALSO honored as a session-level
+ * suppression so a remount inside the same tab can't bring it back even
+ * before the storage write lands.
  *
  * Wave 12C: replaced the milestone checklist with a tour-style coach
  * referencing the new editor surfaces shipped by waves 8-11 (drag-pan,
  * Cmd+K command palette, Cmd+F finder, ? cheat sheet, M/R tab jumps).
  */
-export function FirstRunCoach() {
+function FirstRunCoachTour() {
   const [dismissed, setDismissed] = useState<boolean>(() => readInitialSeen())
   const [stepIdx, setStepIdx] = useState(0)
   const cardRef = useRef<HTMLDivElement | null>(null)

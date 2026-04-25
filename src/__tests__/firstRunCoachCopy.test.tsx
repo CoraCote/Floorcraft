@@ -15,6 +15,10 @@ describe('FirstRunCoach copy + step behavior', () => {
   beforeEach(() => {
     localStorage.clear()
     useUIStore.setState({ commandPaletteOpen: false })
+    // Wave 17B: the first-run composite now also renders a
+    // "Load sample content" card on empty offices. Dismiss it so the
+    // tour copy tests below don't have to reason about two overlays.
+    localStorage.setItem('floocraft.firstRunDemoDismissed', '1')
   })
 
   it('renders the first step copy referencing pan + zoom', () => {
