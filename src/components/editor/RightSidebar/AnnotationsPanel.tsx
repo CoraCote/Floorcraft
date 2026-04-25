@@ -7,15 +7,22 @@ import { useFloorStore } from '../../../stores/floorStore'
 import { useCan } from '../../../hooks/useCan'
 import { focusElements } from '../../../lib/focusElements'
 import { switchToFloor } from '../../../lib/seatAssignment'
+import { formatRelative } from '../../../lib/time'
 import type { Annotation } from '../../../types/annotations'
+import { PanelHeader } from './PanelHeader'
+import { PanelEmptyState } from './PanelEmptyState'
 
 /**
- * Panel section mounted inside `InsightsPanel`. Lists open annotations,
- * with resolved ones tucked under a collapsible. Click a row to focus
- * the anchor on the canvas:
+ * Annotations section — lists open annotations with resolved ones tucked
+ * under a collapsible. Click a row to focus the anchor on the canvas:
  *   - element anchors → reuse `focusElements` (selects + zooms to fit).
  *   - floor-position anchors → switch to the owning floor if needed and
  *     pan so the pin lands in the middle of the viewport.
+ *
+ * Wave 17D polish: moved to shared PanelHeader / PanelEmptyState so the
+ * section visually matches Properties / People. The header now shows the
+ * open count as a standard pill, and the empty state explains how to
+ * create the first note rather than leaving a terse one-liner.
  *
  * Permissions:
  *   - View: everyone (roles without edit).
@@ -50,22 +57,25 @@ export function AnnotationsPanel() {
     return { open: o, resolved: r }
   }, [annotations])
 
-  return (
-    <div className="mb-3">
-      <div className="flex items-center gap-1.5 mb-2">
-        <MessageSquare size={12} className="text-gray-400 dark:text-gray-500" />
-        <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-          Annotations
-        </div>
-        <div className="ml-auto text-[11px] text-gray-400 dark:text-gray-500">
-          {open.length} open
-        </div>
-      </div>
+  const hasAnything = open.length > 0 || resolved.length > 0
 
-      {open.length === 0 && resolved.length === 0 ? (
-        <div className="text-xs text-gray-400 dark:text-gray-500 py-2">
-          No annotations yet. Use the pin tool on the left sidebar to add one.
-        </div>
+  return (
+    <div className="flex flex-col">
+      <PanelHeader title="Annotations" count={open.length} />
+
+      {!hasAnything ? (
+        <PanelEmptyState
+          icon={MessageSquare}
+          title="No annotations yet"
+          body={
+            <>
+              Use the pin tool in the left sidebar to drop a note on the
+              canvas. Notes can anchor to a specific element or to a point
+              on the floor.
+            </>
+          }
+          compact
+        />
       ) : (
         <div className="flex flex-col gap-1.5">
           {open.map((a) => (
@@ -88,7 +98,7 @@ export function AnnotationsPanel() {
                 aria-expanded={showResolved}
               >
                 {showResolved ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
-                <span>Resolved ({resolved.length})</span>
+                <span className="tabular-nums">Resolved ({resolved.length})</span>
               </button>
               {showResolved && (
                 <div className="mt-1 flex flex-col gap-1.5 opacity-70">
@@ -142,10 +152,11 @@ function AnnotationRow({ a, canEdit, onResolve, resolved }: RowProps) {
   // Short body preview — full body is visible in the canvas popover.
   const preview =
     a.body.length > 90 ? `${a.body.slice(0, 87)}…` : a.body
+  const relative = formatRelative(a.createdAt)
 
   return (
     <div
-      className={`flex flex-col gap-1 p-2 rounded border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer ${
+      className={`group flex flex-col gap-1 p-2 rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer ${
         resolved ? 'text-gray-500 dark:text-gray-400' : 'text-gray-800 dark:text-gray-100'
       }`}
       role="button"
@@ -164,13 +175,21 @@ function AnnotationRow({ a, canEdit, onResolve, resolved }: RowProps) {
       >
         {preview}
       </div>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-[10px] text-gray-500 dark:text-gray-400">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 text-[10px] text-gray-500 dark:text-gray-400 min-w-0">
           <span className="truncate max-w-[8rem]" title={a.authorName}>
             {a.authorName}
           </span>
-          <span>·</span>
-          <span>{describeAnchor(a)}</span>
+          <span aria-hidden>·</span>
+          <span className="truncate">{describeAnchor(a)}</span>
+          {relative && (
+            <>
+              <span aria-hidden>·</span>
+              <span className="tabular-nums" title={a.createdAt}>
+                {relative}
+              </span>
+            </>
+          )}
         </div>
         {canEdit && (
           <button
@@ -180,7 +199,8 @@ function AnnotationRow({ a, canEdit, onResolve, resolved }: RowProps) {
               onResolve()
             }}
             title={resolved ? 'Reopen annotation' : 'Resolve annotation'}
-            className="flex items-center gap-1 text-[10px] text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-800 hover:border-gray-300"
+            aria-label={resolved ? 'Reopen annotation' : 'Resolve annotation'}
+            className="flex items-center gap-1 text-[10px] text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-800 hover:border-gray-300 flex-shrink-0 opacity-60 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
           >
             {resolved ? <RotateCcw size={10} /> : <Check size={10} />}
             {resolved ? 'Reopen' : 'Resolve'}

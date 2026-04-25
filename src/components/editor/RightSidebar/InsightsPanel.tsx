@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useRef, useMemo } from 'react'
-import { RefreshCw, CheckCircle } from 'lucide-react'
+import { RefreshCw, ShieldCheck } from 'lucide-react'
 import { useInsightsStore } from '../../../stores/insightsStore'
 import { useVisibleEmployees } from '../../../hooks/useVisibleEmployees'
 import { useAllFloorElements } from '../../../hooks/useActiveFloorElements'
@@ -17,6 +17,9 @@ import { SeatSwapsPanel } from './SeatSwapsPanel'
 import { RoomBookingsPanel } from './RoomBookingsPanel'
 import { useNeighborhoodStore } from '../../../stores/neighborhoodStore'
 import { focusElements } from '../../../lib/focusElements'
+import { PanelHeader } from './PanelHeader'
+import { PanelSection } from './PanelSection'
+import { PanelEmptyState } from './PanelEmptyState'
 
 export function InsightsPanel() {
   const floorsWithElements = useAllFloorElements()
@@ -113,6 +116,8 @@ export function InsightsPanel() {
     return { critical, warning, info }
   }, [insights])
 
+  const totalOpen = counts.critical + counts.warning + counts.info
+
   // Clicking the card body selects the related elements and pans the
   // canvas to them. For "highlight" / "navigate" action buttons we do
   // exactly the same thing — the visual outcome the user wants is the
@@ -160,8 +165,28 @@ export function InsightsPanel() {
     [lastAnalyzedAt]
   )
 
+  // Wave 17D: refresh affordance lives in the PanelHeader action slot so
+  // it sits alongside the title — the old footer placement made it easy
+  // to miss at the bottom of a long scroll. Footer still shows the
+  // last-analyzed timestamp as a quiet status line.
+  const refreshAction = (
+    <button
+      type="button"
+      onClick={triggerAnalysis}
+      disabled={isAnalyzing}
+      className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-800 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50 disabled:opacity-40"
+      aria-label="Refresh insights"
+      title="Re-run plan analysis"
+    >
+      <RefreshCw size={12} className={isAnalyzing ? 'animate-spin' : ''} aria-hidden="true" />
+      Refresh
+    </button>
+  )
+
   return (
-    <div className="flex flex-col h-full gap-3">
+    <div className="flex flex-col h-full gap-4">
+      <PanelHeader title="Plan health" count={totalOpen} actions={refreshAction} />
+
       {/* Utilization KPIs — the "is this office healthy?" scan facilities
           asked for. Sits above the severity summary because "are we sized
           right?" is a bigger question than "any issues to fix?". */}
@@ -189,29 +214,31 @@ export function InsightsPanel() {
           Click a row to focus the room. */}
       <RoomBookingsPanel />
 
-      {/* Severity summary */}
-      <SeveritySummary
-        critical={counts.critical}
-        warning={counts.warning}
-        info={counts.info}
-      />
+      <PanelSection title="Severity" subtitle="Open issues grouped by impact">
+        <SeveritySummary
+          critical={counts.critical}
+          warning={counts.warning}
+          info={counts.info}
+        />
+      </PanelSection>
 
-      {/* Filters */}
-      <InsightFilters
-        activeCategories={filter.categories}
-        activeSeverities={filter.severities}
-        onToggleCategory={toggleCategory}
-        onToggleSeverity={toggleSeverity}
-      />
+      <PanelSection title="Filters" subtitle="Narrow the list below">
+        <InsightFilters
+          activeCategories={filter.categories}
+          activeSeverities={filter.severities}
+          onToggleCategory={toggleCategory}
+          onToggleSeverity={toggleSeverity}
+        />
+      </PanelSection>
 
       {/* Insight cards */}
       <div className="flex-1 overflow-y-auto -mx-3 px-3">
         {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <CheckCircle size={32} className="text-green-400 mb-3" />
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-300">All clear</p>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">No issues detected. Your office layout looks good.</p>
-          </div>
+          <PanelEmptyState
+            icon={ShieldCheck}
+            title="No issues detected"
+            body="Floorcraft flags orphan seats, proximity problems, and capacity risks automatically. Your plan currently looks clean."
+          />
         ) : (
           <div className="flex flex-col gap-2">
             {filtered.map((insight) => (
@@ -231,7 +258,7 @@ export function InsightsPanel() {
           <div className="mt-4">
             <button
               onClick={() => useInsightsStore.getState().setShowDismissed(!filter.showDismissed)}
-              className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 mb-2"
+              className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 mb-2 tabular-nums"
             >
               {filter.showDismissed ? 'Hide' : 'Show'} dismissed ({dismissed.length})
             </button>
@@ -257,17 +284,10 @@ export function InsightsPanel() {
         )}
       </div>
 
-      {/* Footer */}
-      <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800 text-[10px] text-gray-400 dark:text-gray-500">
-        <span>Last analyzed: {lastAnalyzedLabel}</span>
-        <button
-          onClick={triggerAnalysis}
-          disabled={isAnalyzing}
-          className="flex items-center gap-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-40"
-        >
-          <RefreshCw size={10} className={isAnalyzing ? 'animate-spin' : ''} />
-          Refresh
-        </button>
+      {/* Footer — quiet status line. The refresh action moved to the
+          PanelHeader in Wave 17D. */}
+      <div className="pt-2 border-t border-gray-100 dark:border-gray-800 text-[10px] text-gray-400 dark:text-gray-500">
+        <span className="tabular-nums">Last analyzed: {lastAnalyzedLabel}</span>
       </div>
     </div>
   )
