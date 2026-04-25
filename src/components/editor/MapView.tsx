@@ -6,6 +6,7 @@ import { LayerVisibilityPanel } from './LeftSidebar/LayerVisibilityPanel'
 import { ElementLibrary } from './LeftSidebar/ElementLibrary'
 import { CollapsibleSection } from './LeftSidebar/CollapsibleSection'
 import { RightSidebar } from './RightSidebar/RightSidebar'
+import { SidebarToggle } from './RightSidebar/SidebarToggle'
 import { StatusBar } from './StatusBar'
 import { CanvasStage } from './Canvas/CanvasStage'
 import { KeyboardShortcutsOverlay } from './KeyboardShortcutsOverlay'
@@ -186,6 +187,11 @@ export function MapView() {
           <CanvasScaleBar />
           <NorthArrow />
           <FirstRunCoach />
+          {/* Closed-state pull-tab to expand the right sidebar.
+              Replaces the toggle that used to live in the TopBar so
+              the control belongs to the panel it controls. Only
+              renders when the panel is hidden. */}
+          {!rightSidebarOpen && <SidebarToggle variant="floating" />}
         </div>
         {rightSidebarOpen && (
           <div className="w-[320px] flex-shrink-0 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 overflow-y-auto">

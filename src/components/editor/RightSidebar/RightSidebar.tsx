@@ -6,6 +6,7 @@ import { InsightsPanel } from './InsightsPanel'
 import { PeoplePanel } from './PeoplePanel'
 import { PropertiesPanel } from './PropertiesPanel'
 import { ReportsPanel } from './ReportsPanel'
+import { SidebarToggle } from './SidebarToggle'
 
 type TabId = 'properties' | 'people' | 'reports' | 'insights'
 
@@ -67,12 +68,17 @@ export function RightSidebar() {
 
   return (
     <div className="flex flex-col h-full">
-      <div
-        role="tablist"
-        aria-label="Right sidebar"
-        className="flex border-b border-gray-200 dark:border-gray-800"
-        onKeyDown={onKeyDown}
-      >
+      <div className="flex items-stretch border-b border-gray-200 dark:border-gray-800">
+        {/* Collapse handle lives at the leftmost slot of the tablist
+            row so it reads as part of the side panel, not part of the
+            top ribbon. The four content tabs follow to the right. */}
+        <SidebarToggle variant="inline" />
+        <div
+          role="tablist"
+          aria-label="Right sidebar"
+          className="flex flex-1"
+          onKeyDown={onKeyDown}
+        >
         {tabs.map((t) => {
           const selected = tab === t.id
           return (
@@ -104,6 +110,7 @@ export function RightSidebar() {
             </button>
           )
         })}
+        </div>
       </div>
       <div
         role="tabpanel"

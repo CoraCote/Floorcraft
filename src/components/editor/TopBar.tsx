@@ -8,7 +8,7 @@ import { useNeighborhoodStore } from '../../stores/neighborhoodStore'
 import { useShallow } from 'zustand/react/shallow'
 import {
   Undo2, Redo2, ZoomIn, ZoomOut,
-  Maximize2, Minimize2, PanelRightOpen, PanelRightClose,
+  Maximize2, Minimize2,
   Cloud, CloudOff, UploadCloud, X as XIcon,
   Ruler, Grid3x3, Printer, Image as ImageIcon,
   ChevronDown, Link2, Eye, Check, Share2, Download,
@@ -50,7 +50,7 @@ export function TopBar() {
     toggleGrid: s.toggleGrid,
     toggleDimensions: s.toggleDimensions,
   })))
-  const { rightSidebarOpen, setRightSidebarOpen, setShareModalOpen, setExportDialogOpen, setPresentationMode, presentationMode, selectedIds, clearSelection } = useUIStore(useShallow((s) => ({ rightSidebarOpen: s.rightSidebarOpen, setRightSidebarOpen: s.setRightSidebarOpen, setShareModalOpen: s.setShareModalOpen, setExportDialogOpen: s.setExportDialogOpen, setPresentationMode: s.setPresentationMode, presentationMode: s.presentationMode, selectedIds: s.selectedIds, clearSelection: s.clearSelection })))
+  const { setShareModalOpen, setExportDialogOpen, setPresentationMode, presentationMode, selectedIds, clearSelection } = useUIStore(useShallow((s) => ({ setShareModalOpen: s.setShareModalOpen, setExportDialogOpen: s.setExportDialogOpen, setPresentationMode: s.setPresentationMode, presentationMode: s.presentationMode, selectedIds: s.selectedIds, clearSelection: s.clearSelection })))
   // Drive both temporal-wrapped stores on every undo/redo so a single
   // click rewinds the most recent canvas change regardless of which
   // store owns it (elements vs. neighborhoods).
@@ -504,16 +504,16 @@ export function TopBar() {
           : <Maximize2 size={16} aria-hidden="true" />}
       </button>
 
-      <button
-        onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
-        className="p-1.5 rounded hover:bg-gray-100 text-gray-600 dark:text-gray-400 dark:hover:bg-gray-800"
-        title="Toggle Right Sidebar"
-        aria-label={rightSidebarOpen ? 'Close right sidebar' : 'Open right sidebar'}
-      >
-        {rightSidebarOpen
-          ? <PanelRightClose size={16} aria-hidden="true" />
-          : <PanelRightOpen size={16} aria-hidden="true" />}
-      </button>
+      {/*
+        The right-sidebar collapse / expand button used to live here in
+        the TopBar. It now belongs to the side panel itself — the
+        collapse chevron is rendered at the left edge of the sidebar's
+        tablist row when the panel is open, and an "Open panel" tab is
+        rendered as a floating affordance at the top-right of the
+        canvas when the panel is closed (see SidebarToggle.tsx). That
+        keeps the TopBar focused on document-level concerns and makes
+        the collapse control visually adjacent to what it controls.
+      */}
 
       {/* Share + Export collapsed into the FileMenu at the left of the
           TopBar (Wave 8B). The view-only link dialog stays mounted here

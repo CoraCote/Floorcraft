@@ -38,11 +38,17 @@ describe('UserMenu', () => {
     })
   })
 
-  it('renders the user initial + email on the trigger', () => {
+  it('renders just the initial on the trigger (email is in the panel header, not the trigger)', () => {
     renderMenu()
     const trigger = screen.getByTestId('user-menu-trigger')
-    expect(trigger.textContent).toMatch(/a@b\.co/)
+    // Trigger shows only the initial; the email lives in the dropdown
+    // header row when the menu is open.
     expect(trigger.textContent).toMatch(/A/)
+    expect(trigger.textContent).not.toMatch(/a@b\.co/)
+    // Accessible name still includes the email so screen readers and
+    // hover tooltips can disambiguate which account this is.
+    expect(trigger.getAttribute('aria-label')).toMatch(/a@b\.co/)
+    expect(trigger.getAttribute('title')).toBe('a@b.co')
   })
 
   it('opens the dropdown on click and shows grouped items', () => {

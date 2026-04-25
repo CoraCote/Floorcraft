@@ -21,6 +21,9 @@ import { cn } from '../../lib/cn'
  * dark-mode tokens, and a destructive "Sign out" footer.
  *
  * Layout:
+ *   - Trigger:    32px initials disc — no email label beside it. The
+ *                 email is still surfaced as the menu's "Signed in
+ *                 as …" header row when the dropdown is open.
  *   - Header row: email (truncated, non-interactive)
  *   - Account:  Profile  /  Theme (three-way ThemeToggle inline)
  *   - Help:     User guide  /  Keyboard shortcuts
@@ -72,23 +75,28 @@ export function UserMenu() {
 
   return (
     <div className="relative">
+      {/*
+        Trigger is the avatar circle alone — no email beside it. The
+        email previously rendered next to the circle on >=sm viewports
+        (truncated to 140px) was redundant noise: the same address is
+        still shown inside the dropdown's "Signed in as …" header, so
+        users who actually need to see which account they're in can
+        open the menu and read it there. Stripping it from the trigger
+        gives the right cluster a clean, unmistakable account anchor —
+        a single 32px initials disc — and lets the eye land on it
+        without competing with project name, save state, plan-health
+        pill, or any of the other right-cluster chips.
+      */}
       <button
         {...triggerProps}
         type="button"
         onClick={toggle}
-        className="flex items-center gap-2 pl-1 pr-2 py-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800"
-        aria-label="Account menu"
+        className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 flex items-center justify-center text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 transition-colors"
+        aria-label={`Account menu (${email})`}
+        title={email}
         data-testid="user-menu-trigger"
       >
-        <span
-          className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 flex items-center justify-center text-xs font-semibold"
-          aria-hidden="true"
-        >
-          {initial}
-        </span>
-        <span className="hidden sm:inline text-sm text-gray-700 dark:text-gray-200 truncate max-w-[140px]">
-          {email}
-        </span>
+        <span aria-hidden="true">{initial}</span>
       </button>
       {open && (
         <div
