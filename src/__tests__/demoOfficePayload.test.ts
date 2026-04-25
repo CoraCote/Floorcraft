@@ -6,7 +6,26 @@ import {
   isDoorElement,
   isWindowElement,
   isAssignableElement,
+  type CanvasElement,
 } from '../types/elements'
+
+/**
+ * Look up an element by id across the entire payload. `payload.elements`
+ * carries ONLY the active floor's elements (matching the live-app
+ * contract — see the comment on `buildDemoOfficePayload`'s return), so
+ * resolving a seat that belongs to a non-active floor requires walking
+ * `payload.floors[i].elements` instead. Tests that previously consulted
+ * `payload.elements` directly would miss roughly two-thirds of the
+ * seeded seats — this helper centralises the "find anywhere" lookup.
+ */
+type DemoPayload = ReturnType<typeof buildDemoOfficePayload>
+function findElement(p: DemoPayload, id: string): CanvasElement | undefined {
+  if (p.elements[id]) return p.elements[id]
+  for (const f of p.floors) {
+    if (f.elements[id]) return f.elements[id]
+  }
+  return undefined
+}
 
 /**
  * Wave 17B — the demo office is the landing experience for new users
@@ -52,7 +71,9 @@ describe('buildDemoOfficePayload — shape', () => {
   it('every seated employee references an element that actually exists', () => {
     for (const emp of Object.values(payload.employees)) {
       if (!emp.seatId) continue
-      expect(payload.elements[emp.seatId]).toBeTruthy()
+      // Seats may live on any floor — `payload.elements` is the active
+      // floor only, so walk all floors via the shared helper.
+      expect(findElement(payload, emp.seatId)).toBeTruthy()
       // floorId must resolve to one of the floors
       const floorIds = new Set(payload.floors.map((f) => f.id))
       expect(floorIds.has(emp.floorId!)).toBe(true)
@@ -64,7 +85,7 @@ describe('buildDemoOfficePayload — shape', () => {
       .filter((e) => e.seatId !== null)
       .map((e) => e.seatId!)
       .filter((id) => {
-        const el = payload.elements[id]
+        const el = findElement(payload, id)
         return el && (el.type === 'desk' || el.type === 'hot-desk')
       })
     expect(new Set(deskSeats).size).toBe(deskSeats.length)
@@ -73,17 +94,36 @@ describe('buildDemoOfficePayload — shape', () => {
   it('desks mirror their occupant in assignedEmployeeId / assignedEmployeeIds', () => {
     for (const emp of Object.values(payload.employees)) {
       if (!emp.seatId) continue
-      const el = payload.elements[emp.seatId]
+      const el = findElement(payload, emp.seatId)
       expect(el).toBeTruthy()
-      expect(isAssignableElement(el)).toBe(true)
-      if (el.type === 'desk' || el.type === 'hot-desk') {
-        if (isDeskElement(el)) {
-          expect(el.assignedEmployeeId).toBe(emp.id)
+      expect(isAssignableElement(el!)).toBe(true)
+      if (el!.type === 'desk' || el!.type === 'hot-desk') {
+        if (isDeskElement(el!)) {
+          expect(el!.assignedEmployeeId).toBe(emp.id)
         }
-      } else if (el.type === 'workstation' || el.type === 'private-office') {
+      } else if (el!.type === 'workstation' || el!.type === 'private-office') {
         expect(
           (el as { assignedEmployeeIds: string[] }).assignedEmployeeIds,
         ).toContain(emp.id)
+      }
+    }
+  })
+
+  it('payload.elements carries ONLY the active floor (matches the live-app contract)', () => {
+    // Regression guard for the bug fixed in this PR. The previous
+    // implementation merged all floors' elements into payload.elements,
+    // which caused every floor's walls/desks/decor to render on top of
+    // the active floor when the seeder hydrated `useElementsStore`.
+    const activeFloor = payload.floors.find((f) => f.id === payload.activeFloorId)
+    expect(activeFloor).toBeTruthy()
+    const activeIds = new Set(Object.keys(activeFloor!.elements))
+    const elementsIds = new Set(Object.keys(payload.elements))
+    expect(elementsIds).toEqual(activeIds)
+    // And no element id from a non-active floor leaks into the top-level.
+    for (const f of payload.floors) {
+      if (f.id === payload.activeFloorId) continue
+      for (const id of Object.keys(f.elements)) {
+        expect(payload.elements[id]).toBeUndefined()
       }
     }
   })
@@ -131,7 +171,10 @@ describe('buildDemoOfficePayload — neighborhoods + annotations', () => {
       if (a.anchor.type === 'floor-position') {
         expect(floorIds.has(a.anchor.floorId)).toBe(true)
       } else {
-        expect(payload.elements[a.anchor.elementId]).toBeTruthy()
+        // Element-anchored annotations may target an element on any
+        // floor; payload.elements only carries the active floor, so
+        // walk all floors.
+        expect(findElement(payload, a.anchor.elementId)).toBeTruthy()
       }
     }
   })

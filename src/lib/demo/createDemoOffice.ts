@@ -1613,8 +1613,13 @@ export function buildDemoOfficePayload(): DemoOfficePayload {
     ...leadership.seatIds,
   ]
 
-  // Aggregate elements + a floorId lookup so we can set `floorId` on each
-  // employee once their seat is resolved.
+  // Aggregate elements across all floors into a single working map. This
+  // is internal to the build pipeline — it lets the seat-assignment loop
+  // below resolve any seat id (regardless of floor) when reflecting the
+  // occupant back onto the desk/workstation/private-office element. The
+  // returned `payload.elements` is NOT this merged map (see the bottom of
+  // this function for why) — that field is contracted to be the ACTIVE
+  // floor's elements only.
   const elementsMap: Record<string, CanvasElement> = {
     ...ground.floor.elements,
     ...engineering.floor.elements,
@@ -1748,15 +1753,32 @@ export function buildDemoOfficePayload(): DemoOfficePayload {
     annotations[a.id] = a
   }
 
+  // CRITICAL: `payload.elements` carries ONLY the active floor's
+  // elements. The other floors' elements live in `floors[i].elements`.
+  // This mirrors the live-app contract enforced by `ProjectShell` and
+  // `switchToFloor`: the elements store always represents whichever
+  // floor is currently active; floor switches save the live elements
+  // into the outgoing floor's snapshot and load the new floor's
+  // snapshot back. If we returned a flat merged map here, every floor's
+  // walls / desks / decor would render on top of each other on whichever
+  // floor the user lands on — and the first floor switch would corrupt
+  // the snapshot by writing the merged superset over the outgoing
+  // floor's `elements`. The post-build assignment loop above already
+  // mirrored the per-element occupant updates back to each floor's
+  // `elements`, so picking the engineering floor's elements here gives
+  // us a fully-populated active-floor view with the same occupants that
+  // the per-floor snapshots will use after a switch.
+  const activeFloor = floors.find((f) => f.id === engineering.floor.id) ?? floors[0]
+
   return {
     version: 2,
-    elements: elementsMap,
+    elements: { ...activeFloor.elements },
     employees,
     departmentColors: { ...DEPARTMENTS },
     floors,
-    activeFloorId: engineering.floor.id, // open on the dense engineering
-    // floor — that's where neighborhoods + accommodations + density all
-    // show up at once; first impression > ceremony.
+    activeFloorId: activeFloor.id, // open on the dense engineering floor —
+    // that's where neighborhoods + accommodations + density all show up
+    // at once; first impression > ceremony.
     settings: { ...DEFAULT_CANVAS_SETTINGS },
     neighborhoods,
     annotations,
