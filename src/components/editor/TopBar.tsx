@@ -11,7 +11,7 @@ import {
   Maximize2, Minimize2, PanelRightOpen, PanelRightClose,
   Cloud, CloudOff, UploadCloud, X as XIcon,
   Ruler, Grid3x3, Printer, Image as ImageIcon,
-  ChevronDown, Link2, Eye, Check, Pencil, Share2, Download,
+  ChevronDown, Link2, Eye, Check, Share2, Download,
 } from 'lucide-react'
 import { SeatLabelStylePicker } from './TopBar/SeatLabelStylePicker'
 import { FileMenu, type FileMenuGroup } from './TopBar/FileMenu'
@@ -29,12 +29,10 @@ import { UserMenu } from '../team/UserMenu'
 import { ScaleSettingsPopover } from './ScaleSettingsPopover'
 import { ViewAsMenu } from './ViewAsMenu'
 import { ShareLinkDialog } from './ShareLinkDialog'
-import { ThemeToggle } from '../ui/ThemeToggle'
 import { PlanHealthPill } from './PlanHealthPill'
 
 export function TopBar() {
   const project = useProjectStore((s) => s.currentProject)
-  const updateName = useProjectStore((s) => s.updateProjectName)
   const saveState = useProjectStore((s) => s.saveState)
   const lastSavedAt = useProjectStore((s) => s.lastSavedAt)
   // Post Phase 6: the router exclusively mounts the editor at
@@ -99,17 +97,6 @@ export function TopBar() {
     }
   }, [])
 
-  const [editing, setEditing] = useState(false)
-  const [nameValue, setNameValue] = useState('')
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    if (editing && inputRef.current) {
-      inputRef.current.focus()
-      inputRef.current.select()
-    }
-  }, [editing])
-
   // Tick a state every 10s so the "Saved Xs ago" label stays fresh. We
   // intentionally use a counter (not a date) so React compares primitives
   // and we keep the derivation pure.
@@ -147,13 +134,6 @@ export function TopBar() {
       document.removeEventListener('visibilitychange', onVisibility)
     }
   }, [])
-
-  const handleNameSubmit = () => {
-    if (nameValue.trim()) {
-      updateName(nameValue.trim())
-    }
-    setEditing(false)
-  }
 
   const handleExportPng = () => {
     const stage = getActiveStage()
@@ -233,20 +213,10 @@ export function TopBar() {
   // filtered by permission so a viewer never sees an affordance they
   // cannot act on; the menu component itself stays presentational.
   const fileMenuGroups: FileMenuGroup[] = [
-    {
-      heading: 'Project',
-      items: [
-        {
-          id: 'rename',
-          label: 'Rename project',
-          icon: Pencil,
-          onSelect: () => {
-            setNameValue(project?.name || '')
-            setEditing(true)
-          },
-        },
-      ],
-    },
+    // Rename moved to the OfficeSwitcher dropdown in the FloorSwitcher
+    // row (Wave 15D) — the file menu now reads as
+    // "things you do TO the file" (export, share) rather than a
+    // mixed bag.
     {
       heading: 'Export',
       items: [
@@ -305,38 +275,22 @@ export function TopBar() {
           any action, so they sit at the far left. */}
       <TeamSwitcher currentSlug={teamSlug} />
 
-      <div className="flex-shrink-0">
-        {editing ? (
-          <input
-            ref={inputRef}
-            className="text-sm font-semibold px-2 py-1 border border-blue-400 rounded outline-none bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100 dark:border-blue-500"
-            value={nameValue}
-            onChange={(e) => setNameValue(e.target.value)}
-            onBlur={handleNameSubmit}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleNameSubmit()
-              if (e.key === 'Escape') setEditing(false)
-            }}
-          />
-        ) : (
-          <button
-            className="text-sm font-semibold text-gray-800 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-800 px-2 py-1 rounded"
-            title="Click to rename"
-            onClick={() => {
-              setNameValue(project?.name || '')
-              setEditing(true)
-            }}
-          >
-            {project?.name || 'Untitled Office Plan'}
-          </button>
-        )}
-      </div>
+      {/* Wave 15D: the editable project-name button moved out of this
+          row into the FloorSwitcher strip below, where the office
+          identity now lives next to the floor tabs. The TopBar's
+          left cluster is just "what team am I in" — clean and minimal,
+          no longer competing with the rename affordance. */}
 
-      {/* Unified File menu — Wave 8B. Consolidates rename, export, and
-          share into a single Linear/JSON-Crack-style dropdown so the
+      {/* Unified File menu — Wave 8B. Consolidates export and share
+          into a single Linear/JSON-Crack-style dropdown so the
           TopBar's right cluster reads as actions on the canvas, not on
           the file. */}
       <FileMenu groups={fileMenuGroups} />
+
+      {/* Hairline divider between the identity cluster and the
+          save/undo cluster — JSON-Crack idiom that helps the eye
+          group otherwise unrelated chips. */}
+      <div className="w-px h-6 bg-gray-200 dark:bg-gray-700" />
 
       <SaveIndicator saveState={saveState} lastSavedAt={lastSavedAt} />
 
@@ -643,17 +597,10 @@ export function TopBar() {
         </nav>
       )}
 
-      {/* Quick jump to the user guide. Opens in a new tab so the user
-          doesn't lose their canvas state. */}
-      <a
-        href="/help"
-        target="_blank"
-        rel="noreferrer"
-        className="text-xs px-2 py-1 text-gray-600 hover:text-blue-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-blue-400 dark:hover:bg-gray-800 rounded"
-        title="Open user guide in a new tab"
-      >
-        Help
-      </a>
+      {/* Wave 15D: the standalone Help link was removed — it duplicated
+          the User-guide row already inside UserMenu. The standalone
+          ThemeToggle was also removed for the same reason; theme now
+          has a single home inside UserMenu's Account section. */}
 
       {/* Owner-only "View as…" menu. Rendered to the left of the account
           avatar so it reads as an admin tool rather than part of the user's
@@ -663,13 +610,14 @@ export function TopBar() {
 
       <PlanHealthPill />
 
-      {/* Theme toggle — sits in the actions cluster next to the account
-          menu so it's discoverable without crowding the canvas chrome. */}
-      <ThemeToggle />
-
-      {/* Account dropdown — rightmost so it's the one element users
-          always know where to find. */}
-      <UserMenu />
+      {/* Account block — Wave 15D gives the avatar visual weight by
+          parking it inside its own bordered cluster. The left hairline
+          + ml-1 wrapper turn UserMenu from "one more icon in the row"
+          into "the rightmost cluster", which the user described as
+          "barely visible" before this pass. */}
+      <div className="ml-1 pl-3 border-l border-gray-200 dark:border-gray-800 flex items-center">
+        <UserMenu />
+      </div>
     </div>
   )
 }

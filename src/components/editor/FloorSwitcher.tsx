@@ -1,5 +1,6 @@
 import { useFloorStore } from '../../stores/floorStore'
 import { useElementsStore } from '../../stores/elementsStore'
+import { useProjectStore } from '../../stores/projectStore'
 import { switchToFloor, deleteFloor } from '../../lib/seatAssignment'
 import { emit } from '../../lib/audit'
 import { useCan } from '../../hooks/useCan'
@@ -12,6 +13,8 @@ import { ConfirmDialog } from './ConfirmDialog'
 import { Plus } from 'lucide-react'
 import { useState, useRef, useEffect, type KeyboardEvent } from 'react'
 import { useShallow } from 'zustand/react/shallow'
+import { useParams } from 'react-router-dom'
+import { OfficeSwitcher } from '../team/OfficeSwitcher'
 
 /**
  * Wave 9C: drag-to-reorder mime. Distinct from `application/floocraft-element-type`
@@ -53,6 +56,22 @@ export function FloorSwitcher() {
   const elements = useElementsStore((s) => s.elements)
   const canEdit = useCan('editMap')
 
+  // Wave 15D — office identity promoted into this row. Read the
+  // current project name off projectStore rather than threading it
+  // through props so the switcher stays a leaf render that doesn't
+  // fire on every project mutation the editor makes.
+  const project = useProjectStore((s) => s.currentProject)
+  const updateProjectName = useProjectStore((s) => s.updateProjectName)
+  const { teamSlug, officeSlug } = useParams<{ teamSlug: string; officeSlug: string }>()
+
+  // Rename-in-place for the office name. Triggered from the
+  // OfficeSwitcher dropdown's "Rename this office" row — the
+  // switcher handles all the menu affordances; we just own the
+  // inline input state and keyboard handling.
+  const [renamingOffice, setRenamingOffice] = useState(false)
+  const [officeNameValue, setOfficeNameValue] = useState('')
+  const officeNameInputRef = useRef<HTMLInputElement>(null)
+
   const [contextMenuFloorId, setContextMenuFloorId] = useState<string | null>(null)
   const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 })
   const [renamingFloorId, setRenamingFloorId] = useState<string | null>(null)
@@ -83,6 +102,24 @@ export function FloorSwitcher() {
       renameInputRef.current.select()
     }
   }, [renamingFloorId])
+
+  // Focus + select the office-name input the moment the user picks
+  // "Rename this office" from the OfficeSwitcher, mirroring the
+  // floor-rename pattern above.
+  useEffect(() => {
+    if (renamingOffice && officeNameInputRef.current) {
+      officeNameInputRef.current.focus()
+      officeNameInputRef.current.select()
+    }
+  }, [renamingOffice])
+
+  const handleOfficeRenameSubmit = () => {
+    const trimmed = officeNameValue.trim()
+    if (trimmed && trimmed !== project?.name) {
+      updateProjectName(trimmed)
+    }
+    setRenamingOffice(false)
+  }
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -279,7 +316,48 @@ export function FloorSwitcher() {
   }
 
   return (
-    <div className="h-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center px-4 gap-1">
+    <div className="h-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center px-4 gap-3">
+      {/* ───── Left: office identity ─────
+          Wave 15D moved the editable office name out of the TopBar
+          and into this strip alongside the floor tabs. The
+          OfficeSwitcher trigger doubles as the office name label;
+          its dropdown owns the rename + switch + manage actions.
+          When the user picks Rename, we swap the trigger for an
+          inline input so the rename happens in place rather than in
+          a modal — the same idiom the old TopBar button used. */}
+      <div className="flex-shrink-0 min-w-0">
+        {renamingOffice ? (
+          <input
+            ref={officeNameInputRef}
+            aria-label="Rename office"
+            className="text-sm font-semibold px-2 py-1 border border-blue-400 rounded outline-none bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100 dark:border-blue-500 max-w-[220px]"
+            value={officeNameValue}
+            onChange={(e) => setOfficeNameValue(e.target.value)}
+            onBlur={handleOfficeRenameSubmit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleOfficeRenameSubmit()
+              if (e.key === 'Escape') setRenamingOffice(false)
+            }}
+          />
+        ) : (
+          <OfficeSwitcher
+            teamSlug={teamSlug}
+            officeSlug={officeSlug}
+            officeName={project?.name}
+            onRenameCurrent={() => {
+              setOfficeNameValue(project?.name ?? '')
+              setRenamingOffice(true)
+            }}
+          />
+        )}
+      </div>
+
+      {/* ───── Center: floor tabs ─────
+          flex-1 wrapper centers the tabs in the dead space between
+          the office switcher and the Add-Floor button on the right.
+          The tablist itself keeps its left-to-right ordering and
+          all of its existing roving/drag behaviour. */}
+      <div className="flex-1 flex justify-center min-w-0 overflow-x-auto">
       <div
         role="tablist"
         aria-label="Floors"
@@ -348,18 +426,25 @@ export function FloorSwitcher() {
           </div>
         ))}
       </div>
+      </div>
 
-      {canEdit && (
-        <button
-          type="button"
-          onClick={handleAddFloor}
-          aria-label="Add floor"
-          className="flex items-center gap-1 px-2 py-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors ml-1"
-        >
-          <Plus size={14} aria-hidden="true" />
-          <span>Add Floor</span>
-        </button>
-      )}
+      {/* ───── Right: editing actions ─────
+          Add-Floor sits in a flex-shrink-0 cluster so it always
+          renders at the row's right edge, balancing the left-side
+          office switcher. */}
+      <div className="flex-shrink-0 flex items-center gap-1">
+        {canEdit && (
+          <button
+            type="button"
+            onClick={handleAddFloor}
+            aria-label="Add floor"
+            className="flex items-center gap-1 px-2 py-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+          >
+            <Plus size={14} aria-hidden="true" />
+            <span>Add Floor</span>
+          </button>
+        )}
+      </div>
 
       {contextMenuFloorId && canEdit && (
         <div

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, fireEvent, within } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { FloorSwitcher } from '../components/editor/FloorSwitcher'
 import { useFloorStore } from '../stores/floorStore'
 import { useElementsStore } from '../stores/elementsStore'
@@ -16,6 +17,26 @@ vi.mock('../lib/auditRepository', () => ({
   insertEvent: vi.fn().mockResolvedValue(undefined),
 }))
 
+// Wave 15D: the FloorSwitcher row now hosts the OfficeSwitcher,
+// which resolves teamSlug → id via supabase and lists offices via
+// the repository. Stub both so this test stays focused on floor-tab
+// behaviour and doesn't trigger any network round-trip.
+vi.mock('../lib/supabase', () => ({
+  supabase: {
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          maybeSingle: () =>
+            Promise.resolve({ data: { id: 'team-1' }, error: null }),
+        }),
+      }),
+    }),
+  },
+}))
+vi.mock('../lib/offices/officeRepository', () => ({
+  listOffices: () => Promise.resolve([]),
+}))
+
 beforeEach(() => {
   useFloorStore.setState({
     floors: [
@@ -30,13 +51,21 @@ beforeEach(() => {
 
 describe('FloorSwitcher — reorder + duplicate', () => {
   it('renders tabs in `order` sequence', () => {
-    render(<FloorSwitcher />)
+    render(
+      <MemoryRouter initialEntries={['/t/acme/o/hq/map']}>
+        <FloorSwitcher />
+      </MemoryRouter>,
+    )
     const tabs = screen.getAllByRole('tab')
     expect(tabs.map((t) => t.textContent)).toEqual(['Ground', 'Two', 'Three'])
   })
 
   it('context menu shows Duplicate between Rename and Delete', () => {
-    render(<FloorSwitcher />)
+    render(
+      <MemoryRouter initialEntries={['/t/acme/o/hq/map']}>
+        <FloorSwitcher />
+      </MemoryRouter>,
+    )
     const tab = screen.getByRole('tab', { name: 'Two' })
     fireEvent.contextMenu(tab, { clientX: 50, clientY: 50 })
 
@@ -56,7 +85,11 @@ describe('FloorSwitcher — reorder + duplicate', () => {
   })
 
   it('clicking Duplicate creates a new floor and switches to it', () => {
-    render(<FloorSwitcher />)
+    render(
+      <MemoryRouter initialEntries={['/t/acme/o/hq/map']}>
+        <FloorSwitcher />
+      </MemoryRouter>,
+    )
     fireEvent.contextMenu(screen.getByRole('tab', { name: 'Ground' }), {
       clientX: 10,
       clientY: 10,
@@ -72,7 +105,11 @@ describe('FloorSwitcher — reorder + duplicate', () => {
   })
 
   it('Duplicate inserts the clone immediately after the source', () => {
-    render(<FloorSwitcher />)
+    render(
+      <MemoryRouter initialEntries={['/t/acme/o/hq/map']}>
+        <FloorSwitcher />
+      </MemoryRouter>,
+    )
     // Right-click on the middle tab "Two".
     fireEvent.contextMenu(screen.getByRole('tab', { name: 'Two' }), {
       clientX: 10,
@@ -92,7 +129,11 @@ describe('FloorSwitcher — reorder + duplicate', () => {
   })
 
   it('drag-and-drop reorders tabs', () => {
-    render(<FloorSwitcher />)
+    render(
+      <MemoryRouter initialEntries={['/t/acme/o/hq/map']}>
+        <FloorSwitcher />
+      </MemoryRouter>,
+    )
     const tabs = screen.getAllByRole('tab')
     const threeTab = tabs[2] // "Three" (id=c)
     const groundTab = tabs[0] // "Ground" (id=a)
@@ -143,7 +184,11 @@ describe('FloorSwitcher — reorder + duplicate', () => {
   })
 
   it('shows insertion caret while dragging over a non-self tab', () => {
-    render(<FloorSwitcher />)
+    render(
+      <MemoryRouter initialEntries={['/t/acme/o/hq/map']}>
+        <FloorSwitcher />
+      </MemoryRouter>,
+    )
     const tabs = screen.getAllByRole('tab')
 
     const store: Record<string, string> = {}
@@ -186,7 +231,11 @@ describe('FloorSwitcher — reorder + duplicate', () => {
   })
 
   it('sets aria-dropeffect on the tablist while a drag is in progress', () => {
-    render(<FloorSwitcher />)
+    render(
+      <MemoryRouter initialEntries={['/t/acme/o/hq/map']}>
+        <FloorSwitcher />
+      </MemoryRouter>,
+    )
     const tabs = screen.getAllByRole('tab')
     const tablist = screen.getByRole('tablist')
 
@@ -220,6 +269,24 @@ describe('FloorSwitcher — viewer mode', () => {
     vi.doMock('../lib/auditRepository', () => ({
       insertEvent: vi.fn().mockResolvedValue(undefined),
     }))
+    // Wave 15D: the OfficeSwitcher inside the FloorSwitcher row needs
+    // both supabase + the office repo stubbed, otherwise its
+    // teamSlug → id lookup tries to hit the network at mount.
+    vi.doMock('../lib/supabase', () => ({
+      supabase: {
+        from: () => ({
+          select: () => ({
+            eq: () => ({
+              maybeSingle: () =>
+                Promise.resolve({ data: { id: 'team-1' }, error: null }),
+            }),
+          }),
+        }),
+      },
+    }))
+    vi.doMock('../lib/offices/officeRepository', () => ({
+      listOffices: () => Promise.resolve([]),
+    }))
     const { FloorSwitcher: ViewerFloorSwitcher } = await import(
       '../components/editor/FloorSwitcher'
     )
@@ -232,7 +299,11 @@ describe('FloorSwitcher — viewer mode', () => {
       activeFloorId: 'a',
     })
 
-    render(<ViewerFloorSwitcher />)
+    render(
+      <MemoryRouter initialEntries={['/t/acme/o/hq/map']}>
+        <ViewerFloorSwitcher />
+      </MemoryRouter>,
+    )
     const tablist = screen.getByRole('tablist')
     const tabs = within(tablist).getAllByRole('tab')
     for (const t of tabs) {
@@ -241,5 +312,7 @@ describe('FloorSwitcher — viewer mode', () => {
 
     vi.doUnmock('../hooks/useCan')
     vi.doUnmock('../lib/auditRepository')
+    vi.doUnmock('../lib/supabase')
+    vi.doUnmock('../lib/offices/officeRepository')
   })
 })
