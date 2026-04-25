@@ -9,7 +9,12 @@ import { useVisibleEmployees } from '../../../hooks/useVisibleEmployees'
 import { deriveSeatStatus } from '../../../lib/seatStatus'
 import type { Accommodation } from '../../../types/employee'
 import type { SeatLabelStyle } from '../../../types/project'
-import { SeatLabel } from './SeatLabel'
+import {
+  SeatLabel,
+  ID_BADGE_BAND_H,
+  accommodationAnchorFor,
+  type AccommodationBadgeAnchor,
+} from './SeatLabel'
 
 /** Visual palette for the drop-target outline painted while the user is
  *  dragging an employee chip over the canvas. Green = open desk, amber =
@@ -71,17 +76,25 @@ function AccommodationBadge({
   employee,
   elementWidth,
   elementHeight,
+  anchor = 'top-right',
 }: {
   employee: EmployeeBadgeShape | null | undefined
   elementWidth: number
   elementHeight: number
+  /** Wave 15E — `'right-below-strip'` is used for the card-style label
+   *  whose 12px header strip would otherwise sit underneath the badge.
+   *  Pushing the badge below the strip keeps the corner clean and the
+   *  badge legible. */
+  anchor?: AccommodationBadgeAnchor
 }) {
   const glyph = accommodationGlyph(employee?.accommodations)
   if (!glyph) return null
-  // Anchor in the top-right corner (x/y are element-relative since the
-  // parent Group is already translated to the element origin).
-  const cx = elementWidth / 2 - 8
-  const cy = -elementHeight / 2 + 8
+  // Pixel-snapped anchor so the badge body reads crisp at every zoom.
+  const cx = Math.round(elementWidth / 2 - 8)
+  const cy =
+    anchor === 'right-below-strip'
+      ? Math.round(-elementHeight / 2 + 12 + 8)
+      : Math.round(-elementHeight / 2 + 8)
   return (
     <Group listening={false}>
       <Rect
@@ -92,6 +105,7 @@ function AccommodationBadge({
         cornerRadius={7}
         fill="#4F46E5" /* indigo-600 */
         opacity={0.95}
+        perfectDrawEnabled={false}
       />
       <Text
         text={glyph}
@@ -103,6 +117,7 @@ function AccommodationBadge({
         verticalAlign="middle"
         fontSize={10}
         fill="#ffffff"
+        perfectDrawEnabled={false}
       />
     </Group>
   )
@@ -270,7 +285,8 @@ function DeskElementRenderer({ element, isSelected, employees, getDepartmentColo
   // real estate, same "what is this thing" signal), so we hide the
   // id-badge band and let the label consume the full height. Readers
   // can always pull the exact desk id from the Properties panel.
-  const ID_BAND_H = 11
+  // Wave 15E — pulled into a shared constant on SeatLabel so every
+  // place that reasons about the id-badge keep-out band agrees.
   const TOO_SMALL_FOR_ID = element.width < 48 || element.height < 28
   const showIdBadge = !TOO_SMALL_FOR_ID && seatLabelStyle !== 'card'
   // The `'card'` style fills the entire seat — its header strip lives
@@ -281,11 +297,11 @@ function DeskElementRenderer({ element, isSelected, employees, getDepartmentColo
   const contentTop = isCard
     ? -element.height / 2
     : showIdBadge
-      ? -element.height / 2 + ID_BAND_H
+      ? -element.height / 2 + ID_BADGE_BAND_H
       : -element.height / 2 + 4
   const contentH = isCard
     ? element.height
-    : element.height - (showIdBadge ? ID_BAND_H : 4) - 4
+    : element.height - (showIdBadge ? ID_BADGE_BAND_H : 4) - 4
   const contentLeft = isCard ? -element.width / 2 : -element.width / 2 + 4
   const contentW = isCard ? element.width : element.width - 8
 
@@ -346,12 +362,15 @@ function DeskElementRenderer({ element, isSelected, employees, getDepartmentColo
         y={contentTop}
         width={contentW}
         height={contentH}
+        containerWidth={element.width}
         underlyingFill="#FFFFFF"
+        attenuated={!!dragState}
       />
       <AccommodationBadge
         employee={employee}
         elementWidth={element.width}
         elementHeight={element.height}
+        anchor={accommodationAnchorFor(seatLabelStyle)}
       />
       {dragState && (
         <DropTargetOutline
@@ -437,6 +456,7 @@ function WorkstationRenderer({ element, isSelected, employees, getDepartmentColo
             employee={accommodated}
             elementWidth={element.width}
             elementHeight={element.height}
+            anchor={accommodationAnchorFor(seatLabelStyle)}
           />
         )
       })()}
@@ -496,7 +516,9 @@ function WorkstationRenderer({ element, isSelected, employees, getDepartmentColo
               y={labelTop}
               width={slotWidth - 4}
               height={labelH}
+              containerWidth={slotWidth}
               underlyingFill="#FFFFFF"
+              attenuated={!!dragState}
             />
           </Group>
         )
@@ -592,7 +614,9 @@ function PrivateOfficeRenderer({ element, isSelected, employees, getDepartmentCo
               y={labelTop}
               width={labelW}
               height={labelAreaH}
+              containerWidth={element.width}
               underlyingFill="#EFF6FF"
+              attenuated={!!dragState}
             />
           )
         }
@@ -613,7 +637,9 @@ function PrivateOfficeRenderer({ element, isSelected, employees, getDepartmentCo
               y={labelTop + i * perLabelH}
               width={labelW}
               height={perLabelH}
+              containerWidth={element.width}
               underlyingFill="#EFF6FF"
+              attenuated={!!dragState}
             />
           )
         })
@@ -628,6 +654,7 @@ function PrivateOfficeRenderer({ element, isSelected, employees, getDepartmentCo
             employee={accommodated}
             elementWidth={element.width}
             elementHeight={element.height}
+            anchor={accommodationAnchorFor(seatLabelStyle)}
           />
         )
       })()}

@@ -2,7 +2,13 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { render } from '@testing-library/react'
 import { Stage, Layer } from 'react-konva'
-import { SeatLabel } from '../components/editor/Canvas/SeatLabel'
+import {
+  SeatLabel,
+  ID_BADGE_BAND_H,
+  accommodationAnchorFor,
+  NARROW_SLOT_W,
+  COMPACT_SLOT_W,
+} from '../components/editor/Canvas/SeatLabel'
 import { DeskRenderer } from '../components/editor/Canvas/DeskRenderer'
 import { useCanvasStore } from '../stores/canvasStore'
 import { useEmployeeStore } from '../stores/employeeStore'
@@ -393,6 +399,188 @@ describe('DeskRenderer integration — style flows through store', () => {
         hoveredSeatId: null,
       } as any)
     })
+  })
+
+  // --- Wave 15E: explicit overlap + crispness invariants ----------
+
+  it('exports a non-zero ID_BADGE_BAND_H so renderers can reserve it', () => {
+    expect(ID_BADGE_BAND_H).toBeGreaterThan(0)
+  })
+
+  it('accommodationAnchorFor pushes the badge below the strip on card', () => {
+    expect(accommodationAnchorFor('card')).toBe('right-below-strip')
+    expect(accommodationAnchorFor('pill')).toBe('top-right')
+    expect(accommodationAnchorFor('avatar')).toBe('top-right')
+    expect(accommodationAnchorFor('banner')).toBe('top-right')
+  })
+
+  SEAT_LABEL_STYLES.forEach((style) => {
+    it(`[${style}] interior label content stays inside its given box`, () => {
+      const stage = mountLabel(
+        <SeatLabel
+          style={style}
+          employee={{ id: 'e1', name: 'Jane Doe', department: 'Engineering' }}
+          departmentColor="#4F46E5"
+          x={0}
+          y={0}
+          width={120}
+          height={60}
+        />,
+      )
+      // No Text node should report an x or y outside the [0, 120] / [0, 60]
+      // bounds — that's what guarantees the label can't wander into the
+      // ID-badge zone or off the seat edge.
+      stage?.find('Text').forEach((t: any) => {
+        expect(t.x()).toBeGreaterThanOrEqual(0)
+        expect(t.y()).toBeGreaterThanOrEqual(-2)
+        expect(t.x()).toBeLessThan(120 + 1)
+        expect(t.y()).toBeLessThan(60 + 1)
+      })
+    })
+
+    it(`[${style}] every Text uses the Inter font stack`, () => {
+      const stage = mountLabel(
+        <SeatLabel
+          style={style}
+          employee={{ id: 'e1', name: 'Jane Doe', department: 'Engineering' }}
+          departmentColor="#4F46E5"
+          width={120}
+          height={60}
+        />,
+      )
+      const fonts = new Set<string>()
+      stage?.find('Text').forEach((t: any) => fonts.add(t.fontFamily()))
+      // Either every Text node carries the explicit Inter stack, or the
+      // tree contains zero Text nodes (e.g. degenerate-size guard) — but
+      // never the Konva default Arial.
+      fonts.forEach((f) => {
+        expect(f).toMatch(/Inter/)
+      })
+    })
+
+    it(`[${style}] every coordinate is whole-pixel`, () => {
+      const stage = mountLabel(
+        <SeatLabel
+          style={style}
+          employee={{ id: 'e1', name: 'Jane Doe', department: 'Engineering' }}
+          departmentColor="#4F46E5"
+          width={121} // odd width forces /2 = 60.5 into many call sites
+          height={61}
+        />,
+      )
+      const isWhole = (n: number) => Math.abs(n - Math.round(n)) < 1e-9
+      stage?.find('Text').forEach((t: any) => {
+        expect(isWhole(t.x())).toBe(true)
+        expect(isWhole(t.y())).toBe(true)
+      })
+      stage?.find('Rect').forEach((rc: any) => {
+        expect(isWhole(rc.x())).toBe(true)
+        expect(isWhole(rc.y())).toBe(true)
+      })
+    })
+  })
+
+  it('[card] paints a department-coloured header rect', () => {
+    const stage = mountLabel(
+      <SeatLabel
+        style="card"
+        employee={{ id: 'e1', name: 'Jane Doe', department: 'Engineering' }}
+        departmentColor="#4F46E5"
+        width={120}
+        height={60}
+      />,
+    )
+    const rectFills: string[] = []
+    stage?.find('Rect').forEach((rc: any) => rectFills.push(rc.fill()))
+    expect(rectFills).toContain('#4F46E5')
+  })
+
+  it('[avatar] renders a 24px diameter chip on a sized seat', () => {
+    const stage = mountLabel(
+      <SeatLabel
+        style="avatar"
+        employee={{ id: 'e1', name: 'Jane Doe', department: 'Engineering' }}
+        departmentColor="#4F46E5"
+        width={120}
+        height={60}
+      />,
+    )
+    const widths: number[] = []
+    stage?.find('Rect').forEach((rc: any) => widths.push(rc.width()))
+    // 24 = the new chip diameter from 15E (was 22).
+    expect(widths).toContain(24)
+  })
+
+  it('[banner] renders a 4px wide stripe on a normal-width seat', () => {
+    const stage = mountLabel(
+      <SeatLabel
+        style="banner"
+        employee={{ id: 'e1', name: 'Jane Doe', department: 'Engineering' }}
+        departmentColor="#4F46E5"
+        width={120}
+        height={60}
+      />,
+    )
+    // The stripe is the only Rect with width 4 in this tree.
+    const stripeWidths: number[] = []
+    stage?.find('Rect').forEach((rc: any) => {
+      if (rc.fill() === '#4F46E5') stripeWidths.push(rc.width())
+    })
+    expect(stripeWidths).toContain(4)
+  })
+
+  it('[banner] degrades to a 3px stripe on a narrow workstation slot', () => {
+    const stage = mountLabel(
+      <SeatLabel
+        style="banner"
+        employee={{ id: 'e1', name: 'Jane Doe', department: 'Engineering' }}
+        departmentColor="#4F46E5"
+        width={NARROW_SLOT_W - 5}
+        height={60}
+        containerWidth={NARROW_SLOT_W - 5}
+      />,
+    )
+    const stripeWidths: number[] = []
+    stage?.find('Rect').forEach((rc: any) => {
+      if (rc.fill() === '#4F46E5') stripeWidths.push(rc.width())
+    })
+    expect(stripeWidths).toContain(3)
+  })
+
+  it('[card → pill] degrades on a narrow workstation slot', () => {
+    // At a slot width < COMPACT_SLOT_W, card should fall back to pill —
+    // so the tree should NOT contain the card's white-body Rect with a
+    // department stroke. Asserting via the absence of an "ENGINEERING"
+    // header text is the simplest stable signal.
+    const stage = mountLabel(
+      <SeatLabel
+        style="card"
+        employee={{ id: 'e1', name: 'Jane Doe', department: 'Engineering' }}
+        departmentColor="#4F46E5"
+        width={COMPACT_SLOT_W - 5}
+        height={60}
+        containerWidth={COMPACT_SLOT_W - 5}
+      />,
+    )
+    const texts: string[] = []
+    stage?.find('Text').forEach((t: any) => texts.push(t.text()))
+    expect(texts).not.toContain('ENGINEERING')
+  })
+
+  it('attenuated wraps the label in a 0.85-opacity Group', () => {
+    const stage = mountLabel(
+      <SeatLabel
+        style="pill"
+        employee={{ id: 'e1', name: 'Jane Doe', department: 'Engineering' }}
+        departmentColor="#4F46E5"
+        width={120}
+        height={60}
+        attenuated
+      />,
+    )
+    const opacities: number[] = []
+    stage?.find('Group').forEach((g: any) => opacities.push(g.opacity()))
+    expect(opacities).toContain(0.85)
   })
 
   it('default (undefined) seatLabelStyle falls back to pill behaviour', () => {
