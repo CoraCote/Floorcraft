@@ -26,6 +26,10 @@ function openDialog() {
 }
 
 function pasteAndContinue(text: string = CSV) {
+  // Wave 16B: textarea moved into a <details> wrapper. Open the
+  // disclosure first so the textarea is in the DOM.
+  const summary = screen.getByText(/or paste csv directly/i)
+  fireEvent.click(summary)
   const textarea = screen.getByPlaceholderText(/name,email/i) as HTMLTextAreaElement
   fireEvent.change(textarea, { target: { value: text } })
   fireEvent.click(screen.getByRole('button', { name: /^continue$/i }))
@@ -49,6 +53,8 @@ describe('CSVImportDialog — preview step', () => {
     render(<CSVImportDialog />)
     pasteAndContinue()
     fireEvent.click(screen.getByRole('button', { name: /^back$/i }))
+    // Re-open the textarea disclosure to inspect the persisted value.
+    fireEvent.click(screen.getByText(/or paste csv directly/i))
     const textarea = screen.getByPlaceholderText(/name,email/i) as HTMLTextAreaElement
     expect(textarea.value).toBe(CSV)
   })

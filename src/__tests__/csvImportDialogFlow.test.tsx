@@ -25,6 +25,8 @@ describe('CSVImportDialog flow', () => {
   it('imports the valid rows and opens a summary modal with skipped + warnings', () => {
     render(<CSVImportDialog />)
 
+    // Wave 16B: paste textarea now lives in a <details>; click to open.
+    fireEvent.click(screen.getByText(/or paste csv directly/i))
     const textarea = screen.getByPlaceholderText(/name,email/i) as HTMLTextAreaElement
     fireEvent.change(textarea, { target: { value: CSV } })
 

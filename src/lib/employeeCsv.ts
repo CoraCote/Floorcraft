@@ -94,6 +94,211 @@ export interface EmployeeCSVParseResult {
   headers: string[]
   rows: EmployeeImportRow[]
   errors: string[]
+  /**
+   * Mapping from the *original* header (as it appeared in the file) to
+   * the canonical column name we resolved it to. Only includes entries
+   * whose original differed from the canonical (i.e. an alias was
+   * matched). When empty, the file's headers all matched directly.
+   *
+   * Surfaces in the dialog as a "Headers matched" banner so the user
+   * understands why their `First Name` column got read as `name`.
+   */
+  headerAliases: Record<string, string>
+  /**
+   * True when at least one row's `name` was synthesised by concatenating
+   * `first_name` and `last_name` columns (no `name` column was present).
+   * Surfaced in the same banner as a one-line note.
+   */
+  firstLastConcatenated: boolean
+}
+
+/**
+ * Canonical canonical-column → list-of-accepted-aliases map. Aliases are
+ * compared after normalisation: lowercase, all non-alphanumeric stripped.
+ * That means `First Name`, `first_name`, `first-name`, and `FIRST NAME`
+ * all collapse to the same key.
+ *
+ * Real HR exports (BambooHR, Workday, Notion DBs, Google Sheets) name
+ * the same field a dozen different ways; rather than make the user
+ * rename headers we accept all the common shapes and remap once at parse
+ * time. Adding a new alias here is the right pattern when a user reports
+ * that their export "didn't import" — please don't reach into the parse
+ * logic itself.
+ */
+export const HEADER_ALIASES: Record<string, readonly string[]> = {
+  name: ['name', 'full_name', 'employee_name', 'display_name', 'fullname'],
+  email: ['email', 'email_address', 'e_mail', 'work_email', 'mail'],
+  department: ['department', 'dept', 'division'],
+  team: ['team', 'group', 'squad'],
+  title: ['title', 'job_title', 'role', 'position'],
+  manager: [
+    'manager',
+    'manager_name',
+    'reports_to',
+    'supervisor',
+    'reportsto',
+  ],
+  type: [
+    'type',
+    'employment_type',
+    'employee_type',
+    'employment_status',
+  ],
+  office_days: ['office_days', 'in_office_days', 'wfo_days', 'days', 'in_office'],
+  status: ['status', 'employee_status', 'state'],
+  start_date: ['start_date', 'hire_date', 'start', 'joined', 'startdate'],
+  end_date: ['end_date', 'termination_date', 'departed', 'left', 'enddate'],
+  equipment_needs: ['equipment_needs', 'equipment', 'accommodations'],
+  equipment_status: ['equipment_status'],
+  photo_url: ['photo_url', 'photo', 'avatar', 'picture', 'photourl'],
+  tags: ['tags', 'labels', 'keywords'],
+  floor: ['floor', 'floor_name', 'floor_number'],
+  first_name: ['first_name', 'firstname', 'given_name', 'givenname'],
+  last_name: ['last_name', 'lastname', 'surname', 'family_name', 'familyname'],
+}
+
+/**
+ * Lowercase + strip non-alphanumeric. Cheaper than a regex global on a
+ * hot path; called once per header per parse. We keep `_` and the rest
+ * out so `"First Name"`, `"first_name"`, `"first-name"`, and
+ * `"firstname"` all map to the same `firstname` token.
+ */
+function normaliseHeaderToken(h: string): string {
+  let out = ''
+  for (let i = 0; i < h.length; i++) {
+    const c = h.charCodeAt(i)
+    // 0-9
+    if (c >= 48 && c <= 57) {
+      out += h[i]
+    } else if (c >= 97 && c <= 122) {
+      // a-z
+      out += h[i]
+    } else if (c >= 65 && c <= 90) {
+      // A-Z → lower
+      out += String.fromCharCode(c + 32)
+    }
+  }
+  return out
+}
+
+/**
+ * Build a one-time lookup table from "normalised alias token" to
+ * "canonical header name". Reverse of `HEADER_ALIASES`. Memoised at
+ * module load — the alias set is static.
+ */
+const ALIAS_LOOKUP: Map<string, string> = (() => {
+  const m = new Map<string, string>()
+  for (const canonical of Object.keys(HEADER_ALIASES)) {
+    for (const alias of HEADER_ALIASES[canonical]) {
+      m.set(normaliseHeaderToken(alias), canonical)
+    }
+  }
+  return m
+})()
+
+/**
+ * Resolve a single raw header to its canonical column name. Falls back
+ * to the lowercased trimmed input when no alias matches — that lets the
+ * parser still pass through unknown columns (e.g. custom HRIS fields)
+ * without dropping them, while ensuring known columns are normalised.
+ */
+export function resolveHeaderAlias(raw: string): string {
+  const token = normaliseHeaderToken(raw)
+  const match = ALIAS_LOOKUP.get(token)
+  if (match) return match
+  return raw.trim().toLowerCase()
+}
+
+/**
+ * The canonical header order used by `buildEmployeeImportTemplate` and
+ * the round-trip exporter. Kept in sync with `EmployeeImportRow`'s
+ * persisted shape.
+ */
+const TEMPLATE_HEADERS = [
+  'name',
+  'email',
+  'department',
+  'team',
+  'title',
+  'manager',
+  'type',
+  'status',
+  'office_days',
+  'start_date',
+  'end_date',
+  'equipment_needs',
+  'equipment_status',
+  'photo_url',
+  'tags',
+] as const
+
+/**
+ * Generate a sample CSV the user can download as a starting point. Three
+ * rows: a comment-style instructions row (parser drops it because the
+ * `name` column is the comment string and that's still treated as a
+ * single-row entry — but it's prefixed with `#` so a human eye reads it
+ * as a guide), one fully-populated example, and one row with optional
+ * fields blank.
+ *
+ * The blank-name row would normally be skipped on import as a
+ * `blank_name` error; that's fine for a template — users delete the
+ * placeholder rows before importing anyway.
+ */
+export function buildEmployeeImportTemplate(): string {
+  const rows = [
+    {
+      name: '# template — replace with your data and delete this row',
+      email: '',
+      department: '',
+      team: '',
+      title: '',
+      manager: '',
+      type: '',
+      status: '',
+      office_days: '',
+      start_date: '',
+      end_date: '',
+      equipment_needs: '',
+      equipment_status: '',
+      photo_url: '',
+      tags: '',
+    },
+    {
+      name: 'Jane Doe',
+      email: 'jane@example.com',
+      department: 'Engineering',
+      team: 'Frontend',
+      title: 'Senior Engineer',
+      manager: 'Alex Lee',
+      type: 'full-time',
+      status: 'active',
+      office_days: 'Mon, Wed, Fri',
+      start_date: '2023-01-15',
+      end_date: '',
+      equipment_needs: 'standing-desk, ergonomic-chair',
+      equipment_status: 'provisioned',
+      photo_url: '',
+      tags: 'mentor',
+    },
+    {
+      name: 'Sam Patel',
+      email: 'sam@example.com',
+      department: 'Design',
+      team: '',
+      title: 'Product Designer',
+      manager: '',
+      type: 'full-time',
+      status: 'active',
+      office_days: '',
+      start_date: '',
+      end_date: '',
+      equipment_needs: '',
+      equipment_status: '',
+      photo_url: '',
+      tags: '',
+    },
+  ]
+  return Papa.unparse(rows, { header: true, columns: [...TEMPLATE_HEADERS] })
 }
 
 /**
@@ -113,10 +318,24 @@ export function parseEmployeeCSV(text: string): EmployeeCSVParseResult {
     )
   }
 
+  // Header alias resolution happens inside `transformHeader` so the
+  // remapped names land in `result.data` directly. Track the aliases
+  // we resolved so the dialog can surface them.
+  const headerAliases: Record<string, string> = {}
   const result = Papa.parse<Record<string, string>>(text, {
     header: true,
     skipEmptyLines: true,
-    transformHeader: (h) => h.trim().toLowerCase(),
+    transformHeader: (h) => {
+      const trimmed = h.trim()
+      const canonical = resolveHeaderAlias(trimmed)
+      const fallback = trimmed.toLowerCase()
+      if (canonical !== fallback) {
+        // The alias map matched something other than the trivial
+        // lower(trim) — record the original→canonical mapping.
+        headerAliases[trimmed] = canonical
+      }
+      return canonical
+    },
   })
 
   if (result.data.length > CSV_MAX_ROWS) {
@@ -129,42 +348,52 @@ export function parseEmployeeCSV(text: string): EmployeeCSVParseResult {
   const headers = result.meta.fields || []
   const errors = result.errors.map((e) => `Row ${e.row}: ${e.message}`)
 
+  // If the file has no `name` column but DOES have first_name and/or
+  // last_name, synthesise `name` per row by joining them. If both `name`
+  // and first/last are present, `name` wins (per spec).
+  const hasNameCol = headers.includes('name')
+  const hasFirstNameCol = headers.includes('first_name')
+  const hasLastNameCol = headers.includes('last_name')
+  const shouldSynthesiseName =
+    !hasNameCol && (hasFirstNameCol || hasLastNameCol)
+
   const rows: EmployeeImportRow[] = result.data.map((row) => {
-    const name = row.name || row.full_name || row.employee_name || ''
-    const email = row.email || row.email_address || undefined
-    const department = row.department || row.dept || undefined
-    const team = row.team || row.group || undefined
-    const title = row.title || row.role || row.job_title || undefined
-    const manager = row.manager || row.manager_name || row.reports_to || undefined
-    const type = row.type || row.employment_type || 'full-time'
-    const status = row.status || row.employee_status || undefined
-    const office_days = row.office_days || row.days || row.in_office || undefined
-    const start_date = row.start_date || row.hire_date || undefined
-    const end_date = row.end_date || row.termination_date || undefined
-    const equipment_needs = row.equipment_needs || row.equipment || undefined
-    const equipment_status = row.equipment_status || undefined
-    const photo_url = row.photo_url || row.photo || row.avatar || undefined
-    const tags = row.tags || undefined
+    let name = row.name || ''
+    if (!name && shouldSynthesiseName) {
+      const first = (row.first_name || '').trim()
+      const last = (row.last_name || '').trim()
+      name = `${first} ${last}`.trim()
+    }
+    // Spread the parsed row first so unknown columns (like `floor`)
+    // pass through, then overlay the canonical fields so our
+    // normalised values win on collision.
     return {
+      ...row,
       name,
-      email,
-      department,
-      team,
-      title,
-      manager,
-      type,
-      status,
-      office_days,
-      start_date,
-      end_date,
-      equipment_needs,
-      equipment_status,
-      photo_url,
-      tags,
+      email: row.email || undefined,
+      department: row.department || undefined,
+      team: row.team || undefined,
+      title: row.title || undefined,
+      manager: row.manager || undefined,
+      type: row.type || 'full-time',
+      status: row.status || undefined,
+      office_days: row.office_days || undefined,
+      start_date: row.start_date || undefined,
+      end_date: row.end_date || undefined,
+      equipment_needs: row.equipment_needs || undefined,
+      equipment_status: row.equipment_status || undefined,
+      photo_url: row.photo_url || undefined,
+      tags: row.tags || undefined,
     }
   })
 
-  return { headers, rows, errors }
+  return {
+    headers,
+    rows,
+    errors,
+    headerAliases,
+    firstLastConcatenated: shouldSynthesiseName,
+  }
 }
 
 /**
