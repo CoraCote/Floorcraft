@@ -11,14 +11,51 @@ vi.mock('../lib/offices/officeRepository', () => ({
   listOffices: (...a: unknown[]) => listOffices(...a),
   createOffice: (...a: unknown[]) => createOffice(...a),
 }))
+
+// Supabase shim. `from('teams')` returns a simple single-row selector;
+// `from('team_members')` supports the two shapes used by TeamHomePage:
+//   (a) .select('role').eq().eq().maybeSingle()  — role lookup
+//   (b) .select('user_id', { count, head: true }).eq()  — member-count
+// Kept small on purpose — the test is about the page, not the repo.
 const { fromMock } = vi.hoisted(() => {
-  const impl = (_table: string) => ({
-    select: () => ({
-      eq: () => ({
-        single: () => Promise.resolve({ data: { id: 't1', slug: 'acme', name: 'Acme' }, error: null }),
+  const impl = (table: string) => {
+    if (table === 'teams') {
+      return {
+        select: () => ({
+          eq: () => ({
+            single: () =>
+              Promise.resolve({ data: { id: 't1', slug: 'acme', name: 'Acme' }, error: null }),
+          }),
+        }),
+      }
+    }
+    if (table === 'team_members') {
+      return {
+        select: (_cols: string, opts?: { count?: string; head?: boolean }) => {
+          if (opts?.head) {
+            return {
+              eq: () => Promise.resolve({ count: 3, data: null, error: null }),
+            }
+          }
+          return {
+            eq: () => ({
+              eq: () => ({
+                maybeSingle: () =>
+                  Promise.resolve({ data: { role: 'admin' }, error: null }),
+              }),
+            }),
+          }
+        },
+      }
+    }
+    return {
+      select: () => ({
+        eq: () => ({
+          single: () => Promise.resolve({ data: null, error: null }),
+        }),
       }),
-    }),
-  })
+    }
+  }
   return { fromMock: vi.fn<typeof impl>(impl) }
 })
 vi.mock('../lib/supabase', () => ({
@@ -46,7 +83,7 @@ describe('TeamHomePage', () => {
       </MemoryRouter>,
     )
     await screen.findByText('HQ')
-    fireEvent.click(screen.getByRole('button', { name: /create office/i }))
+    fireEvent.click(screen.getByRole('button', { name: /new office/i }))
     await waitFor(() => expect(createOffice).toHaveBeenCalled())
     expect(await screen.findByText('map-view')).toBeInTheDocument()
   })
