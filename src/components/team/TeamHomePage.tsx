@@ -422,6 +422,39 @@ export function TeamHomePage() {
     }
   }
 
+  /**
+   * "Import" header action — replaces a previous placeholder alert.
+   *
+   * Creates a fresh empty office (named by the user, defaulting to a
+   * suggestion) and navigates to its roster with `?import=csv`. The
+   * RosterPage watches that query param and auto-opens the CSV import
+   * dialog so the user lands directly on the import flow rather than
+   * an empty office. The CSV import dialog itself was upgraded in
+   * Wave 16B (drag-drop, header aliases, template, filter pills,
+   * inline edit) so the experience picks up where this leaves off.
+   *
+   * Future work: a second branch could accept an office-payload JSON
+   * (backup format) — for now a "blank office + people CSV" is the
+   * common case and ships the button as a real working action.
+   */
+  async function onImport() {
+    if (!team || session.status !== 'authenticated') return
+    const suggested = nextOfficeName(offices)
+    const input = window.prompt(
+      "Name this office. We'll open the CSV import dialog after it's created so you can paste or drop your employee list.",
+      suggested,
+    )
+    if (input === null) return
+    const name = input.trim() || suggested
+    setCreating(true)
+    try {
+      const created = await createOffice(team.id, name)
+      navigate(`/t/${team.slug}/o/${created.slug}/roster?import=csv`)
+    } finally {
+      setCreating(false)
+    }
+  }
+
   async function onNewDemo() {
     if (!team || session.status !== 'authenticated') return
     setCreating(true)
@@ -592,12 +625,10 @@ export function TeamHomePage() {
               <>
                 <button
                   type="button"
-                  onClick={() => {
-                    window.alert(
-                      'Import is not available yet. Create a blank office to start, or use the sample office template.',
-                    )
-                  }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  onClick={onImport}
+                  disabled={creating}
+                  title="Create a new office and open the CSV import dialog"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 >
                   <Upload size={14} aria-hidden="true" />
                   Import

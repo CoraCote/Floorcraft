@@ -257,6 +257,28 @@ export function RosterPage() {
     }
   }, [dayFilter, searchParams, setSearchParams])
 
+  // `?import=csv` deep-link: opens the CSV import dialog as soon as the
+  // roster mounts. Used by the TeamHomePage's "Import" header action,
+  // which creates a fresh office and lands on the roster expecting the
+  // import flow to be the next step. The param is stripped from the URL
+  // after handling so a refresh doesn't re-open the dialog and so the
+  // user can copy the URL without dragging the import-flow side-effect
+  // along. Gated on `canEdit` so a viewer who somehow lands here with
+  // the param doesn't see a dialog they can't act on.
+  useEffect(() => {
+    if (searchParams.get('import') !== 'csv') return
+    if (!canEdit) {
+      const next = new URLSearchParams(searchParams)
+      next.delete('import')
+      setSearchParams(next, { replace: true })
+      return
+    }
+    setCsvImportOpen(true)
+    const next = new URLSearchParams(searchParams)
+    next.delete('import')
+    setSearchParams(next, { replace: true })
+  }, [searchParams, setSearchParams, setCsvImportOpen, canEdit])
+
   // Everything keyed off the current clock stays stable for the lifetime of
   // a single render (so sort order doesn't skew as midnight rolls over
   // mid-session — a fresh render will just pick up the new date).
