@@ -117,3 +117,23 @@
     @apply transition-colors duration-150;
   }
 }
+
+/*
+ * Wave 14C — shared dropdown entrance animation used by TeamSwitcher
+ * and UserMenu. Skipped automatically when the user prefers reduced
+ * motion; components gate the class behind prefersReducedMotion().
+ */
+@keyframes dropdown-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-enter {
+  animation: dropdown-enter 120ms ease-out;
+}
