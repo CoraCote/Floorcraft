@@ -14,6 +14,7 @@ export interface HelpSectionMeta {
 }
 
 export const HELP_SECTIONS: HelpSectionMeta[] = [
+  { id: 'whats-new', title: "What's new" },
   { id: 'getting-started', title: 'Getting started' },
   { id: 'teams-offices', title: 'Teams & offices' },
   { id: 'map-editor', title: 'Map (floor plan editor)' },

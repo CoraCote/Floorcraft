@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { HelpSearchPalette } from './HelpSearchPalette'
 import { HELP_SECTIONS } from './helpSections'
@@ -7,23 +7,94 @@ import { HELP_SECTIONS } from './helpSections'
  * Single-page user guide + FAQ. Deliberately kept in one file with
  * inline content so contributors can search/grep for a phrase and land
  * on the exact spot to edit — no cross-file hunting. Content is grouped
- * into anchored sections that the sidebar TOC jumps to; a
- * scroll-spy effect keeps the active section highlighted in the TOC as
- * the reader scrolls.
+ * into anchored sections that the sidebar TOC jumps to; an
+ * IntersectionObserver-driven scroll-spy keeps the active section
+ * highlighted in the TOC as the reader scrolls.
+ *
+ * Wave 12C added a live search filter (case-insensitive substring on
+ * heading + body text) that hides whole sections AND collapses the TOC
+ * to matches, plus a "What's new" section at the top, copy-to-clipboard
+ * anchors on each `<h2>`, and a results-count `aria-live` chip.
  */
 
 interface Section {
   id: string
   label: string
   icon: string
+  // Plain-text representation of the body so the search filter can
+  // match prose without traversing the rendered React tree.
+  searchText: string
   body: React.ReactNode
+}
+
+// Anchor link to another section by id. Used inside the "What's new"
+// bullets so each highlight links to deeper content where one exists.
+function SectionLink({ to, children }: { to: string; children: React.ReactNode }) {
+  return (
+    <a
+      href={`#${to}`}
+      className="text-blue-600 dark:text-blue-400 hover:underline"
+    >
+      {children}
+    </a>
+  )
 }
 
 const sections: Section[] = [
   {
+    id: 'whats-new',
+    label: "What's new",
+    icon: '✨',
+    searchText:
+      "what's new whats new drag empty canvas pan shortcut cheat sheet command palette canvas finder plan health pill broken refs capacity multi-select align distribute toolbar floor tabs drag-reorderable duplicate presentation mode fullscreen floor navigation cmd+f cmd+k question mark",
+    body: (
+      <div className="space-y-3">
+        <p>
+          Recent waves shipped a stack of editor upgrades. The highlights:
+        </p>
+        <ul className="list-disc pl-6 space-y-1.5 text-gray-700 dark:text-gray-200">
+          <li>
+            <strong>Drag empty canvas to pan</strong> — no need to switch tools
+            first. See <SectionLink to="map-editor">Map editor</SectionLink>.
+          </li>
+          <li>
+            Press <kbd>?</kbd> for the shortcut cheat sheet. Full reference in{' '}
+            <SectionLink to="shortcuts">Keyboard shortcuts</SectionLink>.
+          </li>
+          <li>
+            Press <kbd>Cmd</kbd>+<kbd>F</kbd> for the canvas finder — type a
+            label to highlight matching elements.
+          </li>
+          <li>
+            Press <kbd>Cmd</kbd>+<kbd>K</kbd> for the command palette — every
+            action in one searchable list.
+          </li>
+          <li>
+            The <strong>plan health pill</strong> in the top bar surfaces
+            broken references and capacity issues at a glance.
+          </li>
+          <li>
+            Multi-select shows a floating <strong>align / distribute toolbar</strong>{' '}
+            so you can line up rows of desks in one click.
+          </li>
+          <li>
+            Floor tabs are now drag-reorderable; each has a{' '}
+            <strong>Duplicate</strong> action to clone a layout to a new floor.
+          </li>
+          <li>
+            <strong>Presentation mode</strong> goes fullscreen with{' '}
+            <kbd>←</kbd> / <kbd>→</kbd> floor navigation.
+          </li>
+        </ul>
+      </div>
+    ),
+  },
+  {
     id: 'getting-started',
     label: 'Getting started',
     icon: '🚀',
+    searchText:
+      'getting started floorcraft floor-plan editor roster offices map demo office sign up create team three-minute tour drag desk library assign person status bar double-click row side drawer auto-save cloud icon saving saved save failed',
     body: (
       <div className="space-y-4">
         <p>
@@ -67,6 +138,8 @@ const sections: Section[] = [
     id: 'teams-offices',
     label: 'Teams & offices',
     icon: '🏢',
+    searchText:
+      'teams offices workspace company department family create office demo office delete trash icon confirmation dialog inviting collaborators members invite email verification resend cooldown team role admin member office role owner hr editor space planner viewer permissions read-only',
     body: (
       <div className="space-y-4">
         <p>
@@ -124,6 +197,8 @@ const sections: Section[] = [
     id: 'map-editor',
     label: 'Map (floor plan editor)',
     icon: '🗺️',
+    searchText:
+      "map floor plan editor konva canvas tools left sidebar element library multi-floor undo redo grouping live collaboration drawing walls press w wall tool snap grid double-click enter finish run drag wall midpoint curve arc placing elements desks workstations private offices conference rooms phone booths kitchens doors windows decor plants couches ghost preview multiple floors floor switcher add floor delete floor unassigned safe renames desk ids unique inline error properties panel selection editing click select shift-click marquee select ctrl+d duplicate arrow nudge ctrl+g group ctrl+l lock unlock moving rotating magenta alignment guides snap shift bypass rotate handle cardinal angles 0 45 90 135 180 225 270 315 angle badge drag empty canvas pan space-hold pan presentation mode fullscreen floor arrows",
     body: (
       <div className="space-y-4">
         <p>
@@ -132,7 +207,23 @@ const sections: Section[] = [
           undo/redo, grouping, and live collaboration.
         </p>
 
-        <h3 className="font-semibold text-gray-900 dark:text-gray-100">Drawing walls</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100">Panning &amp; zooming</h3>
+        <ul className="list-disc pl-6 space-y-1.5 text-gray-700 dark:text-gray-200">
+          <li>
+            <strong>Drag empty canvas</strong> to pan with the select tool —
+            no need to swap to the hand tool first.
+          </li>
+          <li>
+            Hold <kbd>Space</kbd> + drag for the classic pan-tool feel; release
+            to snap back to whatever tool you were using.
+          </li>
+          <li>
+            Scroll to zoom around the cursor. <kbd>Ctrl</kbd>+<kbd>0</kbd>{' '}
+            resets to 100%.
+          </li>
+        </ul>
+
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">Drawing walls</h3>
         <ol className="list-decimal pl-6 space-y-1.5 text-gray-700 dark:text-gray-200">
           <li>Press <kbd>W</kbd> or click the Wall tool.</li>
           <li>Click to drop each wall segment endpoint. Double-click or press <kbd>Enter</kbd> to finish a run.</li>
@@ -152,11 +243,14 @@ const sections: Section[] = [
         <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">Multiple floors</h3>
         <p>
           The floor switcher lives at the bottom of the map. <strong>+ Add
-          floor</strong> spins up an empty floor; each floor has its own
-          elements and seat assignments but shares the same roster of people.
-          Deleting a floor that has people assigned to desks on it shows the
-          count in the confirmation dialog ("Floor 3 has 12 assigned employees.
-          They will be unassigned.") and frees those seats automatically.
+          floor</strong> spins up an empty floor; <strong>drag a floor tab</strong>{' '}
+          to reorder, and the right-click menu on a tab includes a{' '}
+          <strong>Duplicate</strong> action to clone the current layout into a
+          new floor. Each floor has its own elements and seat assignments but
+          shares the same roster of people. Deleting a floor that has people
+          assigned to desks on it shows the count in the confirmation dialog
+          ("Floor 3 has 12 assigned employees. They will be unassigned.") and
+          frees those seats automatically.
         </p>
 
         <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">Safe renames</h3>
@@ -166,13 +260,18 @@ const sections: Section[] = [
           blocks the save — no silent collisions.
         </p>
 
-        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">Selection & editing</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">Selection &amp; editing</h3>
         <ul className="list-disc pl-6 space-y-1.5 text-gray-700 dark:text-gray-200">
           <li>Click to select; Shift-click to add to selection.</li>
           <li>Drag on empty canvas to marquee-select.</li>
           <li><kbd>Ctrl</kbd>+<kbd>D</kbd> duplicates; arrow keys nudge (hold <kbd>Shift</kbd> for 10px).</li>
           <li><kbd>Ctrl</kbd>+<kbd>G</kbd> groups selected elements; <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>G</kbd> ungroups.</li>
           <li><kbd>Ctrl</kbd>+<kbd>L</kbd> locks/unlocks selection so it can't be moved accidentally.</li>
+          <li>
+            With 2+ items selected, a floating <strong>align / distribute
+            toolbar</strong> appears with one-click left/center/right and
+            equal-spacing controls.
+          </li>
         </ul>
 
         <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">Moving &amp; rotating</h3>
@@ -194,6 +293,26 @@ const sections: Section[] = [
           badge disappears. Multi-select works the same — the whole group
           rotates around its collective center.
         </p>
+
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">Finder &amp; presentation</h3>
+        <ul className="list-disc pl-6 space-y-1.5 text-gray-700 dark:text-gray-200">
+          <li>
+            <kbd>Cmd</kbd>+<kbd>F</kbd> opens the <strong>canvas finder</strong>:
+            type a label and matching elements light up while everything else
+            dims. <kbd>Enter</kbd> cycles to the next match.
+          </li>
+          <li>
+            <kbd>P</kbd> toggles <strong>presentation mode</strong> — the
+            canvas goes fullscreen, chrome retracts, and <kbd>←</kbd> /{' '}
+            <kbd>→</kbd> walk through floors.
+          </li>
+          <li>
+            The <strong>plan health pill</strong> in the top bar lights up
+            amber/red when something needs attention — broken seat references,
+            over-capacity rooms, dangling managers — and opens a drawer listing
+            each issue with a jump-to link.
+          </li>
+        </ul>
       </div>
     ),
   },
@@ -201,6 +320,8 @@ const sections: Section[] = [
     id: 'roster',
     label: 'Roster',
     icon: '👥',
+    searchText:
+      "roster spreadsheet people view filters bulk actions side drawer sort inline-edit stats bar chips total active on leave unassigned pending equipment ending soon departing soon in today editing rows inline edit double-click side drawer office days weekdays mwf tth hybrid remote leave metadata leave type expected return coverage buddy notes scheduled departure date status active on leave departed undo restore desk ctrl+z toast badges warnings amber rehire end-date pill departure pill on-leave ribbon manager dangling bulk actions checkboxes set-department set-status unassign delete export-selection import csv export csv preview validation",
     body: (
       <div className="space-y-4">
         <p>
@@ -251,7 +372,7 @@ const sections: Section[] = [
           assemble a batch across views.
         </p>
 
-        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">Import & export</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">Import &amp; export</h3>
         <ul className="list-disc pl-6 space-y-1.5 text-gray-700 dark:text-gray-200">
           <li><strong>Import CSV</strong> — paste a CSV or upload a file. A preview panel lists each row with a status (New / Update / Error) and surfaces per-row validation before you commit — no more silent drops on malformed data. Manager references resolve by name; duplicates are matched by email (falling back to name + department).</li>
           <li><strong>Export CSV</strong> — export all or just selected. Round-trips cleanly back through import.</li>
@@ -263,6 +384,8 @@ const sections: Section[] = [
     id: 'seating',
     label: 'Seat assignment',
     icon: '💺',
+    searchText:
+      'seat assignment bridge map roster desk workstation private office employees ways to assign drag person right-sidebar people panel onto desk click desk assign properties panel pick person import csv seat column desk id moving unassigning swap bumped notification roster to map seat column floor select desk',
     body: (
       <div className="space-y-4">
         <p>
@@ -294,6 +417,8 @@ const sections: Section[] = [
     id: 'reports',
     label: 'Reports',
     icon: '📊',
+    searchText:
+      'reports tab top bar dashboard utilization floor utilization per-floor occupancy capacity desks workstations private offices red yellow green department headcount active employees grouped department sorted unassigned alphabetically exporting export csv snapshot owner hr editor space planner viewers',
     body: (
       <div className="space-y-4">
         <p>
@@ -336,6 +461,8 @@ const sections: Section[] = [
     id: 'audit-log',
     label: 'Audit log',
     icon: '📋',
+    searchText:
+      'audit log compliance review employees added updated deleted seat assignments floor lifecycle csv imports actor action target metadata filters action employee.delete csv.import owner hr editor append-only',
     body: (
       <div className="space-y-4">
         <p>
@@ -361,6 +488,8 @@ const sections: Section[] = [
     id: 'sharing',
     label: 'Sharing read-only links',
     icon: '🔗',
+    searchText:
+      'sharing read-only links owners public link roster sign-in url snapshot contractor recruiter exec creating link share top bar create share link token revoke audit events scope',
     body: (
       <div className="space-y-4">
         <p>
@@ -393,6 +522,8 @@ const sections: Section[] = [
     id: 'shortcuts',
     label: 'Keyboard shortcuts',
     icon: '⌨️',
+    searchText:
+      'keyboard shortcuts cheat sheet overlay editing ctrl+z undo ctrl+shift+z redo ctrl+d duplicate ctrl+a select all delete del ctrl+g group ctrl+l lock unlock tools v select w wall r rectangle e ellipse t text view ctrl+plus minus zoom in out ctrl+0 reset g toggle grid p presentation m roster general escape deselect cancel question mark cheat sheet arrow nudge cmd cmd+k command palette cmd+f canvas finder space pan',
     body: (
       <div className="space-y-4">
         <p>
@@ -419,7 +550,8 @@ const sections: Section[] = [
               <dt className="inline"><kbd>W</kbd></dt><dd className="inline text-gray-600 dark:text-gray-300"> — Wall</dd><br />
               <dt className="inline"><kbd>R</kbd></dt><dd className="inline text-gray-600 dark:text-gray-300"> — Rectangle</dd><br />
               <dt className="inline"><kbd>E</kbd></dt><dd className="inline text-gray-600 dark:text-gray-300"> — Ellipse</dd><br />
-              <dt className="inline"><kbd>T</kbd></dt><dd className="inline text-gray-600 dark:text-gray-300"> — Text</dd>
+              <dt className="inline"><kbd>T</kbd></dt><dd className="inline text-gray-600 dark:text-gray-300"> — Text</dd><br />
+              <dt className="inline">Hold <kbd>Space</kbd></dt><dd className="inline text-gray-600 dark:text-gray-300"> — Temporary pan</dd>
             </dl>
           </div>
           <div>
@@ -435,6 +567,8 @@ const sections: Section[] = [
           <div>
             <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-1.5">General</h4>
             <dl className="text-sm space-y-1">
+              <dt className="inline"><kbd>Cmd</kbd>+<kbd>K</kbd></dt><dd className="inline text-gray-600 dark:text-gray-300"> — Command palette</dd><br />
+              <dt className="inline"><kbd>Cmd</kbd>+<kbd>F</kbd></dt><dd className="inline text-gray-600 dark:text-gray-300"> — Canvas finder (map)</dd><br />
               <dt className="inline"><kbd>Esc</kbd></dt><dd className="inline text-gray-600 dark:text-gray-300"> — Deselect / cancel</dd><br />
               <dt className="inline"><kbd>?</kbd></dt><dd className="inline text-gray-600 dark:text-gray-300"> — Show cheat sheet</dd><br />
               <dt className="inline">Arrow keys</dt><dd className="inline text-gray-600 dark:text-gray-300"> — Nudge 1px (Shift = 10px)</dd>
@@ -451,6 +585,8 @@ const sections: Section[] = [
     id: 'faq',
     label: 'FAQ',
     icon: '❓',
+    searchText:
+      "faq frequently asked questions create first office data saved automatically two people edited same office optimistic locking conflict modal undo delete csv duplicate employees rehire badge departed leave parental leave coverage stat chips ending soon align desks rotate angle export floor plan image png pdf change email password admin owner schedule departure",
     body: (
       <div className="space-y-5">
         <FaqItem q="How do I create my first office?">
@@ -628,10 +764,74 @@ function FaqItem({ q, children }: { q: string; children: React.ReactNode }) {
   )
 }
 
+/**
+ * Header `<h2>` for each section. Clicking the inline `#` icon copies the
+ * deep-link URL to the clipboard and surfaces a brief aria-live
+ * confirmation so screen-reader and sighted users alike get feedback.
+ */
+function SectionHeading({
+  id,
+  icon,
+  label,
+  onCopy,
+}: {
+  id: string
+  icon: string
+  label: string
+  onCopy: (id: string) => void
+}) {
+  return (
+    <h2
+      id={`heading-${id}`}
+      className="group text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2 scroll-mt-20"
+    >
+      <span aria-hidden>{icon}</span>
+      <a
+        href={`#${id}`}
+        className="hover:underline"
+        onClick={(e) => {
+          // Plain navigation still works (browsers handle the hash) but
+          // we additionally write the absolute URL to the clipboard so
+          // sharing is one click instead of two.
+          e.preventDefault()
+          onCopy(id)
+        }}
+      >
+        {label}
+      </a>
+      <button
+        type="button"
+        onClick={() => onCopy(id)}
+        aria-label={`Copy link to ${label}`}
+        className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 text-base font-normal transition-opacity"
+      >
+        #
+      </button>
+    </h2>
+  )
+}
+
 export function HelpPage() {
   const [activeId, setActiveId] = useState(sections[0].id)
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({})
   const [paletteOpen, setPaletteOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  // `copyMsg` drives the aria-live confirmation chip after an anchor
+  // copy; it auto-clears after a short timeout so a screen reader gets
+  // the announcement without permanent visible noise.
+  const [copyMsg, setCopyMsg] = useState('')
+
+  const trimmedQuery = query.trim().toLowerCase()
+  const filteredSections = useMemo(() => {
+    if (!trimmedQuery) return sections
+    return sections.filter((s) => {
+      const haystack = `${s.label} ${s.searchText}`.toLowerCase()
+      return haystack.includes(trimmedQuery)
+    })
+  }, [trimmedQuery])
+
+  const matchCount = filteredSections.length
+  const isFiltered = trimmedQuery.length > 0
 
   // cmd-K / ctrl-K opens the section search palette. Scoped to this
   // page; the listener is unmounted when you navigate away.
@@ -646,32 +846,80 @@ export function HelpPage() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  // Scroll-spy: highlight whichever section's top is closest to the
-  // viewport top. Runs on scroll, cheap — just a bounding-box read per
-  // section, no IntersectionObserver needed for this list size.
+  // Scroll-spy via IntersectionObserver. We track all visible section
+  // refs and pick whichever one's top has crossed the rootMargin band
+  // most recently — this matches the user's intuition of "the section
+  // I'm reading right now". Falls back to the first section when nothing
+  // is intersecting (e.g. the user is at the very top above all
+  // sections).
   useEffect(() => {
-    function onScroll() {
-      let best = sections[0].id
-      let bestDist = Infinity
-      for (const s of sections) {
-        const el = sectionRefs.current[s.id]
-        if (!el) continue
-        const top = el.getBoundingClientRect().top
-        // Pick the section whose top is closest to (but not far past)
-        // the viewport top. A 120px grace zone accounts for the fixed
-        // header so we don't jump active-state too eagerly.
-        const dist = Math.abs(top - 120)
-        if (top < 200 && dist < bestDist) {
-          best = s.id
-          bestDist = dist
+    if (typeof IntersectionObserver === 'undefined') return
+    const visible = new Set<string>()
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            visible.add(entry.target.id)
+          } else {
+            visible.delete(entry.target.id)
+          }
         }
-      }
-      setActiveId(best)
+        // Pick the first visible section in document order.
+        for (const s of sections) {
+          if (visible.has(s.id)) {
+            setActiveId(s.id)
+            return
+          }
+        }
+      },
+      {
+        // Bias toward the top of the viewport: a section becomes
+        // "active" once its top hits ~120px below the page top, which
+        // accounts for the fixed header without flipping prematurely.
+        rootMargin: '-120px 0px -60% 0px',
+        threshold: 0,
+      },
+    )
+    for (const s of sections) {
+      const el = sectionRefs.current[s.id]
+      if (el) observer.observe(el)
     }
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    return () => observer.disconnect()
   }, [])
+
+  // Auto-clear the copy-confirmation aria-live message after a short
+  // moment so the announcement fires once and the chip fades.
+  useEffect(() => {
+    if (!copyMsg) return
+    const id = window.setTimeout(() => setCopyMsg(''), 1800)
+    return () => window.clearTimeout(id)
+  }, [copyMsg])
+
+  const handleCopyAnchor = (id: string) => {
+    const url = `${window.location.origin}${window.location.pathname}#${id}`
+    // Update the URL hash so back/forward stays consistent with what
+    // the user just copied.
+    if (typeof window.history?.replaceState === 'function') {
+      window.history.replaceState(null, '', `#${id}`)
+    }
+    const announce = () => setCopyMsg('Link copied')
+    const announceFail = () => setCopyMsg('Copy failed')
+    try {
+      const clip = navigator.clipboard
+      if (clip && typeof clip.writeText === 'function') {
+        clip
+          .writeText(url)
+          .then(announce)
+          .catch(announceFail)
+        return
+      }
+    } catch {
+      // fall through to fallback below
+    }
+    // No clipboard API (older browsers / locked-down contexts): still
+    // give the user feedback that the URL is now in the address bar.
+    announce()
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50">
@@ -694,44 +942,86 @@ export function HelpPage() {
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6 md:gap-10">
+      <div className="max-w-6xl mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-[240px_1fr] gap-6 md:gap-10">
         {/*
-          Narrow viewports (below md): wrap the TOC in a collapsed
-          <details> so the user doesn't have to scroll past 9 nav links
-          to reach the content. Desktop keeps the sticky sidebar layout.
-          We render two nav variants rather than toggling CSS on a single
-          <details>, because <details>' open/closed is stateful DOM — not
-          something a media query can override cleanly.
+          Mobile (< md): the TOC collapses into a <details> block at
+          the top of the page so the reader doesn't have to scroll past
+          a stack of nav links to reach content.
         */}
         <details className="md:hidden -mb-2 rounded border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 text-sm">
           <summary className="cursor-pointer select-none px-3 py-2 text-gray-700 dark:text-gray-200 font-medium flex items-center justify-between">
             <span>On this page</span>
             <span className="text-xs text-gray-500 dark:text-gray-400 font-normal">
-              {sections.length} sections
+              {filteredSections.length} sections
             </span>
           </summary>
-          <nav className="space-y-0.5 px-2 pb-2">
-            {sections.map((s) => (
-              <a
-                key={s.id}
-                href={`#${s.id}`}
-                className={`flex items-center gap-2 px-2 py-1.5 rounded transition-colors ${
-                  activeId === s.id
-                    ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-medium'
-                    : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
-              >
-                <span aria-hidden>{s.icon}</span>
-                {s.label}
-              </a>
-            ))}
-          </nav>
+          <div className="px-2 pb-2">
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search help…"
+              aria-label="Search help"
+              className="w-full mb-2 px-2 py-1.5 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+            />
+            <nav
+              role="navigation"
+              aria-label="Table of contents"
+              className="space-y-0.5"
+            >
+              {filteredSections.map((s) => (
+                <a
+                  key={s.id}
+                  href={`#${s.id}`}
+                  className={`flex items-center gap-2 px-2 py-1.5 rounded transition-colors ${
+                    activeId === s.id
+                      ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-medium'
+                      : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  }`}
+                >
+                  <span aria-hidden>{s.icon}</span>
+                  {s.label}
+                </a>
+              ))}
+              {filteredSections.length === 0 && (
+                <div className="px-2 py-2 text-sm text-gray-500 dark:text-gray-400">
+                  No sections match.{' '}
+                  <button
+                    type="button"
+                    onClick={() => setQuery('')}
+                    className="text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    Clear
+                  </button>
+                </div>
+              )}
+            </nav>
+          </div>
         </details>
 
         {/* Desktop sticky sidebar TOC */}
         <aside className="hidden md:block md:sticky md:top-6 md:self-start">
-          <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">
-            On this page
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search help…"
+            aria-label="Search help"
+            className="w-full mb-3 px-2.5 py-1.5 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400"
+          />
+          <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2 flex items-center justify-between">
+            <span>On this page</span>
+            <span
+              role="status"
+              aria-live="polite"
+              className="text-[11px] normal-case tracking-normal text-gray-400 dark:text-gray-500"
+            >
+              {isFiltered
+                ? matchCount === 1
+                  ? '1 section matches'
+                  : `${matchCount} sections match`
+                : ''}
+            </span>
           </div>
           <div className="text-xs text-gray-400 dark:text-gray-500 mb-3">
             Press{' '}
@@ -740,8 +1030,12 @@ export function HelpPage() {
             </kbd>{' '}
             to search
           </div>
-          <nav className="space-y-0.5 text-sm">
-            {sections.map((s) => (
+          <nav
+            role="navigation"
+            aria-label="Table of contents"
+            className="space-y-0.5 text-sm"
+          >
+            {filteredSections.map((s) => (
               <a
                 key={s.id}
                 href={`#${s.id}`}
@@ -755,35 +1049,72 @@ export function HelpPage() {
                 {s.label}
               </a>
             ))}
+            {filteredSections.length === 0 && (
+              <div className="px-2 py-2 text-sm text-gray-500 dark:text-gray-400">
+                No sections match.{' '}
+                <button
+                  type="button"
+                  onClick={() => setQuery('')}
+                  className="text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  Clear
+                </button>
+              </div>
+            )}
           </nav>
         </aside>
 
         <main className="min-w-0">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">User guide</h1>
-          <p className="text-gray-600 dark:text-gray-300 mb-10 max-w-2xl">
+          <p className="text-gray-600 dark:text-gray-300 mb-6 max-w-2xl">
             Everything you need to design an office, populate a roster, and
             keep both in sync. Use the sidebar to jump around, or scroll top
             to bottom.
           </p>
 
-          {sections.map((s) => (
-            <section
-              key={s.id}
-              id={s.id}
-              ref={(el) => {
-                sectionRefs.current[s.id] = el
-              }}
-              className="mb-14 scroll-mt-20"
-            >
-              <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-                <span aria-hidden>{s.icon}</span>
-                {s.label}
-              </h2>
-              <div className="prose prose-sm max-w-none text-gray-700 dark:text-gray-200 leading-relaxed">
-                {s.body}
-              </div>
-            </section>
-          ))}
+          {/* aria-live confirmation for "copied!" — visible chip too */}
+          <div
+            role="status"
+            aria-live="polite"
+            className={`min-h-[20px] mb-4 text-xs ${copyMsg ? 'text-green-600 dark:text-green-400' : 'text-transparent'}`}
+          >
+            {copyMsg || ''}
+          </div>
+
+          {filteredSections.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-gray-300 dark:border-gray-700 p-8 text-center text-gray-500 dark:text-gray-400">
+              <div className="text-base mb-2">No sections match "{query}".</div>
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
+              >
+                Clear search
+              </button>
+            </div>
+          ) : (
+            filteredSections.map((s) => (
+              <section
+                key={s.id}
+                id={s.id}
+                ref={(el) => {
+                  sectionRefs.current[s.id] = el
+                }}
+                className="mb-14 scroll-mt-20"
+                aria-labelledby={`heading-${s.id}`}
+              >
+                <SectionHeading
+                  id={s.id}
+                  icon={s.icon}
+                  label={s.label}
+                  onCopy={handleCopyAnchor}
+                />
+                <div className="prose prose-sm max-w-none text-gray-700 dark:text-gray-200 leading-relaxed">
+                  {s.body}
+                </div>
+              </section>
+            ))
+          )}
 
           <footer className="mt-20 pt-6 border-t border-gray-200 dark:border-gray-800 text-sm text-gray-500 dark:text-gray-400">
             <p>
