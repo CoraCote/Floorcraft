@@ -189,6 +189,103 @@ describe('AlignmentGuides — distance labels', () => {
     expect(getTexts(stage)).toEqual([])
   })
 
+  it('caps labels at one per orientation when many guides share the same axis', () => {
+    // Three vertical guides at DIFFERENT positions (distinct alignments)
+    // but all with gap info. The component should render at most ONE
+    // label for the vertical axis — the nearest non-zero gap — instead
+    // of three blue pills stacked on top of the canvas.
+    const near: AlignmentGuide = {
+      orientation: 'vertical',
+      position: 100,
+      start: 0,
+      end: 140,
+      gap: 20,
+      gapMidpoint: 70,
+    }
+    const mid: AlignmentGuide = {
+      orientation: 'vertical',
+      position: 200,
+      start: 0,
+      end: 140,
+      gap: 60,
+      gapMidpoint: 70,
+    }
+    const far: AlignmentGuide = {
+      orientation: 'vertical',
+      position: 300,
+      start: 0,
+      end: 140,
+      gap: 120,
+      gapMidpoint: 70,
+    }
+    let stage: any
+    render(
+      <Stage width={400} height={400} ref={(s) => { stage = s }}>
+        <AlignmentGuides guides={[far, near, mid]} />
+      </Stage>,
+    )
+    const texts = getTexts(stage)
+    // Only the nearest vertical alignment should get a label. 20 canvas
+    // units at scale=1, ft → "20.0 ft".
+    expect(texts).toEqual(['20.0 ft'])
+  })
+
+  it('deduplicates guides that share orientation + position', () => {
+    // Two guides at the exact same line (e.g., a left-edge AND
+    // center-X alignment that happened to land on the same X due to
+    // coincident neighbour geometry) should collapse into one dashed
+    // line and one label — not two stacked on top of each other.
+    const a = leftEdgeGuide(40)
+    const b = { ...leftEdgeGuide(40), gap: 80, gapMidpoint: 70 }
+    let stage: any
+    render(
+      <Stage width={400} height={400} ref={(s) => { stage = s }}>
+        <AlignmentGuides guides={[a, b]} />
+      </Stage>,
+    )
+    // One dashed line (position=100) + one label at the smallest gap.
+    const lines = stage.find('Line')
+    expect(lines.length).toBe(1)
+    const texts = getTexts(stage)
+    // Smaller gap (40) wins over larger gap (80) per the dedup rule.
+    expect(texts).toEqual(['40.0 ft'])
+  })
+
+  it('emits at most two labels total (one per orientation)', () => {
+    // A horizontal + a vertical alignment = two labels max. Adding
+    // additional guides on each axis must not push past two total.
+    const v1: AlignmentGuide = {
+      orientation: 'vertical',
+      position: 100, start: 0, end: 140,
+      gap: 20, gapMidpoint: 70,
+    }
+    const v2: AlignmentGuide = {
+      orientation: 'vertical',
+      position: 200, start: 0, end: 140,
+      gap: 80, gapMidpoint: 70,
+    }
+    const h1: AlignmentGuide = {
+      orientation: 'horizontal',
+      position: 50, start: 0, end: 200,
+      gap: 15, gapMidpoint: 100,
+    }
+    const h2: AlignmentGuide = {
+      orientation: 'horizontal',
+      position: 150, start: 0, end: 200,
+      gap: 45, gapMidpoint: 100,
+    }
+    let stage: any
+    render(
+      <Stage width={400} height={400} ref={(s) => { stage = s }}>
+        <AlignmentGuides guides={[v1, v2, h1, h2]} />
+      </Stage>,
+    )
+    const texts = getTexts(stage).sort()
+    // The two winners: smallest vertical gap (20) + smallest horizontal
+    // gap (15). The two larger gaps are suppressed.
+    expect(texts).toEqual(['15.0 ft', '20.0 ft'])
+  })
+
   it('handles guides missing gap data without crashing', () => {
     // Legacy-style guide: no gap/gapMidpoint — should still render the
     // dashed line but skip the label. Covers hand-crafted callers and

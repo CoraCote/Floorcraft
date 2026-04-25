@@ -18,12 +18,20 @@ interface AlignmentGuidesProps {
  * makes the dimensions tweakable without hunting through the JSX, and
  * lets the test file assert exact formatter output without guessing
  * pixel math.
+ *
+ * Refined to be less visually intrusive — the previous 10px blue pill
+ * was big enough that a dense snap would cover the drag target and
+ * obscure the grid underneath. Now: 9px font, 3/2 padding, a slightly
+ * translucent background so the grid and neighbouring elements read
+ * through. See MAX_LABELS_PER_ORIENTATION below for the label count
+ * cap that complements this.
  */
-const LABEL_FONT_SIZE = 10
-const LABEL_PAD_X = 5
-const LABEL_PAD_Y = 2
-const LABEL_CORNER_RADIUS = 3
-const LABEL_BG = '#2563eb' // Tailwind blue-600 — matches the spec's pill
+const LABEL_FONT_SIZE = 9
+const LABEL_PAD_X = 3
+const LABEL_PAD_Y = 1.5
+const LABEL_CORNER_RADIUS = 2
+const LABEL_BG = '#1e3a8a' // Tailwind blue-900 — darker but translucent; reads on grid
+const LABEL_BG_OPACITY = 0.88
 const LABEL_FG = '#ffffff'
 const LABEL_FONT_FAMILY = 'ui-monospace, SFMono-Regular, Menlo, monospace'
 /**
@@ -34,6 +42,20 @@ const LABEL_FONT_FAMILY = 'ui-monospace, SFMono-Regular, Menlo, monospace'
  * earlier (fewer screen pixels) and zooming in keeps them longer.
  */
 const MIN_SCREEN_PX_FOR_LABEL = 20
+
+/**
+ * At most one distance label per orientation (horizontal, vertical),
+ * for a total of two on screen at any moment. This mirrors the idiom
+ * in Figma / Sketch / Framer: while dragging, the tool surfaces the
+ * ONE distance that matters on each axis — the nearest snap target —
+ * rather than every possible alignment. Before this cap the
+ * overlay could easily paint five or six blue pills stacked over
+ * each other because the guide generator emits up to six per nearby
+ * rect (center×2 + edges×4). The cap is enforced after guide
+ * deduplication, so a single logical alignment line only gets
+ * counted once.
+ */
+const MAX_LABELS_PER_ORIENTATION = 1
 
 interface PreparedLabel {
   key: string
@@ -71,33 +93,99 @@ export function AlignmentGuides({ guides }: AlignmentGuidesProps) {
   const projectScale = useCanvasStore((s) => s.settings.scale)
   const projectScaleUnit = useCanvasStore((s) => s.settings.scaleUnit)
 
+  // Dedupe guide LINES first. `findAlignmentGuides` happily emits
+  // multiple guides with the same (orientation, position) — for
+  // example when the moving rect shares a left edge AND a
+  // center-X with two different neighbours, two vertical guides
+  // arrive at the same X. The dashed lines would draw on top of
+  // each other (invisible to the user) and each would get its own
+  // label chip — that's the "too many pop-ups" the user called
+  // out. Rounding to the nearest canvas unit is lenient enough to
+  // catch sub-pixel drift while still treating truly distinct
+  // alignments as separate. When two guides collapse, we keep the
+  // one with the smallest non-zero gap since it's the nearest
+  // real neighbour — more informative than a center alignment
+  // against a far-away rect.
+  const dedupedGuides = useMemo<AlignmentGuide[]>(() => {
+    const byKey = new Map<string, AlignmentGuide>()
+    for (const g of guides) {
+      const key = `${g.orientation}:${Math.round(g.position)}`
+      const existing = byKey.get(key)
+      if (!existing) {
+        byKey.set(key, g)
+        continue
+      }
+      // Prefer the guide with the smaller positive gap (closer
+      // neighbour). A gap of 0 means overlap, which is the least
+      // interesting signal — only adopt it if the existing has no
+      // gap info at all.
+      const existingGap = existing.gap
+      const incomingGap = g.gap
+      if (incomingGap === undefined) continue
+      if (existingGap === undefined) {
+        byKey.set(key, g)
+        continue
+      }
+      if (incomingGap > 0 && (existingGap === 0 || incomingGap < existingGap)) {
+        byKey.set(key, g)
+      }
+    }
+    return Array.from(byKey.values())
+  }, [guides])
+
   // Build the label payloads once per (guides, scale, unit) triple.
   // Iterating the array on every mousemove would otherwise allocate a
   // fresh array + string per frame even when nothing meaningful changed.
+  //
+  // The label set is intentionally capped at one per orientation —
+  // see MAX_LABELS_PER_ORIENTATION. For each axis we pick the guide
+  // with the smallest non-zero gap (i.e., the nearest real snap),
+  // falling back to the first overlap guide if nothing has a
+  // positive gap to report.
   const labels = useMemo<PreparedLabel[]>(() => {
-    const out: PreparedLabel[] = []
-    for (let i = 0; i < guides.length; i += 1) {
-      const g = guides[i]
+    type Candidate = { g: AlignmentGuide; i: number; screenSpan: number }
+    const byAxis: Record<'horizontal' | 'vertical', Candidate[]> = {
+      horizontal: [],
+      vertical: [],
+    }
+    for (let i = 0; i < dedupedGuides.length; i += 1) {
+      const g = dedupedGuides[i]
       if (g.gap === undefined || g.gapMidpoint === undefined) continue
-      // Skip labels whose dashed line is too short at the current zoom to
-      // host a readable chip. The dashed line extends 20 canvas units past
-      // each end (`start - 20 .. end + 20`), but the informative span is
-      // `start..end`; compare that to the screen-px threshold.
       const canvasSpan = Math.max(0, g.end - g.start)
       const screenSpan = canvasSpan * stageScale
       if (screenSpan < MIN_SCREEN_PX_FOR_LABEL) continue
+      byAxis[g.orientation].push({ g, i, screenSpan })
+    }
 
+    // Sort each axis' candidates: smallest positive gap first, then
+    // by longer span (more visible guide). Overlaps (gap === 0) sink
+    // to the end so they're only chosen if nothing else qualifies.
+    const ranker = (a: Candidate, b: Candidate): number => {
+      const aGap = a.g.gap ?? 0
+      const bGap = b.g.gap ?? 0
+      const aIsOverlap = aGap === 0 ? 1 : 0
+      const bIsOverlap = bGap === 0 ? 1 : 0
+      if (aIsOverlap !== bIsOverlap) return aIsOverlap - bIsOverlap
+      if (aGap !== bGap) return aGap - bGap
+      return b.screenSpan - a.screenSpan
+    }
+    byAxis.horizontal.sort(ranker)
+    byAxis.vertical.sort(ranker)
+
+    const chosen = [
+      ...byAxis.horizontal.slice(0, MAX_LABELS_PER_ORIENTATION),
+      ...byAxis.vertical.slice(0, MAX_LABELS_PER_ORIENTATION),
+    ]
+
+    const out: PreparedLabel[] = []
+    for (const { g, i } of chosen) {
+      if (g.gap === undefined || g.gapMidpoint === undefined) continue
       const real = toRealLength(g.gap, projectScale, projectScaleUnit)
       const text = `${formatLength(real, projectScaleUnit)} ${projectScaleUnit}`
       const widthPx = estimateTextWidth(text, LABEL_FONT_SIZE) + LABEL_PAD_X * 2
       const heightPx = LABEL_FONT_SIZE + LABEL_PAD_Y * 2
-
-      // For a vertical guide, `position` is the X (constant along the
-      // line) and `gapMidpoint` is the Y anchor. Horizontal guides are
-      // the mirror case.
       const x = g.orientation === 'vertical' ? g.position : g.gapMidpoint
       const y = g.orientation === 'vertical' ? g.gapMidpoint : g.position
-
       out.push({
         key: `${i}:${g.orientation}:${g.position}`,
         x,
@@ -108,9 +196,9 @@ export function AlignmentGuides({ guides }: AlignmentGuidesProps) {
       })
     }
     return out
-  }, [guides, stageScale, projectScale, projectScaleUnit])
+  }, [dedupedGuides, stageScale, projectScale, projectScaleUnit])
 
-  if (guides.length === 0) return null
+  if (dedupedGuides.length === 0) return null
 
   // Inverse stage scale keeps chip size + font constant on screen as the
   // user zooms. Guard against a pathological zero scale (shouldn't occur
@@ -119,7 +207,7 @@ export function AlignmentGuides({ guides }: AlignmentGuidesProps) {
 
   return (
     <Layer listening={false}>
-      {guides.map((guide, i) => (
+      {dedupedGuides.map((guide, i) => (
         <Line
           key={`line-${i}`}
           points={
@@ -160,6 +248,7 @@ export function AlignmentGuides({ guides }: AlignmentGuidesProps) {
             width={label.widthPx}
             height={label.heightPx}
             fill={LABEL_BG}
+            opacity={LABEL_BG_OPACITY}
             cornerRadius={LABEL_CORNER_RADIUS}
             listening={false}
           />
