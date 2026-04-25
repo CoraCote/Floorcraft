@@ -56,11 +56,12 @@ describe('HelpPage TOC + search', () => {
   it('renders the new "What\'s new" section above existing content', () => {
     renderHelp()
     // Each section has an id matching its slug. The What's new
-    // landmark should be present.
+    // landmark should be present and reflect the most recent wave of
+    // features (Wave 15B refresh).
     const section = document.getElementById('whats-new')
     expect(section).not.toBeNull()
-    expect(section?.textContent ?? '').toMatch(/drag empty canvas to pan/i)
-    expect(section?.textContent ?? '').toMatch(/cmd/i)
+    expect(section?.textContent ?? '').toMatch(/dark mode/i)
+    expect(section?.textContent ?? '').toMatch(/action dock|hover card|csv import preview/i)
   })
 
   it('search filters TOC and sections by heading text', () => {
