@@ -36,14 +36,20 @@ describe('Invite preview', () => {
       inviterName: 'Sarah',
     })
     mount()
+    // Wave 17C: the invite page now splits the greeting across two
+    // lines — "You've been invited to join {team}" and "Invited by
+    // {inviter}" — so match the two pieces individually instead of
+    // one concatenated string.
     await waitFor(() =>
-      expect(screen.getByText(/Sarah invited you to Acme Corp/i)).toBeInTheDocument(),
+      expect(screen.getByText(/Acme Corp/i)).toBeInTheDocument(),
     )
+    expect(screen.getByText(/Invited by/i)).toBeInTheDocument()
+    expect(screen.getByText(/Sarah/)).toBeInTheDocument()
   })
 
   it('shows not-valid message when preview returns null', async () => {
     vi.mocked(preview.previewInvite).mockResolvedValue(null)
     mount()
-    await waitFor(() => expect(screen.getByText(/not valid/i)).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText(/isn't valid|not valid/i)).toBeInTheDocument())
   })
 })

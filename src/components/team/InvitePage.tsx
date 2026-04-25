@@ -1,9 +1,28 @@
 import { useEffect, useState } from 'react'
-import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams, Link } from 'react-router-dom'
+import { Shield } from 'lucide-react'
 import { useSession } from '../../lib/auth/session'
 import { supabase } from '../../lib/supabase'
 import { humanizeError } from '../../lib/errorMessages'
 import { previewInvite, type InvitePreview } from '../../lib/invitePreview'
+import { Button } from '../ui'
+
+/**
+ * Wave 17C: branded invite landing page. The route fires before auth
+ * (see the unauthenticated branch below), previews the inviter + team
+ * via a security-definer RPC, and — once the user is signed in — lets
+ * them accept with a single click.
+ *
+ * Polish: full-height gradient bg matching the auth/landing pages; a
+ * card with the Floorcraft wordmark, a clear "X invited you to Y"
+ * headline, inviter attribution, a styled role pill, and primary
+ * "Accept & join" + secondary "Decline" buttons. Decline surfaces a
+ * muted confirmation state rather than closing the tab, so the user
+ * isn't left wondering what happened.
+ *
+ * The accept flow is unchanged — it still round-trips through
+ * `accept_invite` RPC and navigates to the team home on success.
+ */
 
 export function InvitePage() {
   const { token } = useParams<{ token: string }>()
@@ -13,6 +32,7 @@ export function InvitePage() {
   const [error, setError] = useState<string | null>(null)
   const [preview, setPreview] = useState<InvitePreview | null>(null)
   const [previewLoaded, setPreviewLoaded] = useState(false)
+  const [declined, setDeclined] = useState(false)
 
   // Fire the preview fetch as soon as we have a token, regardless of
   // auth state. The preview RPC is `security definer` and callable by
@@ -33,10 +53,25 @@ export function InvitePage() {
     }
   }, [token])
 
-  if (!token) return <div className="p-6 text-sm">Invalid invite link.</div>
+  if (!token) {
+    return (
+      <InviteShell>
+        <InviteErrorCard
+          title="Invalid invite link"
+          body="This URL is missing its invite token."
+        />
+      </InviteShell>
+    )
+  }
 
   if (session.status === 'loading') {
-    return <div className="p-6 text-sm text-gray-500 dark:text-gray-400">Loading…</div>
+    return (
+      <InviteShell>
+        <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <p className="text-sm text-gray-500 dark:text-gray-400">Loading…</p>
+        </div>
+      </InviteShell>
+    )
   }
 
   if (session.status === 'unauthenticated') {
@@ -69,36 +104,130 @@ export function InvitePage() {
   // that'll just surface a generic error.
   const inviteInvalid = previewLoaded && !preview
 
+  if (declined) {
+    return (
+      <InviteShell>
+        <InviteErrorCard
+          title="Invitation declined"
+          body="You can close this tab. If this was a mistake, ask your inviter for a fresh link."
+        />
+      </InviteShell>
+    )
+  }
+
+  if (inviteInvalid) {
+    return (
+      <InviteShell>
+        <InviteErrorCard
+          title="This invite isn't valid anymore"
+          body="It may have expired, been revoked, or already been accepted. Ask your inviter for a fresh link."
+        />
+      </InviteShell>
+    )
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-800/50">
-      <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow max-w-sm space-y-3 text-sm">
+    <InviteShell>
+      <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm dark:border-gray-800 dark:bg-gray-900">
         {preview ? (
           <>
-            <h1 className="text-lg font-semibold">
-              {preview.inviterName} invited you to {preview.teamName}
+            <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+              You've been invited to join{' '}
+              <span className="text-blue-600 dark:text-blue-400">
+                {preview.teamName}
+              </span>
             </h1>
-            <p className="text-gray-600 dark:text-gray-300">Accept to join this workspace on Floorcraft.</p>
-          </>
-        ) : previewLoaded ? (
-          <>
-            <h1 className="text-lg font-semibold">Invite link not valid</h1>
-            <p className="text-gray-600 dark:text-gray-300">
-              This invite may be expired or already used. Ask your inviter for a fresh link.
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+              Invited by <strong>{preview.inviterName}</strong>
             </p>
+            <div className="mt-4 flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                <Shield size={10} aria-hidden="true" />
+                Member
+              </span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                Access to every office in this team
+              </span>
+            </div>
           </>
         ) : (
           <>
-            <h1 className="text-lg font-semibold">Loading invite…</h1>
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+              Loading invite…
+            </h1>
+            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+              Fetching the team and inviter details.
+            </p>
           </>
         )}
-        {error && <p className="text-red-600 dark:text-red-400">{error}</p>}
-        <button
-          onClick={accept}
-          disabled={busy || inviteInvalid}
-          className="w-full bg-blue-600 text-white rounded py-2 font-medium disabled:opacity-50"
+
+        {error && (
+          <p role="alert" className="mt-4 text-sm text-red-600 dark:text-red-400">
+            {error}
+          </p>
+        )}
+
+        <div className="mt-6 flex flex-col sm:flex-row-reverse gap-2">
+          <Button
+            variant="primary"
+            onClick={accept}
+            disabled={busy || inviteInvalid}
+            className="w-full sm:w-auto justify-center"
+          >
+            {busy ? 'Joining…' : 'Accept invite'}
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => setDeclined(true)}
+            disabled={busy}
+            className="w-full sm:w-auto justify-center"
+          >
+            Decline
+          </Button>
+        </div>
+      </div>
+    </InviteShell>
+  )
+}
+
+/**
+ * Shared chrome: gradient background + centered card + Floorcraft
+ * wordmark at the top. Keeps the invite page visually consistent with
+ * the landing page and auth pages, which this user may have just come
+ * from (or be about to bounce through on the signup round-trip).
+ */
+function InviteShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-gray-950 dark:to-gray-900 flex flex-col items-center justify-center px-6 py-10">
+      <Link
+        to="/"
+        className="mb-6 flex items-center gap-2 font-semibold tracking-tight text-gray-900 dark:text-gray-100"
+      >
+        <span
+          aria-hidden="true"
+          className="inline-block h-5 w-5 rotate-45 rounded-sm bg-gradient-to-br from-blue-500 to-indigo-600"
+        />
+        <span>Floorcraft</span>
+      </Link>
+      <div className="w-full max-w-md">{children}</div>
+    </div>
+  )
+}
+
+function InviteErrorCard({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm dark:border-gray-800 dark:bg-gray-900 text-center">
+      <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+        {title}
+      </h1>
+      <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{body}</p>
+      <div className="mt-5">
+        <Link
+          to="/"
+          className="inline-flex items-center text-sm text-blue-600 hover:underline dark:text-blue-400"
         >
-          {busy ? 'Joining…' : 'Accept invite'}
-        </button>
+          Go to Floorcraft home
+        </Link>
       </div>
     </div>
   )
