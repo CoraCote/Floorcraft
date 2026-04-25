@@ -53,6 +53,7 @@ import { commitDueStatusChanges } from '../../lib/commitDueStatusChanges'
 import { todayIsoDate } from '../../lib/time'
 import { useEffectiveDateTick } from '../../hooks/useEffectiveDateTick'
 import type { Project } from '../../types/project'
+import { DEFAULT_CANVAS_SETTINGS, isSeatLabelStyle } from '../../types/project'
 
 type ShellState = 'loading' | 'not_found' | 'ready'
 
@@ -168,9 +169,22 @@ export function ProjectShell() {
         activeFloorId: typeof rawActiveFloor === 'string' ? rawActiveFloor : '',
       })
       if (p.settings) {
-        useCanvasStore.setState({
-          settings: p.settings as ReturnType<typeof useCanvasStore.getState>['settings'],
-        })
+        // Back-fill `seatLabelStyle` for pre-Wave-15C payloads the same
+        // way `northRotation` and the wall `bulges` field get defaults
+        // applied at load — so an existing office opened after the
+        // upgrade keeps rendering the legacy `'pill'` style (no
+        // visible change) rather than reading `undefined` and confusing
+        // the renderer. New offices persist their own choice via the
+        // autosave plumbing.
+        const rawSettings = p.settings as Record<string, unknown>
+        const settings = {
+          ...DEFAULT_CANVAS_SETTINGS,
+          ...rawSettings,
+          seatLabelStyle: isSeatLabelStyle(rawSettings.seatLabelStyle)
+            ? rawSettings.seatLabelStyle
+            : 'pill',
+        } as ReturnType<typeof useCanvasStore.getState>['settings']
+        useCanvasStore.setState({ settings })
       }
 
       // Rehydrate the seat-history log. `coerceSeatHistoryEntries` is

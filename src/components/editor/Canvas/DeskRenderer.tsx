@@ -4,10 +4,12 @@ import { isDeskElement, isWorkstationElement } from '../../../types/elements'
 import { useUIStore } from '../../../stores/uiStore'
 import { useEmployeeStore } from '../../../stores/employeeStore'
 import { useSeatDragStore } from '../../../stores/seatDragStore'
+import { useCanvasStore } from '../../../stores/canvasStore'
 import { useVisibleEmployees } from '../../../hooks/useVisibleEmployees'
 import { deriveSeatStatus } from '../../../lib/seatStatus'
-import { truncateToWidth } from '../../../lib/textTruncate'
 import type { Accommodation } from '../../../types/employee'
+import type { SeatLabelStyle } from '../../../types/project'
+import { SeatLabel } from './SeatLabel'
 
 /** Visual palette for the drop-target outline painted while the user is
  *  dragging an employee chip over the canvas. Green = open desk, amber =
@@ -130,6 +132,13 @@ export function DeskRenderer({ element }: DeskRendererProps) {
   // remains visible — it's not PII and it's load-bearing for wayfinding.
   const employees = useVisibleEmployees()
   const getDepartmentColor = useEmployeeStore((s) => s.getDepartmentColor)
+  // User-selected cosmetic style for the per-seat label. Back-filled to
+  // `'pill'` in ProjectShell on load, so existing projects see the
+  // legacy rendering until the user opts into something else via the
+  // View menu. Reading `settings.seatLabelStyle` lets every seat on
+  // screen update in lockstep when the user toggles the picker.
+  const seatLabelStyle: SeatLabelStyle =
+    useCanvasStore((s) => s.settings.seatLabelStyle) ?? 'pill'
   // Drag-in-flight outline: when an employee is being dragged from
   // PeoplePanel, paint every assignable desk with an affordance outline
   // so the user can see where they can drop. `hoveredSeatId` bumps the
@@ -148,6 +157,7 @@ export function DeskRenderer({ element }: DeskRendererProps) {
         employees={employees}
         getDepartmentColor={getDepartmentColor}
         dragState={dragState}
+        seatLabelStyle={seatLabelStyle}
       />
     )
   }
@@ -160,6 +170,7 @@ export function DeskRenderer({ element }: DeskRendererProps) {
         employees={employees}
         getDepartmentColor={getDepartmentColor}
         dragState={dragState}
+        seatLabelStyle={seatLabelStyle}
       />
     )
   }
@@ -171,6 +182,7 @@ export function DeskRenderer({ element }: DeskRendererProps) {
       employees={employees}
       getDepartmentColor={getDepartmentColor}
       dragState={dragState}
+      seatLabelStyle={seatLabelStyle}
     />
   )
 }
@@ -232,9 +244,10 @@ interface DeskElementRendererProps {
   getDepartmentColor: (department: string) => string
   /** Active while an employee drag is in flight — null otherwise. */
   dragState: { isHovered: boolean } | null
+  seatLabelStyle: SeatLabelStyle
 }
 
-function DeskElementRenderer({ element, isSelected, employees, getDepartmentColor, dragState }: DeskElementRendererProps) {
+function DeskElementRenderer({ element, isSelected, employees, getDepartmentColor, dragState, seatLabelStyle }: DeskElementRendererProps) {
   const employee = element.assignedEmployeeId ? employees[element.assignedEmployeeId] : null
   const departmentColor = employee?.department ? getDepartmentColor(employee.department) : null
   const isHotDesk = element.type === 'hot-desk'
@@ -246,25 +259,35 @@ function DeskElementRenderer({ element, isSelected, employees, getDepartmentColo
   const borderDash = employee ? undefined : [4, 4]
 
   // Layout contract: the desk-id sits as a tiny top-left badge, and the
-  // employee chip lives on a pill centered on the remaining real estate
-  // below it. The pill-row starts below the id-badge band (9px + 2px) so
-  // the two text layers never overlap. When the seat is too narrow to
-  // fit the id badge + a legible chip we drop the badge and keep only
-  // the chip — the chip is the load-bearing piece for wayfinding.
+  // employee label lives on the remaining real estate below it. The
+  // label-row starts below the id-badge band (9px + 2px) so the two
+  // text layers never overlap. When the seat is too narrow to fit the
+  // id badge + a legible label we drop the badge and keep only the
+  // label — the label is the load-bearing piece for wayfinding.
+  //
+  // The `'card'` style is an exception: the card's own header strip
+  // takes the place of the desk-id badge visually (same top-of-seat
+  // real estate, same "what is this thing" signal), so we hide the
+  // id-badge band and let the label consume the full height. Readers
+  // can always pull the exact desk id from the Properties panel.
   const ID_BAND_H = 11
   const TOO_SMALL_FOR_ID = element.width < 48 || element.height < 28
-  const showIdBadge = !TOO_SMALL_FOR_ID
-  const contentTop = showIdBadge ? -element.height / 2 + ID_BAND_H : -element.height / 2 + 4
-  const contentH = element.height - (showIdBadge ? ID_BAND_H : 4) - 4
-  // Employee name truncated to fit the chip width; department similarly
-  // truncated at a smaller font so long dept names don't overflow.
-  const chipInnerPadX = 6
-  const chipW = Math.max(20, element.width - 8)
-  const nameMaxPx = chipW - chipInnerPadX * 2
-  const displayName = employee ? truncateToWidth(employee.name, nameMaxPx, 11) : ''
-  const displayDept = employee?.department
-    ? truncateToWidth(employee.department, nameMaxPx, 9)
-    : ''
+  const showIdBadge = !TOO_SMALL_FOR_ID && seatLabelStyle !== 'card'
+  // The `'card'` style fills the entire seat — its header strip lives
+  // at the top edge and the body extends to the bottom edge. Every
+  // other style insets by 4px (and reserves the id-badge band at the
+  // top) so the label never collides with the desk outline.
+  const isCard = seatLabelStyle === 'card'
+  const contentTop = isCard
+    ? -element.height / 2
+    : showIdBadge
+      ? -element.height / 2 + ID_BAND_H
+      : -element.height / 2 + 4
+  const contentH = isCard
+    ? element.height
+    : element.height - (showIdBadge ? ID_BAND_H : 4) - 4
+  const contentLeft = isCard ? -element.width / 2 : -element.width / 2 + 4
+  const contentW = isCard ? element.width : element.width - 8
 
   return (
     <Group rotation={element.rotation} listening={!element.locked}>
@@ -282,11 +305,13 @@ function DeskElementRenderer({ element, isSelected, employees, getDepartmentColo
       />
 
       {/* Desk-id corner badge. Rendered in its own reserved band at the
-          top-left so the employee chip below can center without risking
-          overlap. Hidden when the desk is too small to fit both. A
-          `title`-equivalent tooltip isn't available on Konva Text but
-          selection in the canvas already surfaces `element.deskId` in the
-          Properties panel — same info, one click away. */}
+          top-left so the employee label below can center without risking
+          overlap. Hidden for the `'card'` style (whose header strip
+          replaces the badge visually) and when the desk is too small to
+          fit both. A `title`-equivalent tooltip isn't available on Konva
+          Text but selection in the canvas already surfaces
+          `element.deskId` in the Properties panel — same info, one click
+          away. */}
       {showIdBadge && (
         <Text
           text={element.deskId}
@@ -301,62 +326,28 @@ function DeskElementRenderer({ element, isSelected, employees, getDepartmentColo
         />
       )}
 
-      {employee ? (
-        // Employee chip — a pill centered on the content band. The pill
-        // sits behind the name so the department colour reads as a
-        // gentle department tint, not a flat block. `clip` on the outer
-        // Group would also work but the pill-and-truncate combo keeps
-        // the chip from ever bleeding outside the seat.
-        <Group clipX={-element.width / 2} clipY={contentTop} clipWidth={element.width} clipHeight={contentH}>
-          {departmentColor && (
-            <Rect
-              x={-chipW / 2}
-              y={contentTop + contentH / 2 - 10}
-              width={chipW}
-              height={20}
-              fill={departmentColor}
-              opacity={0.18}
-              cornerRadius={10}
-              listening={false}
-            />
-          )}
-          <Text
-            text={displayName}
-            x={-chipW / 2}
-            y={contentTop + contentH / 2 - 6}
-            width={chipW}
-            align="center"
-            fontSize={11}
-            fontStyle="bold"
-            fill="#1F2937"
-            listening={false}
-          />
-          {displayDept && element.height >= 44 && (
-            <Text
-              text={displayDept}
-              x={-chipW / 2}
-              y={contentTop + contentH / 2 + 7}
-              width={chipW}
-              align="center"
-              fontSize={9}
-              fill="#6B7280"
-              listening={false}
-            />
-          )}
-        </Group>
-      ) : (
-        <Text
-          text="Open"
-          x={-element.width / 2 + 4}
-          y={contentTop + contentH / 2 - 6}
-          width={element.width - 8}
-          align="center"
-          fontSize={11}
-          fontStyle="italic"
-          fill="#9CA3AF"
-          listening={false}
-        />
-      )}
+      {/* Per-seat label — one of four cosmetic styles selected from the
+          canvas settings. See `SeatLabel.tsx` for the variants. The
+          underlyingFill is passed so the `'card'` style can paint a
+          contrasting white body over the cream desk fill. */}
+      <SeatLabel
+        style={seatLabelStyle}
+        employee={
+          employee
+            ? {
+                id: employee.id,
+                name: employee.name,
+                department: employee.department,
+              }
+            : null
+        }
+        departmentColor={departmentColor}
+        x={contentLeft}
+        y={contentTop}
+        width={contentW}
+        height={contentH}
+        underlyingFill="#FFFFFF"
+      />
       <AccommodationBadge
         employee={employee}
         elementWidth={element.width}
@@ -382,9 +373,10 @@ interface WorkstationRendererProps {
   employees: Record<string, { id: string; name: string; department: string | null; accommodations?: Accommodation[] }>
   getDepartmentColor: (department: string) => string
   dragState: { isHovered: boolean } | null
+  seatLabelStyle: SeatLabelStyle
 }
 
-function WorkstationRenderer({ element, isSelected, employees, getDepartmentColor, dragState }: WorkstationRendererProps) {
+function WorkstationRenderer({ element, isSelected, employees, getDepartmentColor, dragState, seatLabelStyle }: WorkstationRendererProps) {
   const slotWidth = element.width / element.positions
   const { opacityMul, overrideStroke } = seatStatusVisuals(element)
   const borderColor = isSelected
@@ -449,17 +441,35 @@ function WorkstationRenderer({ element, isSelected, employees, getDepartmentColo
         )
       })()}
 
-      {/* Position slots */}
+      {/* Position slots
+       *
+       * Each slot hosts one `<SeatLabel>`. The slot's usable area is the
+       * per-position column between the divider lines, inset by 2px on
+       * each side so the label can't kiss the divider. The bottom
+       * department-colour indicator rail stays in place for every style
+       * *except* `'banner'` (whose left stripe is the identity cue —
+       * adding a second rail would be noise) and `'card'` (whose full-
+       * bleed colour header already communicates the department).
+       *
+       * Layout note: workstation slots are typically narrow (40–60px
+       * wide for a 4-position bench on a typical desk width), which
+       * puts them below the `'avatar'` side-by-side threshold. The
+       * avatar style automatically falls back to a stacked layout
+       * there; no slot-layout adjustments needed.
+       */}
       {Array.from({ length: element.positions }, (_, i) => {
         const employeeId = element.assignedEmployeeIds[i] || null
         const employee = employeeId ? employees[employeeId] : null
         const slotX = -element.width / 2 + slotWidth * i
         const deptColor = employee?.department ? getDepartmentColor(employee.department) : null
-
+        const showDeptRail = deptColor && seatLabelStyle !== 'banner' && seatLabelStyle !== 'card'
+        // Reserve 14px at the top for the deskId text and 6px at the
+        // bottom for the divider/department rail.
+        const labelTop = -element.height / 2 + 14
+        const labelH = element.height - 14 - 6
         return (
           <Group key={`slot-${i}`}>
-            {/* Department color indicator dot */}
-            {deptColor && (
+            {showDeptRail && (
               <Rect
                 x={slotX + 2}
                 y={element.height / 2 - 5}
@@ -470,20 +480,23 @@ function WorkstationRenderer({ element, isSelected, employees, getDepartmentColo
                 listening={false}
               />
             )}
-            <Text
-              text={
+            <SeatLabel
+              style={seatLabelStyle}
+              employee={
                 employee
-                  ? truncateToWidth(employee.name.split(' ')[0], slotWidth - 4, 10)
-                  : 'Open'
+                  ? {
+                      id: employee.id,
+                      name: employee.name,
+                      department: employee.department,
+                    }
+                  : null
               }
-              x={slotX}
-              y={-2}
-              width={slotWidth}
-              align="center"
-              fontSize={10}
-              fontStyle={employee ? 'normal' : 'italic'}
-              fill={employee ? '#1F2937' : '#9CA3AF'}
-              listening={false}
+              departmentColor={deptColor}
+              x={slotX + 2}
+              y={labelTop}
+              width={slotWidth - 4}
+              height={labelH}
+              underlyingFill="#FFFFFF"
             />
           </Group>
         )
@@ -510,9 +523,10 @@ interface PrivateOfficeRendererProps {
   employees: Record<string, { id: string; name: string; department: string | null; accommodations?: Accommodation[] }>
   getDepartmentColor: (department: string) => string
   dragState: { isHovered: boolean } | null
+  seatLabelStyle: SeatLabelStyle
 }
 
-function PrivateOfficeRenderer({ element, isSelected, employees, getDepartmentColor, dragState }: PrivateOfficeRendererProps) {
+function PrivateOfficeRenderer({ element, isSelected, employees, getDepartmentColor, dragState, seatLabelStyle }: PrivateOfficeRendererProps) {
   const assignedEmployees = element.assignedEmployeeIds
     .map((id) => employees[id])
     .filter(Boolean)
@@ -552,36 +566,58 @@ function PrivateOfficeRenderer({ element, isSelected, employees, getDepartmentCo
         listening={false}
       />
 
-      {assignedEmployees.length > 0 ? (
-        <>
-          {assignedEmployees.map((emp, i) => (
-            <Text
-              key={emp.id}
-              text={truncateToWidth(emp.name, element.width - 16, 12)}
-              x={-element.width / 2 + 8}
-              y={-8 + i * 16}
-              width={element.width - 16}
-              align="center"
-              fontSize={12}
-              fontStyle="bold"
-              fill="#1E3A5F"
-              listening={false}
+      {/* Private offices can seat 1-2 people, so we render one SeatLabel
+       *  per occupant stacked vertically. Empty offices render a single
+       *  `'open'`-state SeatLabel so the style choice still applies
+       *  visually. The label area is inset 8px horizontally and leaves a
+       *  14px top strip for the deskId text.
+       *
+       *  For the 2-capacity case each label gets half the interior
+       *  height — that comfortably fits every style at the default
+       *  private-office dimensions (100x72), though the `'avatar'`
+       *  style may switch into its stacked narrow-layout variant if a
+       *  user shrinks the office aggressively. */}
+      {(() => {
+        const labelTop = -element.height / 2 + 14
+        const labelAreaH = element.height - 14 - 6
+        const labelLeft = -element.width / 2 + 8
+        const labelW = element.width - 16
+        if (assignedEmployees.length === 0) {
+          return (
+            <SeatLabel
+              style={seatLabelStyle}
+              employee={null}
+              departmentColor={null}
+              x={labelLeft}
+              y={labelTop}
+              width={labelW}
+              height={labelAreaH}
+              underlyingFill="#EFF6FF"
             />
-          ))}
-        </>
-      ) : (
-        <Text
-          text="Open"
-          x={-element.width / 2 + 8}
-          y={-4}
-          width={element.width - 16}
-          align="center"
-          fontSize={12}
-          fontStyle="italic"
-          fill="#9CA3AF"
-          listening={false}
-        />
-      )}
+          )
+        }
+        const perLabelH = labelAreaH / assignedEmployees.length
+        return assignedEmployees.map((emp, i) => {
+          const deptColor = emp.department ? getDepartmentColor(emp.department) : null
+          return (
+            <SeatLabel
+              key={emp.id}
+              style={seatLabelStyle}
+              employee={{
+                id: emp.id,
+                name: emp.name,
+                department: emp.department,
+              }}
+              departmentColor={deptColor}
+              x={labelLeft}
+              y={labelTop + i * perLabelH}
+              width={labelW}
+              height={perLabelH}
+              underlyingFill="#EFF6FF"
+            />
+          )
+        })
+      })()}
       {(() => {
         const accommodated = assignedEmployees.find(
           (e) => e?.accommodations && e.accommodations.length > 0,

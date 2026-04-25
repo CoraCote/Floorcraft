@@ -13,6 +13,7 @@ import {
   Ruler, Grid3x3, Printer, Image as ImageIcon,
   ChevronDown, Link2, Eye, Check, Pencil, Share2, Download,
 } from 'lucide-react'
+import { SeatLabelStylePicker } from './TopBar/SeatLabelStylePicker'
 import { FileMenu, type FileMenuGroup } from './TopBar/FileMenu'
 import { buildWayfindingPdf, buildFileName } from '../../lib/pdfExport'
 import { exportFloorAsPng } from '../../lib/pngExport'
@@ -460,6 +461,17 @@ export function TopBar() {
               Toggle dimensions
               <kbd className="ml-auto text-[10px] text-gray-400 dark:text-gray-500 font-mono">D</kbd>
             </button>
+
+            {/* Seat-label style picker — Wave 15C. Lives inside the View
+                menu alongside grid / dimensions because it's a view
+                preference, not a project property. The picker writes
+                through `setSettings` so the choice flows through the
+                existing autosave plumbing. */}
+            <div className="my-1 border-t border-gray-100 dark:border-gray-800" />
+            <SeatLabelStylePicker
+              value={settings.seatLabelStyle ?? 'pill'}
+              onChange={(next) => setSettings({ seatLabelStyle: next })}
+            />
           </div>
         )}
       </div>
