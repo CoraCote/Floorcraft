@@ -27,7 +27,10 @@ export function consumeQueueAtElement(elementId: string, floorId: string): numbe
     open = element.assignedEmployeeId ? 0 : 1
     isSingleCapacity = true
   } else if (isWorkstationElement(element)) {
-    open = Math.max(0, element.positions - element.assignedEmployeeIds.length)
+    // Sparse positional array — open slots are the nulls, not
+    // `positions - length` (length now equals positions).
+    const filled = element.assignedEmployeeIds.filter((id) => id !== null).length
+    open = Math.max(0, element.positions - filled)
   } else if (isPrivateOfficeElement(element)) {
     open = Math.max(0, element.capacity - element.assignedEmployeeIds.length)
   } else {

@@ -23,7 +23,7 @@ function workstation(deskId: string, id = nanoid()): WorkstationElement {
     id, type: 'workstation', x: 0, y: 0, width: 120, height: 40, rotation: 0,
     locked: false, groupId: null, zIndex: 0, label: 'Workstation', visible: true,
     style: { fill: '#fff', stroke: '#000', strokeWidth: 2, opacity: 1 },
-    deskId, positions: 4, assignedEmployeeIds: [],
+    deskId, positions: 4, assignedEmployeeIds: [null, null, null, null],
   }
 }
 

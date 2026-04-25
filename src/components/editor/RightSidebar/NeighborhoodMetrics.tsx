@@ -46,7 +46,8 @@ export function NeighborhoodMetrics() {
           if (el.assignedEmployeeId) assigned += 1
         } else if (isWorkstationElement(el)) {
           seats += el.positions
-          assigned += el.assignedEmployeeIds.length
+          // Sparse positional array — count only filled slots.
+          assigned += el.assignedEmployeeIds.filter((id) => id !== null).length
         } else if (isPrivateOfficeElement(el)) {
           seats += el.capacity
           assigned += el.assignedEmployeeIds.length

@@ -93,6 +93,45 @@ const EQUIPPABLE_TYPES = new Set([
   'private-office',
 ])
 
+/**
+ * Workstations now carry a SPARSE positional `assignedEmployeeIds`:
+ * the array length is exactly `positions`, and `null` at index `i`
+ * means slot `i` is empty. Older payloads stored a dense `string[]`
+ * of however many people were seated.
+ *
+ * This helper:
+ *   - right-pads short legacy arrays with `null` to length `positions`,
+ *   - truncates over-long arrays defensively (shouldn't happen but
+ *     keeps the invariant true on hand-crafted payloads),
+ *   - passes through arrays already in the sparse shape unchanged
+ *     (idempotent — see test fixture in
+ *     `src/__tests__/workstationSlotAssignment.test.ts`).
+ *
+ * Non-array input collapses to an all-empty array of the right length
+ * so the renderer can iterate without bounds checks.
+ */
+function migrateWorkstationAssignedEmployeeIds(
+  raw: unknown,
+  positions: number,
+): Array<string | null> {
+  const safeLen = Math.max(0, Math.floor(positions))
+  if (!Array.isArray(raw)) {
+    return Array.from({ length: safeLen }, () => null)
+  }
+  const out: Array<string | null> = []
+  for (let i = 0; i < safeLen; i++) {
+    const entry = raw[i]
+    if (typeof entry === 'string' && entry.length > 0) {
+      out.push(entry)
+    } else {
+      // Treat anything that isn't a non-empty string (null, undefined,
+      // empty string from very old fixtures) as "slot empty".
+      out.push(null)
+    }
+  }
+  return out
+}
+
 function migrateElements(
   elements: Record<string, unknown>,
 ): ReturnType<typeof useElementsStore.getState>['elements'] {
@@ -132,10 +171,28 @@ function migrateElements(
       // Back-fill the optional `equipment: string[]` on every seat-bearing
       // element so the equipment-needs overlay can treat it as an invariant
       // `string[]` without first nulling-out. See `migrateEquipment`.
-      out[id] = {
+      const migrated: Record<string, unknown> = {
         ...el,
         equipment: migrateEquipment(el.equipment),
       }
+      // Workstations carry a SPARSE positional `assignedEmployeeIds`
+      // (length === positions, `null` for empty slots). Older payloads
+      // stored a dense `string[]` of however many people were seated;
+      // `migrateWorkstationAssignedEmployeeIds` right-pads to the new
+      // shape. Idempotent — payloads already containing nulls pass
+      // through unchanged because the helper preserves entries that
+      // are already valid string ids.
+      if (el.type === 'workstation') {
+        const positions =
+          typeof el.positions === 'number' && Number.isFinite(el.positions)
+            ? el.positions
+            : 0
+        migrated.assignedEmployeeIds = migrateWorkstationAssignedEmployeeIds(
+          el.assignedEmployeeIds,
+          positions,
+        )
+      }
+      out[id] = migrated
     } else {
       out[id] = el
     }

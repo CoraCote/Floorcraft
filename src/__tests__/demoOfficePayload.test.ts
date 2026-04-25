@@ -102,8 +102,11 @@ describe('buildDemoOfficePayload — shape', () => {
           expect(el!.assignedEmployeeId).toBe(emp.id)
         }
       } else if (el!.type === 'workstation' || el!.type === 'private-office') {
+        // Workstations now store a sparse `(string|null)[]`; private
+        // offices still store dense `string[]`. `.toContain` works
+        // identically on both.
         expect(
-          (el as { assignedEmployeeIds: string[] }).assignedEmployeeIds,
+          (el as { assignedEmployeeIds: Array<string | null> }).assignedEmployeeIds,
         ).toContain(emp.id)
       }
     }

@@ -84,7 +84,10 @@ function workstation(id: string, overrides: Partial<WorkstationElement> = {}): W
     style: { fill: '#fff', stroke: '#000', strokeWidth: 1, opacity: 1 },
     deskId: `W-${id}`,
     positions: 4,
-    assignedEmployeeIds: [],
+    // Sparse positional default — length === positions, all empty.
+    // Tests can supply `assignedEmployeeIds` via `overrides`; those
+    // pass through verbatim (the analyzer counts truthy entries).
+    assignedEmployeeIds: [null, null, null, null],
     ...overrides,
   }
 }

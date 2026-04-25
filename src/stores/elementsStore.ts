@@ -98,11 +98,17 @@ export const useElementsStore = create<ElementsState>()(
               zIndex: get().getMaxZIndex() + 1,
             } as CanvasElement
             // Clear assignment fields so the duplicate doesn't falsely claim
-            // the original's occupants.
+            // the original's occupants. Workstations require a sparse array
+            // of length === positions (slot ↔ index contract); the other
+            // cleanup paths can collapse to `[]` because their renderers
+            // iterate the array directly without a positional invariant.
             if (isDeskElement(copy)) {
               copy = { ...copy, assignedEmployeeId: null }
             } else if (isWorkstationElement(copy)) {
-              copy = { ...copy, assignedEmployeeIds: [] }
+              copy = {
+                ...copy,
+                assignedEmployeeIds: Array.from({ length: copy.positions }, () => null),
+              }
             } else if (isPrivateOfficeElement(copy)) {
               copy = { ...copy, assignedEmployeeIds: [] }
             } else if (isTableElement(copy)) {
@@ -236,7 +242,12 @@ export const useElementsStore = create<ElementsState>()(
           if (isDeskElement(el)) {
             stripped[id] = { ...el, assignedEmployeeId: null }
           } else if (isWorkstationElement(el)) {
-            stripped[id] = { ...el, assignedEmployeeIds: [] }
+            // Sparse positional array — preserve length by filling with
+            // nulls instead of truncating.
+            stripped[id] = {
+              ...el,
+              assignedEmployeeIds: Array.from({ length: el.positions }, () => null),
+            }
           } else if (isPrivateOfficeElement(el)) {
             stripped[id] = { ...el, assignedEmployeeIds: [] }
           } else if (isTableElement(el)) {

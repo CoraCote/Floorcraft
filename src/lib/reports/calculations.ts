@@ -22,7 +22,8 @@ export function floorUtilization(floors: Floor[]): FloorUtilRow[] {
         if (el.assignedEmployeeId) assigned += 1
       } else if (el.type === 'workstation') {
         capacity += el.positions
-        assigned += el.assignedEmployeeIds.length
+        // Sparse positional array — count only filled slots.
+        assigned += el.assignedEmployeeIds.filter((id) => !!id).length
       } else if (el.type === 'private-office') {
         capacity += el.capacity
         assigned += el.assignedEmployeeIds.length

@@ -152,7 +152,13 @@ export const useFloorStore = create<FloorState>((set, get) => ({
       if (isDeskElement(cloned)) {
         cloned.assignedEmployeeId = null
       } else if (isWorkstationElement(cloned)) {
-        cloned.assignedEmployeeIds = []
+        // Workstations carry a SPARSE positional array — preserve the
+        // length so the cloned bench renders the right number of empty
+        // slots and the slot ↔ index contract holds.
+        cloned.assignedEmployeeIds = Array.from(
+          { length: cloned.positions },
+          () => null,
+        )
       } else if (isPrivateOfficeElement(cloned)) {
         cloned.assignedEmployeeIds = []
       } else if (isTableElement(cloned)) {

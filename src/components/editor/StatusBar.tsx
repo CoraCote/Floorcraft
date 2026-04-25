@@ -54,7 +54,9 @@ export function StatusBar() {
         }
       } else if (isWorkstationElement(el)) {
         totalDesks += el.positions
-        assignedDesks += el.assignedEmployeeIds.length
+        // Sparse positional array — count only non-null entries.
+        // `.length` is now the capacity, not the occupancy count.
+        assignedDesks += el.assignedEmployeeIds.filter((id) => id !== null).length
       } else if (isPrivateOfficeElement(el)) {
         totalDesks += el.capacity
         assignedDesks += el.assignedEmployeeIds.length

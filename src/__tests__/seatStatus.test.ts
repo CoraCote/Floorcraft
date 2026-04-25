@@ -54,7 +54,8 @@ const workstation = (overrides: Partial<WorkstationElement> = {}): WorkstationEl
     type: 'workstation',
     deskId: 'W-1',
     positions: 4,
-    assignedEmployeeIds: [],
+    // Sparse positional default — length === positions, all empty.
+    assignedEmployeeIds: [null, null, null, null],
     ...overrides,
   } as WorkstationElement)
 

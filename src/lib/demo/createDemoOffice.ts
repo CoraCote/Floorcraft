@@ -239,7 +239,10 @@ function makeWorkstation(
     style: baseStyle('#FEF3C7', '#D97706'),
     deskId,
     positions,
-    assignedEmployeeIds: [],
+    // Sparse positional array — `loadFromLegacyPayload` enforces this
+    // invariant on load, but constructing it correctly here keeps
+    // freshly-seeded demo offices identical to migrated ones.
+    assignedEmployeeIds: Array.from({ length: positions }, () => null),
     equipment: opts.equipment,
   }
 }
@@ -1826,9 +1829,15 @@ export function buildDemoOfficePayload(): DemoOfficePayload {
     if (el.type === 'desk' || el.type === 'hot-desk') {
       elementsMap[emp.seatId] = { ...(el as DeskElement), assignedEmployeeId: emp.id }
     } else if (isWorkstationElement(el)) {
-      elementsMap[emp.seatId] = {
-        ...el,
-        assignedEmployeeIds: [...el.assignedEmployeeIds, emp.id],
+      // Workstation `assignedEmployeeIds` is a sparse positional array;
+      // place this employee in the first empty slot. If the array is
+      // somehow already full, fall through silently — the seat
+      // assignment loop above is best-effort for the seed.
+      const next = [...el.assignedEmployeeIds]
+      const slot = next.findIndex((id) => id === null)
+      if (slot !== -1) {
+        next[slot] = emp.id
+        elementsMap[emp.seatId] = { ...el, assignedEmployeeIds: next }
       }
     } else if (isPrivateOfficeElement(el)) {
       elementsMap[emp.seatId] = {

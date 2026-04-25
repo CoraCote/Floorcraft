@@ -922,44 +922,86 @@ export function PropertiesPanel() {
                 disabled={inputDisabled}
                 onChange={(e) => {
                   const newCount = Number(e.target.value)
-                  // If shrinking below the number of current assignees, unassign
-                  // the tail employees so they aren't stranded claiming this
-                  // workstation with no visible seat.
-                  if (newCount < el.assignedEmployeeIds.length) {
-                    const toRemove = el.assignedEmployeeIds.slice(newCount)
-                    toRemove.forEach((empId) => unassignEmployee(empId))
+                  if (!Number.isFinite(newCount) || newCount < 1) return
+                  // Workstation `assignedEmployeeIds` is a SPARSE
+                  // positional array (length === positions, nulls for
+                  // empty slots). Resizing means:
+                  //   - shrinking → unassign anyone in the tail slots,
+                  //     then truncate the array.
+                  //   - growing → right-pad with nulls so the renderer
+                  //     can still iterate `0..positions` safely.
+                  // The `update()` call below only sets `positions`; we
+                  // also need to send a fresh `assignedEmployeeIds`
+                  // when the length is changing.
+                  const current = el.assignedEmployeeIds
+                  if (newCount < current.length) {
+                    const tail = current.slice(newCount)
+                    tail.forEach((empId) => {
+                      if (empId) unassignEmployee(empId)
+                    })
+                    // Re-read after the unassign cascade — store mutations
+                    // are synchronous, so the latest snapshot has the
+                    // already-tail-cleared array. Truncate to newCount.
+                    update({
+                      positions: newCount,
+                      assignedEmployeeIds: current.slice(0, newCount),
+                    } as Partial<WorkstationElement>)
+                  } else if (newCount > current.length) {
+                    const padded: Array<string | null> = [
+                      ...current,
+                      ...Array.from({ length: newCount - current.length }, () => null),
+                    ]
+                    update({
+                      positions: newCount,
+                      assignedEmployeeIds: padded,
+                    } as Partial<WorkstationElement>)
+                  } else {
+                    update({ positions: newCount } as Partial<WorkstationElement>)
                   }
-                  update({ positions: newCount } as Partial<WorkstationElement>)
                 }}
               />
             </div>
           )}
 
-          {(isWorkstationElement(el) || isPrivateOfficeElement(el)) && (
-            <div>
-              <label className={LABEL_CLASS}>
-                Assigned ({el.assignedEmployeeIds.length} /{' '}
-                {isWorkstationElement(el) ? el.positions : el.capacity})
-              </label>
-              {el.assignedEmployeeIds.length > 0 ? (
-                <div className="flex flex-col gap-1.5">
-                  {el.assignedEmployeeIds.map((empId) => (
-                    <AssigneeRow
-                      key={empId}
-                      employee={employees[empId]}
-                      fallbackId={empId}
-                      canEdit={canEdit}
-                      onClear={() => unassignEmployee(empId)}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-sm text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5">
-                  No one assigned
-                </div>
-              )}
-            </div>
-          )}
+          {(isWorkstationElement(el) || isPrivateOfficeElement(el)) && (() => {
+            // Workstations store a sparse `(string|null)[]`; private
+            // offices still store a dense `string[]`. Filter out nulls
+            // for both display count and the AssigneeRow loop so the
+            // panel doesn't render an empty row per empty slot. The
+            // explicit cast through `Array<string | null>` is needed
+            // because the discriminated-union type for the workstation
+            // arm widens the element-array type, so the `.filter`
+            // predicate alone doesn't narrow the resulting array
+            // element type to `string`.
+            const occupants: string[] = (
+              el.assignedEmployeeIds as Array<string | null>
+            ).filter((id): id is string => !!id)
+            const capacity = isWorkstationElement(el) ? el.positions : el.capacity
+            return (
+              <div>
+                <label className={LABEL_CLASS}>
+                  Assigned ({occupants.length} / {capacity})
+                </label>
+                {occupants.length > 0 ? (
+                  <div className="flex flex-col gap-1.5">
+                    {occupants.map((empId) => (
+                      <AssigneeRow
+                        key={empId}
+                        employee={employees[empId]}
+                        fallbackId={empId}
+                        canEdit={canEdit}
+                        onClear={() => unassignEmployee(empId)}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5">
+                    No one assigned
+                  </div>
+                )}
+              </div>
+            )
+          })()}
 
           <DeskIdInput elementId={el.id} value={el.deskId} disabled={inputDisabled} />
           <SeatStatusOverridePicker elementId={el.id} value={el.seatStatus} disabled={inputDisabled} />

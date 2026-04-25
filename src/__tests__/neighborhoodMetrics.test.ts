@@ -87,7 +87,10 @@ function workstation(
     label: '',
     deskId: `D-${id}`,
     positions,
-    assignedEmployeeIds: assigned,
+    // Sparse positional contract — pad with nulls to length === positions.
+    assignedEmployeeIds: Array.from({ length: positions }, (_, i) =>
+      i < assigned.length ? assigned[i] : null,
+    ),
   } as unknown as CanvasElement
 }
 

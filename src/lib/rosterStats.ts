@@ -82,7 +82,8 @@ export function computeRosterStats(
       }
     } else if (isWorkstationElement(el)) {
       totalDesks += el.positions
-      assignedDesks += el.assignedEmployeeIds.length
+      // Sparse positional array — count only filled slots.
+      assignedDesks += el.assignedEmployeeIds.filter((id) => id !== null).length
     } else if (isPrivateOfficeElement(el)) {
       totalDesks += el.capacity
       assignedDesks += el.assignedEmployeeIds.length

@@ -67,7 +67,9 @@ function assignedCount(
   el: DeskElement | WorkstationElement | PrivateOfficeElement,
 ): number {
   if (isDeskElement(el)) return el.assignedEmployeeId !== null ? 1 : 0
-  return el.assignedEmployeeIds.length
+  // Workstation arrays are sparse (`(string|null)[]`); private offices
+  // are dense (`string[]`). Filtering truthy entries handles both.
+  return el.assignedEmployeeIds.filter((id) => !!id).length
 }
 
 /**

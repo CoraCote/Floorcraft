@@ -166,8 +166,16 @@ export function DeskRenderer({ element }: DeskRendererProps) {
   // outline to a brighter colour on the desk currently under the cursor.
   const draggingEmployeeId = useSeatDragStore((s) => s.draggingEmployeeId)
   const hoveredSeatId = useSeatDragStore((s) => s.hoveredSeatId)
+  const hoveredSlotIndex = useSeatDragStore((s) => s.hoveredSlotIndex)
+  const isHovered = hoveredSeatId === element.id
   const dragState = draggingEmployeeId
-    ? { isHovered: hoveredSeatId === element.id }
+    ? {
+        isHovered,
+        // Forwarded only to WorkstationRenderer — the value is null
+        // for non-workstation hover targets, and ignored by the
+        // single-seat renderers.
+        hoveredSlotIndex: isHovered ? hoveredSlotIndex : null,
+      }
     : null
 
   if (isDeskElement(element)) {
@@ -267,7 +275,7 @@ interface DeskElementRendererProps {
   employees: Record<string, { id: string; name: string; department: string | null; title?: string | null; accommodations?: Accommodation[] }>
   getDepartmentColor: (department: string) => string
   /** Active while an employee drag is in flight — null otherwise. */
-  dragState: { isHovered: boolean } | null
+  dragState: { isHovered: boolean; hoveredSlotIndex: number | null } | null
   seatLabelStyle: SeatLabelStyle
   /** Wave 16 — when true, paint the desk-id corner badge. Default off
    *  so the canvas doesn't duplicate info the hover card and the
@@ -399,7 +407,7 @@ interface WorkstationRendererProps {
   isSelected: boolean
   employees: Record<string, { id: string; name: string; department: string | null; title?: string | null; accommodations?: Accommodation[] }>
   getDepartmentColor: (department: string) => string
-  dragState: { isHovered: boolean } | null
+  dragState: { isHovered: boolean; hoveredSlotIndex: number | null } | null
   seatLabelStyle: SeatLabelStyle
   showDeskIds: boolean
 }
@@ -539,16 +547,50 @@ function WorkstationRenderer({ element, isSelected, employees, getDepartmentColo
           </Group>
         )
       })}
-      {dragState && (
-        <DropTargetOutline
-          width={element.width}
-          height={element.height}
-          // A workstation counts as occupied if ANY position is filled —
-          // dropping on it will push the employee into the next slot.
-          isOccupied={element.assignedEmployeeIds.some((id) => !!id)}
-          isHovered={dragState.isHovered}
-        />
-      )}
+      {/* Per-slot drop affordance.
+       *
+       * Each slot gets its own dashed outline so the user can target a
+       * SPECIFIC slot rather than the whole bench (the data model is
+       * sparse-positional now — see WorkstationElement.assignedEmployeeIds).
+       *
+       *   - green dashed outline   → empty slot, drop will fill it
+       *   - amber dashed outline   → occupied slot, drop will reassign
+       *                              that slot (evicting the incumbent)
+       *   - blue (thicker) outline → the slot directly under the cursor
+       *
+       * `dragState.hoveredSlotIndex` is null when the cursor is over a
+       * different element (or over no element); in that case every slot
+       * still gets the green/amber affordance so the bench reads as a
+       * valid drop target overall, just without a "you are here" cue.
+       */}
+      {dragState && Array.from({ length: element.positions }, (_, i) => {
+        const occupied = element.assignedEmployeeIds[i] != null
+        const isHoveredSlot = dragState.hoveredSlotIndex === i
+        const slotLeft = -element.width / 2 + slotWidth * i
+        const stroke = isHoveredSlot
+          ? DROP_HOVER_STROKE
+          : occupied
+            ? DROP_BUSY_STROKE
+            : DROP_OPEN_STROKE
+        // Inset by 2px so adjacent slot outlines don't visually merge,
+        // and so the hovered-slot rect reads distinctly from its
+        // neighbours. Listening is off — DropTargetOutline parity.
+        return (
+          <Rect
+            key={`slot-drop-${i}`}
+            x={slotLeft + 2}
+            y={-element.height / 2 + 2}
+            width={Math.max(0, slotWidth - 4)}
+            height={Math.max(0, element.height - 4)}
+            fill="transparent"
+            stroke={stroke}
+            strokeWidth={isHoveredSlot ? 2.5 : 1.5}
+            dash={[6, 3]}
+            cornerRadius={4}
+            listening={false}
+          />
+        )
+      })}
     </Group>
   )
 }
@@ -560,7 +602,7 @@ interface PrivateOfficeRendererProps {
   isSelected: boolean
   employees: Record<string, { id: string; name: string; department: string | null; title?: string | null; accommodations?: Accommodation[] }>
   getDepartmentColor: (department: string) => string
-  dragState: { isHovered: boolean } | null
+  dragState: { isHovered: boolean; hoveredSlotIndex: number | null } | null
   seatLabelStyle: SeatLabelStyle
   showDeskIds: boolean
 }

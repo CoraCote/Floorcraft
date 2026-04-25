@@ -33,7 +33,18 @@ function makeDesk(id: string, assignedEmployeeId: string | null): DeskElement {
   }
 }
 
-function makeWorkstation(id: string, assignedEmployeeIds: string[]): WorkstationElement {
+function makeWorkstation(
+  id: string,
+  // Legacy `string[]` shape accepted to keep the existing call sites
+  // ergonomic. We pad with nulls to length === positions on the way in
+  // so the constructed element respects the new sparse-positional
+  // invariant on `WorkstationElement.assignedEmployeeIds`.
+  occupants: string[],
+): WorkstationElement {
+  const positions = 4
+  const padded: Array<string | null> = Array.from({ length: positions }, (_, i) =>
+    i < occupants.length ? occupants[i] : null,
+  )
   return {
     id,
     type: 'workstation',
@@ -49,8 +60,8 @@ function makeWorkstation(id: string, assignedEmployeeIds: string[]): Workstation
     visible: true,
     style: { fill: '#fff', stroke: '#000', strokeWidth: 1, opacity: 1 },
     deskId: 'W-1',
-    positions: 4,
-    assignedEmployeeIds,
+    positions,
+    assignedEmployeeIds: padded,
   }
 }
 
@@ -207,7 +218,9 @@ describe('floorStore.duplicateFloor', () => {
       (el): el is WorkstationElement => el.type === 'workstation',
     )
     expect(workstations.length).toBe(1)
-    expect(workstations[0].assignedEmployeeIds).toEqual([])
+    // Sparse positional contract — the cloned bench keeps the same
+    // capacity (length === positions) but every slot is null.
+    expect(workstations[0].assignedEmployeeIds).toEqual([null, null, null, null])
   })
 
   it('strips assignedEmployeeIds from cloned private offices', () => {
@@ -226,7 +239,9 @@ describe('floorStore.duplicateFloor', () => {
     const desk = source.elements['desk1'] as DeskElement
     expect(desk.assignedEmployeeId).toBe('emp-1')
     const ws = source.elements['ws1'] as WorkstationElement
-    expect(ws.assignedEmployeeIds).toEqual(['emp-2', 'emp-3'])
+    // The makeWorkstation helper pads occupants out to length ===
+    // positions; only the first two slots are filled here.
+    expect(ws.assignedEmployeeIds).toEqual(['emp-2', 'emp-3', null, null])
   })
 
   it('returns null for an unknown floorId', () => {

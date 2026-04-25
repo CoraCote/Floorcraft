@@ -7,7 +7,9 @@ function getAssignedCount(el: DeskElement | WorkstationElement | PrivateOfficeEl
     return el.assignedEmployeeId ? 1 : 0
   }
   if (el.type === 'workstation') {
-    return el.assignedEmployeeIds.length
+    // Sparse positional array — `.length` is now capacity, not
+    // occupancy; count truthy entries to get the assigned slot count.
+    return el.assignedEmployeeIds.filter((id) => !!id).length
   }
   if (el.type === 'private-office') {
     return el.assignedEmployeeIds.length

@@ -37,7 +37,11 @@ function countSeatedEmployees(floorElements: Record<string, CanvasElement>): num
     if (isDeskElement(el)) {
       if (el.assignedEmployeeId) count += 1
     } else {
-      count += el.assignedEmployeeIds.length
+      // Workstation `assignedEmployeeIds` is now a sparse positional
+      // array (length === positions, with nulls for empty slots);
+      // private offices still store a dense `string[]`. Counting truthy
+      // entries handles both shapes uniformly.
+      count += el.assignedEmployeeIds.filter((id) => !!id).length
     }
   }
   return count

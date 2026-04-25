@@ -33,10 +33,13 @@ export function deriveSeatStatus(element: CanvasElement): SeatStatus {
   if (isDeskElement(element)) {
     return element.assignedEmployeeId !== null ? 'assigned' : 'unassigned'
   }
-  // Workstation or private-office.
+  // Workstation or private-office. Workstation arrays are sparse
+  // (`(string|null)[]` of length === positions), so we can't use
+  // `.length > 0` as the assigned/unassigned signal — `.some(id => !!id)`
+  // works uniformly across both shapes.
   const ids = (element as WorkstationElement | PrivateOfficeElement)
     .assignedEmployeeIds
-  return ids.length > 0 ? 'assigned' : 'unassigned'
+  return ids.some((id) => !!id) ? 'assigned' : 'unassigned'
 }
 
 function isAssignable(el: CanvasElement): el is AssignableElement {

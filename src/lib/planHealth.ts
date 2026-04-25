@@ -227,21 +227,28 @@ export function analyzePlan(input: PlanHealthInput): PlanHealth {
         }
       }
 
-      // 3 & 4. Workstation capacity & reference integrity
+      // 3 & 4. Workstation capacity & reference integrity. The sparse
+      // positional array makes "over capacity" a slightly different
+      // proposition: the array length === positions by construction
+      // (the migration enforces it), so over-cap can only occur when
+      // FILLED slots exceed positions — which shouldn't happen, but
+      // count the non-null entries defensively for parity with the
+      // private-office check below.
       if (isWorkstationElement(el)) {
         const ids = el.assignedEmployeeIds ?? []
-        if (ids.length > el.positions) {
+        const occupants = ids.filter((id): id is string => !!id)
+        if (occupants.length > el.positions) {
           issues.push({
             id: `ws-overcap:${el.id}`,
             severity: 'error',
             category: 'capacity',
             message: `Workstation ${elementLabel(el)} is over capacity`,
-            detail: `${ids.length} assigned, only ${el.positions} positions`,
+            detail: `${occupants.length} assigned, only ${el.positions} positions`,
             floorId,
             targetIds: [el.id],
           })
         }
-        const stale = ids.filter((id) => !employees[id])
+        const stale = occupants.filter((id) => !employees[id])
         if (stale.length > 0) {
           issues.push({
             id: `ws-stale-emp:${el.id}`,

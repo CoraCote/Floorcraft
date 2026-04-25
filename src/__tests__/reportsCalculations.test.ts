@@ -31,10 +31,16 @@ function desk(id: string, assigned: string | null): CanvasElement {
 }
 
 function workstation(id: string, assigned: string[], positions: number): CanvasElement {
+  // The new sparse-positional contract requires length === positions
+  // with `null` in empty slots. Pad the test's dense `string[]` so
+  // calculations under test see a realistic shape.
+  const padded: Array<string | null> = Array.from({ length: positions }, (_, i) =>
+    i < assigned.length ? assigned[i] : null,
+  )
   return {
     id, type: 'workstation', x: 0, y: 0, width: 120, height: 60, rotation: 0,
     locked: false, groupId: null, zIndex: 0, visible: true, label: '',
-    deskId: id, positions, assignedEmployeeIds: assigned,
+    deskId: id, positions, assignedEmployeeIds: padded,
   } as unknown as CanvasElement
 }
 

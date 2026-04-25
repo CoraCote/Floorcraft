@@ -112,7 +112,7 @@ function workstation(overrides: Partial<WorkstationElement> = {}): WorkstationEl
     style: { fill: '#FEF3C7', stroke: '#000', strokeWidth: 1, opacity: 1 },
     deskId: 'WS-1',
     positions: 4,
-    assignedEmployeeIds: ['emp-1', '', 'emp-2', ''],
+    assignedEmployeeIds: ['emp-1', null, 'emp-2', null],
     ...overrides,
   } as WorkstationElement
 }

@@ -212,7 +212,9 @@ function matchElement(
   if (isWorkstationElement(el)) {
     if (el.deskId && el.deskId.toLowerCase().includes(q)) return el.deskId
     if (canViewPII) {
+      // Sparse positional array — skip nulls (empty slots).
       for (const empId of el.assignedEmployeeIds) {
+        if (!empId) continue
         const emp = employees[empId]
         if (emp && emp.name.toLowerCase().includes(q)) return emp.name
       }

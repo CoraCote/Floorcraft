@@ -177,7 +177,19 @@ export interface WorkstationElement extends BaseElement {
   type: 'workstation'
   deskId: string
   positions: number        // how many positions (N seats)
-  assignedEmployeeIds: string[]
+  /**
+   * Sparse positional array. Length is exactly `positions`; index `i`
+   * is the occupant of slot `i`, or `null` when the slot is empty.
+   *
+   * The sparse shape (vs. a dense `string[]`) lets a user drop someone
+   * onto a SPECIFIC slot of a multi-position bench rather than relying
+   * on append order — which is what `WorkstationRenderer` already
+   * implies visually (it draws one column per slot index). The
+   * `loadFromLegacyPayload.migrateElements` migration right-pads
+   * older `string[]` payloads with nulls so existing offices keep
+   * rendering identically.
+   */
+  assignedEmployeeIds: Array<string | null>
   seatStatus?: SeatStatus
   /** See `DeskElement.equipment`. */
   equipment?: string[]

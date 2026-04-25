@@ -21,7 +21,11 @@ function workstation(id: string, positions: number): WorkstationElement {
   return {
     id, type: 'workstation', x: 0, y: 0, width: 120, height: 60,
     rotation: 0, locked: false, groupId: null, zIndex: 0, visible: true,
-    label: '', deskId: 'W-' + id, positions, assignedEmployeeIds: [],
+    label: '', deskId: 'W-' + id, positions,
+    // Workstation `assignedEmployeeIds` is now a sparse positional
+    // array of length === positions; tests must respect that
+    // invariant or `consumeQueueAtElement` won't see any open slots.
+    assignedEmployeeIds: Array.from({ length: positions }, () => null),
   } as unknown as WorkstationElement
 }
 
@@ -68,7 +72,7 @@ describe('consumeQueueAtElement', () => {
 
   it('reports overflow when workstation has fewer open seats than queue length', () => {
     useElementsStore.setState({
-      elements: { w1: { ...workstation('w1', 2), assignedEmployeeIds: [] } as WorkstationElement },
+      elements: { w1: workstation('w1', 2) },
     })
     useUIStore.getState().setAssignmentQueue(['e1', 'e2', 'e3'])
 

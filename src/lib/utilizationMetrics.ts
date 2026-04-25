@@ -79,7 +79,9 @@ function seatCount(el: DeskElement | WorkstationElement | PrivateOfficeElement):
 
 function assignedCount(el: DeskElement | WorkstationElement | PrivateOfficeElement): number {
   if (isDeskElement(el)) return el.assignedEmployeeId !== null ? 1 : 0
-  return el.assignedEmployeeIds.length
+  // Workstation arrays are sparse; private offices dense. Filter
+  // truthy entries so both shapes report occupancy correctly.
+  return el.assignedEmployeeIds.filter((id) => !!id).length
 }
 
 export function computeUtilizationMetrics(

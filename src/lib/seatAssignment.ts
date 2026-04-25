@@ -70,12 +70,28 @@ function recordHistory(args: {
  * Atomically updates BOTH stores. If the employee was previously seated,
  * clears the old seat. If the target desk already has an occupant (and is
  * single-capacity), evicts them.
+ *
+ * `slotIndex` is workstation-specific: when supplied (and in range), the
+ * employee is placed at exactly that slot — evicting whoever was there,
+ * matching the 1:1 desk reassignment idiom. When omitted (or out of
+ * range), the employee lands at the first empty slot. Ignored for desks
+ * and private offices.
  */
-export function assignEmployee(employeeId: string, targetElementId: string, floorId: string): void {
-  withHistoryRecording(() => doAssignEmployee(employeeId, targetElementId, floorId))
+export function assignEmployee(
+  employeeId: string,
+  targetElementId: string,
+  floorId: string,
+  slotIndex?: number,
+): void {
+  withHistoryRecording(() => doAssignEmployee(employeeId, targetElementId, floorId, slotIndex))
 }
 
-function doAssignEmployee(employeeId: string, targetElementId: string, floorId: string): void {
+function doAssignEmployee(
+  employeeId: string,
+  targetElementId: string,
+  floorId: string,
+  slotIndex?: number,
+): void {
   const employeeStore = useEmployeeStore.getState()
   const elementsStore = useElementsStore.getState()
   const floorStore = useFloorStore.getState()
@@ -95,11 +111,19 @@ function doAssignEmployee(employeeId: string, targetElementId: string, floorId: 
       : floorStore.getFloorElements(floorId)
     const target = targetElements[targetElementId]
     if (target && isAssignableElement(target)) {
+      // For workstations with an explicit `slotIndex`, "agrees" means
+      // the employee is already AT THAT SLOT — otherwise we need to
+      // shuffle them, which is the whole point of slot-aware
+      // assignment.
       const agrees = isDeskElement(target)
         ? target.assignedEmployeeId === employeeId
-        : isWorkstationElement(target) || isPrivateOfficeElement(target)
-          ? target.assignedEmployeeIds.includes(employeeId)
-          : false
+        : isWorkstationElement(target)
+          ? typeof slotIndex === 'number' && slotIndex >= 0 && slotIndex < target.assignedEmployeeIds.length
+            ? target.assignedEmployeeIds[slotIndex] === employeeId
+            : target.assignedEmployeeIds.includes(employeeId)
+          : isPrivateOfficeElement(target)
+            ? target.assignedEmployeeIds.includes(employeeId)
+            : false
       if (agrees) return
     }
   }
@@ -122,30 +146,83 @@ function doAssignEmployee(employeeId: string, targetElementId: string, floorId: 
 
   // Capture the previous desk occupant *before* the eviction write so the
   // history entry can tag this call as a reassignment rather than a bare
-  // assign. Multi-capacity elements (workstation, private-office) don't
-  // evict on add, so `previousEmployeeId` stays null for them — the
-  // interesting predecessor there is the employee's OLD seat, which we
+  // assign. For 1:1 desks the predecessor is whoever was on the desk;
+  // for workstations the predecessor is whoever held the *target slot*
+  // (computed below alongside the slot resolution). Private offices
+  // still don't evict on add, so the predecessor there stays null —
+  // the interesting predecessor is the employee's OLD seat, which we
   // capture separately (below) for the employee-centric history view.
-  const previousDeskOccupant =
+  let previousDeskOccupant: string | null =
     isDeskElement(target) &&
     target.assignedEmployeeId &&
     target.assignedEmployeeId !== employeeId
       ? target.assignedEmployeeId
       : null
 
-  // 3. Evict previous occupant(s) if needed
+  // 3. Compute the workstation slot write (if applicable). We resolve
+  //    the target slot here so its evicted occupant can flow through
+  //    the same eviction + history machinery that the 1:1 desk path
+  //    uses below.
+  let workstationNextSlots: Array<string | null> | null = null
+  let workstationEvicted: string | null = null
+  if (isWorkstationElement(target)) {
+    const next: Array<string | null> = [...target.assignedEmployeeIds]
+    // If this employee already occupies a slot on this workstation,
+    // free that slot first so they don't end up on the workstation
+    // twice when the user shuffles them within the same bench.
+    const existingIdx = next.findIndex((id) => id === employeeId)
+    if (existingIdx !== -1) next[existingIdx] = null
+
+    const requestedSlot =
+      typeof slotIndex === 'number' &&
+      Number.isFinite(slotIndex) &&
+      slotIndex >= 0 &&
+      slotIndex < next.length
+        ? Math.floor(slotIndex)
+        : -1
+    const fallbackSlot = next.findIndex((id) => id === null)
+    const placeAt = requestedSlot >= 0 ? requestedSlot : fallbackSlot
+
+    if (placeAt === -1) {
+      // No empty slot AND no specific slot requested — workstation is
+      // full. Bail without mutating; the caller's 1:1 short-circuit
+      // above already handled the "already on this workstation" case.
+      // This mirrors how dropping on a full single desk is a no-op
+      // when no eviction can happen; surfacing it as an audit/error
+      // is left to a follow-up if call sites care.
+      return
+    }
+
+    const evicted = next[placeAt]
+    if (evicted && evicted !== employeeId) {
+      workstationEvicted = evicted
+      previousDeskOccupant = evicted
+    }
+    next[placeAt] = employeeId
+    workstationNextSlots = next
+  }
+
+  // 4. Evict previous occupant(s) if needed. Both the 1:1 desk path
+  //    and the workstation slot path funnel through the same eviction
+  //    so the employee record gets nulled identically (and the seat
+  //    history gets a single "reassign" entry per call).
   if (previousDeskOccupant) {
     const prev = employeeStore.employees[previousDeskOccupant]
     if (prev) {
       employeeStore.updateEmployee(previousDeskOccupant, { seatId: null, floorId: null })
     }
   }
+  // Silence unused-binding lint when the workstation branch didn't
+  // populate `workstationEvicted` — the value is intentionally captured
+  // for symmetry / future audit hooks even if eviction is already
+  // handled via `previousDeskOccupant`.
+  void workstationEvicted
 
-  // 4. Update the element
+  // 5. Update the element
   const updatedElement: CanvasElement = isDeskElement(target)
     ? { ...target, assignedEmployeeId: employeeId }
-    : isWorkstationElement(target)
-      ? { ...target, assignedEmployeeIds: Array.from(new Set([...target.assignedEmployeeIds, employeeId])) }
+    : isWorkstationElement(target) && workstationNextSlots
+      ? { ...target, assignedEmployeeIds: workstationNextSlots }
       : isPrivateOfficeElement(target)
         ? { ...target, assignedEmployeeIds: Array.from(new Set([...target.assignedEmployeeIds, employeeId])) }
         : target
@@ -387,8 +464,16 @@ export function cleanupElementAssignments(
         cleaned = { ...foundElement, assignedEmployeeId: null }
       }
     } else if (isWorkstationElement(foundElement)) {
-      if (foundElement.assignedEmployeeIds.length > 0) {
-        cleaned = { ...foundElement, assignedEmployeeIds: [] }
+      // Workstation `assignedEmployeeIds` is a SPARSE positional array
+      // (length === positions). Cleanup means "every slot empty" — i.e.
+      // an array of nulls of the same length, NOT a truncated `[]` (the
+      // renderer iterates `0..positions` and would silently re-show
+      // stale ids if the array were shorter than expected).
+      if (foundElement.assignedEmployeeIds.some((id) => id !== null)) {
+        cleaned = {
+          ...foundElement,
+          assignedEmployeeIds: Array.from({ length: foundElement.positions }, () => null),
+        }
       }
     } else if (isPrivateOfficeElement(foundElement)) {
       if (foundElement.assignedEmployeeIds.length > 0) {
@@ -437,7 +522,15 @@ function clearEmployeeFromElement(elementId: string, employeeId: string, floorId
   if (isDeskElement(el) && el.assignedEmployeeId === employeeId) {
     updated = { ...el, assignedEmployeeId: null }
   } else if (isWorkstationElement(el)) {
-    updated = { ...el, assignedEmployeeIds: el.assignedEmployeeIds.filter((id) => id !== employeeId) }
+    // Sparse positional array — null out the slot the employee occupied
+    // rather than filtering, which would shift everyone left and break
+    // the slot ↔ index contract.
+    if (el.assignedEmployeeIds.some((id) => id === employeeId)) {
+      updated = {
+        ...el,
+        assignedEmployeeIds: el.assignedEmployeeIds.map((id) => (id === employeeId ? null : id)),
+      }
+    }
   } else if (isPrivateOfficeElement(el)) {
     updated = { ...el, assignedEmployeeIds: el.assignedEmployeeIds.filter((id) => id !== employeeId) }
   }

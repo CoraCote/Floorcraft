@@ -70,7 +70,11 @@ function getClaimedEmployeeIds(): Set<string> {
     if (isDeskElement(el)) {
       if (el.assignedEmployeeId) claimed.add(el.assignedEmployeeId)
     } else if (isWorkstationElement(el) || isPrivateOfficeElement(el)) {
-      for (const id of el.assignedEmployeeIds) claimed.add(id)
+      // Workstation arrays are sparse (`(string|null)[]`); skip nulls
+      // so they don't get added as a phantom "claimed" id.
+      for (const id of el.assignedEmployeeIds) {
+        if (id) claimed.add(id)
+      }
     }
   }
   return claimed

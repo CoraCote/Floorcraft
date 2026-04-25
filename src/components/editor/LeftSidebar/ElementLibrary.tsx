@@ -250,12 +250,16 @@ export function buildLibraryElement(
 
   if (item.type === 'workstation') {
     const deskId = nextSeatNumber(existingElements)
+    const positions = 4
     const element: WorkstationElement = {
       ...baseProps,
       type: 'workstation',
       deskId,
-      positions: 4,
-      assignedEmployeeIds: [],
+      positions,
+      // Sparse positional array — one `null` per slot. The renderer
+      // and per-slot drop logic expect length === `positions`, so we
+      // initialise that invariant at construction time.
+      assignedEmployeeIds: Array.from({ length: positions }, () => null),
     }
     return element
   }

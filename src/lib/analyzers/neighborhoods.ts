@@ -94,7 +94,11 @@ function getAssignedIds(
   if (isDeskElement(el)) {
     return el.assignedEmployeeId ? [el.assignedEmployeeId] : []
   }
-  if (isWorkstationElement(el)) return el.assignedEmployeeIds
+  // Workstation arrays are sparse — drop nulls so callers (analyzers,
+  // adjacency walks) only see real employee ids.
+  if (isWorkstationElement(el)) {
+    return el.assignedEmployeeIds.filter((id): id is string => !!id)
+  }
   if (isPrivateOfficeElement(el)) return el.assignedEmployeeIds
   return []
 }

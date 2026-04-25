@@ -20,7 +20,8 @@ import { OrgChartOverlay } from '../../reports/OrgChartOverlay'
 import { SeatMapColorMode } from '../../reports/SeatMapColorMode'
 import { useWallDrawing } from '../../../hooks/useWallDrawing'
 import { ZOOM_MIN, ZOOM_MAX, ZOOM_WHEEL_SENSITIVITY } from '../../../lib/constants'
-import { isAssignableElement } from '../../../types/elements'
+import { isAssignableElement, isWorkstationElement } from '../../../types/elements'
+import { computeWorkstationSlotIndex } from '../../../lib/workstationSlots'
 import { elementsIntersectingRect } from '../../../lib/marquee'
 import { useLayerVisibilityStore } from '../../../stores/layerVisibilityStore'
 import { categoryForElement } from '../../../lib/layerCategory'
@@ -1216,8 +1217,24 @@ export function CanvasStage() {
               }
             }
           }
-          const prev = useSeatDragStore.getState().hoveredSeatId
-          if (prev !== hitId) useSeatDragStore.getState().setHoveredSeat(hitId)
+          // Compute the workstation slot under the cursor (if any) so
+          // WorkstationRenderer can highlight the specific slot rather
+          // than the whole bench. `computeWorkstationSlotIndex` returns
+          // -1 when the cursor is horizontally outside the workstation
+          // bounds — we forward that as `null` to keep the store contract
+          // ("no slot" = null).
+          let hoveredSlot: number | null = null
+          if (hitId) {
+            const hit = elements[hitId]
+            if (hit && isWorkstationElement(hit)) {
+              const idx = computeWorkstationSlotIndex(cx, hit)
+              hoveredSlot = idx >= 0 ? idx : null
+            }
+          }
+          const prev = useSeatDragStore.getState()
+          if (prev.hoveredSeatId !== hitId || prev.hoveredSlotIndex !== hoveredSlot) {
+            useSeatDragStore.getState().setHoveredSeat(hitId, hoveredSlot)
+          }
         }
       }
       return
@@ -1338,7 +1355,17 @@ export function CanvasStage() {
           return
         }
       }
-      assignEmployee(empId, hitId, useFloorStore.getState().activeFloorId)
+      // For workstations, compute the slot under the drop cursor so
+      // the employee lands at the SPECIFIC slot the user dropped on
+      // (instead of the first empty slot — which would silently move
+      // the body up the bench from where the user pointed).
+      let slotIndex: number | undefined
+      const targetEl = elements[hitId]
+      if (targetEl && isWorkstationElement(targetEl)) {
+        const idx = computeWorkstationSlotIndex(pos.x, targetEl)
+        if (idx >= 0) slotIndex = idx
+      }
+      assignEmployee(empId, hitId, useFloorStore.getState().activeFloorId, slotIndex)
     }
     useSeatDragStore.getState().reset()
   }, [stageX, stageY, stageScale, canEdit])

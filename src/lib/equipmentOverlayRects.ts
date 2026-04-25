@@ -42,7 +42,9 @@ export function computeRects(
       assignedId = el.assignedEmployeeId
     } else if (isWorkstationElement(el)) {
       desk = el
-      assignedId = el.assignedEmployeeIds[0] ?? null
+      // Sparse positional array — pick the first non-null occupant
+      // (slot 0 may legitimately be empty while slot 2 is filled).
+      assignedId = el.assignedEmployeeIds.find((id): id is string => !!id) ?? null
     } else if (isPrivateOfficeElement(el)) {
       desk = el
       assignedId = el.assignedEmployeeIds[0] ?? null

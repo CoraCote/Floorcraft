@@ -38,11 +38,14 @@ function desk(id: string, assigned: string | null = null): CanvasElement {
 }
 
 function workstation(id: string, positions: number, assigned: string[]): CanvasElement {
+  const padded: Array<string | null> = Array.from({ length: positions }, (_, i) =>
+    i < assigned.length ? assigned[i] : null,
+  )
   return {
     id,
     type: 'workstation',
     positions,
-    assignedEmployeeIds: assigned,
+    assignedEmployeeIds: padded,
     x: 0,
     y: 0,
     width: 10,
