@@ -233,3 +233,225 @@ describe('buildDemoOfficePayload — isolation', () => {
     }
   })
 })
+
+// ---------------------------------------------------------------------------
+// Geometric invariants. Every CanvasElement uses CENTER-ORIGIN x/y
+// coordinates (verified by reading ElementRenderer.tsx + RoomRenderer.tsx).
+// The original demo author confused top-left vs center conventions in
+// several places, leaving the reception in the negative quadrant, conference
+// tables overhanging their rooms, and the design pod's desks outside the
+// pod's common-area AABB. These tests pin the coordinate convention so we
+// can never silently regress it.
+// ---------------------------------------------------------------------------
+
+interface AABB {
+  x1: number
+  y1: number
+  x2: number
+  y2: number
+}
+
+function aabbOf(el: { x: number; y: number; width: number; height: number }): AABB {
+  return {
+    x1: el.x - el.width / 2,
+    y1: el.y - el.height / 2,
+    x2: el.x + el.width / 2,
+    y2: el.y + el.height / 2,
+  }
+}
+
+function aabbContains(outer: AABB, inner: AABB, tolerance = 0.001): boolean {
+  return (
+    inner.x1 >= outer.x1 - tolerance &&
+    inner.y1 >= outer.y1 - tolerance &&
+    inner.x2 <= outer.x2 + tolerance &&
+    inner.y2 <= outer.y2 + tolerance
+  )
+}
+
+function aabbContainsPoint(outer: AABB, x: number, y: number): boolean {
+  return x >= outer.x1 && x <= outer.x2 && y >= outer.y1 && y <= outer.y2
+}
+
+function aabbsOverlap(a: AABB, b: AABB): boolean {
+  return !(a.x2 <= b.x1 || b.x2 <= a.x1 || a.y2 <= b.y1 || b.y2 <= a.y1)
+}
+
+const FLOOR_BOUNDS: AABB = { x1: 0, y1: 0, x2: 1200, y2: 800 }
+
+describe('buildDemoOfficePayload — geometric invariants', () => {
+  const payload = buildDemoOfficePayload()
+
+  it('every common area lives inside the floor bounds [0..1200, 0..800]', () => {
+    for (const floor of payload.floors) {
+      const commons = Object.values(floor.elements).filter(
+        (e) => e.type === 'common-area',
+      )
+      for (const c of commons) {
+        const box = aabbOf(c)
+        expect(
+          aabbContains(FLOOR_BOUNDS, box),
+          `common area "${c.label}" on floor "${floor.name}" AABB ${JSON.stringify(box)} escapes floor bounds`,
+        ).toBe(true)
+      }
+    }
+  })
+
+  it('no element extends into the negative quadrant (x < 0 or y < 0)', () => {
+    for (const floor of payload.floors) {
+      for (const el of Object.values(floor.elements)) {
+        // Walls anchor at (0,0) by convention with their geometry living in
+        // `points` — exclude them from the AABB-negative check since the
+        // bounding box stored on the element doesn't reflect the actual
+        // stroke footprint and they routinely sit on the perimeter.
+        if (el.type === 'wall' || el.type === 'door' || el.type === 'window') continue
+        const box = aabbOf(el)
+        expect(
+          box.x1 >= -0.001 && box.y1 >= -0.001,
+          `${el.type} "${el.label}" on "${floor.name}" AABB ${JSON.stringify(box)} extends into negative quadrant`,
+        ).toBe(true)
+      }
+    }
+  })
+
+  it('every conference table is fully contained in its enclosing room or common area', () => {
+    for (const floor of payload.floors) {
+      const els = Object.values(floor.elements)
+      // A conference table can semantically live inside a conference-room
+      // (the typical case) OR a common-area like a "Design pod" — both
+      // are valid containers and both should fully enclose the table.
+      const containers = els.filter(
+        (e) => e.type === 'conference-room' || e.type === 'common-area',
+      )
+      const tables = els.filter((e) => e.type === 'table-conference')
+      for (const t of tables) {
+        const tBox = aabbOf(t)
+        const containing = containers.find((c) => aabbContainsPoint(aabbOf(c), t.x, t.y))
+        expect(
+          containing,
+          `conference table on "${floor.name}" at (${t.x}, ${t.y}) is not inside any conference room or common area`,
+        ).toBeTruthy()
+        if (containing) {
+          const cBox = aabbOf(containing)
+          expect(
+            aabbContains(cBox, tBox),
+            `table AABB ${JSON.stringify(tBox)} not fully inside container "${containing.label}" AABB ${JSON.stringify(cBox)}`,
+          ).toBe(true)
+        }
+      }
+    }
+  })
+
+  it('every conference table renders ABOVE its containing conference room (zIndex)', () => {
+    // Only enforced for conference-room containers (the case where
+    // overlapping zIndex causes flicker). Common-area containers paint at
+    // zIndex 1, well below the table's zIndex 3, so they're trivially
+    // satisfied — no need to assert.
+    for (const floor of payload.floors) {
+      const els = Object.values(floor.elements)
+      const rooms = els.filter((e) => e.type === 'conference-room')
+      const tables = els.filter((e) => e.type === 'table-conference')
+      for (const t of tables) {
+        const containingRoom = rooms.find((r) => aabbContainsPoint(aabbOf(r), t.x, t.y))
+        if (containingRoom) {
+          expect(
+            t.zIndex,
+            `table at (${t.x},${t.y}) has zIndex ${t.zIndex} but room "${containingRoom.label}" has zIndex ${containingRoom.zIndex} — table must paint on top`,
+          ).toBeGreaterThan(containingRoom.zIndex)
+        }
+      }
+    }
+  })
+
+  it('every desk is inside SOME zone (neighborhood, common area, or other seated container)', () => {
+    for (const floor of payload.floors) {
+      const els = Object.values(floor.elements)
+      const desks = els.filter((e) => e.type === 'desk' || e.type === 'hot-desk')
+
+      // Build the candidate-zone AABB list for the floor:
+      //  - All neighborhood AABBs whose floorId matches.
+      //  - All common-area, conference-room, private-office, workstation
+      //    element AABBs (any container that semantically "owns" a seat).
+      const zones: AABB[] = []
+      for (const n of Object.values(payload.neighborhoods)) {
+        if (n.floorId === floor.id) zones.push(aabbOf(n))
+      }
+      for (const e of els) {
+        if (
+          e.type === 'common-area' ||
+          e.type === 'conference-room' ||
+          e.type === 'private-office' ||
+          e.type === 'workstation'
+        ) {
+          zones.push(aabbOf(e))
+        }
+      }
+
+      for (const d of desks) {
+        const inside = zones.some((z) => aabbContainsPoint(z, d.x, d.y))
+        expect(
+          inside,
+          `desk "${d.label}" at (${d.x}, ${d.y}) on "${floor.name}" floats outside every defined zone`,
+        ).toBe(true)
+      }
+    }
+  })
+
+  it('no two neighborhoods on the same floor have overlapping AABBs', () => {
+    const byFloor = new Map<string, AABB[]>()
+    const byFloorMeta = new Map<string, { name: string; box: AABB }[]>()
+    for (const n of Object.values(payload.neighborhoods)) {
+      const arr = byFloor.get(n.floorId) ?? []
+      const meta = byFloorMeta.get(n.floorId) ?? []
+      arr.push(aabbOf(n))
+      meta.push({ name: n.name, box: aabbOf(n) })
+      byFloor.set(n.floorId, arr)
+      byFloorMeta.set(n.floorId, meta)
+    }
+    for (const [floorId, metas] of byFloorMeta) {
+      for (let i = 0; i < metas.length; i++) {
+        for (let j = i + 1; j < metas.length; j++) {
+          expect(
+            aabbsOverlap(metas[i].box, metas[j].box),
+            `neighborhoods "${metas[i].name}" and "${metas[j].name}" overlap on floor ${floorId}`,
+          ).toBe(false)
+        }
+      }
+    }
+  })
+
+  it('every neighborhoods desk on the engineering floor is inside its squad neighborhood', () => {
+    // Stronger version of "desk inside some zone": each engineering desk
+    // belongs to a SPECIFIC squad neighborhood (matched by the desk label
+    // prefix), and the desk's center must sit inside that exact squad.
+    const engFloor = payload.floors.find((f) => f.name.includes('Engineering'))
+    expect(engFloor).toBeTruthy()
+    if (!engFloor) return
+
+    const neighborhoods = Object.values(payload.neighborhoods).filter(
+      (n) => n.floorId === engFloor.id,
+    )
+    expect(neighborhoods.length).toBeGreaterThanOrEqual(4)
+
+    for (const n of neighborhoods) {
+      const box = aabbOf(n)
+      // Every desk whose label starts with the squad name should be in this box.
+      const desks = Object.values(engFloor.elements).filter(
+        (e) =>
+          (e.type === 'desk' || e.type === 'hot-desk') &&
+          typeof e.label === 'string' &&
+          e.label.startsWith(n.name),
+      )
+      expect(
+        desks.length,
+        `squad ${n.name} should have desks labeled with its name`,
+      ).toBeGreaterThan(0)
+      for (const d of desks) {
+        expect(
+          aabbContainsPoint(box, d.x, d.y),
+          `desk "${d.label}" at (${d.x}, ${d.y}) is outside neighborhood "${n.name}" AABB ${JSON.stringify(box)}`,
+        ).toBe(true)
+      }
+    }
+  })
+})

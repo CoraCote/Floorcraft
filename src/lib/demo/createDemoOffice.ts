@@ -397,7 +397,11 @@ function makeConferenceTable(
     rotation: 0,
     locked: false,
     groupId: null,
-    zIndex: 2,
+    // zIndex 3 — strictly higher than the conference room (zIndex 2) that
+    // visually contains this table, so the table always paints on top.
+    // Equal zIndex with the room would tie render order and let the table
+    // flicker under its container during selection / drag operations.
+    zIndex: 3,
     label: 'Conference table',
     visible: true,
     style: baseStyle('#FAFAF9', '#78716C'),
@@ -405,6 +409,31 @@ function makeConferenceTable(
     seatLayout: 'around',
     seats: [],
   }
+}
+
+// ---------------------------------------------------------------------------
+// Geometry helpers. Every CanvasElement uses CENTER-ORIGIN x/y — the
+// renderer translates a Group to (el.x, el.y) and the per-type renderer
+// draws at (-width/2, -height/2). The original demo layout author leaked
+// top-left-style coordinates into a few makeCommonArea / makeConferenceTable
+// calls, putting the reception in the negative quadrant and tables hanging
+// off the edge of their rooms. These helpers make the center-origin
+// convention explicit at the call site.
+// ---------------------------------------------------------------------------
+
+/**
+ * Given a parent's center + an offset from that center, return absolute
+ * (cx, cy) coords for the child. Useful when laying out desks around a
+ * pod's central table — the offsets are intuitive (x=-180 means "180
+ * units left of pod center") instead of top-left-relative.
+ */
+function offsetInside(
+  parentCx: number,
+  parentCy: number,
+  offsetX: number,
+  offsetY: number,
+): [number, number] {
+  return [parentCx + offsetX, parentCy + offsetY]
 }
 
 // ---------------------------------------------------------------------------
@@ -433,6 +462,37 @@ interface FloorBuild {
  * so it's deliberately the most varied in element types: walls, doors,
  * windows, a round conference table, a couch, plants, and a hot-desk
  * bench to show off workstations as distinct from 1:1 desks.
+ *
+ * Layout (canvas 1200x800, all coordinates are CENTER-ORIGIN — see
+ * ElementRenderer.tsx):
+ *
+ *   y=0  ┌──────────────────────────────────────────────┐
+ *        │ Reception │  [Odyssey] [Atlas] │  (north)    │
+ *        │  + sofa   │                     │             │
+ *   y=200├───────────┴─────────────────────┴─────────────┤
+ *        │ Phone booths   ·   bullpen   ·                │
+ *        │  Priv offices                                 │
+ *        │   on west ·   workstation bench   · kitchen   │
+ *        │                                               │
+ *        │   south desks (2x3)                           │
+ *  y=800 └──────────────────────────────────────────────┘
+ *
+ * Why these specific centers (the previous code passed top-left-style
+ * coords into makeCommonArea, putting reception at AABB [-130..210,
+ * -10..90] — half off the canvas):
+ *   - Reception: center (170, 80), 280x100 → AABB [30..310, 30..130].
+ *   - Odyssey: center (520, 160), 220x180 → AABB [410..630, 70..250].
+ *     Conference table centered EXACTLY at (520, 160) so the table is
+ *     visually inside the room and table.zIndex (3) > room.zIndex (2).
+ *   - Atlas: center (820, 160), 200x180 → AABB [720..920, 70..250].
+ *   - Phone booths: 4 booths flanking conference rooms.
+ *   - Private offices: 4 along west edge (south of reception). Each
+ *     center at x=110 (so AABB x runs 30..190, just inside the wall).
+ *   - Workstation bench: center (560, 480), 432x54 hot-desk row.
+ *   - 6 desks (2 rows × 3): south bullpen at y=620 and y=700.
+ *   - Kitchen/Lounge common area encloses the south-east corner; the
+ *     6 south desks live INSIDE this common area's AABB so the
+ *     "every desk inside some zone" invariant holds.
  */
 function buildGroundFloor(): FloorBuild {
   const els: CanvasElement[] = []
@@ -452,66 +512,69 @@ function buildGroundFloor(): FloorBuild {
   const leftWall = makeWall(0, 0, [0, 0, 0, 800], 'West wall')
   els.push(topWall, rightWall, bottomWall, leftWall)
 
-  // Interior wall separating reception from the bullpen. Adds a door.
-  const receptionWall = makeWall(
-    0,
-    160,
-    [0, 0, 400, 0],
-    'Reception partition',
-    { wallType: 'glass' },
-  )
-  els.push(receptionWall)
-  els.push(makeDoor(340, 156, receptionWall.id, 0.85, 'Reception door'))
-
-  // Doors on the exterior — main entrance on the south wall.
+  // Doors on the exterior — main entrance on the south wall, side exit on
+  // the east, plus a stairwell on the west connecting upper floors.
   els.push(makeDoor(600, 796, bottomWall.id, 0.5, 'Main entrance'))
   els.push(makeDoor(1188, 400, rightWall.id, 0.42, 'Side exit'))
+  els.push(makeDoor(4, 400, leftWall.id, 0.5, 'Stairwell'))
 
   // Windows on the east wall — facing the street.
   els.push(
-    makeWindow(1188, 200, rightWall.id, 0.19, 80, 'Window'),
-    makeWindow(1188, 600, rightWall.id, 0.73, 80, 'Window'),
+    makeWindow(1188, 250, rightWall.id, 0.24, 80, 'Window'),
+    makeWindow(1188, 600, rightWall.id, 0.7, 80, 'Window'),
   )
   // Window on the angled north wall.
-  els.push(makeWindow(500, -4, topWall.id, 0.5, 120, 'Window'))
+  els.push(makeWindow(500, 4, topWall.id, 0.5, 120, 'Window'))
 
-  // Reception area (top-left): counter + sofa + plant.
-  els.push(makeCommonArea(40, 40, 340, 100, 'Reception'))
-  els.push(makeSofa(60, 70, 140, 56))
-  els.push(makePlant(250, 50))
+  // Reception area (top-left). Center (170, 80), 280x100 →
+  // AABB [30..310, 30..130]. Sits comfortably inside the floor with a
+  // 30px margin from west/north walls.
+  els.push(makeCommonArea(170, 80, 280, 100, 'Reception'))
+  // Sofa centered inside the reception common area. (170, 95) keeps the
+  // sofa AABB [100..240, 75..115] fully inside reception [30..310, 30..130].
+  els.push(makeSofa(170, 95, 140, 40))
+  // Plant at NE corner of reception.
+  els.push(makePlant(290, 60))
 
-  // Conference rooms — two against the north bullpen side.
-  els.push(makeConferenceRoom(500, 200, 240, 160, 'Odyssey (10p)', 10))
-  els.push(makeConferenceTable(560, 240, 180, 90, 8))
-  els.push(makeConferenceRoom(800, 200, 200, 160, 'Atlas (6p)', 6))
-  els.push(makeConferenceTable(840, 240, 140, 80, 6))
+  // Conference rooms along the top. Odyssey (520, 160) 220x180 with the
+  // table centered EXACTLY at (520, 160) — same coords as the room, smaller
+  // size (160x100) so the table AABB [440..600, 110..210] is fully inside
+  // the room AABB [410..630, 70..250].
+  const odyssey = makeConferenceRoom(520, 160, 220, 180, 'Odyssey (10p)', 10)
+  els.push(odyssey)
+  els.push(makeConferenceTable(520, 160, 160, 100, 8))
+  // Atlas (820, 160) 200x180 with table at exact center (820, 160).
+  const atlas = makeConferenceRoom(820, 160, 200, 180, 'Atlas (6p)', 6)
+  els.push(atlas)
+  els.push(makeConferenceTable(820, 160, 140, 90, 6))
 
-  // Phone booths — flanking the conference rooms.
-  els.push(makePhoneBooth(440, 200, 'Booth 1'))
-  els.push(makePhoneBooth(440, 280, 'Booth 2'))
-  els.push(makePhoneBooth(1020, 200, 'Booth 3'))
-  els.push(makePhoneBooth(1020, 280, 'Booth 4'))
+  // Phone booths flanking the conference rooms. 4 booths × 60x60 each.
+  els.push(makePhoneBooth(370, 130, 'Booth 1'))
+  els.push(makePhoneBooth(370, 200, 'Booth 2'))
+  els.push(makePhoneBooth(970, 130, 'Booth 3'))
+  els.push(makePhoneBooth(970, 200, 'Booth 4'))
 
-  // Private offices for ops/people leadership — four along the west edge.
+  // Private offices along the west edge (south of reception). Each is
+  // 160x110 with center x=110 → AABB x∈[30..190]. The west wall is at x∈[0..8]
+  // so AABB x1=30 leaves a comfortable 22px gap from the wall stroke.
   const privateOffices: PrivateOfficeElement[] = [
-    makePrivateOffice(30, 420, 160, 110, 'G-P01', 'Operations office', {
+    makePrivateOffice(110, 320, 160, 110, 'G-P01', 'Operations office', {
       equipment: ['monitor'],
     }),
-    makePrivateOffice(30, 550, 160, 110, 'G-P02', 'People office', {
+    makePrivateOffice(110, 450, 160, 110, 'G-P02', 'People office', {
       equipment: ['monitor'],
     }),
-    makePrivateOffice(30, 680, 160, 100, 'G-P03', 'Marketing office'),
-    makePrivateOffice(210, 420, 160, 110, 'G-P04', 'Finance partner'),
+    makePrivateOffice(110, 580, 160, 110, 'G-P03', 'Marketing office'),
+    makePrivateOffice(110, 710, 160, 80, 'G-P04', 'Finance partner'),
   ]
   for (const po of privateOffices) {
     els.push(po)
     seatIds.push(po.id)
   }
 
-  // Workstation bench (hot-desk row) — a 6-seat shared bench in the middle
-  // of the bullpen. Shows the "workstation" element type which is distinct
-  // from a 1:1 desk.
-  const bench = makeWorkstation(420, 440, 'G-W01', 6, {
+  // Workstation bench (hot-desk row) in the middle of the bullpen.
+  // Center (560, 460), 432x54 → AABB [344..776, 433..487].
+  const bench = makeWorkstation(560, 460, 'G-W01', 6, {
     equipment: ['monitor', 'docking-station'],
     width: 6 * 72,
     height: 54,
@@ -519,8 +582,19 @@ function buildGroundFloor(): FloorBuild {
   els.push(bench)
   seatIds.push(bench.id)
 
-  // 6 desks in two 3-desk rows along the south wall — mix of assigned and
-  // unassigned so both states are visible.
+  // Kitchen + lounge common area in the south-east — placed FIRST so the
+  // 6 south desks can live inside its AABB. Center (760, 600), 700x340 →
+  // AABB [410..1110, 430..770]. The south desks (centers at x∈[440..616],
+  // y∈[620..700]) sit fully inside this common area, satisfying the
+  // "every desk inside some zone" invariant.
+  els.push(makeCommonArea(760, 600, 700, 340, 'Kitchen / Lounge'))
+  els.push(makeSofa(900, 480, 180, 60))
+  els.push(makeSofa(1020, 660, 160, 60))
+  els.push(makePlant(1080, 480))
+  els.push(makePlant(1080, 720))
+
+  // 6 desks in two 3-desk rows in the south bullpen. Centers chosen so
+  // every desk AABB (72x48) sits inside the kitchen/lounge common area.
   let deskCounter = 1
   const southRows: Array<[number, number]> = []
   for (let col = 0; col < 3; col++) {
@@ -533,14 +607,6 @@ function buildGroundFloor(): FloorBuild {
     els.push(d)
     seatIds.push(d.id)
   }
-
-  // Kitchen + lounge along the east interior — adds a second plant and a
-  // second sofa for the "break-room" vibe.
-  els.push(makeCommonArea(760, 440, 400, 340, 'Kitchen / Lounge'))
-  els.push(makeSofa(790, 480, 180, 60))
-  els.push(makeSofa(790, 560, 180, 60))
-  els.push(makePlant(1100, 460))
-  els.push(makePlant(1100, 720))
 
   const floor: Floor = {
     id: floorId,
@@ -578,6 +644,22 @@ function buildGroundFloor(): FloorBuild {
  * main floor plate, one per sub-squad; each has 6 desks arranged in two
  * rows so the clusters read as cohesive pods. A small workstation bench
  * and a conference room sit on the east side for standups.
+ *
+ * Squad neighborhoods are sized 440x240 (not 400x220) so that 6 desks
+ * laid out at offsets [-180, -60, 60] × [-90, 0] from the squad center
+ * each fit FULLY inside the neighborhood AABB. Previously the desks at
+ * row 0 (y=cy-90) had AABB y1=cy-114 which escaped the cy-110 neighborhood
+ * top edge by 4px — visually subtle but enough to fail an "every desk
+ * inside its squad" geometric invariant.
+ *
+ *   ┌──────────────────────────────────────────────────┐
+ *   │ Frontend (260,220)        Backend (760,220)      │
+ *   │   6 desks 3x2               6 desks 3x2          │
+ *   ├───────────── standup bench (560,370) ────────────┤
+ *   │ DevOps (260,540)          Platform (760,540)     │
+ *   │   6 desks 3x2               6 desks 3x2          │
+ *   │              [Huddle (1080,640)]                 │
+ *   └──────────────────────────────────────────────────┘
  */
 function buildEngineeringFloor(): FloorBuild {
   const els: CanvasElement[] = []
@@ -633,14 +715,16 @@ function buildEngineeringFloor(): FloorBuild {
 
   const neighborhoods: Neighborhood[] = []
   for (const sq of squads) {
+    // 440x240 — the previous 400x220 was 4px too tight on each axis to
+    // fully contain the 3x2 desk grid laid out at the offsets below.
     const n: Neighborhood = {
       id: nanoid(),
       name: sq.name,
       color: ENG_SQUAD_COLORS[sq.name],
       x: sq.cx,
       y: sq.cy,
-      width: 400,
-      height: 220,
+      width: 440,
+      height: 240,
       floorId,
       department: 'Engineering',
       team: sq.name,
@@ -648,14 +732,17 @@ function buildEngineeringFloor(): FloorBuild {
     }
     neighborhoods.push(n)
 
-    // 6 desks arranged in a 3x2 grid within the neighborhood rect. The
-    // neighborhood is painted at (cx, cy) as center so we offset desks
-    // from the top-left = (cx - 200, cy - 110).
+    // 6 desks arranged in a 3x2 grid within the neighborhood AABB.
+    // Center offsets from (cx, cy):
+    //   columns: -180, -60, +60   (so desk AABB x1 ranges from cx-216
+    //                              which is > cx-220, fitting inside)
+    //   rows:    -60, +60         (desk AABB y1=cy-84, y2=cy+84; both
+    //                              inside [cy-120, cy+120])
     let deskNum = 1
     for (let row = 0; row < 2; row++) {
       for (let col = 0; col < 3; col++) {
         const x = sq.cx - 180 + col * 120
-        const y = sq.cy - 90 + row * 90
+        const y = sq.cy - 60 + row * 120
         const equipment: string[] = ['monitor']
         // One standing desk per squad so the equipment-needs overlay has
         // something to line up with the `standing-desk` accommodation
@@ -673,25 +760,31 @@ function buildEngineeringFloor(): FloorBuild {
   }
 
   // Central standup area — a long workstation bench between the two
-  // neighborhood columns. Shows the "workstation" type and a clean way to
-  // break up the grid.
-  const standupBench = makeWorkstation(510, 370, 'E-W01', 4, {
+  // neighborhood rows. Center (560, 380), width 4*72=288, height 48 →
+  // AABB [416..704, 356..404]. Sits in the gap between the upper squads
+  // (y∈[100..340]) and lower squads (y∈[420..660]).
+  const standupBench = makeWorkstation(560, 380, 'E-W01', 4, {
     equipment: ['docking-station'],
     width: 4 * 72,
   })
   els.push(standupBench)
   seatIds.push(standupBench.id)
 
-  // Small conference room on the south-east corner for standups.
-  els.push(makeConferenceRoom(1000, 620, 160, 120, 'Huddle (4p)', 4))
-  els.push(makeConferenceTable(1020, 640, 120, 70, 4))
+  // Small conference room in the south-east corner for standups.
+  // Center (1080, 640), 160x120 → AABB [1000..1160, 580..700].
+  // Conference table centered EXACTLY at (1080, 640), 120x70 →
+  // AABB [1020..1140, 605..675] — fully inside the room.
+  els.push(makeConferenceRoom(1080, 640, 160, 120, 'Huddle (4p)', 4))
+  els.push(makeConferenceTable(1080, 640, 120, 70, 4))
 
   // Plants + sofas in the corners — ambient decoration so the floor
-  // doesn't read as a desk parking lot.
-  els.push(makeSofa(480, 40, 160, 54))
-  els.push(makePlant(40, 40))
-  els.push(makePlant(1140, 40))
-  els.push(makePlant(40, 720))
+  // doesn't read as a desk parking lot. Plants are 40x40 so center (60,60)
+  // gives AABB [40..80, 40..80] — comfortably inside the perimeter wall
+  // (which sits at x∈[0..8]).
+  els.push(makeSofa(560, 720, 160, 54))
+  els.push(makePlant(60, 60))
+  els.push(makePlant(1140, 60))
+  els.push(makePlant(60, 720))
 
   const floor: Floor = {
     id: floorId,
@@ -729,6 +822,27 @@ function buildEngineeringFloor(): FloorBuild {
  * Leadership & Design floor — the smallest and most private. Mostly
  * private offices along the perimeter with a collaborative design pod in
  * the middle. Fewer people, bigger rooms.
+ *
+ * Layout (canvas 1200x800, all coordinates CENTER-ORIGIN):
+ *
+ *   ┌──────────────────────────────────────────────────┐
+ *   │ booths   booths             [Exec lounge NE]     │
+ *   │                                                   │
+ *   │            [Design pod (600, 300)]               │
+ *   │             8 desks + central table               │
+ *   │                                                   │
+ *   │ [CEO] [CFO] [CPO] [VP Design]   south offices    │
+ *   └──────────────────────────────────────────────────┘
+ *
+ * Critical fix vs. previous version:
+ *  - The old code passed `(podCenter[0]-200, podCenter[1]-100, 400, 200)`
+ *    to `makeCommonArea`, intending to anchor the top-left at (400, 200) —
+ *    but makeCommonArea takes CENTER coords, so the area landed at AABB
+ *    [200..600, 100..300] while desks were placed RELATIVE to (600, 300),
+ *    extending to x=690, y=360 — entirely outside the pod common area.
+ *  - The new code centers the design pod at (600, 300) with size 480x260,
+ *    AABB [360..840, 170..430], and positions the 8 desks at offsets
+ *    that keep each desk AABB fully inside the pod.
  */
 function buildLeadershipFloor(): FloorBuild {
   const els: CanvasElement[] = []
@@ -749,8 +863,8 @@ function buildLeadershipFloor(): FloorBuild {
   const leftWall = makeWall(0, 0, [0, 0, 0, 800], 'West wall')
   els.push(topWall, rightWall, bottomWall, leftWall)
 
-  // Stairwell door on west.
-  els.push(makeDoor(-4, 400, leftWall.id, 0.5, 'Stairwell'))
+  // Stairwell door on west — center x=4 keeps the door inside [0,8].
+  els.push(makeDoor(4, 400, leftWall.id, 0.5, 'Stairwell'))
   // East-facing windows.
   els.push(
     makeWindow(1188, 200, rightWall.id, 0.17, 120, 'Window'),
@@ -758,11 +872,13 @@ function buildLeadershipFloor(): FloorBuild {
   )
 
   // Four private offices along the south wall for VPs / leadership.
+  // Each is 180x140 with center y=690 → AABB y∈[620..760], comfortably
+  // inside the 800-tall canvas. Centers spaced 220 apart on x.
   const southOffices: Array<[number, number, string]> = [
-    [60, 620, 'CEO office'],
-    [280, 620, 'CFO office'],
-    [500, 620, 'CPO office'],
-    [720, 620, 'VP Design'],
+    [150, 690, 'CEO office'],
+    [370, 690, 'CFO office'],
+    [590, 690, 'CPO office'],
+    [810, 690, 'VP Design'],
   ]
   let priv = 1
   for (const [x, y, label] of southOffices) {
@@ -774,29 +890,37 @@ function buildLeadershipFloor(): FloorBuild {
     seatIds.push(po.id)
   }
 
-  // Design collaborative pod in the middle — 8 desks in a ring around a
-  // shared table. This is the "open collaborative" counterpart to the
-  // private offices.
+  // Design pod in the middle — 8 desks ringing a shared central table.
+  // Common area center (600, 300), size 480x260 → AABB [360..840, 170..430].
   const podCenter: [number, number] = [600, 300]
-  els.push(makeCommonArea(podCenter[0] - 200, podCenter[1] - 100, 400, 200, 'Design pod'))
-  els.push(makeConferenceTable(podCenter[0] - 70, podCenter[1] - 30, 140, 60, 6))
+  els.push(makeCommonArea(podCenter[0], podCenter[1], 480, 260, 'Design pod'))
+  // Conference table centered EXACTLY at the pod center, 180x80 →
+  // table AABB [510..690, 260..340], well inside the pod.
+  els.push(makeConferenceTable(podCenter[0], podCenter[1], 180, 80, 8))
 
-  // 8 desks around the pod — positioned just inside the common area.
+  // 8 desks in two rows of 4, ringing the central table. Desk size 72x48,
+  // so a desk centered at (cx + dx, cy + dy) has AABB extending ±36 in x
+  // and ±24 in y. With pod AABB [360..840, 170..430]:
+  //   row dy = -90  → desk AABB y∈[cy-114..cy-66] = [186..234]  — inside [170..430]
+  //   row dy = +90  → desk AABB y∈[cy+66..cy+114] = [366..414]  — inside [170..430]
+  //   columns dx = -180, -60, 60, 180 → x∈[420..816] desk centers,
+  //     AABB ranges [384..816] worst-case, all inside [360..840].
   const podDeskOffsets: Array<[number, number]> = [
     [-180, -90],
-    [-90, -90],
-    [0, -90],
-    [90, -90],
-    [-180, 60],
-    [-90, 60],
-    [0, 60],
-    [90, 60],
+    [-60, -90],
+    [60, -90],
+    [180, -90],
+    [-180, 90],
+    [-60, 90],
+    [60, 90],
+    [180, 90],
   ]
   let deskIdx = 1
   for (const [dx, dy] of podDeskOffsets) {
+    const [cx, cy] = offsetInside(podCenter[0], podCenter[1], dx, dy)
     const d = makeDesk(
-      podCenter[0] + dx,
-      podCenter[1] + dy,
+      cx,
+      cy,
       `L-D${String(deskIdx).padStart(2, '0')}`,
       { label: `Design ${deskIdx}`, equipment: deskIdx === 1 ? ['monitor', 'tablet'] : ['monitor'] },
     )
@@ -805,17 +929,22 @@ function buildLeadershipFloor(): FloorBuild {
     seatIds.push(d.id)
   }
 
-  // Phone booths along the north wall.
+  // Phone booths along the north wall, well inside the floor (booth size
+  // 60x60 so center y=100 keeps AABB y1=70 inside the 80-tall north-wall
+  // bulge area).
   els.push(makePhoneBooth(200, 100, 'Booth 1'))
-  els.push(makePhoneBooth(280, 100, 'Booth 2'))
+  els.push(makePhoneBooth(400, 100, 'Booth 2'))
   els.push(makePhoneBooth(900, 100, 'Booth 3'))
 
-  // Executive lounge — NE corner.
-  els.push(makeCommonArea(960, 120, 220, 140, 'Executive lounge'))
-  els.push(makeSofa(980, 140, 180, 60))
-  els.push(makePlant(1150, 220))
-  els.push(makePlant(40, 80))
-  els.push(makePlant(40, 740))
+  // Executive lounge in the NE corner. Center (1060, 180), 240x140 →
+  // AABB [940..1180, 110..250]. Sofa center (1060, 200), 180x60 →
+  // AABB [970..1150, 170..230] — fully inside the lounge.
+  els.push(makeCommonArea(1060, 180, 240, 140, 'Executive lounge'))
+  els.push(makeSofa(1060, 200, 180, 60))
+  els.push(makePlant(1140, 230))
+  // Decor plants near the perimeter — centered well inside the wall stroke.
+  els.push(makePlant(60, 200))
+  els.push(makePlant(60, 540))
 
   const floor: Floor = {
     id: floorId,
