@@ -1,8 +1,9 @@
-import { useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ChevronDown,
   ChevronRight,
   MessageSquarePlus,
+  SearchX,
   Star,
   Upload,
   X,
@@ -14,6 +15,10 @@ import { useLibraryCollapse } from '../../../hooks/useLibraryCollapse'
 import { useLibraryFavorites, favoriteKey } from '../../../hooks/useLibraryFavorites'
 import { useCustomShapes } from '../../../hooks/useCustomShapes'
 import { sanitizeSvg, MAX_SVG_BYTES } from '../../../lib/svgSanitize'
+import {
+  addRecent as persistRecent,
+  getRecents as readPersistedRecents,
+} from '../../../lib/elementLibraryRecents'
 import type {
   ElementType,
   TableType,
@@ -56,6 +61,54 @@ export interface LibraryItem {
  * `application/employee-id`).
  */
 export const LIBRARY_DRAG_MIME = 'application/floocraft-element-type'
+
+/**
+ * Short, file-local copy keyed by `tileKey(item)` (i.e. `type[/shape]`).
+ * Used by the hover tooltip — the action records themselves don't carry a
+ * `description` field, and we deliberately do not extend `LibraryItem`
+ * with one to keep the persisted shape stable. Missing entries fall back
+ * to a generic single-line tooltip in the renderer.
+ */
+const TILE_DESCRIPTIONS: Record<string, string> = {
+  'table-rect': 'Rectangular meeting or work table.',
+  'table-conference': 'Long conference table with seats around the edges.',
+  'table-round': 'Round table — sociable, equal-distance seating.',
+  'table-oval': 'Oval table — large boardroom-style meetings.',
+  desk: 'Single-person desk with an assignable seat.',
+  'hot-desk': 'Unassigned desk available to anyone for the day.',
+  'desk/l-shape': 'L-shaped desk — extra surface area for monitors.',
+  'desk/cubicle': 'Enclosed cubicle desk for focus work.',
+  workstation: 'Multi-person bench, up to four seats.',
+  'private-office': 'Walled office with one occupant.',
+  'private-office/u-shape': 'U-shaped private office for two people.',
+  'conference-room': 'Bookable meeting room with capacity.',
+  'phone-booth': 'Single-occupant phone or focus pod.',
+  'common-area': 'Shared lounge or breakout zone.',
+  chair: 'Standalone office chair.',
+  'decor/armchair': 'Lounge armchair for casual seating.',
+  'decor/couch': 'Sofa for breakout / casual areas.',
+  'decor/column': 'Structural column — block off as obstruction.',
+  'decor/stairs': 'Stairs / stairwell footprint.',
+  'decor/elevator': 'Elevator shaft footprint.',
+  divider: 'Partition wall between zones.',
+  planter: 'Decorative planter or large indoor plant.',
+  'decor/reception': 'Reception desk near building entrance.',
+  'decor/kitchen-counter': 'Kitchen counter / kitchenette block.',
+  'decor/fridge': 'Fridge — pantry or break room.',
+  'decor/whiteboard': 'Wall-mounted whiteboard.',
+  counter: 'Service counter or bar.',
+  sofa: 'Three-seat sofa.',
+  plant: 'Floor plant — small decorative footprint.',
+  printer: 'Shared printer or copier.',
+  whiteboard: 'Whiteboard footprint.',
+  'custom-shape': 'Generic custom outline — resize freely.',
+  'text-label': 'Free-form text label.',
+}
+
+/** Same key shape as the recents helper so descriptions follow shape variants. */
+function tileKey(item: LibraryItem): string {
+  return `${item.type}${item.shape ? `/${item.shape}` : ''}`
+}
 
 const LIBRARY_ITEMS: LibraryItem[] = [
   // Tables
@@ -284,11 +337,31 @@ interface LibraryTileProps {
   /** Present only for user-uploaded custom SVGs. Shows an "×" in place of
    *  the star so the shape can be removed from the library. */
   onDelete?: (item: LibraryItem) => void
+  /** True when this tile's element type matches the canvas's active tool.
+   *  Drives the stronger highlight class. Most library items are factories
+   *  (not tools) so this is normally false — but kept generic in case a
+   *  future tile maps directly to a canvas tool. */
+  isActive?: boolean
+  /** Callback when hover passes the dwell threshold (250ms). The owning
+   *  ElementLibrary keeps a single shared tooltip rather than one per tile
+   *  so 50 idle tiles don't allocate 50 tooltip nodes. */
+  onHoverEnter?: (item: LibraryItem, anchor: HTMLElement) => void
+  /** Hover left or drag started — tear the tooltip down. */
+  onHoverLeave?: (item: LibraryItem) => void
 }
 
-function LibraryTile({ item, onClick, onDragStart, onDelete }: LibraryTileProps) {
+function LibraryTile({
+  item,
+  onClick,
+  onDragStart,
+  onDelete,
+  isActive,
+  onHoverEnter,
+  onHoverLeave,
+}: LibraryTileProps) {
   const isFavorite = useLibraryFavorites((s) => s.favorites.has(favoriteKey(item)))
   const toggleFavorite = useLibraryFavorites((s) => s.toggleFavorite)
+  const wrapperRef = useRef<HTMLDivElement>(null)
 
   const handleStarClick = (e: React.MouseEvent | React.KeyboardEvent) => {
     e.preventDefault()
@@ -302,20 +375,40 @@ function LibraryTile({ item, onClick, onDragStart, onDelete }: LibraryTileProps)
     onDelete?.(item)
   }
 
+  const handleMouseEnter = () => {
+    if (wrapperRef.current) onHoverEnter?.(item, wrapperRef.current)
+  }
+  const handleMouseLeave = () => {
+    onHoverLeave?.(item)
+  }
+
   return (
     <div
+      ref={wrapperRef}
       draggable
-      onDragStart={onDragStart(item)}
+      onDragStart={(e) => {
+        // Tear down any pending tooltip so it doesn't race the drag image.
+        onHoverLeave?.(item)
+        onDragStart(item)(e)
+      }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      role="button"
+      aria-label={`${item.label} — click to place at centre, or drag onto the canvas`}
       title="Click to add to centre, or drag onto the canvas to place exactly"
       // The wrapper owns the drag; the inner <button> handles click-to-add.
       // The star sits above as a sibling with its own keyboard handler so
       // Tab reaches it and Space/Enter toggles without placing the element.
-      className="group relative flex items-center gap-1.5 px-2 py-1.5 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded border border-gray-100 dark:border-gray-800 hover:border-gray-200 transition-colors cursor-grab active:cursor-grabbing"
+      className={`group relative flex items-center gap-1.5 px-2 py-1.5 text-xs rounded border transition-colors cursor-grab active:cursor-grabbing hover:ring-1 hover:ring-blue-300 dark:hover:ring-blue-700 ${
+        isActive
+          ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-100 border-blue-200 dark:border-blue-800'
+          : 'text-gray-700 dark:text-gray-200 border-gray-100 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800 hover:border-gray-200'
+      }`}
     >
       <button
         type="button"
         onClick={() => onClick(item)}
-        className="flex items-center gap-1.5 flex-1 text-left"
+        className="flex items-center gap-1.5 flex-1 text-left rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
       >
         <LibraryPreview item={item} />
         <span className="truncate">{item.label}</span>
@@ -369,10 +462,23 @@ interface LibrarySectionProps {
   /** Per-tile delete handler; forwarded to LibraryTile's onDelete. Used by
    *  "My Shapes" to let users remove uploaded custom SVGs. */
   onDelete?: (item: LibraryItem) => void
+  /** Predicate the section uses to mark a tile as the active tool. */
+  isActive?: (item: LibraryItem) => boolean
+  onHoverEnter?: (item: LibraryItem, anchor: HTMLElement) => void
+  onHoverLeave?: (item: LibraryItem) => void
 }
 
 function LibrarySection({
-  id, title, items, collapsible = true, onClick, onDragStart, onDelete,
+  id,
+  title,
+  items,
+  collapsible = true,
+  onClick,
+  onDragStart,
+  onDelete,
+  isActive,
+  onHoverEnter,
+  onHoverLeave,
 }: LibrarySectionProps) {
   // If the user hasn't explicitly toggled this section, fall back to the
   // per-category default — most sections start collapsed (see the hook)
@@ -409,6 +515,9 @@ function LibrarySection({
               onClick={onClick}
               onDragStart={onDragStart}
               onDelete={onDelete}
+              isActive={isActive?.(item)}
+              onHoverEnter={onHoverEnter}
+              onHoverLeave={onHoverLeave}
             />
           ))}
         </div>
@@ -434,15 +543,87 @@ export function ElementLibrary() {
   const stageScale = useCanvasStore((s) => s.stageScale)
   const stageX = useCanvasStore((s) => s.stageX)
   const stageY = useCanvasStore((s) => s.stageY)
-  const recents = useRecentLibraryItems((s) => s.recents)
-  const addRecent = useRecentLibraryItems((s) => s.addRecent)
+  // Wave 12B: ElementLibrary is now the source of truth for the "Recent"
+  // row, backed by `lib/elementLibraryRecents` (pure localStorage helper).
+  // The legacy zustand `useRecentLibraryItems` store stays in place — it's
+  // also written to from CanvasStage's drop handler (out of scope for this
+  // wave) — and we mirror our writes there so both lists stay in sync.
+  const addZustandRecent = useRecentLibraryItems((s) => s.addRecent)
   const favoriteSet = useLibraryFavorites((s) => s.favorites)
   const customShapes = useCustomShapes((s) => s.shapes)
   const addCustomShape = useCustomShapes((s) => s.addShape)
   const removeCustomShape = useCustomShapes((s) => s.removeShape)
   const [query, setQuery] = useState('')
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [recents, setRecents] = useState<LibraryItem[]>(() =>
+    readPersistedRecents(),
+  )
+  // Single shared tooltip target. Lives in component state so we don't
+  // mount one tooltip per tile. `null` means "no hover preview shown".
+  const [hovered, setHovered] = useState<{
+    item: LibraryItem
+    rect: DOMRect
+  } | null>(null)
+  // Suppressed during a drag so the tooltip doesn't follow the drag image
+  // around — see `dragInProgress` checks below.
+  const [dragInProgress, setDragInProgress] = useState(false)
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
+
+  const bumpRecent = useCallback(
+    (item: LibraryItem) => {
+      const next = persistRecent(item)
+      setRecents(next)
+      // Keep the legacy zustand store warm so CanvasStage's drop handler
+      // (and any other consumer outside this component) sees the update.
+      try {
+        addZustandRecent(item)
+      } catch {
+        /* defensive: never block placement on recents bookkeeping */
+      }
+    },
+    [addZustandRecent],
+  )
+
+  // Listen for cross-window updates so two open tabs/floor panels stay in
+  // sync. Cheap: 1 listener for the lifetime of the editor.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (!e.key || e.key === 'floocraft.elementLibrary.recent') {
+        setRecents(readPersistedRecents())
+      }
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
+
+  // Tear down any pending hover timer on unmount so we don't fire setState
+  // after the component is gone.
+  useEffect(() => {
+    return () => {
+      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current)
+    }
+  }, [])
+
+  const handleHoverEnter = useCallback(
+    (item: LibraryItem, anchor: HTMLElement) => {
+      if (dragInProgress) return
+      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current)
+      hoverTimerRef.current = setTimeout(() => {
+        setHovered({ item, rect: anchor.getBoundingClientRect() })
+      }, 250)
+    },
+    [dragInProgress],
+  )
+
+  const handleHoverLeave = useCallback(() => {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current)
+      hoverTimerRef.current = null
+    }
+    setHovered(null)
+  }, [])
   // Running offset for click-to-add placements. When the same spot is used
   // repeatedly (user click-click-clicks the same tile), each subsequent
   // placement nudges down-and-right by CLICK_ADD_STEP so elements don't
@@ -518,16 +699,32 @@ export function ElementLibrary() {
     // to the whole map just to auto-number a new seat.
     const existing = useElementsStore.getState().elements
     addElement(buildLibraryElement(item, x, y, getMaxZIndex() + 1, existing))
-    addRecent(item)
+    bumpRecent(item)
   }
 
   // Drag-to-canvas: serialise the LibraryItem into the drag payload. The
   // CanvasStage drop handler reads this, translates the drop coords into
   // canvas space, and calls buildLibraryElement at the cursor.
-  const handleDragStart = (item: LibraryItem) => (e: React.DragEvent<HTMLElement>) => {
-    e.dataTransfer.setData(LIBRARY_DRAG_MIME, JSON.stringify(item))
-    e.dataTransfer.effectAllowed = 'copy'
-  }
+  // We bump the recents list at drag-start (rather than drop) — detecting
+  // drop completion would require crossing into CanvasStage, which is out
+  // of scope for this wave. False positives (drag cancelled before drop)
+  // are acceptable: the tile clearly intended to be used.
+  const handleDragStart =
+    (item: LibraryItem) => (e: React.DragEvent<HTMLElement>) => {
+      e.dataTransfer.setData(LIBRARY_DRAG_MIME, JSON.stringify(item))
+      e.dataTransfer.effectAllowed = 'copy'
+      bumpRecent(item)
+      setDragInProgress(true)
+      // Tear down any visible tooltip so it doesn't fight the drag image.
+      handleHoverLeave()
+      // Drag-end fires regardless of drop success on the same element.
+      const target = e.currentTarget
+      const onEnd = () => {
+        setDragInProgress(false)
+        target.removeEventListener('dragend', onEnd)
+      }
+      target.addEventListener('dragend', onEnd)
+    }
 
   const categories = useMemo(
     () => [...new Set(LIBRARY_ITEMS.map((i) => i.category))],
@@ -554,14 +751,25 @@ export function ElementLibrary() {
 
   const q = query.trim().toLowerCase()
   const isSearching = q.length > 0
+  // Match against label OR category (case-insensitive substring on each).
+  // The action records don't currently carry a `tags` field, so tag-based
+  // matching is a no-op for now — if we later add tags, extend this here.
+  const matchesQuery = useCallback(
+    (i: LibraryItem) => {
+      if (!isSearching) return true
+      return (
+        i.label.toLowerCase().includes(q) ||
+        i.category.toLowerCase().includes(q)
+      )
+    },
+    [isSearching, q],
+  )
   const filtered = useMemo(
     () =>
       isSearching
-        ? [...LIBRARY_ITEMS, ...customShapeItems].filter((i) =>
-            i.label.toLowerCase().includes(q),
-          )
+        ? [...LIBRARY_ITEMS, ...customShapeItems].filter(matchesQuery)
         : [],
-    [isSearching, q, customShapeItems],
+    [isSearching, customShapeItems, matchesQuery],
   )
   const favoriteItems = useMemo(
     () => LIBRARY_ITEMS.filter((i) => favoriteSet.has(favoriteKey(i))),
@@ -601,19 +809,45 @@ export function ElementLibrary() {
     )
   }
 
+  // Esc keystroke contract on the search input:
+  //   - first Esc with text → clears the query (keeps focus so the user
+  //     can immediately type a new search without re-clicking).
+  //   - second Esc on an empty input → blurs, returning focus to the
+  //     editor body so canvas keybindings (V, H, Z…) take over again.
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      if (query.length > 0) {
+        e.preventDefault()
+        setQuery('')
+      } else {
+        e.currentTarget.blur()
+      }
+    }
+  }
+
+  // Convenience predicate: does an item match the canvas's active tool?
+  // Most LIBRARY_ITEMS are factories (not tools) so this is normally false,
+  // but `pin` etc. could overlap and the highlight makes the matched tile
+  // stand out at a glance.
+  const isActiveTool = (item: LibraryItem) =>
+    (activeTool as string) === (item.type as string)
+
   return (
     // The outer sidebar (`MapView.tsx`) now owns the scrollbar for the
     // whole left column, so the library renders at its natural height
     // and stacks cleanly below ToolSelector + LayerVisibilityPanel.
     // `pb-6` keeps visible breathing room under the final row when the
     // user scrolls to the bottom of the sidebar.
-    <div className="p-3 pb-6">
+    <div className="p-3 pb-6 relative">
       <input
+        ref={searchInputRef}
         type="search"
+        aria-label="Filter elements"
         placeholder="Search shapes…"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        className="w-full mb-3 px-2 py-1 text-xs border border-gray-200 dark:border-gray-800 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+        onKeyDown={handleSearchKeyDown}
+        className="w-full mb-3 px-2 py-1 text-xs border border-gray-200 dark:border-gray-800 rounded focus:outline-none focus:ring-2 focus-visible:ring-2 focus:ring-blue-500 focus-visible:ring-blue-500"
       />
       {canAnnotate && (
         // Pin tool: a one-off entry here (rather than a LibraryItem)
@@ -638,15 +872,90 @@ export function ElementLibrary() {
           )}
         </button>
       )}
-      {isSearching ? (
+      {/* Recent row — always visible when populated. Search ignores it so
+          frequently-used tiles are always one click away even mid-filter. */}
+      {recents.length > 0 && (
         <LibrarySection
-          id="search-results"
-          title={`Results (${filtered.length})`}
-          items={filtered}
+          id="recent"
+          title="Recent"
+          items={recents}
           collapsible={false}
           onClick={handleAddElement}
           onDragStart={handleDragStart}
+          isActive={isActiveTool}
+          onHoverEnter={handleHoverEnter}
+          onHoverLeave={handleHoverLeave}
         />
+      )}
+      {isSearching ? (
+        filtered.length === 0 ? (
+          <div
+            role="status"
+            className="flex flex-col items-center gap-2 py-6 text-xs text-gray-500 dark:text-gray-400"
+          >
+            <SearchX size={20} aria-hidden="true" className="text-gray-400" />
+            <div>No elements match</div>
+            <button
+              type="button"
+              onClick={() => {
+                setQuery('')
+                searchInputRef.current?.focus()
+              }}
+              className="text-blue-600 dark:text-blue-400 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded px-1"
+            >
+              Clear
+            </button>
+          </div>
+        ) : (
+          <>
+            {favoriteItems.filter(matchesQuery).length > 0 && (
+              <LibrarySection
+                id="favorites"
+                title="Favorites"
+                items={favoriteItems.filter(matchesQuery)}
+                collapsible={false}
+                onClick={handleAddElement}
+                onDragStart={handleDragStart}
+                isActive={isActiveTool}
+                onHoverEnter={handleHoverEnter}
+                onHoverLeave={handleHoverLeave}
+              />
+            )}
+            {categories.map((cat) => {
+              const matched = LIBRARY_ITEMS.filter(
+                (i) => i.category === cat && matchesQuery(i),
+              )
+              if (matched.length === 0) return null
+              return (
+                <LibrarySection
+                  key={cat}
+                  id={cat}
+                  title={cat}
+                  items={matched}
+                  onClick={handleAddElement}
+                  onDragStart={handleDragStart}
+                  isActive={isActiveTool}
+                  onHoverEnter={handleHoverEnter}
+                  onHoverLeave={handleHoverLeave}
+                />
+              )
+            })}
+            {customShapeItems.filter(matchesQuery).length > 0 && (
+              <LibrarySection
+                id="my-shapes"
+                title="My Shapes"
+                items={customShapeItems.filter(matchesQuery)}
+                collapsible={true}
+                onClick={handleAddElement}
+                onDragStart={handleDragStart}
+                onDelete={handleDeleteCustom}
+                isActive={isActiveTool}
+                onHoverEnter={handleHoverEnter}
+                onHoverLeave={handleHoverLeave}
+              />
+            )}
+          </>
+        )
       ) : (
         <>
           {favoriteItems.length > 0 && (
@@ -657,16 +966,9 @@ export function ElementLibrary() {
               collapsible={false}
               onClick={handleAddElement}
               onDragStart={handleDragStart}
-            />
-          )}
-          {recents.length > 0 && (
-            <LibrarySection
-              id="recent"
-              title="Recent"
-              items={recents}
-              collapsible={false}
-              onClick={handleAddElement}
-              onDragStart={handleDragStart}
+              isActive={isActiveTool}
+              onHoverEnter={handleHoverEnter}
+              onHoverLeave={handleHoverLeave}
             />
           )}
           {categories.map((cat) => (
@@ -677,6 +979,9 @@ export function ElementLibrary() {
               items={LIBRARY_ITEMS.filter((i) => i.category === cat)}
               onClick={handleAddElement}
               onDragStart={handleDragStart}
+              isActive={isActiveTool}
+              onHoverEnter={handleHoverEnter}
+              onHoverLeave={handleHoverLeave}
             />
           ))}
           {customShapeItems.length > 0 && (
@@ -688,6 +993,9 @@ export function ElementLibrary() {
               onClick={handleAddElement}
               onDragStart={handleDragStart}
               onDelete={handleDeleteCustom}
+              isActive={isActiveTool}
+              onHoverEnter={handleHoverEnter}
+              onHoverLeave={handleHoverLeave}
             />
           )}
           <div className="mt-2">
@@ -717,6 +1025,32 @@ export function ElementLibrary() {
             )}
           </div>
         </>
+      )}
+      {/* Single shared hover tooltip. Rendered as a fixed-position overlay
+          so it can escape the sidebar's overflow without portalling. The
+          250ms dwell threshold filters out drive-by hovers. */}
+      {hovered && !dragInProgress && (
+        <div
+          role="tooltip"
+          aria-label={`${hovered.item.label} preview`}
+          className="fixed z-50 max-w-[220px] px-2.5 py-2 text-xs rounded-md shadow-lg bg-gray-900 dark:bg-gray-100 text-gray-100 dark:text-gray-900 border border-gray-700 dark:border-gray-300 pointer-events-none"
+          style={{
+            // Pin to the right of the hovered tile with an 8px gap. The
+            // sidebar is roughly 240px wide so this lands in canvas space
+            // and never clips against the left viewport edge.
+            top: hovered.rect.top,
+            left: hovered.rect.right + 8,
+          }}
+        >
+          <div className="font-medium mb-0.5">{hovered.item.label}</div>
+          <div className="opacity-80 leading-snug">
+            {TILE_DESCRIPTIONS[tileKey(hovered.item)] ??
+              `${hovered.item.category} element.`}
+          </div>
+          <div className="mt-1 text-[10px] opacity-60">
+            Drag onto canvas to place
+          </div>
+        </div>
       )}
     </div>
   )
