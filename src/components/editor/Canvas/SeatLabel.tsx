@@ -3,89 +3,103 @@ import type { SeatLabelStyle } from '../../../types/project'
 import { truncateToWidth } from '../../../lib/textTruncate'
 
 /**
- * Wave 15C — shared seat-label component.
- * Wave 15E — refinement pass: no-overlap layout + crisp rendering.
+ * Wave 16 — full rework of seat-label rendering.
  *
- * The three seat renderers (`DeskElementRenderer`, `WorkstationRenderer`,
- * `PrivateOfficeRenderer`) used to each paint the assigned-employee label
- * inline, which meant every cosmetic tweak had to be duplicated three
- * times and drifted over time. This module pulls the per-seat label out
- * into one component with four switchable `style` variants, matching the
- * `SeatLabelStyle` union on `CanvasSettings`.
+ * Background. Wave 15C introduced four label styles. Wave 15E refined
+ * geometry (pixel snapping, AccommodationBadge keep-out, font stack)
+ * but didn't address the underlying design debt: every style was
+ * encoding the same datum more than once. The user complaint that
+ * triggered this rework was "information is duplicated and words
+ * overlap" — the words-overlap problem was a downstream symptom of the
+ * duplication problem.
  *
- * The desk shape itself (the outer Rect, the corner desk-id, the drop-
- * target outline, the accommodation badge) stays in the renderers; this
- * component owns ONLY the "who sits here" layer and is passed the
- * usable interior width / height to lay itself out inside.
+ * The duplications, with chapter-and-verse from 15E:
  *
- * ── 15E AUDIT ─────────────────────────────────────────────────────
+ *   - Card style:     dept text in the header + dept text in the body
+ *                     subtitle (when no title) + dept-coloured 1px
+ *                     border = three encodings of the same datum.
+ *   - Avatar style:   initials chip (derived from name) RIGHT BESIDE
+ *                     the full name = both encoding identity.
+ *                     PLUS dept text under the name AND dept colour
+ *                     fill on the chip = two encodings of dept.
+ *   - Banner style:   left stripe in dept colour + uppercase dept
+ *                     eyebrow above the name = two encodings of dept.
+ *   - Pill style:     pill background tinted with dept colour + dept
+ *                     name as a subtitle line = two encodings of dept.
+ *   - Cross-cutting:  `deskId` rendered as a corner badge on every
+ *                     desk while it ALSO appears in the hover card and
+ *                     the Properties panel = three surfaces showing
+ *                     the same id at the same time.
  *
- * Collisions found before the refinement and how they're resolved:
+ * The fix isn't "tighten the layout math more"; it's "render fewer
+ * pieces of information." A 60×40 desk is the wrong real estate for
+ * multi-row data — the hover card (`ElementHoverCard.tsx`) is the
+ * portalled DOM surface that exists precisely to carry that depth.
+ * The canvas labels are now glanceable identity only.
  *
- * 1. Card-style header strip vs AccommodationBadge.
- *    The card draws an accent-coloured strip across the top 12px of the
- *    seat. AccommodationBadge is a 14px circle in the top-right at
- *    `(w/2 - 8, -h/2 + 8)` — exactly where the strip sits. Resolution:
- *    DeskRenderer queries `accommodationAnchorFor(style)` and pushes the
- *    badge below the strip when card is active.
+ * THE ANTI-DUPLICATION RULES (enforced by tests in SeatLabel.test):
  *
- * 2. Pill chip vs ID-badge band on small desks.
- *    The pill chip used to be centred on the full desk height; on a
- *    60×40 with the id-badge band claiming the top 11px the chip would
- *    encroach. Resolution: callers pass an interior x/y/w/h that's
- *    already inset past the id-badge band; `EDGE_PADDING` ensures we
- *    never draw within 4px of any edge of that interior region.
+ *   1. The department NAME is rendered as text *zero times* in every
+ *      style. Department is encoded by colour only — the pill tint, the
+ *      card's top accent strip, the banner's left stripe, the avatar
+ *      chip fill. Users learn the colour map within minutes; if they
+ *      can't recall a colour they hover for the card.
+ *   2. The employee NAME is rendered *at most once* per style. The
+ *      avatar variant uses an initials chip ALONE (no name beside it);
+ *      every other variant uses the full name without initials.
+ *   3. Title is rendered ONLY when `employee.title` is truthy. It NEVER
+ *      falls back to department. If there's no title, no second line
+ *      gets drawn — the seat reads as name-only.
+ *   4. The `deskId` corner badge is opt-in via `CanvasSettings.showDeskIds`
+ *      (default off). When on, the renderers continue to paint the badge;
+ *      when off they don't. This module never renders the deskId itself.
  *
- * 3. Half-pixel anti-aliasing.
- *    Konva does not snap fractional coordinates — `width/2` arithmetic
- *    leaves 0.5px residuals on odd-width seats. Resolution: every x/y/w/h
- *    expression in this file is wrapped in `Math.round(...)` via the `r()`
- *    helper. Konva still anti-aliases strokes, but the body geometry is
- *    now whole-pixel and rectangles read crisp.
+ * ── PER-STYLE LAYOUT CONTRACTS ──────────────────────────────────────
  *
- * 4. Muddy department tint.
- *    The 0.18-alpha pill fill mixes the cream desk colour into the
- *    department colour and reads muddy at any zoom. Resolution: pill
- *    now stacks a 0.95-alpha white rect under a 0.30-alpha department
- *    colour rect over the desk fill, so the department colour reads
- *    cleanly without losing the soft "tinted" feel.
+ * Each style declares explicit "render fewer pieces" rules at narrow
+ * sizes — the failure mode is to drop content, not to shrink everything
+ * proportionally.
  *
- * 5. Default font family.
- *    Konva falls back to Arial when no fontFamily is supplied; the rest
- *    of the chrome uses Inter. Resolution: every Text node passes
- *    `fontFamily={LABEL_FONT}` so canvas labels match the toolbars.
+ *   pill:
+ *     baseline       — tinted pill, full name centred (semibold, 11).
+ *     w<50 OR h<28   — initials only in dept colour (no chip).
  *
- * 6. Workstation slot degradation.
- *    Slot widths can drop below the legible threshold for the richer
- *    styles. Resolution: `containerWidth` prop drives explicit
- *    fallbacks — see `degradeStyle()`.
+ *   card (block):
+ *     baseline       — 4px solid dept-coloured top accent strip,
+ *                      full name centred in body, 1px dept-coloured
+ *                      outer border. Title line ONLY if employee.title
+ *                      is truthy AND interior height >= 24.
+ *     h<36           — drop the 4px strip; reduce to a 1px top-edge
+ *                      accent. Border stays.
  *
- * Design references:
+ *   avatar (initials):
+ *     baseline       — 24px circular initials chip in dept colour,
+ *                      white initials, centred. NOTHING else.
+ *     w<36           — 18px chip, still centred, still alone.
  *
- *   - `'pill'` is the pre-15C baseline. Default so upgrading doesn't
- *     change what existing users see.
- *   - `'card'` reaches for the todiagram / JSON-Crack aesthetic the
- *     user called out: solid department-coloured header strip with
- *     uppercase caps, crisp white body with centred name + subtitle,
- *     1px department-coloured border, soft drop shadow.
- *   - `'avatar'` puts a circular initials chip next to the name — same
- *     department colour but used as identity, not tint. 24px chip with
- *     a 1px white inset stroke for clean contrast on any desk fill.
- *   - `'banner'` is the restrained option: a 4px left-edge accent
- *     stripe, an uppercase eyebrow, and the name in plain bold. The
- *     stripe alone carries the department cue.
+ *   banner:
+ *     baseline       — 4px solid dept-coloured left stripe, full name
+ *                      centred in remaining body.
+ *     w<50           — stripe drops to 3px. Name stays centred.
+ *
+ * Hover card carries: full name, department (with colour swatch),
+ * title (if any), deskId, status (decommissioned/reserved/active),
+ * accommodations. See `ElementHoverCard.tsx`.
  */
 
 /* ────────────────────────────────────────────────────────────────────
- * Cross-style constants (Wave 15E)
+ * Cross-style constants
  * ────────────────────────────────────────────────────────────────── */
 
-/** Top band reserved for the desk-id corner badge. The DeskRenderer
- *  shares this constant so the label area never starts above it. */
+/** Top band reserved for the desk-id corner badge when `showDeskIds`
+ *  is on. The DeskRenderer shares this constant so the label area
+ *  never starts above it. (Wave 16: only meaningful when the user has
+ *  opted into desk-id visibility; otherwise the label can use the
+ *  full interior.) */
 export const ID_BADGE_BAND_H = 11
-/** Radius around the AccommodationBadge centre that no label content may
- *  cross. The badge is a 14px circle centred 8px inside the top-right
- *  corner; 16px around that gives a 1-2px breathing margin. */
+/** Radius around the AccommodationBadge centre that no label content
+ *  may cross. The badge is a 14px circle centred 8px inside the top-
+ *  right corner; 16px around that gives a 1-2px breathing margin. */
 export const ACCOMMODATION_BADGE_KEEPOUT = 16
 /** Minimum padding from any edge of the label's interior rect to its
  *  drawn content. Prevents text from kissing the seat stroke. */
@@ -102,7 +116,8 @@ const LABEL_FONT = 'Inter, system-ui, -apple-system, sans-serif'
 
 /** Body text colour — Tailwind gray-800. */
 const BODY_TEXT = '#1F2937'
-/** Subtitle / dept label — gray-500. */
+/** Subtitle / supporting text — gray-500. Used for the optional
+ *  `employee.title` line on the card style. */
 const SUBTLE_TEXT = '#6B7280'
 /** Empty-state italic — gray-400. */
 const OPEN_TEXT = '#9CA3AF'
@@ -118,12 +133,14 @@ function r(n: number): number {
 }
 
 /** Minimum assigned-employee shape the label needs — the renderers already
- *  project the full `Employee` down to this before calling in. */
+ *  project the full `Employee` record down to this before calling in. */
 export interface SeatLabelEmployee {
   id: string
   name: string
   department: string | null
-  /** Optional; some views call us with just id+name+dept. */
+  /** Optional; rendered as a subtitle on the `card` style ONLY when
+   *  truthy. Other styles ignore it (the canvas is glanceable identity;
+   *  rich employee data lives in the hover card). */
   title?: string | null
 }
 
@@ -134,8 +151,7 @@ interface SeatLabelProps {
   /** Full-opacity department colour, or `null` if the employee has no
    *  department assigned (or no employee at all). */
   departmentColor: string | null
-  /** Width of the usable label area (seat width minus any caller-reserved
-   *  chrome like the id badge band). The label must stay inside this. */
+  /** Width of the usable label area. The label must stay inside this. */
   width: number
   /** Height of the usable label area. */
   height: number
@@ -143,44 +159,50 @@ interface SeatLabelProps {
    *  (which is already translated to the seat's centre). Default 0,0. */
   x?: number
   y?: number
-  /** When the outer seat has its own fill, some styles draw on top of it;
-   *  others (like `'card'`) want to paint their own white body. */
+  /** When the outer seat has its own fill, some styles draw on top of
+   *  it; the card style wants to paint its own white body. */
   underlyingFill?: string
-  /** Width of the visible container the label sits inside (slot width on a
-   *  workstation, full desk width on a single desk). When narrower than the
-   *  rich-style thresholds the label degrades to a compatible style. */
+  /** Width of the visible container the label sits inside (slot width
+   *  on a workstation, full desk width on a single desk). Drives the
+   *  per-style narrow-size degradation rules. */
   containerWidth?: number
   /** When true, dim the whole label by ~15% — used while a drag is in
-   *  flight so the DropTargetOutline reads as the dominant signal. */
+   *  flight so the DropTargetOutline reads as the dominant signal.
+   *  Wave 16: also attenuates the dept-coloured border on the card
+   *  style and the dept stripe on the banner so the dashed drop
+   *  affordance stays the dominant edge cue. */
   attenuated?: boolean
 }
 
 /**
  * Per-style policy for where the AccommodationBadge should anchor.
- * Card draws an opaque top strip that the badge would collide with;
- * pushing the badge below the strip is the cleaner fix versus shrinking
- * the strip away from the corner. Other styles keep the legacy top-right.
+ *
+ * Wave 16: the card style's accent went from a 12px header strip to a
+ * 4px top edge accent — small enough that the 14px badge centred 8px
+ * inside the top-right corner no longer collides with it. All four
+ * styles now use the legacy top-right anchor. The `'right-below-strip'`
+ * variant is kept on the union for callers that pin against a future
+ * style that might re-introduce a tall header.
  */
 export type AccommodationBadgeAnchor = 'top-right' | 'right-below-strip'
 // eslint-disable-next-line react-refresh/only-export-components
 export function accommodationAnchorFor(
-  style: SeatLabelStyle,
+  _style: SeatLabelStyle,
 ): AccommodationBadgeAnchor {
-  return style === 'card' ? 'right-below-strip' : 'top-right'
+  return 'top-right'
 }
 
 /**
  * Workstation slot degradation. Below the configured thresholds the
  * heavier styles fall back to lighter ones so the slot stays legible.
- *   - Card → Pill below COMPACT_SLOT_W (70px) — the header strip and body
- *     text both need that headroom; the pill is the cleanest fallback.
- *   - Avatar self-degrades inside its renderer (stacked layout under
- *     50px, chip-only under 60px+32h), so no remap here.
- *   - Banner stays banner at every width — the stripe-and-name idiom
- *     actually reads BETTER at narrow widths than the centred pill, and
- *     `BannerLabel` shrinks the stripe to 3px and drops the eyebrow on
- *     its own when the container is narrow.
- *   - Pill stays pill.
+ *   - Card → Pill below COMPACT_SLOT_W (70px) — the card needs
+ *     headroom for the strip + name + (optional) title row; the pill
+ *     is a clean fallback that still carries the dept tint.
+ *   - Avatar self-degrades inside its renderer (chip diameter shrinks
+ *     to 18px below 36px width); always centred, never side-by-side.
+ *   - Banner stays banner — the stripe-and-name idiom reads well at
+ *     narrow widths; `BannerLabel` shrinks the stripe to 3px on its own.
+ *   - Pill stays pill (and self-degrades to initials-only at <50w/<28h).
  */
 function degradeStyle(
   style: SeatLabelStyle,
@@ -236,10 +258,17 @@ export function SeatLabel(props: SeatLabelProps) {
 }
 
 /* ────────────────────────────────────────────────────────────────────
- * Style 1 — PILL (baseline, refined)
+ * Style 1 — PILL
  *
- * 15E: stacked white-under-tint instead of muddy 0.18 fill, true-pill
- *      cornerRadius, pixel-snapped geometry, Inter font.
+ * Identity:    full employee name (11 semibold), centred.
+ * Dept signal: pill background tint (white-under-tint stack so the
+ *              colour reads cleanly over the cream desk fill).
+ * NO subtitle. The tint IS the dept signal. If the user can't read
+ * a colour they hover for the card.
+ *
+ * Narrow-size degradation: at width<50 OR height<28, render initials
+ * only in dept colour (no pill). This is a "render fewer pieces" rule
+ * — never a "shrink everything proportionally" rule.
  * ────────────────────────────────────────────────────────────────── */
 function PillLabel({
   employee,
@@ -275,11 +304,32 @@ function PillLabel({
     )
   }
 
+  // Tight-mode: initials only, no chip. Workstation slots and tiny
+  // desks live here — the pill chrome wouldn't fit and the full name
+  // wouldn't be legible at this size, so we degrade by content rather
+  // than by size.
+  const tight = width < 50 || height < 28
+  if (tight) {
+    const initials = deriveInitials(employee.name)
+    const accent = departmentColor ?? NEUTRAL_ACCENT
+    return (
+      <Text
+        text={initials}
+        x={r(x)}
+        y={r(chipCenterY - 6)}
+        width={r(width)}
+        align="center"
+        fontSize={11}
+        fontStyle="bold"
+        fontFamily={LABEL_FONT}
+        fill={accent}
+        listening={false}
+        perfectDrawEnabled={false}
+      />
+    )
+  }
+
   const displayName = truncateToWidth(employee.name, nameMaxPx, 11)
-  const displayDept = employee.department
-    ? truncateToWidth(employee.department, nameMaxPx, 9)
-    : ''
-  const hasRoomForDept = height >= 44
 
   return (
     <Group
@@ -291,8 +341,8 @@ function PillLabel({
     >
       {departmentColor && (
         <>
-          {/* White lift under the tint so the colour reads cleanly over
-              the cream desk fill rather than blending muddy. */}
+          {/* White lift under the tint so the colour reads cleanly
+              over the cream desk fill rather than blending muddy. */}
           <Rect
             x={r(chipCenterX - chipW / 2)}
             y={r(chipCenterY - chipH / 2)}
@@ -330,31 +380,22 @@ function PillLabel({
         listening={false}
         perfectDrawEnabled={false}
       />
-      {displayDept && hasRoomForDept && (
-        <Text
-          text={displayDept}
-          x={r(chipCenterX - chipW / 2)}
-          y={r(chipCenterY + 7)}
-          width={r(chipW)}
-          align="center"
-          fontSize={9}
-          fontFamily={LABEL_FONT}
-          fill={SUBTLE_TEXT}
-          listening={false}
-          perfectDrawEnabled={false}
-        />
-      )}
     </Group>
   )
 }
 
 /* ────────────────────────────────────────────────────────────────────
- * Style 2 — CARD (todiagram-style, refined)
+ * Style 2 — CARD (block-style accent + name)
  *
- * 15E: pixel-snapped, soft drop-shadow on the body, header strip stays
- *      a clean accent block (AccommodationBadge gets pushed below the
- *      strip via accommodationAnchorFor), subtitle suppressed when the
- *      body is shorter than 24px so the name keeps breathing room.
+ * Identity:    full employee name (11 semibold), centred in body.
+ * Dept signal: 4px solid dept-coloured top accent strip + 1px dept
+ *              border (coherent edge styling, NOT a separate encoding).
+ * Subtitle:    ONLY when `employee.title` is truthy AND body height
+ *              is at least 24px. Never falls back to department text.
+ *
+ * Narrow-size degradation: when the seat is below 36px tall, drop the
+ * 4px strip and use a 1px top-edge accent instead. The border stays
+ * (it's the only edge cue at that size).
  * ────────────────────────────────────────────────────────────────── */
 function CardLabel({
   employee,
@@ -364,17 +405,23 @@ function CardLabel({
   x = 0,
   y = 0,
   underlyingFill = CARD_BODY_FILL,
+  attenuated,
 }: SeatLabelProps) {
   const accent = departmentColor ?? NEUTRAL_ACCENT
-  const HEADER_H = 12
-  const hasHeader = width >= 60 && height >= 36
+  const STRIP_H = 4
+  const hasFullStrip = height >= 36
   const padX = 6
-  const bodyTop = r(y + (hasHeader ? HEADER_H : 2))
-  const bodyH = r(height - (hasHeader ? HEADER_H : 2))
+  const bodyTop = r(y + (hasFullStrip ? STRIP_H : 1))
+  const bodyH = r(height - (hasFullStrip ? STRIP_H : 1))
   const bodyCenterY = r(bodyTop + bodyH / 2)
+  // When a drag is in flight, soften the dept edge so the dashed
+  // DropTargetOutline reads as the dominant signal. (`attenuated`
+  // also wraps the whole label in a 0.85-opacity Group, but the
+  // border deserves its own pull-back so the drop affordance pops.)
+  const borderOpacity = attenuated ? 0.4 : 1
 
   if (!employee) {
-    // Empty-state card — dashed neutral border, white body, italic Open.
+    // Empty-state card — dashed neutral border, no strip, italic Open.
     return (
       <Group listening={false}>
         <Rect
@@ -407,16 +454,15 @@ function CardLabel({
     )
   }
 
-  const subtitle = employee.title || employee.department || ''
   const displayName = truncateToWidth(employee.name, width - padX * 2, 11)
+  // `employee.title` ONLY — never falls back to department. The dept
+  // is already encoded by the strip + border; rendering it as text
+  // again was the duplication this rework removed.
+  const subtitle = employee.title ? employee.title : ''
   const displaySubtitle = subtitle
     ? truncateToWidth(subtitle, width - padX * 2, 9)
     : ''
-  const headerLabel = employee.department
-    ? employee.department.toUpperCase()
-    : 'DESK'
-  const displayHeader = truncateToWidth(headerLabel, width - padX * 2, 8)
-  const hasRoomForSubtitle = bodyH >= 24
+  const hasRoomForSubtitle = !!displaySubtitle && bodyH >= 24
 
   return (
     <Group
@@ -426,9 +472,9 @@ function CardLabel({
       clipHeight={r(height)}
       listening={false}
     >
-      {/* White body with a soft drop shadow — gives the card a deliberate
-          "lifted off the canvas" feel at zoom-in without bleeding at
-          zoom-out. */}
+      {/* White body with a soft drop shadow + 1px dept-coloured border.
+          The border is coherent edge styling for the strip — it makes
+          the card read as a single shape rather than a strip + a body. */}
       <Rect
         x={r(x)}
         y={r(y)}
@@ -437,6 +483,7 @@ function CardLabel({
         fill={underlyingFill}
         stroke={accent}
         strokeWidth={1}
+        opacity={borderOpacity}
         cornerRadius={4}
         shadowColor="rgba(15,23,42,0.08)"
         shadowBlur={2}
@@ -445,46 +492,19 @@ function CardLabel({
         listening={false}
         perfectDrawEnabled={false}
       />
-      {hasHeader ? (
-        <>
-          <Rect
-            x={r(x)}
-            y={r(y)}
-            width={r(width)}
-            height={HEADER_H}
-            fill={accent}
-            cornerRadius={[4, 4, 0, 0]}
-            listening={false}
-            perfectDrawEnabled={false}
-          />
-          <Text
-            text={displayHeader}
-            x={r(x + padX)}
-            y={r(y + 2)}
-            width={r(width - padX * 2)}
-            align="left"
-            fontSize={8}
-            fontStyle="bold"
-            fontFamily={LABEL_FONT}
-            letterSpacing={0.8}
-            fill="#FFFFFF"
-            listening={false}
-            perfectDrawEnabled={false}
-          />
-        </>
-      ) : (
-        // Degraded state — a 2px coloured top border instead of the
-        // full header strip.
-        <Rect
-          x={r(x)}
-          y={r(y)}
-          width={r(width)}
-          height={2}
-          fill={accent}
-          listening={false}
-          perfectDrawEnabled={false}
-        />
-      )}
+      {/* Top accent — full 4px strip at normal size, 1px at <36h. The
+          strip alone IS the department signal; no header text. */}
+      <Rect
+        x={r(x)}
+        y={r(y)}
+        width={r(width)}
+        height={hasFullStrip ? STRIP_H : 1}
+        fill={accent}
+        opacity={borderOpacity}
+        cornerRadius={hasFullStrip ? [4, 4, 0, 0] : 0}
+        listening={false}
+        perfectDrawEnabled={false}
+      />
       <Text
         text={displayName}
         x={r(x + padX)}
@@ -498,7 +518,7 @@ function CardLabel({
         listening={false}
         perfectDrawEnabled={false}
       />
-      {displaySubtitle && hasRoomForSubtitle && (
+      {hasRoomForSubtitle && (
         <Text
           text={displaySubtitle}
           x={r(x + padX)}
@@ -517,12 +537,17 @@ function CardLabel({
 }
 
 /* ────────────────────────────────────────────────────────────────────
- * Style 3 — AVATAR (initials chip, refined)
+ * Style 3 — AVATAR (initials chip alone)
  *
- * 15E: 24px chip (was 22) with a 1px white inset stroke so it reads
- *      cleanly against any seat fill, 11px semibold initials, opaque
- *      department colour (no opacity reduction — the chip IS the
- *      identity). Width-gated fallbacks for narrow workstation slots.
+ * Identity:    24px circular chip in dept colour with white initials,
+ *              centred in the seat. Nothing else — no name beside it,
+ *              no dept text below. The chip IS the identity for users
+ *              who want the canvas to read as a plan diagram, not a
+ *              seating roster.
+ *
+ * Narrow-size degradation: chip diameter shrinks to 18px below 36px
+ * width. Never drops below that — the chip is the entire identity at
+ * any size and must remain visible.
  * ────────────────────────────────────────────────────────────────── */
 function AvatarLabel({
   employee,
@@ -532,18 +557,16 @@ function AvatarLabel({
   x = 0,
   y = 0,
 }: SeatLabelProps) {
-  const CHIP_D = 24
-  const padX = EDGE_PADDING
+  const tightChip = width < 36 || height < 28
+  const CHIP_D = tightChip ? 18 : 24
+  const centerX = r(x + width / 2)
   const centerY = r(y + height / 2)
-  // < 50px → stacked layout (chip above, name below or chip-only)
-  // < 60px → drop the name entirely and centre the chip
-  const tight = width < 50
-  const ultraTight = width < 60 && height < 32
+  const chipX = r(centerX - CHIP_D / 2)
+  const chipY = r(centerY - CHIP_D / 2)
 
   if (!employee) {
-    // Dashed empty chip + "Open"
-    const chipX = tight ? r(x + width / 2 - CHIP_D / 2) : r(x + padX)
-    const chipY = tight ? r(centerY - CHIP_D - 2) : r(centerY - CHIP_D / 2)
+    // Dashed empty chip — no surrounding text. The hover card reports
+    // "Unassigned" / "Seat open"; no need to write it on the canvas.
     return (
       <Group listening={false}>
         <Rect
@@ -559,70 +582,16 @@ function AvatarLabel({
           listening={false}
           perfectDrawEnabled={false}
         />
-        {tight ? (
-          <Text
-            text="Open"
-            x={r(x + padX)}
-            y={r(centerY + 2)}
-            width={r(width - padX * 2)}
-            align="center"
-            fontSize={10}
-            fontStyle="italic"
-            fontFamily={LABEL_FONT}
-            fill={OPEN_TEXT}
-            listening={false}
-            perfectDrawEnabled={false}
-          />
-        ) : (
-          <Text
-            text="Open"
-            x={r(chipX + CHIP_D + 6)}
-            y={r(centerY - 5)}
-            width={r(width - (CHIP_D + 6 + padX * 2))}
-            align="left"
-            fontSize={10}
-            fontStyle="italic"
-            fontFamily={LABEL_FONT}
-            fill={OPEN_TEXT}
-            listening={false}
-            perfectDrawEnabled={false}
-          />
-        )}
-      </Group>
-    )
-  }
-
-  const accent = departmentColor ?? NEUTRAL_ACCENT
-  const initials = deriveInitials(employee.name)
-
-  // Ultra-tight: just the chip, centred. No name (won't be legible).
-  if (ultraTight) {
-    const chipX = r(x + width / 2 - CHIP_D / 2)
-    const chipY = r(y + height / 2 - CHIP_D / 2)
-    return (
-      <Group listening={false}>
-        <Rect
-          x={chipX}
-          y={chipY}
-          width={CHIP_D}
-          height={CHIP_D}
-          cornerRadius={CHIP_D / 2}
-          fill={accent}
-          stroke="#FFFFFF"
-          strokeWidth={1}
-          listening={false}
-          perfectDrawEnabled={false}
-        />
         <Text
-          text={initials}
-          x={chipX}
-          y={r(chipY + 6)}
-          width={CHIP_D}
+          text="Open"
+          x={r(x)}
+          y={r(centerY - 5)}
+          width={r(width)}
           align="center"
-          fontSize={11}
-          fontStyle="bold"
+          fontSize={tightChip ? 8 : 10}
+          fontStyle="italic"
           fontFamily={LABEL_FONT}
-          fill="#FFFFFF"
+          fill={OPEN_TEXT}
           listening={false}
           perfectDrawEnabled={false}
         />
@@ -630,70 +599,14 @@ function AvatarLabel({
     )
   }
 
-  if (tight) {
-    // Stacked layout for narrow seats.
-    const chipX = r(x + width / 2 - CHIP_D / 2)
-    const chipY = r(y + 2)
-    const nameY = r(chipY + CHIP_D + 2)
-    const displayName = truncateToWidth(
-      employee.name.split(' ')[0],
-      width - padX * 2,
-      10,
-    )
-    return (
-      <Group listening={false}>
-        <Rect
-          x={chipX}
-          y={chipY}
-          width={CHIP_D}
-          height={CHIP_D}
-          cornerRadius={CHIP_D / 2}
-          fill={accent}
-          stroke="#FFFFFF"
-          strokeWidth={1}
-          listening={false}
-          perfectDrawEnabled={false}
-        />
-        <Text
-          text={initials}
-          x={chipX}
-          y={r(chipY + 6)}
-          width={CHIP_D}
-          align="center"
-          fontSize={11}
-          fontStyle="bold"
-          fontFamily={LABEL_FONT}
-          fill="#FFFFFF"
-          listening={false}
-          perfectDrawEnabled={false}
-        />
-        <Text
-          text={displayName}
-          x={r(x + padX)}
-          y={nameY}
-          width={r(width - padX * 2)}
-          align="center"
-          fontSize={10}
-          fontStyle="bold"
-          fontFamily={LABEL_FONT}
-          fill={BODY_TEXT}
-          listening={false}
-          perfectDrawEnabled={false}
-        />
-      </Group>
-    )
-  }
+  const accent = departmentColor ?? NEUTRAL_ACCENT
+  const initials = deriveInitials(employee.name)
+  // Vertical text inset inside the chip — tuned so the initials sit
+  // optically centred for both sizes. (The 11/9 split tracks the chip
+  // diameters; tweaking either without the other introduces drift.)
+  const textInsetY = tightChip ? 4 : 6
+  const initialsFontSize = tightChip ? 9 : 11
 
-  // Side-by-side: chip on the left, name + dept on the right.
-  const chipX = r(x + padX)
-  const chipY = r(centerY - CHIP_D / 2)
-  const textX = r(chipX + CHIP_D + 6)
-  const textW = r(Math.max(10, width - (textX - x) - padX))
-  const displayName = truncateToWidth(employee.name, textW, 11)
-  const displayDept = employee.department
-    ? truncateToWidth(employee.department, textW, 8)
-    : ''
-  const hasRoomForDept = height >= 30
   return (
     <Group listening={false}>
       <Rect
@@ -711,52 +624,30 @@ function AvatarLabel({
       <Text
         text={initials}
         x={chipX}
-        y={r(chipY + 6)}
+        y={r(chipY + textInsetY)}
         width={CHIP_D}
         align="center"
-        fontSize={11}
+        fontSize={initialsFontSize}
         fontStyle="bold"
         fontFamily={LABEL_FONT}
         fill="#FFFFFF"
         listening={false}
         perfectDrawEnabled={false}
       />
-      <Text
-        text={displayName}
-        x={textX}
-        y={r(centerY - (hasRoomForDept && displayDept ? 10 : 6))}
-        width={textW}
-        align="left"
-        fontSize={11}
-        fontStyle="bold"
-        fontFamily={LABEL_FONT}
-        fill={BODY_TEXT}
-        listening={false}
-        perfectDrawEnabled={false}
-      />
-      {displayDept && hasRoomForDept && (
-        <Text
-          text={displayDept}
-          x={textX}
-          y={r(centerY + 2)}
-          width={textW}
-          align="left"
-          fontSize={8}
-          fontFamily={LABEL_FONT}
-          fill={SUBTLE_TEXT}
-          listening={false}
-          perfectDrawEnabled={false}
-        />
-      )}
     </Group>
   )
 }
 
 /* ────────────────────────────────────────────────────────────────────
- * Style 4 — BANNER (left accent stripe, refined)
+ * Style 4 — BANNER (left accent stripe + name)
  *
- * 15E: pixel-snapped, stripe drops to 3px on narrow slots, centred
- *      vertical block, eyebrow gated by both height AND container width.
+ * Identity:    full employee name (11 semibold), centred vertically
+ *              in the body to the right of the stripe.
+ * Dept signal: 4px solid dept-coloured stripe on the LEFT edge.
+ *              The stripe IS the dept signal — no eyebrow text.
+ *
+ * Narrow-size degradation: stripe drops to 3px below 50px container
+ * width. Never disappears. Name stays.
  * ────────────────────────────────────────────────────────────────── */
 function BannerLabel({
   employee,
@@ -766,6 +657,7 @@ function BannerLabel({
   x = 0,
   y = 0,
   containerWidth,
+  attenuated,
 }: SeatLabelProps) {
   // Stripe shrinks on narrow slots so it doesn't dominate the column.
   const STRIPE_W =
@@ -775,6 +667,8 @@ function BannerLabel({
   const textW = r(Math.max(10, width - (STRIPE_W + padX * 2)))
   const stripeColor = departmentColor ?? NEUTRAL_ACCENT
   const centerY = r(y + height / 2)
+  // Soften the stripe under a drag so the dashed drop outline pops.
+  const stripeOpacity = attenuated ? 0.5 : employee ? 1 : 0.5
 
   return (
     <Group listening={false}>
@@ -784,55 +678,27 @@ function BannerLabel({
         width={STRIPE_W}
         height={r(height)}
         fill={stripeColor}
-        opacity={employee ? 1 : 0.5}
+        opacity={stripeOpacity}
         listening={false}
         perfectDrawEnabled={false}
       />
       {employee ? (
         (() => {
           const displayName = truncateToWidth(employee.name, textW, 11)
-          const displayDept = employee.department
-            ? truncateToWidth(employee.department.toUpperCase(), textW, 8)
-            : ''
-          // Drop the eyebrow on narrow slots even if the seat is tall
-          // — there isn't horizontal room for both the dept text and a
-          // legible name.
-          const hasEyebrowRoom =
-            height >= 28 &&
-            !!displayDept &&
-            (containerWidth === undefined || containerWidth >= COMPACT_SLOT_W)
           return (
-            <>
-              {hasEyebrowRoom && (
-                <Text
-                  text={displayDept}
-                  x={textX}
-                  y={r(centerY - 11)}
-                  width={textW}
-                  align="left"
-                  fontSize={8}
-                  fontStyle="bold"
-                  fontFamily={LABEL_FONT}
-                  letterSpacing={0.8}
-                  fill={SUBTLE_TEXT}
-                  listening={false}
-                  perfectDrawEnabled={false}
-                />
-              )}
-              <Text
-                text={displayName}
-                x={textX}
-                y={hasEyebrowRoom ? r(centerY - 1) : r(centerY - 6)}
-                width={textW}
-                align="left"
-                fontSize={11}
-                fontStyle="bold"
-                fontFamily={LABEL_FONT}
-                fill={BODY_TEXT}
-                listening={false}
-                perfectDrawEnabled={false}
-              />
-            </>
+            <Text
+              text={displayName}
+              x={textX}
+              y={r(centerY - 6)}
+              width={textW}
+              align="left"
+              fontSize={11}
+              fontStyle="bold"
+              fontFamily={LABEL_FONT}
+              fill={BODY_TEXT}
+              listening={false}
+              perfectDrawEnabled={false}
+            />
           )
         })()
       ) : (

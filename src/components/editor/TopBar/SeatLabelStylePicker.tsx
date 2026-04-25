@@ -34,22 +34,22 @@ const OPTIONS: StyleOption[] = [
   {
     id: 'pill',
     label: 'Pill',
-    description: 'Compact tinted pill — the baseline.',
+    description: 'Tinted pill carries the dept colour; full name only.',
   },
   {
     id: 'card',
     label: 'Card',
-    description: 'JSON-Crack-style with department header strip.',
+    description: '4px dept accent strip + name. Title only when set.',
   },
   {
     id: 'avatar',
     label: 'Avatar',
-    description: 'Initials chip + name — identity-forward.',
+    description: 'Initials chip alone — minimal floor-plan look.',
   },
   {
     id: 'banner',
     label: 'Banner',
-    description: 'Left accent stripe — minimal chrome.',
+    description: 'Dept-coloured left stripe + name. No eyebrow.',
   },
 ]
 
@@ -120,48 +120,52 @@ export function SeatLabelStylePicker({ value, onChange }: SeatLabelStylePickerPr
 function StyleSwatch({ style }: { style: SeatLabelStyle }) {
   switch (style) {
     case 'pill':
+      // Tinted pill — name centred, no subtitle.
       return (
         <span
           aria-hidden="true"
           className="relative inline-block w-6 h-4 rounded-sm border border-gray-300 dark:border-gray-600 bg-amber-50 dark:bg-amber-950/30"
         >
           <span
-            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-1.5 rounded-full"
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-2 rounded-full"
             style={{ backgroundColor: 'rgba(79,70,229,0.35)' }}
           />
+          <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-[2px] bg-gray-700 rounded-sm" />
         </span>
       )
     case 'card':
+      // 4px top accent strip + centred name (no header text).
       return (
         <span
           aria-hidden="true"
           className="relative inline-block w-6 h-4 rounded-sm bg-white border border-indigo-500"
         >
-          <span className="absolute inset-x-0 top-0 h-1 bg-indigo-500 rounded-t-sm" />
-          <span className="absolute left-1/2 bottom-0.5 -translate-x-1/2 w-3 h-[2px] bg-gray-600 rounded-sm" />
+          <span className="absolute inset-x-0 top-0 h-[2px] bg-indigo-500" />
+          <span className="absolute left-1/2 top-[55%] -translate-x-1/2 -translate-y-1/2 w-3.5 h-[2px] bg-gray-700 rounded-sm" />
         </span>
       )
     case 'avatar':
+      // Centred initials chip alone — no name beside it.
       return (
         <span
           aria-hidden="true"
           className="relative inline-block w-6 h-4 rounded-sm border border-gray-300 dark:border-gray-600 bg-amber-50 dark:bg-amber-950/30"
         >
           <span
-            className="absolute left-0.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full"
-            style={{ backgroundColor: 'rgba(79,70,229,0.8)' }}
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full"
+            style={{ backgroundColor: 'rgba(79,70,229,0.85)' }}
           />
-          <span className="absolute right-0.5 top-1/2 -translate-y-1/2 w-2.5 h-[2px] bg-gray-600 rounded-sm" />
         </span>
       )
     case 'banner':
+      // Left stripe + centred name (no eyebrow).
       return (
         <span
           aria-hidden="true"
           className="relative inline-block w-6 h-4 rounded-sm border border-gray-300 dark:border-gray-600 bg-amber-50 dark:bg-amber-950/30"
         >
           <span className="absolute inset-y-0 left-0 w-1 bg-indigo-500" />
-          <span className="absolute left-2 top-1.5 right-0.5 h-[2px] bg-gray-600 rounded-sm" />
+          <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-[2px] bg-gray-700 rounded-sm" />
         </span>
       )
   }

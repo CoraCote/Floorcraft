@@ -184,6 +184,10 @@ describe('SeatLabel — per-style unit coverage', () => {
   // changes — but we do assert that text nodes exist and carry the
   // expected body content so we catch regressions like a bad
   // `truncateToWidth` that swallows the whole name.
+  //
+  // Wave 16: the avatar style is initials-ONLY (no name beside the
+  // chip), so its identity assertion checks for initials rather than
+  // the full name. Every other style still surfaces the full name.
   SEAT_LABEL_STYLES.forEach((style) => {
     it(`[${style}] renders an assigned employee without crashing`, () => {
       const stage = mountLabel(
@@ -195,11 +199,17 @@ describe('SeatLabel — per-style unit coverage', () => {
           height={60}
         />,
       )
-      // Collect every Text node's text and assert the name renders
-      // somewhere in the tree.
       const texts: string[] = []
       stage?.find('Text').forEach((t: any) => texts.push(t.text()))
-      expect(texts.some((s) => s.includes('Jane'))).toBe(true)
+      if (style === 'avatar') {
+        // Avatar variant is the initials chip alone — full name lives
+        // in the hover card per Wave 16. So it MUST contain 'JD' and
+        // MUST NOT contain the full 'Jane Doe' text.
+        expect(texts).toContain('JD')
+        expect(texts.some((s) => s.includes('Jane'))).toBe(false)
+      } else {
+        expect(texts.some((s) => s.includes('Jane'))).toBe(true)
+      }
     })
 
     it(`[${style}] renders an unassigned seat with "Open" placeholder`, () => {
@@ -265,36 +275,116 @@ describe('SeatLabel — per-style unit coverage', () => {
     stage?.find('Text').forEach((t: any) => texts.push(t.text()))
     expect(texts).toContain('C')
   })
+})
 
-  it('[card] paints a department header strip with uppercase label', () => {
+/**
+ * Wave 16 anti-duplication invariants. The previous design encoded the
+ * department name in text + colour AND the employee name as initials
+ * + spelled-out beside it. The rework's load-bearing invariant is
+ * "one encoding per datum"; these tests are the regression net.
+ */
+describe('SeatLabel — Wave 16 anti-duplication invariants', () => {
+  // Helper: render every style at a normal-size seat with a known
+  // employee, then return the list of text nodes drawn.
+  function textsFor(style: 'pill' | 'card' | 'avatar' | 'banner') {
+    const stage = mountLabel(
+      <SeatLabel
+        style={style}
+        employee={{
+          id: 'e1',
+          name: 'Jane Doe',
+          department: 'Engineering',
+          title: 'Staff Engineer',
+        }}
+        departmentColor="#4F46E5"
+        width={140}
+        height={60}
+      />,
+    )
+    const out: string[] = []
+    stage?.find('Text').forEach((t: any) => out.push(t.text()))
+    return out
+  }
+
+  SEAT_LABEL_STYLES.forEach((style) => {
+    it(`[${style}] does NOT render the department name as text`, () => {
+      const texts = textsFor(style)
+      // Department is encoded by colour only — pill tint, card top
+      // accent strip, banner left stripe, avatar chip fill. Rendering
+      // the name as text again is the duplication this rework removed.
+      const deptHits = texts.filter(
+        (s) => s === 'Engineering' || s === 'ENGINEERING' || s === 'engineering',
+      )
+      expect(deptHits).toEqual([])
+    })
+
+    it(`[${style}] renders the employee name at most once`, () => {
+      const texts = textsFor(style)
+      // Avatar uses initials alone — name = 0 occurrences.
+      // Every other style uses the full name once. Initials and full
+      // name on the same seat (the old avatar behaviour) is banned.
+      const nameHits = texts.filter((s) => s.includes('Jane'))
+      const initialHits = texts.filter((s) => s === 'JD')
+      expect(nameHits.length + initialHits.length).toBeLessThanOrEqual(1)
+    })
+  })
+
+  it('[card] does NOT fall back to department when title is missing', () => {
+    // The old card style rendered `employee.title || employee.department`
+    // as the subtitle, which made the dept appear twice (once in the
+    // header strip, once in the body). Wave 16 hard-removes that
+    // fallback — no title means no subtitle row, period.
     const stage = mountLabel(
       <SeatLabel
         style="card"
         employee={{ id: 'e1', name: 'Jane Doe', department: 'Engineering' }}
         departmentColor="#4F46E5"
-        width={120}
+        width={140}
         height={60}
       />,
     )
     const texts: string[] = []
     stage?.find('Text').forEach((t: any) => texts.push(t.text()))
-    // The header upper-cases the department name.
-    expect(texts).toContain('ENGINEERING')
+    expect(texts).not.toContain('Engineering')
+    expect(texts).not.toContain('ENGINEERING')
   })
 
-  it('[banner] shows the dept as an uppercase eyebrow', () => {
+  it('[card] renders the title row when employee.title is present', () => {
     const stage = mountLabel(
       <SeatLabel
-        style="banner"
-        employee={{ id: 'e1', name: 'Jane Doe', department: 'Engineering' }}
+        style="card"
+        employee={{
+          id: 'e1',
+          name: 'Jane Doe',
+          department: 'Engineering',
+          title: 'Staff Engineer',
+        }}
         departmentColor="#4F46E5"
-        width={120}
+        width={160}
         height={60}
       />,
     )
     const texts: string[] = []
     stage?.find('Text').forEach((t: any) => texts.push(t.text()))
-    expect(texts).toContain('ENGINEERING')
+    expect(texts.some((s) => s.includes('Staff'))).toBe(true)
+  })
+
+  it('[avatar] never renders the full name beside the chip', () => {
+    // The old design painted a JD chip RIGHT beside "Jane Doe" — both
+    // encoding identity. Wave 16 makes the chip the entire identity.
+    const stage = mountLabel(
+      <SeatLabel
+        style="avatar"
+        employee={{ id: 'e1', name: 'Jane Doe', department: 'Engineering' }}
+        departmentColor="#4F46E5"
+        width={140}
+        height={60}
+      />,
+    )
+    const texts: string[] = []
+    stage?.find('Text').forEach((t: any) => texts.push(t.text()))
+    expect(texts.some((s) => s.includes('Jane'))).toBe(false)
+    expect(texts).toContain('JD')
   })
 })
 
@@ -325,6 +415,16 @@ describe('DeskRenderer integration — style flows through store', () => {
     return stage
   }
 
+  // Per-style identity oracle. Avatar uses initials alone; every other
+  // style uses the full name once. Workstation slots can degrade to a
+  // shortened form, so we accept first-token initials there.
+  function hasIdentity(texts: string[], style: string) {
+    if (style === 'avatar') {
+      return texts.includes('JD') || texts.includes('J') || texts.includes('B')
+    }
+    return texts.some((s) => s.includes('Jane') || s === 'JD' || s === 'J')
+  }
+
   SEAT_LABEL_STYLES.forEach((style) => {
     it(`[${style}] desk renders without crashing via store setting`, () => {
       // Reset the drag store so the DropTargetOutline doesn't
@@ -337,7 +437,7 @@ describe('DeskRenderer integration — style flows through store', () => {
       const stage = mountDesk(desk())
       const texts: string[] = []
       stage?.find('Text').forEach((t: any) => texts.push(t.text()))
-      expect(texts.some((s) => s.includes('Jane'))).toBe(true)
+      expect(hasIdentity(texts, style)).toBe(true)
     })
 
     it(`[${style}] workstation renders without crashing via store setting`, () => {
@@ -349,9 +449,9 @@ describe('DeskRenderer integration — style flows through store', () => {
       const texts: string[] = []
       stage?.find('Text').forEach((t: any) => texts.push(t.text()))
       // Jane sits in slot 0; Bob sits in slot 2. At a minimum the
-      // first employee's name (or its first-token form for narrow
-      // slot-based avatar fallback) should appear somewhere.
-      expect(texts.some((s) => s.includes('Jane') || s === 'J' || s === 'JD')).toBe(true)
+      // first employee's identity (full name, initials, or first-letter
+      // pill-tight fallback) should appear somewhere.
+      expect(hasIdentity(texts, style)).toBe(true)
       // Empty slots always surface as "Open".
       expect(texts.some((s) => s === 'Open')).toBe(true)
     })
@@ -364,7 +464,7 @@ describe('DeskRenderer integration — style flows through store', () => {
       const stage = mountDesk(office())
       const texts: string[] = []
       stage?.find('Text').forEach((t: any) => texts.push(t.text()))
-      expect(texts.some((s) => s.includes('Jane'))).toBe(true)
+      expect(hasIdentity(texts, style)).toBe(true)
     })
 
     it(`[${style}] decommissioned desk still renders label (status affects opacity only)`, () => {
@@ -377,8 +477,8 @@ describe('DeskRenderer integration — style flows through store', () => {
       stage?.find('Text').forEach((t: any) => texts.push(t.text()))
       // The label is still present — decommissioned is an opacity
       // tweak on the outer Rect, not a hide-the-label signal. Losing
-      // the name would break "who used to sit here" wayfinding.
-      expect(texts.some((s) => s.includes('Jane'))).toBe(true)
+      // the identity would break "who used to sit here" wayfinding.
+      expect(hasIdentity(texts, style)).toBe(true)
     })
 
     it(`[${style}] drag-in-flight overlay composes with the label`, () => {
@@ -392,7 +492,7 @@ describe('DeskRenderer integration — style flows through store', () => {
       const stage = mountDesk(desk())
       const texts: string[] = []
       stage?.find('Text').forEach((t: any) => texts.push(t.text()))
-      expect(texts.some((s) => s.includes('Jane'))).toBe(true)
+      expect(hasIdentity(texts, style)).toBe(true)
       // Cleanup so it doesn't leak into sibling tests.
       useSeatDragStore.setState({
         draggingEmployeeId: null,
@@ -407,8 +507,11 @@ describe('DeskRenderer integration — style flows through store', () => {
     expect(ID_BADGE_BAND_H).toBeGreaterThan(0)
   })
 
-  it('accommodationAnchorFor pushes the badge below the strip on card', () => {
-    expect(accommodationAnchorFor('card')).toBe('right-below-strip')
+  it('accommodationAnchorFor returns top-right for every style (Wave 16)', () => {
+    // Wave 16 reduced the card style's accent from a 12px header strip
+    // to a 4px top accent — the badge is no longer obscured by the
+    // strip, so all four styles use the legacy top-right anchor.
+    expect(accommodationAnchorFor('card')).toBe('top-right')
     expect(accommodationAnchorFor('pill')).toBe('top-right')
     expect(accommodationAnchorFor('avatar')).toBe('top-right')
     expect(accommodationAnchorFor('banner')).toBe('top-right')
@@ -581,6 +684,49 @@ describe('DeskRenderer integration — style flows through store', () => {
     const opacities: number[] = []
     stage?.find('Group').forEach((g: any) => opacities.push(g.opacity()))
     expect(opacities).toContain(0.85)
+  })
+
+  it('Wave 16: deskId corner badge is hidden by default', () => {
+    // The default for `showDeskIds` is `false`. The desk's `D-101`
+    // identifier should NOT appear as a Text node on the canvas — it's
+    // available in the hover card and the Properties panel instead.
+    useSeatDragStore.setState({ draggingEmployeeId: null, hoveredSeatId: null } as any)
+    useCanvasStore.setState({
+      settings: { ...DEFAULT_CANVAS_SETTINGS, seatLabelStyle: 'pill' },
+    })
+    let stage: any = null
+    render(
+      <Stage width={400} height={400} ref={(s: any) => (stage = s)}>
+        <Layer>
+          <DeskRenderer element={desk()} />
+        </Layer>
+      </Stage>,
+    )
+    const texts: string[] = []
+    stage?.find('Text').forEach((t: any) => texts.push(t.text()))
+    expect(texts).not.toContain('D-101')
+  })
+
+  it('Wave 16: deskId corner badge appears when showDeskIds is true', () => {
+    useSeatDragStore.setState({ draggingEmployeeId: null, hoveredSeatId: null } as any)
+    useCanvasStore.setState({
+      settings: {
+        ...DEFAULT_CANVAS_SETTINGS,
+        seatLabelStyle: 'pill',
+        showDeskIds: true,
+      },
+    })
+    let stage: any = null
+    render(
+      <Stage width={400} height={400} ref={(s: any) => (stage = s)}>
+        <Layer>
+          <DeskRenderer element={desk()} />
+        </Layer>
+      </Stage>,
+    )
+    const texts: string[] = []
+    stage?.find('Text').forEach((t: any) => texts.push(t.text()))
+    expect(texts).toContain('D-101')
   })
 
   it('default (undefined) seatLabelStyle falls back to pill behaviour', () => {

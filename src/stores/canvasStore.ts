@@ -91,6 +91,7 @@ interface CanvasState {
   toggleGrid: () => void
   toggleDimensions: () => void
   toggleNorthArrow: () => void
+  toggleDeskIds: () => void
 }
 
 /**
@@ -253,6 +254,19 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         // always yields `false` rather than re-toggling between
         // undefined and true.
         showNorthArrow: !(state.settings.showNorthArrow ?? true),
+      },
+    })),
+
+  // Wave 16 — desk-id corner badge visibility. New default is `false`
+  // (hide), so an absent field on a legacy payload reads as hidden;
+  // flipping it for the first time yields `true`. The deskId is still
+  // available in the hover card and the Properties panel, so this is
+  // strictly about removing on-canvas duplication.
+  toggleDeskIds: () =>
+    set((state) => ({
+      settings: {
+        ...state.settings,
+        showDeskIds: !(state.settings.showDeskIds ?? false),
       },
     })),
 }))

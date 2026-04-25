@@ -11,7 +11,7 @@ import {
   Maximize2, Minimize2,
   Cloud, CloudOff, UploadCloud, X as XIcon,
   Ruler, Grid3x3, Compass, Printer, Image as ImageIcon,
-  ChevronDown, Link2, Eye, Check, Share2, Download,
+  ChevronDown, Link2, Eye, Check, Share2, Download, Hash,
 } from 'lucide-react'
 import { SeatLabelStylePicker } from './TopBar/SeatLabelStylePicker'
 import { FileMenu, type FileMenuGroup } from './TopBar/FileMenu'
@@ -40,7 +40,7 @@ export function TopBar() {
   // Any legacy `/project/:slug/*` URL redirects to /dashboard before
   // hitting this component.
   const { teamSlug, officeSlug } = useParams<{ teamSlug: string; officeSlug: string }>()
-  const { stageScale, zoomIn, zoomOut, resetZoom, settings, setSettings, toggleGrid, toggleDimensions, toggleNorthArrow } = useCanvasStore(useShallow((s) => ({
+  const { stageScale, zoomIn, zoomOut, resetZoom, settings, setSettings, toggleGrid, toggleDimensions, toggleNorthArrow, toggleDeskIds } = useCanvasStore(useShallow((s) => ({
     stageScale: s.stageScale,
     zoomIn: s.zoomIn,
     zoomOut: s.zoomOut,
@@ -50,6 +50,7 @@ export function TopBar() {
     toggleGrid: s.toggleGrid,
     toggleDimensions: s.toggleDimensions,
     toggleNorthArrow: s.toggleNorthArrow,
+    toggleDeskIds: s.toggleDeskIds,
   })))
   const { setShareModalOpen, setExportDialogOpen, setPresentationMode, presentationMode, selectedIds, clearSelection } = useUIStore(useShallow((s) => ({ setShareModalOpen: s.setShareModalOpen, setExportDialogOpen: s.setExportDialogOpen, setPresentationMode: s.setPresentationMode, presentationMode: s.presentationMode, selectedIds: s.selectedIds, clearSelection: s.clearSelection })))
   // Drive both temporal-wrapped stores on every undo/redo so a single
@@ -433,6 +434,28 @@ export function TopBar() {
               <Compass size={14} aria-hidden="true" />
               Toggle compass
               <kbd className="ml-auto text-[10px] text-gray-400 dark:text-gray-500 font-mono">N</kbd>
+            </button>
+            {/* Wave 16 — desk-id corner badge visibility. Default off so
+                the canvas reads as a glanceable plan rather than a
+                roster table. The deskId is also surfaced in the hover
+                card and the Properties panel; this toggle is for
+                operators who deliberately want the on-canvas badge. */}
+            <button
+              role="menuitem"
+              onClick={() => {
+                setViewMenuOpen(false)
+                toggleDeskIds()
+              }}
+              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800/50"
+              aria-pressed={settings.showDeskIds ?? false}
+            >
+              {(settings.showDeskIds ?? false) ? (
+                <Check size={14} aria-hidden="true" />
+              ) : (
+                <span className="inline-block w-[14px]" />
+              )}
+              <Hash size={14} aria-hidden="true" />
+              Show desk IDs
             </button>
 
             {/* Seat-label style picker — Wave 15C. Lives inside the View
