@@ -79,6 +79,7 @@ const shortcutGroups: ShortcutGroup[] = [
       { keys: 'Cmd+0', action: 'Reset zoom' },
       { keys: 'G', action: 'Toggle grid' },
       { keys: 'D', action: 'Toggle dimensions' },
+      { keys: 'N', action: 'Toggle compass' },
       { keys: 'P', action: 'Presentation mode' },
       { keys: 'M', action: 'Jump to map view' },
       { keys: 'R', action: 'Jump to roster view' },

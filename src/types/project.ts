@@ -69,6 +69,15 @@ export interface CanvasSettings {
    */
   northRotation?: number
   /**
+   * Whether the floating north-arrow compass renders on the canvas. Many
+   * indoor floor plans have no real-world cardinal alignment and the
+   * compass is just visual noise — toggle it off via View → "Toggle
+   * compass" or the `N` hotkey. Optional for backward compatibility with
+   * persisted projects that predate the field — readers should treat
+   * `undefined` as `true` (the historical behaviour).
+   */
+  showNorthArrow?: boolean
+  /**
    * Cosmetic style for per-seat labels. See `SeatLabelStyle` for the four
    * options. Optional for backward-compat with pre-Wave-15C payloads —
    * readers should treat `undefined` as `'pill'` (the baseline / current
@@ -98,5 +107,6 @@ export const DEFAULT_CANVAS_SETTINGS: CanvasSettings = {
   showGrid: true,
   showDimensions: false,
   northRotation: 0,
+  showNorthArrow: true,
   seatLabelStyle: 'pill',
 }

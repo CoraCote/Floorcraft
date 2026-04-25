@@ -90,6 +90,7 @@ interface CanvasState {
   setSettings: (settings: Partial<CanvasSettings>) => void
   toggleGrid: () => void
   toggleDimensions: () => void
+  toggleNorthArrow: () => void
 }
 
 /**
@@ -242,5 +243,16 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   toggleDimensions: () =>
     set((state) => ({
       settings: { ...state.settings, showDimensions: !state.settings.showDimensions },
+    })),
+
+  toggleNorthArrow: () =>
+    set((state) => ({
+      settings: {
+        ...state.settings,
+        // Treat absent (legacy projects) as `true` so flipping it once
+        // always yields `false` rather than re-toggling between
+        // undefined and true.
+        showNorthArrow: !(state.settings.showNorthArrow ?? true),
+      },
     })),
 }))

@@ -10,7 +10,7 @@ import {
   Undo2, Redo2, ZoomIn, ZoomOut,
   Maximize2, Minimize2,
   Cloud, CloudOff, UploadCloud, X as XIcon,
-  Ruler, Grid3x3, Printer, Image as ImageIcon,
+  Ruler, Grid3x3, Compass, Printer, Image as ImageIcon,
   ChevronDown, Link2, Eye, Check, Share2, Download,
 } from 'lucide-react'
 import { SeatLabelStylePicker } from './TopBar/SeatLabelStylePicker'
@@ -40,7 +40,7 @@ export function TopBar() {
   // Any legacy `/project/:slug/*` URL redirects to /dashboard before
   // hitting this component.
   const { teamSlug, officeSlug } = useParams<{ teamSlug: string; officeSlug: string }>()
-  const { stageScale, zoomIn, zoomOut, resetZoom, settings, setSettings, toggleGrid, toggleDimensions } = useCanvasStore(useShallow((s) => ({
+  const { stageScale, zoomIn, zoomOut, resetZoom, settings, setSettings, toggleGrid, toggleDimensions, toggleNorthArrow } = useCanvasStore(useShallow((s) => ({
     stageScale: s.stageScale,
     zoomIn: s.zoomIn,
     zoomOut: s.zoomOut,
@@ -49,6 +49,7 @@ export function TopBar() {
     setSettings: s.setSettings,
     toggleGrid: s.toggleGrid,
     toggleDimensions: s.toggleDimensions,
+    toggleNorthArrow: s.toggleNorthArrow,
   })))
   const { setShareModalOpen, setExportDialogOpen, setPresentationMode, presentationMode, selectedIds, clearSelection } = useUIStore(useShallow((s) => ({ setShareModalOpen: s.setShareModalOpen, setExportDialogOpen: s.setExportDialogOpen, setPresentationMode: s.setPresentationMode, presentationMode: s.presentationMode, selectedIds: s.selectedIds, clearSelection: s.clearSelection })))
   // Drive both temporal-wrapped stores on every undo/redo so a single
@@ -414,6 +415,24 @@ export function TopBar() {
               <Ruler size={14} aria-hidden="true" />
               Toggle dimensions
               <kbd className="ml-auto text-[10px] text-gray-400 dark:text-gray-500 font-mono">D</kbd>
+            </button>
+            <button
+              role="menuitem"
+              onClick={() => {
+                setViewMenuOpen(false)
+                toggleNorthArrow()
+              }}
+              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800/50"
+              aria-pressed={settings.showNorthArrow ?? true}
+            >
+              {(settings.showNorthArrow ?? true) ? (
+                <Check size={14} aria-hidden="true" />
+              ) : (
+                <span className="inline-block w-[14px]" />
+              )}
+              <Compass size={14} aria-hidden="true" />
+              Toggle compass
+              <kbd className="ml-auto text-[10px] text-gray-400 dark:text-gray-500 font-mono">N</kbd>
             </button>
 
             {/* Seat-label style picker — Wave 15C. Lives inside the View

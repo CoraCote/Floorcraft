@@ -19,6 +19,7 @@ import { AlignDistributeToolbar } from './Canvas/AlignDistributeToolbar'
 import { ElementHoverCard } from './Canvas/ElementHoverCard'
 import { FirstRunCoach } from './FirstRunCoach'
 import { useUIStore } from '../../stores/uiStore'
+import { useCanvasStore } from '../../stores/canvasStore'
 import { useFloorStore } from '../../stores/floorStore'
 import { useNeighborhoodStore } from '../../stores/neighborhoodStore'
 import { useToastStore } from '../../stores/toastStore'
@@ -44,6 +45,12 @@ import { focusOnElement } from '../../lib/canvasFocus'
 export function MapView() {
   const rightSidebarOpen = useUIStore((s) => s.rightSidebarOpen)
   const presentationMode = useUIStore((s) => s.presentationMode)
+  // The north-arrow compass renders by default but the user can hide
+  // it via View → "Toggle compass" or the `N` hotkey when the floor
+  // plan has no real-world cardinal alignment. Legacy projects (no
+  // field set) keep the historical behaviour by treating undefined
+  // as `true`.
+  const showNorthArrow = useCanvasStore((s) => s.settings.showNorthArrow ?? true)
   const [searchParams, setSearchParams] = useSearchParams()
 
   useEffect(() => {
@@ -185,7 +192,7 @@ export function MapView() {
           <ElementHoverCard />
           <CanvasActionDock />
           <CanvasScaleBar />
-          <NorthArrow />
+          {showNorthArrow && <NorthArrow />}
           <FirstRunCoach />
           {/* Closed-state pull-tab to expand the right sidebar.
               Replaces the toggle that used to live in the TopBar so

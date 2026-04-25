@@ -22,7 +22,7 @@ export function useKeyboardShortcuts() {
   const { selectedIds, clearSelection, setPresentationMode, presentationMode, setShortcutsOverlayOpen } = useUIStore(useShallow((s) => ({ selectedIds: s.selectedIds, clearSelection: s.clearSelection, setPresentationMode: s.setPresentationMode, presentationMode: s.presentationMode, setShortcutsOverlayOpen: s.setShortcutsOverlayOpen })))
   const { duplicateElements, moveElements, groupElements, ungroupElements } = useElementsStore(useShallow((s) => ({ duplicateElements: s.duplicateElements, moveElements: s.moveElements, groupElements: s.groupElements, ungroupElements: s.ungroupElements })))
   const elements = useElementsStore((s) => s.elements)
-  const { setActiveTool, toggleGrid, toggleDimensions, zoomIn, zoomOut, resetZoom } = useCanvasStore(useShallow((s) => ({ setActiveTool: s.setActiveTool, toggleGrid: s.toggleGrid, toggleDimensions: s.toggleDimensions, zoomIn: s.zoomIn, zoomOut: s.zoomOut, resetZoom: s.resetZoom })))
+  const { setActiveTool, toggleGrid, toggleDimensions, toggleNorthArrow, zoomIn, zoomOut, resetZoom } = useCanvasStore(useShallow((s) => ({ setActiveTool: s.setActiveTool, toggleGrid: s.toggleGrid, toggleDimensions: s.toggleDimensions, toggleNorthArrow: s.toggleNorthArrow, zoomIn: s.zoomIn, zoomOut: s.zoomOut, resetZoom: s.resetZoom })))
   // Cmd+Z / Cmd+Shift+Z rewinds every temporal-wrapped store in lock-step
   // so a single undo matches the user's mental model — they just did one
   // thing on the canvas; one keystroke should walk it back regardless of
@@ -252,6 +252,11 @@ export function useKeyboardShortcuts() {
         }
         if (e.key === 'g' || e.key === 'G') { toggleGrid(); return }
         if (e.key === 'd' || e.key === 'D') { toggleDimensions(); return }
+        // Plain `N` toggles the floating north-arrow compass. Shift+N
+        // (window tool) is checked further down so the modifier-free
+        // path here only matches a bare key. `n` is otherwise free —
+        // verified against the rest of the editor hotkey table.
+        if (!e.shiftKey && (e.key === 'n' || e.key === 'N')) { toggleNorthArrow(); return }
         if (e.key === 'p' || e.key === 'P') { setPresentationMode(!presentationMode); return }
         // Drawing primitives. D and G are already taken (dimensions/grid);
         // R and M are taken on project routes by roster/map nav (handled
@@ -355,7 +360,7 @@ export function useKeyboardShortcuts() {
   }, [
     selectedIds, elements, presentationMode,
     clearSelection, duplicateElements, moveElements,
-    groupElements, ungroupElements, setActiveTool, toggleGrid, toggleDimensions,
+    groupElements, ungroupElements, setActiveTool, toggleGrid, toggleDimensions, toggleNorthArrow,
     zoomIn, zoomOut, resetZoom, setPresentationMode, setShortcutsOverlayOpen,
     undo, redo, navigate, teamSlug, officeSlug, pathname,
   ])
