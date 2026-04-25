@@ -76,9 +76,11 @@ describe('ElementLibrary — Wave 12B polish', () => {
       fireEvent.change(search, { target: { value: 'sofa' } })
       // Furniture group remains because it has a matching tile.
       expect(screen.getByRole('button', { name: /Furniture/i })).toBeInTheDocument()
-      // Tables / Rooms have no matches and should be gone.
-      expect(screen.queryByRole('button', { name: /^Tables$/i })).not.toBeInTheDocument()
-      expect(screen.queryByRole('button', { name: /^Rooms$/i })).not.toBeInTheDocument()
+      // Tables / Rooms have no matches and should be gone. Wave 19A
+      // appends a count to category headers ("Tables · 4"), so we match
+      // the leading word with a word boundary instead of `^Tables$`.
+      expect(screen.queryByRole('button', { name: /\bTables\b/i })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /\bRooms\b/i })).not.toBeInTheDocument()
     })
 
     it('shows the empty-result placard when nothing matches and Clear resets', () => {
@@ -86,10 +88,13 @@ describe('ElementLibrary — Wave 12B polish', () => {
       const search = screen.getByLabelText('Filter elements') as HTMLInputElement
       fireEvent.change(search, { target: { value: 'zzznomatch' } })
       expect(screen.getByText('No elements match')).toBeInTheDocument()
+      // The placard quotes the offending query so the user sees what came
+      // back empty. Asserting the substring catches typos in the copy.
+      expect(screen.getByText(/zzznomatch/)).toBeInTheDocument()
       fireEvent.click(screen.getByRole('button', { name: 'Clear' }))
       expect(search.value).toBe('')
-      // After clearing, regular categories return.
-      expect(screen.getByRole('button', { name: /^Tables$/i })).toBeInTheDocument()
+      // After clearing, regular categories return ("Tables · 4" etc.).
+      expect(screen.getByRole('button', { name: /\bTables\b/i })).toBeInTheDocument()
     })
 
     it('Esc clears a non-empty query (without blurring)', () => {
@@ -171,6 +176,50 @@ describe('ElementLibrary — Wave 12B polish', () => {
     })
   })
 
+  describe('keyboard activation', () => {
+    it('places an element when the tile inner button is activated by keyboard', () => {
+      // We can't easily fire a keyboard "click" on a native <button> in
+      // jsdom without browser-level synthesised events, but the inner
+      // <button type="button"> falls through to its onClick handler on
+      // any synthetic click event — the same path the browser fires for
+      // Enter/Space on a focused button. Asserting the recents-row
+      // populates after a click on the inner tile button is the same
+      // surface the keyboard would hit.
+      render(<ElementLibrary />)
+      const sofaSection = screen
+        .getByRole('button', { name: /Furniture/i })
+        .closest('div.mb-3') as HTMLElement
+      const tile = within(sofaSection).getByRole('button', {
+        name: /Add Sofa element to canvas/i,
+      })
+      // The inner <button type="button"> is the first <button> child of
+      // the wrapper — that's the tab-stop the browser activates with
+      // Enter/Space.
+      const innerButton = tile.querySelector('button') as HTMLButtonElement
+      expect(innerButton).not.toBeNull()
+      innerButton.focus()
+      expect(document.activeElement).toBe(innerButton)
+      // Fire a synthetic click — same handler the browser invokes for
+      // Enter/Space on a focused button.
+      fireEvent.click(innerButton)
+      expect(screen.getByText('Recent')).toBeInTheDocument()
+    })
+  })
+
+  describe('category collapse persistence', () => {
+    it('persists chevron toggles to localStorage under floocraft.library.collapsed', () => {
+      render(<ElementLibrary />)
+      // Tables starts expanded thanks to expandAllCategories(). Click the
+      // header button to collapse it, then read the persisted state.
+      const tables = screen.getByRole('button', { name: /\bTables\b/i })
+      fireEvent.click(tables)
+      const raw = localStorage.getItem('floocraft.library.collapsed')
+      expect(raw).not.toBeNull()
+      const parsed = JSON.parse(raw!) as { state: { collapsed: Record<string, boolean> } }
+      expect(parsed.state.collapsed.Tables).toBe(true)
+    })
+  })
+
   describe('a11y', () => {
     it('search input exposes aria-label="Filter elements"', () => {
       render(<ElementLibrary />)
@@ -184,8 +233,10 @@ describe('ElementLibrary — Wave 12B polish', () => {
       const sofaSection = screen
         .getByRole('button', { name: /Furniture/i })
         .closest('div.mb-3') as HTMLElement
+      // Wave 19A simplified the aria-label to the imperative "Add X
+      // element to canvas" so screen readers read a clear action verb.
       const tile = within(sofaSection).getByRole('button', {
-        name: /Sofa.*click to place at centre/i,
+        name: /Add Sofa element to canvas/i,
       })
       expect(tile).toBeInTheDocument()
     })

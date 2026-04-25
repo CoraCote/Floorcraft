@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
+  Box,
   ChevronDown,
   ChevronRight,
   MessageSquarePlus,
+  Search,
   SearchX,
   Star,
   Upload,
@@ -10,13 +13,16 @@ import {
 } from 'lucide-react'
 import { TABLE_SEAT_DEFAULTS, getDefaults } from '../../../lib/constants'
 import { LibraryPreview } from './LibraryPreview'
+import { Input } from '../../ui/Input'
 import { useRecentLibraryItems } from '../../../hooks/useRecentLibraryItems'
 import { useLibraryCollapse } from '../../../hooks/useLibraryCollapse'
 import { useLibraryFavorites, favoriteKey } from '../../../hooks/useLibraryFavorites'
 import { useCustomShapes } from '../../../hooks/useCustomShapes'
+import { prefersReducedMotion } from '../../../lib/prefersReducedMotion'
 import { sanitizeSvg, MAX_SVG_BYTES } from '../../../lib/svgSanitize'
 import {
   addRecent as persistRecent,
+  clearRecents as clearRecentsStorage,
   getRecents as readPersistedRecents,
 } from '../../../lib/elementLibraryRecents'
 import type {
@@ -366,6 +372,11 @@ function LibraryTile({
   const isFavorite = useLibraryFavorites((s) => s.favorites.has(favoriteKey(item)))
   const toggleFavorite = useLibraryFavorites((s) => s.toggleFavorite)
   const wrapperRef = useRef<HTMLDivElement>(null)
+  // Local visual flag while this tile is the active drag source. We could
+  // read it from a parent provider, but the dragging tile is always the
+  // one whose `dragstart` fired, so a tile-local boolean is the cleanest
+  // representation. `dragend` clears it whether or not the drop succeeded.
+  const [isDragging, setIsDragging] = useState(false)
 
   const handleStarClick = (e: React.MouseEvent | React.KeyboardEvent) => {
     e.preventDefault()
@@ -393,20 +404,34 @@ function LibraryTile({
       onDragStart={(e) => {
         // Tear down any pending tooltip so it doesn't race the drag image.
         onHoverLeave?.(item)
+        setIsDragging(true)
         onDragStart(item)(e)
       }}
+      onDragEnd={() => setIsDragging(false)}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       role="button"
-      aria-label={`${item.label} — click to place at centre, or drag onto the canvas`}
-      title="Click to add to centre, or drag onto the canvas to place exactly"
+      aria-label={`Add ${item.label} element to canvas`}
+      title="Drag onto the canvas, or click to add at viewport centre"
       // The wrapper owns the drag; the inner <button> handles click-to-add.
       // The star sits above as a sibling with its own keyboard handler so
       // Tab reaches it and Space/Enter toggles without placing the element.
-      className={`group relative flex items-center gap-1.5 px-2 py-1.5 text-xs rounded border transition-colors cursor-grab active:cursor-grabbing hover:ring-1 hover:ring-blue-300 dark:hover:ring-blue-700 ${
+      //
+      // Chrome treatment: rounded-md card with a paired light/dark shell.
+      // Hover lifts to a blue accent border + faint shadow — `motion-reduce`
+      // strips the shadow so users on reduced-motion don't see the tile
+      // "pop" when their cursor crosses it. While dragging we drop opacity
+      // and apply a tiny rotation so the user can still see the drag image
+      // is the tile they grabbed (Konva canvas swallows the native drag
+      // ghost on most browsers, so the source-side affordance matters).
+      className={`group relative flex items-center gap-1.5 px-2 py-1.5 text-xs rounded-md border transition-colors hover:shadow-sm motion-reduce:hover:shadow-none ${
+        isDragging
+          ? 'opacity-50 cursor-grabbing rotate-[1deg]'
+          : 'cursor-grab active:cursor-grabbing'
+      } ${
         isActive
-          ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-100 border-blue-200 dark:border-blue-800'
-          : 'text-gray-700 dark:text-gray-200 border-gray-100 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800 hover:border-gray-200'
+          ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-100 border-blue-300 dark:border-blue-700'
+          : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-800 hover:border-blue-400 dark:hover:border-blue-500'
       }`}
     >
       <button
@@ -461,6 +486,17 @@ interface LibrarySectionProps {
   /** When true, a chevron toggles visibility. "Recent"/"Favorites"/search
    *  result sections pass false so they always render. */
   collapsible?: boolean
+  /** Whether to render a faint top border above the section header. Used
+   *  between adjacent categories to give the eye a soft hand-rail without
+   *  introducing a heavier divider that would compete with the tiles. */
+  showDivider?: boolean
+  /** Optional trailing element rendered to the right of the section header.
+   *  "Recent" uses this to tuck a clear-recents button next to the count. */
+  headerAction?: React.ReactNode
+  /** When true, the count badge is suppressed. The "Recent" section already
+   *  caps at a small number, so showing "Recent · 3" doesn't add much and
+   *  competes with the trailing clear-recents action. */
+  hideCount?: boolean
   onClick: (item: LibraryItem) => void
   onDragStart: (item: LibraryItem) => (e: React.DragEvent<HTMLElement>) => void
   /** Per-tile delete handler; forwarded to LibraryTile's onDelete. Used by
@@ -477,6 +513,9 @@ function LibrarySection({
   title,
   items,
   collapsible = true,
+  showDivider = false,
+  headerAction,
+  hideCount = false,
   onClick,
   onDragStart,
   onDelete,
@@ -495,23 +534,37 @@ function LibrarySection({
 
   if (items.length === 0) return null
 
+  // Header copy: "Tables · 4" — a middle-dot separator is the convention
+  // we use on the team and roster headers, so the library inherits the
+  // same visual idiom. Count is hidden for ad-hoc sections like "Recent"
+  // where it would visually fight with a trailing action button.
+  const titleText = hideCount ? title : `${title} · ${items.length}`
+  // Tracked-caps idiom shared with sibling panels (LayerVisibility, Tools).
+  // Centralising the class string here means the next palette tweak is a
+  // single-line change rather than spread across three call sites.
+  const HEADER_CLASS =
+    'text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500'
+
   return (
-    <div className="mb-3">
-      {collapsible ? (
-        <button
-          type="button"
-          onClick={() => toggle(id)}
-          className="w-full flex items-center gap-1 text-xs font-medium text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 mb-1"
-          aria-expanded={!isCollapsed}
-        >
-          {isCollapsed ? <ChevronRight size={12} aria-hidden="true" /> : <ChevronDown size={12} aria-hidden="true" />}
-          <span>{title}</span>
-        </button>
-      ) : (
-        <div className="text-xs font-medium text-gray-400 dark:text-gray-500 mb-1 px-1">{title}</div>
-      )}
+    <div className={`mb-3 ${showDivider ? 'pt-3 border-t border-gray-100 dark:border-gray-800/60' : ''}`}>
+      <div className="flex items-center gap-1 mb-1">
+        {collapsible ? (
+          <button
+            type="button"
+            onClick={() => toggle(id)}
+            className={`flex items-center gap-1 hover:text-gray-600 dark:hover:text-gray-300 ${HEADER_CLASS}`}
+            aria-expanded={!isCollapsed}
+          >
+            {isCollapsed ? <ChevronRight size={12} aria-hidden="true" /> : <ChevronDown size={12} aria-hidden="true" />}
+            <span>{titleText}</span>
+          </button>
+        ) : (
+          <div className={`px-1 ${HEADER_CLASS}`}>{titleText}</div>
+        )}
+        {headerAction ? <div className="ml-auto flex items-center">{headerAction}</div> : null}
+      </div>
       {!isCollapsed && (
-        <div className="grid grid-cols-2 gap-1">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-1">
           {items.map((item) => (
             <LibraryTile
               key={itemKey(item)}
@@ -571,6 +624,10 @@ export function ElementLibrary() {
   // Suppressed during a drag so the tooltip doesn't follow the drag image
   // around — see `dragInProgress` checks below.
   const [dragInProgress, setDragInProgress] = useState(false)
+  // Two-stage confirm for the clear-recents button. `true` when the user
+  // has clicked the X once and we're waiting for either a second click
+  // (commit) or a click elsewhere (dismiss).
+  const [confirmingClearRecents, setConfirmingClearRecents] = useState(false)
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -609,6 +666,18 @@ export function ElementLibrary() {
       if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current)
     }
   }, [])
+
+  // Click-anywhere-else dismisses the clear-recents confirm. We use a
+  // window-level listener because the X button itself stops propagation
+  // — anything that bubbles up to window therefore happened "outside"
+  // the confirm and should reset the armed state. Cheap (1 listener,
+  // only attached while the confirm is armed).
+  useEffect(() => {
+    if (!confirmingClearRecents) return
+    const onWindowClick = () => setConfirmingClearRecents(false)
+    window.addEventListener('click', onWindowClick)
+    return () => window.removeEventListener('click', onWindowClick)
+  }, [confirmingClearRecents])
 
   const handleHoverEnter = useCallback(
     (item: LibraryItem, anchor: HTMLElement) => {
@@ -843,16 +912,34 @@ export function ElementLibrary() {
     // `pb-6` keeps visible breathing room under the final row when the
     // user scrolls to the bottom of the sidebar.
     <div className="p-3 pb-6 relative">
-      <input
-        ref={searchInputRef}
-        type="search"
-        aria-label="Filter elements"
-        placeholder="Search shapes…"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        onKeyDown={handleSearchKeyDown}
-        className="w-full mb-3 px-2 py-1 text-xs border border-gray-200 dark:border-gray-800 rounded focus:outline-none focus:ring-2 focus-visible:ring-2 focus:ring-blue-500 focus-visible:ring-blue-500"
-      />
+      {/* Search input. The Wave 19A polish swaps the bare <input> for the
+          shared `<Input>` primitive so the focus-ring and dark-mode shell
+          match the rest of the app, and adds a leading Search icon — small
+          but a strong "this field is searchable" affordance.
+
+          Why no `/` global focus shortcut: the app's `useKeyboardShortcuts`
+          already binds `/` to the global command palette (Linear / GitHub
+          convention). Adding a local `/` handler here would race the
+          global one. Users who want fast keyboard nav land in the command
+          palette instead — which itself can navigate to the library. */}
+      <div className="relative mb-3">
+        <Search
+          size={14}
+          aria-hidden="true"
+          className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none"
+        />
+        <Input
+          ref={searchInputRef}
+          size="sm"
+          type="search"
+          aria-label="Filter elements"
+          placeholder="Search elements"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={handleSearchKeyDown}
+          className="pl-7"
+        />
+      </div>
       {canAnnotate && (
         // Pin tool: a one-off entry here (rather than a LibraryItem)
         // because it's a canvas *tool*, not an element factory. Sets
@@ -877,28 +964,102 @@ export function ElementLibrary() {
         </button>
       )}
       {/* Recent row — always visible when populated. Search ignores it so
-          frequently-used tiles are always one click away even mid-filter. */}
+          frequently-used tiles are always one click away even mid-filter.
+          Capped at 6 to fill exactly one row at the 3-column lg breakpoint
+          (and a clean two rows at 2-col); beyond that the list ages out
+          per `addRecent`'s move-to-front, so the cap is purely visual. */}
       {recents.length > 0 && (
         <LibrarySection
           id="recent"
           title="Recent"
-          items={recents}
+          items={recents.slice(0, 6)}
           collapsible={false}
+          hideCount
           onClick={handleAddElement}
           onDragStart={handleDragStart}
           isActive={isActiveTool}
           onHoverEnter={handleHoverEnter}
           onHoverLeave={handleHoverLeave}
+          headerAction={
+            // Two-stage clear: first click arms a confirm tooltip, second
+            // click commits. Single-click-to-wipe is too easy to fat-finger
+            // when the row sits right under the search input. The confirm
+            // is dismissed by a click anywhere else (capture-phase listener
+            // installed below) so it doesn't linger after a missed click.
+            <button
+              type="button"
+              aria-label={
+                confirmingClearRecents
+                  ? 'Confirm clear recent elements'
+                  : 'Clear recent elements'
+              }
+              onClick={(e) => {
+                e.stopPropagation()
+                if (confirmingClearRecents) {
+                  setRecents([])
+                  clearRecentsStorage()
+                  setConfirmingClearRecents(false)
+                } else {
+                  setConfirmingClearRecents(true)
+                }
+              }}
+              className={`flex items-center gap-1 px-1 py-0.5 rounded text-[11px] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                confirmingClearRecents
+                  ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-950/60'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+              }`}
+              title={
+                confirmingClearRecents
+                  ? 'Click again to confirm'
+                  : 'Clear recent elements'
+              }
+            >
+              {confirmingClearRecents ? (
+                <span>Clear?</span>
+              ) : (
+                <X size={12} aria-hidden="true" />
+              )}
+            </button>
+          }
         />
       )}
-      {isSearching ? (
+      {/* Defensive empty-catalog state. Today LIBRARY_ITEMS is a static
+          constant so the array is never empty, but the section is here so
+          a future tenant-config-driven catalog can degrade gracefully —
+          users see a helpful placard instead of an unexplained blank panel.
+          The check covers built-ins + custom shapes; recents are excluded
+          (a recents-only library would still be useful). */}
+      {LIBRARY_ITEMS.length === 0 && customShapeItems.length === 0 ? (
+        <div
+          role="status"
+          className="flex flex-col items-center gap-2 py-8 px-3 text-xs text-gray-500 dark:text-gray-400 rounded-md border border-dashed border-gray-200 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-900/40 text-center"
+        >
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+            <Box size={18} aria-hidden="true" />
+          </span>
+          <div className="font-medium text-gray-600 dark:text-gray-300">
+            No elements available
+          </div>
+          <div className="leading-snug">
+            Try clearing your search or asking your admin.
+          </div>
+        </div>
+      ) : isSearching ? (
         filtered.length === 0 ? (
+          // Empty-search placard. We keep the "No elements match" line as
+          // the primary anchor for screen-reader status announcements (and
+          // existing tests assert that exact substring), and append a more
+          // descriptive line that quotes the query so users see exactly
+          // which token came back empty — typos are the most common cause.
           <div
             role="status"
-            className="flex flex-col items-center gap-2 py-6 text-xs text-gray-500 dark:text-gray-400"
+            className="flex flex-col items-center gap-2 py-6 text-xs text-gray-500 dark:text-gray-400 rounded-md border border-dashed border-gray-200 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-900/40"
           >
             <SearchX size={20} aria-hidden="true" className="text-gray-400" />
             <div>No elements match</div>
+            <div className="text-gray-400 dark:text-gray-500 truncate max-w-full px-3 text-center">
+              "{query}"
+            </div>
             <button
               type="button"
               onClick={() => {
@@ -925,7 +1086,7 @@ export function ElementLibrary() {
                 onHoverLeave={handleHoverLeave}
               />
             )}
-            {categories.map((cat) => {
+            {categories.map((cat, idx) => {
               const matched = LIBRARY_ITEMS.filter(
                 (i) => i.category === cat && matchesQuery(i),
               )
@@ -936,6 +1097,7 @@ export function ElementLibrary() {
                   id={cat}
                   title={cat}
                   items={matched}
+                  showDivider={idx > 0}
                   onClick={handleAddElement}
                   onDragStart={handleDragStart}
                   isActive={isActiveTool}
@@ -975,12 +1137,13 @@ export function ElementLibrary() {
               onHoverLeave={handleHoverLeave}
             />
           )}
-          {categories.map((cat) => (
+          {categories.map((cat, idx) => (
             <LibrarySection
               key={cat}
               id={cat}
               title={cat}
               items={LIBRARY_ITEMS.filter((i) => i.category === cat)}
+              showDivider={idx > 0}
               onClick={handleAddElement}
               onDragStart={handleDragStart}
               isActive={isActiveTool}
@@ -1030,32 +1193,102 @@ export function ElementLibrary() {
           </div>
         </>
       )}
-      {/* Single shared hover tooltip. Rendered as a fixed-position overlay
-          so it can escape the sidebar's overflow without portalling. The
-          250ms dwell threshold filters out drive-by hovers. */}
+      {/* Single shared hover tooltip — see HoverTooltip below. Rendered via
+          a portal so the sidebar's `overflow:hidden` doesn't clip it, and
+          suppressed mid-drag so it doesn't follow the drag image. */}
       {hovered && !dragInProgress && (
-        <div
-          role="tooltip"
-          aria-label={`${hovered.item.label} preview`}
-          className="fixed z-50 max-w-[220px] px-2.5 py-2 text-xs rounded-md shadow-lg bg-gray-900 dark:bg-gray-100 text-gray-100 dark:text-gray-900 border border-gray-700 dark:border-gray-300 pointer-events-none"
-          style={{
-            // Pin to the right of the hovered tile with an 8px gap. The
-            // sidebar is roughly 240px wide so this lands in canvas space
-            // and never clips against the left viewport edge.
-            top: hovered.rect.top,
-            left: hovered.rect.right + 8,
-          }}
-        >
-          <div className="font-medium mb-0.5">{hovered.item.label}</div>
-          <div className="opacity-80 leading-snug">
-            {TILE_DESCRIPTIONS[tileKey(hovered.item)] ??
-              `${hovered.item.category} element.`}
-          </div>
-          <div className="mt-1 text-[10px] opacity-60">
-            Drag onto canvas to place
-          </div>
-        </div>
+        <HoverTooltip item={hovered.item} rect={hovered.rect} />
       )}
     </div>
+  )
+}
+
+interface HoverTooltipProps {
+  item: LibraryItem
+  rect: DOMRect
+}
+
+/**
+ * Floating tooltip portalled to `document.body`. Two reasons we extract
+ * this rather than inline-rendering it:
+ *
+ *   1. The sidebar container is `overflow-hidden` — without a portal, the
+ *      tooltip would clip whenever it crosses the panel edge.
+ *   2. We want a triangle pointer pointing back at the source tile, which
+ *      is easier to position with absolute coords against the tile's
+ *      bounding rect than as a sibling inside a flex/grid layout.
+ *
+ * Positioning policy: prefer to sit ABOVE the tile (out of the way of
+ * the cursor and the upcoming tiles below), but fall back to BELOW if
+ * the tile is near the top of the viewport and there isn't room. We
+ * compute this once per render — re-running on scroll would be more
+ * accurate but the dwell timer is short and tooltips are torn down on
+ * mouse-leave anyway, so a static placement is fine.
+ */
+function HoverTooltip({ item, rect }: HoverTooltipProps) {
+  // Approx height: 1 line title + 1-2 lines description + 1 line hint.
+  // Doesn't have to be exact — used only to choose above-vs-below.
+  const APPROX_HEIGHT = 84
+  const placeAbove = rect.top >= APPROX_HEIGHT + 12
+  const top = placeAbove ? rect.top - APPROX_HEIGHT - 8 : rect.bottom + 8
+  // Centre the tooltip horizontally over the tile, but clamp 8px from
+  // the right viewport edge so it never cuts off — the sidebar is on the
+  // left so we mostly worry about overrun on the right.
+  const TOOLTIP_WIDTH = 220
+  const desiredLeft = rect.left + rect.width / 2 - TOOLTIP_WIDTH / 2
+  const maxLeft = window.innerWidth - TOOLTIP_WIDTH - 8
+  const left = Math.max(8, Math.min(desiredLeft, maxLeft))
+  // Pointer triangle x-offset within the tooltip: it always points at the
+  // tile's centre, regardless of the clamp above.
+  const pointerX = rect.left + rect.width / 2 - left
+
+  // Skip the fade-in for reduced-motion users — the tooltip just appears.
+  // We don't subscribe to media-query changes mid-session (matches the
+  // helper's documented behaviour); a refresh picks up the new setting.
+  // The fade itself is a one-shot opacity transition driven by an inline
+  // style flag below, so reduced-motion users see the tooltip render at
+  // full opacity on first paint with no transition.
+  const noMotion = prefersReducedMotion()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    if (noMotion) return
+    // RAF instead of setState directly so the initial 0-opacity paint
+    // commits before we flip to 1; without it React batches both styles
+    // into one frame and the transition has no `from` value to interpolate.
+    const r = requestAnimationFrame(() => setMounted(true))
+    return () => cancelAnimationFrame(r)
+  }, [noMotion])
+  const opacity = noMotion || mounted ? 1 : 0
+
+  return createPortal(
+    <div
+      role="tooltip"
+      aria-label={`${item.label} preview`}
+      className="fixed z-50 max-w-[220px] px-2.5 py-2 text-xs rounded-md shadow-lg bg-gray-900 dark:bg-gray-100 text-gray-100 dark:text-gray-900 border border-gray-700 dark:border-gray-300 pointer-events-none transition-opacity duration-150 motion-reduce:transition-none"
+      style={{ top, left, width: TOOLTIP_WIDTH, opacity }}
+    >
+      <div className="font-medium mb-0.5">{item.label}</div>
+      <div className="opacity-80 leading-snug">
+        {TILE_DESCRIPTIONS[tileKey(item)] ?? `${item.category} element.`}
+      </div>
+      <div className="mt-1 text-[10px] opacity-60">
+        Drag onto canvas, or click to add at viewport centre.
+      </div>
+      {/* Triangle pointer — a 1×1 rotated square sitting on the appropriate
+          edge so the tooltip looks attached to the tile rather than
+          floating in space. Sized at 8px diagonal which lands ~6px on
+          screen after rotation. */}
+      <div
+        aria-hidden="true"
+        className="absolute w-2 h-2 rotate-45 bg-gray-900 dark:bg-gray-100 border-gray-700 dark:border-gray-300"
+        style={{
+          left: Math.max(8, Math.min(pointerX - 4, TOOLTIP_WIDTH - 16)),
+          ...(placeAbove
+            ? { bottom: -4, borderRight: '1px solid', borderBottom: '1px solid' }
+            : { top: -4, borderLeft: '1px solid', borderTop: '1px solid' }),
+        }}
+      />
+    </div>,
+    document.body,
   )
 }
