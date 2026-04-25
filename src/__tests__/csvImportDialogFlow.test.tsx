@@ -28,8 +28,13 @@ describe('CSVImportDialog flow', () => {
     const textarea = screen.getByPlaceholderText(/name,email/i) as HTMLTextAreaElement
     fireEvent.change(textarea, { target: { value: CSV } })
 
-    fireEvent.click(screen.getByRole('button', { name: /preview/i }))
-    fireEvent.click(screen.getByRole('button', { name: /import/i }))
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+    // Include every row so the post-commit summary still shows both
+    // structural skips (blank_name, duplicate_email). The new preview
+    // step leaves error rows unchecked by default; "Select all" puts us
+    // back to the pre-Wave-13B behaviour that this test was built for.
+    fireEvent.click(screen.getByRole('button', { name: /^select all$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^import /i }))
 
     // Dialog closed, summary modal set.
     expect(useUIStore.getState().csvImportOpen).toBe(false)
