@@ -27,7 +27,7 @@ describe('SignupPage', () => {
         options: { data: { name: 'Alice' } },
       }),
     )
-    expect(await screen.findByText(/check your email/i)).toBeInTheDocument()
+    expect(await screen.findByText(/check your inbox/i)).toBeInTheDocument()
   })
 
   it('pre-fills email when an invite token is in the URL', async () => {

@@ -19,6 +19,6 @@ describe('ForgotPasswordPage', () => {
     fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'a@b.c' } })
     fireEvent.click(screen.getByRole('button', { name: /send reset link/i }))
     await waitFor(() => expect(resetMock).toHaveBeenCalledWith('a@b.c', expect.any(Object)))
-    expect(await screen.findByText(/check your email/i)).toBeInTheDocument()
+    expect(await screen.findByText(/check your inbox/i)).toBeInTheDocument()
   })
 })

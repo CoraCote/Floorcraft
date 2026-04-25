@@ -43,7 +43,10 @@ describe('AuthResetPage', () => {
         <AuthResetPage />
       </MemoryRouter>,
     )
-    fireEvent.change(screen.getByLabelText(/new password/i), { target: { value: 'newpass!!' } })
+    // Wave 17A added a confirm-password field, so the label regex now
+    // matches two inputs; use the exact labels to disambiguate.
+    fireEvent.change(screen.getByLabelText(/^new password$/i), { target: { value: 'newpass!!' } })
+    fireEvent.change(screen.getByLabelText(/confirm new password/i), { target: { value: 'newpass!!' } })
     fireEvent.click(screen.getByRole('button', { name: /update password/i }))
     await waitFor(() => expect(updateUserMock).toHaveBeenCalledWith({ password: 'newpass!!' }))
   })
