@@ -377,6 +377,11 @@ function PillLabel({
         fontStyle="bold"
         fontFamily={LABEL_FONT}
         fill={BODY_TEXT}
+        // Single-line + ellipsis so a long employee name truncates
+        // cleanly rather than wrapping to two lines that bleed past
+        // the pill chip and overlap the desk's other elements.
+        wrap="none"
+        ellipsis={true}
         listening={false}
         perfectDrawEnabled={false}
       />
@@ -515,6 +520,12 @@ function CardLabel({
         fontStyle="600"
         fontFamily={LABEL_FONT}
         fill={BODY_TEXT}
+        // Konva Text auto-wraps when content exceeds `width`. Forcing
+        // single-line + native ellipsis truncation prevents the
+        // overflow-into-two-lines case where the wrapped second line
+        // visually collides with the subtitle below it.
+        wrap="none"
+        ellipsis={true}
         listening={false}
         perfectDrawEnabled={false}
       />
@@ -528,6 +539,11 @@ function CardLabel({
           fontSize={9}
           fontFamily={LABEL_FONT}
           fill={SUBTLE_TEXT}
+          // Same single-line guard as the name — multi-word titles
+          // ("Frontend Engineering", "Senior Backend") otherwise wrap
+          // to two lines and overlap the name above.
+          wrap="none"
+          ellipsis={true}
           listening={false}
           perfectDrawEnabled={false}
         />
@@ -696,6 +712,10 @@ function BannerLabel({
               fontStyle="bold"
               fontFamily={LABEL_FONT}
               fill={BODY_TEXT}
+              // Single-line + ellipsis so long names don't wrap to a
+              // second line that overlaps the desk border / stripe.
+              wrap="none"
+              ellipsis={true}
               listening={false}
               perfectDrawEnabled={false}
             />
