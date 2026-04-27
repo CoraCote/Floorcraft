@@ -3,8 +3,10 @@ import { useElementsStore } from '../../../stores/elementsStore'
 import { useUIStore } from '../../../stores/uiStore'
 import { useCanvasStore } from '../../../stores/canvasStore'
 import { useLayerVisibilityStore } from '../../../stores/layerVisibilityStore'
+import { useITLayerStore } from '../../../stores/itLayerStore'
 import { useCanvasFinderStore } from '../../../stores/canvasFinderStore'
 import { categoryForElement } from '../../../lib/layerCategory'
+import { useCan } from '../../../hooks/useCan'
 import { useShallow } from 'zustand/react/shallow'
 import {
   isTableElement,
@@ -33,6 +35,8 @@ import {
   isVideoBarElement,
   isBadgeReaderElement,
   isOutletElement,
+  isITDevice,
+  itLayerOf,
   type ConferenceRoomElement,
   type PhoneBoothElement,
   type CommonAreaElement,
@@ -98,6 +102,25 @@ export function ElementRenderer() {
   // the existing per-element `visible` flag via AND — either "off" wins,
   // so there's no way for a hidden category to leak an element through.
   const categoryVisible = useLayerVisibilityStore((s) => s.visible)
+  // IT-layer (M2): the View-menu toggles + the `viewITLayer` permission
+  // both compose with the existing category-visibility filter into a
+  // single AND that decides whether each IT-device element renders.
+  //
+  // Why three independent axes (permission, category, sub-layer):
+  //   1. Permission is identity-bound — the user simply can't see this
+  //      data. A space-planner reviewing layouts at a customer's office
+  //      shouldn't have IT visibility leak through a stale toggle.
+  //   2. Category is the broad "hide all infra" hammer in the
+  //      LayerVisibility sidebar — same idiom as the existing five
+  //      categories, so the user has one shape of toggle for everything.
+  //   3. Sub-layer is the fine-grained View-menu toggle ("hide power
+  //      receptacles only"). Persisted across sessions; the spec wants
+  //      "I always plan with security off" to survive a refresh.
+  // Any of the three saying "off" hides the element. There is no way for
+  // a hidden element to leak through, which matches the user's mental
+  // model: every toggle is a "hide" signal.
+  const itLayerVisible = useITLayerStore((s) => s.visible)
+  const canViewITLayer = useCan('viewITLayer')
   // Canvas finder integration: when the user opens Cmd+F and types a
   // query, we dim every element that isn't a match so the floor plan
   // visually narrows in on the result set. Implemented in the renderer
@@ -115,6 +138,17 @@ export function ElementRenderer() {
   const sorted = Object.values(elements)
     .filter((el) => el.visible)
     .filter((el) => categoryVisible[categoryForElement(el)])
+    // IT-device gating: the permission cuts the whole family at once,
+    // and (when the user has permission) the sub-layer toggle decides
+    // whether THIS specific device's logical layer is on. We deliberately
+    // run this AFTER the category filter so a fully-disabled
+    // `'it-device'` category still wins via the existing AND-of-OFFs.
+    .filter((el) => {
+      if (!isITDevice(el)) return true
+      if (!canViewITLayer) return false
+      const layer = itLayerOf(el)
+      return layer ? itLayerVisible[layer] : true
+    })
     .sort((a, b) => a.zIndex - b.zIndex)
 
   // Snapshot the initial element ids once. The spawn-animation hook uses

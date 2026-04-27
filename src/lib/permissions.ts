@@ -28,6 +28,15 @@ export type Action =
   // role that can mutate the roster (editRoster) necessarily has it so the
   // edit surface doesn't hand out write access to data the user can't see.
   | 'viewPII'
+  // IT/AV/Network/Power layer (M2). Gates the View-menu toggles, the
+  // library tiles for IT-device types, the type-specific Properties
+  // sections, and the canvas rendering of IT-device elements. Default
+  // truth table grants access to roles that already shape the floor
+  // plan (owner/editor/space-planner): the IT layer is layout work, not
+  // roster work, so HR-editor stays opted out. Viewer + shareViewer are
+  // also opted out — they can still see the rest of the office without
+  // wifi heat-map footprint clutter.
+  | 'viewITLayer'
 
 /**
  * Pilot-era permissions matrix. Legacy `editor` = hr-editor ∪ space-planner
@@ -46,10 +55,11 @@ const MATRIX: Record<Role, Action[]> = {
     'editRoster', 'editMap', 'manageTeam',
     'viewAuditLog', 'viewReports', 'viewSeatHistory',
     'manageBilling', 'generateShareLink', 'viewMap', 'viewPII',
+    'viewITLayer',
   ],
-  editor: ['editRoster', 'editMap', 'viewReports', 'viewSeatHistory', 'viewMap', 'viewPII'],
+  editor: ['editRoster', 'editMap', 'viewReports', 'viewSeatHistory', 'viewMap', 'viewPII', 'viewITLayer'],
   'hr-editor': ['editRoster', 'viewAuditLog', 'viewReports', 'viewSeatHistory', 'viewMap', 'viewPII'],
-  'space-planner': ['editMap', 'viewReports', 'viewSeatHistory', 'viewMap'],
+  'space-planner': ['editMap', 'viewReports', 'viewSeatHistory', 'viewMap', 'viewITLayer'],
   viewer: ['viewMap'],
   // Anonymous share-link visitor: literally the map. No PII, no reports,
   // no seat history, and certainly no edits. The `useCan` gates on every

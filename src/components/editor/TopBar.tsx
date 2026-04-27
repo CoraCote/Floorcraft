@@ -12,6 +12,7 @@ import {
   Cloud, CloudOff, UploadCloud, X as XIcon,
   Ruler, Grid3x3, Compass, Printer, Image as ImageIcon,
   ChevronDown, Link2, Eye, Check, Share2, Download, Hash,
+  Wifi, Tv, ShieldCheck, Plug,
 } from 'lucide-react'
 import { SeatLabelStylePicker } from './TopBar/SeatLabelStylePicker'
 import { FileMenu, type FileMenuGroup } from './TopBar/FileMenu'
@@ -24,6 +25,8 @@ import { NavLink, useNavigate, useLocation, useParams } from 'react-router-dom'
 import { useTemporalState } from '../../hooks/useTemporalState'
 import { formatRelative } from '../../lib/time'
 import { useCan } from '../../hooks/useCan'
+import { useITLayerStore, IT_LAYERS } from '../../stores/itLayerStore'
+import type { ITLayer } from '../../types/elements'
 import { TeamSwitcher } from '../team/TeamSwitcher'
 import { UserMenu } from '../team/UserMenu'
 import { ScaleSettingsPopover } from './ScaleSettingsPopover'
@@ -67,6 +70,14 @@ export function TopBar() {
   const { canUndo, canRedo } = useTemporalState()
   const canViewAudit = useCan('viewAuditLog')
   const canViewReports = useCan('viewReports')
+  // M2 — View-menu toggles for the IT/AV/Network/Power sub-layers. Only
+  // surfaced for users who have the `viewITLayer` permission; everyone
+  // else sees the existing menu unchanged. The four toggles read/write
+  // the same store the canvas filter consumes, so flipping a toggle
+  // hides the matching elements end-to-end.
+  const canViewITLayer = useCan('viewITLayer')
+  const itLayerVisible = useITLayerStore((s) => s.visible)
+  const toggleITLayer = useITLayerStore((s) => s.toggle)
   // Gate the share-link dialog behind `editMap` — editors/owners can hand
   // out read-only links to their work, but a viewer (or a shareViewer who
   // somehow lands here) cannot.
@@ -477,6 +488,54 @@ export function TopBar() {
               <Hash size={14} aria-hidden="true" />
               Show desk IDs
             </button>
+
+            {/* IT layer toggles (M2). Four sub-layers — network, AV,
+                security, power — with one menuitem each. Only rendered
+                when the viewer holds `viewITLayer`; otherwise the menu
+                stays exactly as it was for everyone else. The label
+                copy ("Show network layer" / "Hide network layer")
+                mirrors the existing grid-toggle phrasing so the menu
+                reads consistently. */}
+            {canViewITLayer && (
+              <>
+                <div className="my-1 border-t border-gray-100 dark:border-gray-800" />
+                {IT_LAYERS.map((layer) => {
+                  const on = itLayerVisible[layer]
+                  // Per-layer label + icon mapping. Kept inline because
+                  // the table is small and tightly bound to this menu;
+                  // a separate constants module would be over-engineered
+                  // for four entries.
+                  const meta: Record<ITLayer, { label: string; Icon: typeof Wifi }> = {
+                    network: { label: 'network layer', Icon: Wifi },
+                    av: { label: 'AV layer', Icon: Tv },
+                    security: { label: 'security layer', Icon: ShieldCheck },
+                    power: { label: 'power layer', Icon: Plug },
+                  }
+                  const { label, Icon } = meta[layer]
+                  return (
+                    <button
+                      key={layer}
+                      role="menuitem"
+                      onClick={() => {
+                        setViewMenuOpen(false)
+                        toggleITLayer(layer)
+                      }}
+                      className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800/50"
+                      aria-pressed={on}
+                      data-testid={`it-layer-toggle-${layer}`}
+                    >
+                      {on ? (
+                        <Check size={14} aria-hidden="true" />
+                      ) : (
+                        <span className="inline-block w-[14px]" />
+                      )}
+                      <Icon size={14} aria-hidden="true" />
+                      {on ? `Hide ${label}` : `Show ${label}`}
+                    </button>
+                  )
+                })}
+              </>
+            )}
 
             {/* Seat-label style picker — Wave 15C. Lives inside the View
                 menu alongside grid / dimensions because it's a view

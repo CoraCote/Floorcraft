@@ -21,6 +21,12 @@ import {
   Slash,
   ArrowRight,
   Circle,
+  Wifi,
+  Tv,
+  ShieldCheck,
+  Plug,
+  Network,
+  Video,
   AlignHorizontalJustifyStart,
   AlignHorizontalJustifyCenter,
   AlignHorizontalJustifyEnd,
@@ -67,6 +73,12 @@ import {
   isRectShapeElement,
   isEllipseElement,
   isCustomSvgElement,
+  isAccessPointElement,
+  isNetworkJackElement,
+  isDisplayElement,
+  isVideoBarElement,
+  isBadgeReaderElement,
+  isOutletElement,
   WALL_TYPES,
 } from '../../../types/elements'
 import { computeSeatPositions } from '../../../lib/seatLayout'
@@ -83,6 +95,12 @@ import type {
   WindowElement,
   FreeTextElement,
   WallType,
+  AccessPointElement,
+  NetworkJackElement,
+  DisplayElement,
+  VideoBarElement,
+  BadgeReaderElement,
+  OutletElement,
 } from '../../../types/elements'
 import { SEAT_STATUS_OVERRIDES, type SeatStatus } from '../../../types/seatAssignment'
 
@@ -298,6 +316,15 @@ function getElementIdentity(el: CanvasElement): {
   if (el.type === 'whiteboard') return { Icon: Pencil, typeLabel: 'Whiteboard', subtitle: el.label || null }
   if (el.type === 'phone-booth') return { Icon: Box, typeLabel: 'Phone booth', subtitle: el.label || null }
   if (el.type === 'background-image') return { Icon: ImageIcon, typeLabel: 'Background image', subtitle: el.label || null }
+  // IT/AV/Network/Power layer (M2). Subtitle prefers `model`/`jackId` etc.
+  // — the most user-actionable identifier per type — falling back to the
+  // generic label so a freshly-dropped device still shows something.
+  if (isAccessPointElement(el)) return { Icon: Wifi, typeLabel: 'Access point', subtitle: el.model || el.label || null }
+  if (isNetworkJackElement(el)) return { Icon: Network, typeLabel: 'Network jack', subtitle: el.jackId || el.label || null }
+  if (isDisplayElement(el)) return { Icon: Tv, typeLabel: 'Display', subtitle: el.model || el.label || null }
+  if (isVideoBarElement(el)) return { Icon: Video, typeLabel: 'Video bar', subtitle: el.model || el.label || null }
+  if (isBadgeReaderElement(el)) return { Icon: ShieldCheck, typeLabel: 'Badge reader', subtitle: el.controlsDoorLabel || el.label || null }
+  if (isOutletElement(el)) return { Icon: Plug, typeLabel: 'Outlet', subtitle: el.circuit || el.label || null }
   return { Icon: LayoutGrid, typeLabel: 'Element', subtitle: el.label || null }
 }
 
@@ -471,6 +498,175 @@ function SeatStatusOverridePicker({
         <option value="">None (derive from assignment)</option>
         {SEAT_STATUS_OVERRIDES.map((s) => (
           <option key={s} value={s}>{s}</option>
+        ))}
+      </select>
+    </div>
+  )
+}
+
+/**
+ * IT device — generic text field.
+ *
+ * Why a wrapper rather than inlining six near-identical `<input>`s per
+ * device type: the IT-device family has a wide field surface (model,
+ * serial, MAC, IP, vendor, jackId, switch port, …) and every field is a
+ * trim-on-blur, persist-null-on-empty text input. Centralising that
+ * "type-as-you-go but only commit on blur" idiom in one component keeps
+ * the per-device sections readable and stops a "did this field commit
+ * empty as null or empty-string?" drift between sibling inputs.
+ *
+ * Persistence policy: an empty string saves as `null`, mirroring the
+ * `field?: string | null` shape of every IT-device interface (see
+ * `types/elements.ts`). This matters for autosave round-trips and the
+ * future CSV export — `null` reads as "not set", `""` reads as "set to
+ * the empty string", which would be a different signal in a report.
+ *
+ * `field` is the keyof-targeted string field on the device. We keep it
+ * loose (`string`) rather than narrowing per-component because each
+ * device type has a different set of fields and a discriminated-union
+ * type would force a generic that doesn't carry its weight here — every
+ * call site picks the right field name explicitly.
+ */
+type ITDeviceWithStringFields =
+  | AccessPointElement
+  | NetworkJackElement
+  | DisplayElement
+  | VideoBarElement
+  | BadgeReaderElement
+  | OutletElement
+
+function ITDeviceTextField({
+  label,
+  elementId,
+  value,
+  field,
+  placeholder,
+  disabled,
+}: {
+  label: string
+  elementId: string
+  value: string | null | undefined
+  field: string
+  placeholder?: string
+  disabled?: boolean
+}) {
+  const updateElement = useElementsStore((s) => s.updateElement)
+  // Local draft state so the user can type freely; we only commit on
+  // blur. Tracking prior props lets us reset the draft when the store
+  // changes out from under us (undo/redo, selection swap), matching
+  // the established `DeskIdInput` idiom above. Avoids the
+  // setState-in-effect anti-pattern the linter flags.
+  const [draft, setDraft] = useState(value ?? '')
+  const [prevValue, setPrevValue] = useState<string | null | undefined>(value)
+  const [prevElementId, setPrevElementId] = useState(elementId)
+  if (prevValue !== value || prevElementId !== elementId) {
+    setPrevValue(value)
+    setPrevElementId(elementId)
+    setDraft(value ?? '')
+  }
+
+  return (
+    <div>
+      <label className={LABEL_CLASS}>{label}</label>
+      <input
+        className={INPUT_CLASS}
+        value={draft}
+        placeholder={placeholder}
+        disabled={disabled}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => {
+          const trimmed = draft.trim()
+          // Empty string → null so the persisted shape matches the
+          // `field?: string | null` type (see rationale above).
+          const next = trimmed === '' ? null : trimmed
+          if (next !== (value ?? null)) {
+            updateElement(elementId, { [field]: next } as unknown as Partial<ITDeviceWithStringFields>)
+          }
+        }}
+      />
+    </div>
+  )
+}
+
+/**
+ * IT device — install-date field. Native `<input type="date">` so the
+ * user gets the platform's calendar picker; the stored value is always
+ * an ISO yyyy-mm-dd string (or null when cleared) so it sorts
+ * lexicographically and round-trips through CSV cleanly.
+ */
+function ITDeviceDateField({
+  elementId,
+  value,
+  disabled,
+}: {
+  elementId: string
+  value: string | null | undefined
+  disabled?: boolean
+}) {
+  const updateElement = useElementsStore((s) => s.updateElement)
+  return (
+    <div>
+      <label className={LABEL_CLASS}>Install date</label>
+      <input
+        type="date"
+        className={INPUT_CLASS}
+        value={value ?? ''}
+        disabled={disabled}
+        onChange={(e) =>
+          updateElement(elementId, {
+            installDate: e.target.value === '' ? null : e.target.value,
+          } as Partial<ITDeviceWithStringFields>)
+        }
+      />
+    </div>
+  )
+}
+
+/**
+ * IT device — operational-status select. Five canonical states match
+ * the `deviceStatus` literal union on every IT-device interface. The
+ * select commits immediately on change because there's no "draft" mode
+ * that makes sense for an enum.
+ */
+const IT_DEVICE_STATUSES = [
+  { value: 'planned', label: 'Planned' },
+  { value: 'installed', label: 'Installed' },
+  { value: 'live', label: 'Live' },
+  { value: 'decommissioned', label: 'Decommissioned' },
+  { value: 'broken', label: 'Broken' },
+] as const
+
+type ITDeviceStatus = (typeof IT_DEVICE_STATUSES)[number]['value']
+
+function ITDeviceStatusField({
+  elementId,
+  value,
+  disabled,
+}: {
+  elementId: string
+  value: ITDeviceStatus | null | undefined
+  disabled?: boolean
+}) {
+  const updateElement = useElementsStore((s) => s.updateElement)
+  return (
+    <div>
+      <label className={LABEL_CLASS}>Status</label>
+      <select
+        aria-label="Status"
+        className={INPUT_CLASS}
+        value={value ?? ''}
+        disabled={disabled}
+        onChange={(e) =>
+          updateElement(elementId, {
+            deviceStatus: (e.target.value || null) as ITDeviceStatus | null,
+          } as Partial<ITDeviceWithStringFields>)
+        }
+      >
+        <option value="">—</option>
+        {IT_DEVICE_STATUSES.map((s) => (
+          <option key={s.value} value={s.value}>
+            {s.label}
+          </option>
         ))}
       </select>
     </div>
@@ -1681,6 +1877,179 @@ export function PropertiesPanel() {
               onChange={(e) => update({ areaName: e.target.value } as Partial<CommonAreaElement>)}
             />
           </div>
+        </Section>
+      )}
+
+      {/* IT/AV/Network/Power layer (M2).
+          Each device type renders its own section in the type-specific
+          slot of the standardised layout. The Identity / Layout /
+          Appearance / Actions wrappers are shared with every other
+          element type — only the fields between them vary. Field
+          ordering is intentional: physical-identity (model, serial,
+          MAC, IP, vendor) → operational (install date, status). The
+          status select uses the same five options for every device so
+          a future "show all broken devices" report has a single
+          discriminant to filter on. */}
+      {isAccessPointElement(el) && (
+        <Section title="Access point" subtitle="Network device">
+          <ITDeviceTextField label="Model" elementId={el.id} value={el.model} field="model" disabled={lockedDisabled} />
+          <ITDeviceTextField label="Serial number" elementId={el.id} value={el.serialNumber} field="serialNumber" disabled={lockedDisabled} />
+          <ITDeviceTextField label="MAC address" elementId={el.id} value={el.macAddress} field="macAddress" placeholder="aa:bb:cc:dd:ee:ff" disabled={lockedDisabled} />
+          <ITDeviceTextField label="IP address" elementId={el.id} value={el.ipAddress} field="ipAddress" placeholder="10.0.0.1" disabled={lockedDisabled} />
+          <ITDeviceTextField label="Vendor" elementId={el.id} value={el.vendor} field="vendor" disabled={lockedDisabled} />
+          <ITDeviceDateField elementId={el.id} value={el.installDate} disabled={lockedDisabled} />
+          <ITDeviceStatusField elementId={el.id} value={el.deviceStatus} disabled={lockedDisabled} />
+        </Section>
+      )}
+
+      {isNetworkJackElement(el) && (
+        <Section title="Network jack" subtitle="Network device">
+          <ITDeviceTextField label="Jack ID" elementId={el.id} value={el.jackId} field="jackId" placeholder="J-101" disabled={lockedDisabled} />
+          <div>
+            <label className={LABEL_CLASS}>Cable category</label>
+            <select
+              aria-label="Cable category"
+              className={INPUT_CLASS}
+              value={el.cableCategory ?? ''}
+              disabled={lockedDisabled}
+              onChange={(e) =>
+                update({ cableCategory: (e.target.value || null) as NetworkJackElement['cableCategory'] } as Partial<NetworkJackElement>)
+              }
+            >
+              <option value="">—</option>
+              <option value="cat5e">Cat5e</option>
+              <option value="cat6">Cat6</option>
+              <option value="cat6a">Cat6a</option>
+              <option value="cat7">Cat7</option>
+              <option value="fiber">Fiber</option>
+            </select>
+          </div>
+          <ITDeviceTextField label="Upstream switch" elementId={el.id} value={el.upstreamSwitchLabel} field="upstreamSwitchLabel" placeholder="Switch-1F-A" disabled={lockedDisabled} />
+          <ITDeviceTextField label="Switch port" elementId={el.id} value={el.upstreamSwitchPort} field="upstreamSwitchPort" placeholder="Gi1/0/12" disabled={lockedDisabled} />
+          <ITDeviceTextField label="Serial number" elementId={el.id} value={el.serialNumber} field="serialNumber" disabled={lockedDisabled} />
+          <ITDeviceDateField elementId={el.id} value={el.installDate} disabled={lockedDisabled} />
+          <ITDeviceStatusField elementId={el.id} value={el.deviceStatus} disabled={lockedDisabled} />
+        </Section>
+      )}
+
+      {isDisplayElement(el) && (
+        <Section title="Display" subtitle="AV device">
+          <ITDeviceTextField label="Model" elementId={el.id} value={el.model} field="model" disabled={lockedDisabled} />
+          <ITDeviceTextField label="Serial number" elementId={el.id} value={el.serialNumber} field="serialNumber" disabled={lockedDisabled} />
+          <ITDeviceTextField label="IP address" elementId={el.id} value={el.ipAddress} field="ipAddress" placeholder="10.0.0.1" disabled={lockedDisabled} />
+          <ITDeviceTextField label="Vendor" elementId={el.id} value={el.vendor} field="vendor" disabled={lockedDisabled} />
+          <div>
+            <label className={LABEL_CLASS}>Screen size (in)</label>
+            <input
+              type="number"
+              min={10}
+              max={120}
+              step={1}
+              className={`${INPUT_CLASS} tabular-nums`}
+              value={el.screenSizeInches ?? ''}
+              disabled={lockedDisabled}
+              onChange={(e) => {
+                const raw = e.target.value
+                const num = raw === '' ? null : Number(raw)
+                update({
+                  screenSizeInches: num === null || Number.isNaN(num) ? null : num,
+                } as Partial<DisplayElement>)
+              }}
+            />
+          </div>
+          <ITDeviceTextField label="Connected device" elementId={el.id} value={el.connectedDevice} field="connectedDevice" placeholder="MTR Logitech Rally" disabled={lockedDisabled} />
+          <ITDeviceDateField elementId={el.id} value={el.installDate} disabled={lockedDisabled} />
+          <ITDeviceStatusField elementId={el.id} value={el.deviceStatus} disabled={lockedDisabled} />
+        </Section>
+      )}
+
+      {isVideoBarElement(el) && (
+        <Section title="Video bar" subtitle="AV device">
+          <ITDeviceTextField label="Model" elementId={el.id} value={el.model} field="model" disabled={lockedDisabled} />
+          <ITDeviceTextField label="Serial number" elementId={el.id} value={el.serialNumber} field="serialNumber" disabled={lockedDisabled} />
+          <ITDeviceTextField label="MAC address" elementId={el.id} value={el.macAddress} field="macAddress" placeholder="aa:bb:cc:dd:ee:ff" disabled={lockedDisabled} />
+          <ITDeviceTextField label="IP address" elementId={el.id} value={el.ipAddress} field="ipAddress" placeholder="10.0.0.1" disabled={lockedDisabled} />
+          <ITDeviceTextField label="Vendor" elementId={el.id} value={el.vendor} field="vendor" disabled={lockedDisabled} />
+          <div>
+            <label className={LABEL_CLASS}>Platform</label>
+            <select
+              aria-label="Platform"
+              className={INPUT_CLASS}
+              value={el.platform ?? ''}
+              disabled={lockedDisabled}
+              onChange={(e) =>
+                update({ platform: (e.target.value || null) as VideoBarElement['platform'] } as Partial<VideoBarElement>)
+              }
+            >
+              <option value="">—</option>
+              <option value="teams">Microsoft Teams</option>
+              <option value="zoom">Zoom</option>
+              <option value="meet">Google Meet</option>
+              <option value="webex">Webex</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <ITDeviceDateField elementId={el.id} value={el.installDate} disabled={lockedDisabled} />
+          <ITDeviceStatusField elementId={el.id} value={el.deviceStatus} disabled={lockedDisabled} />
+        </Section>
+      )}
+
+      {isBadgeReaderElement(el) && (
+        <Section title="Badge reader" subtitle="Security device">
+          <ITDeviceTextField label="Model" elementId={el.id} value={el.model} field="model" disabled={lockedDisabled} />
+          <ITDeviceTextField label="Serial number" elementId={el.id} value={el.serialNumber} field="serialNumber" disabled={lockedDisabled} />
+          <ITDeviceTextField label="IP address" elementId={el.id} value={el.ipAddress} field="ipAddress" placeholder="10.0.0.1" disabled={lockedDisabled} />
+          <ITDeviceTextField label="Vendor" elementId={el.id} value={el.vendor} field="vendor" disabled={lockedDisabled} />
+          <ITDeviceTextField label="Controls door" elementId={el.id} value={el.controlsDoorLabel} field="controlsDoorLabel" placeholder="Main entrance" disabled={lockedDisabled} />
+          <ITDeviceDateField elementId={el.id} value={el.installDate} disabled={lockedDisabled} />
+          <ITDeviceStatusField elementId={el.id} value={el.deviceStatus} disabled={lockedDisabled} />
+        </Section>
+      )}
+
+      {isOutletElement(el) && (
+        <Section title="Outlet" subtitle="Power device">
+          <div>
+            <label className={LABEL_CLASS}>Outlet type</label>
+            <select
+              aria-label="Outlet type"
+              className={INPUT_CLASS}
+              value={el.outletType ?? ''}
+              disabled={lockedDisabled}
+              onChange={(e) =>
+                update({ outletType: (e.target.value || null) as OutletElement['outletType'] } as Partial<OutletElement>)
+              }
+            >
+              <option value="">—</option>
+              <option value="duplex">Duplex</option>
+              <option value="quad">Quad</option>
+              <option value="usb-combo">USB combo</option>
+              <option value="floor-box">Floor box</option>
+              <option value="poke-through">Poke-through</option>
+              <option value="l5-20">L5-20 (20A)</option>
+            </select>
+          </div>
+          <div>
+            <label className={LABEL_CLASS}>Voltage (V)</label>
+            <input
+              type="number"
+              min={0}
+              max={600}
+              step={1}
+              className={`${INPUT_CLASS} tabular-nums`}
+              value={el.voltage ?? ''}
+              disabled={lockedDisabled}
+              onChange={(e) => {
+                const raw = e.target.value
+                const num = raw === '' ? null : Number(raw)
+                update({
+                  voltage: num === null || Number.isNaN(num) ? null : num,
+                } as Partial<OutletElement>)
+              }}
+            />
+          </div>
+          <ITDeviceTextField label="Circuit" elementId={el.id} value={el.circuit} field="circuit" placeholder="Panel A · Breaker 12" disabled={lockedDisabled} />
+          <ITDeviceDateField elementId={el.id} value={el.installDate} disabled={lockedDisabled} />
+          <ITDeviceStatusField elementId={el.id} value={el.deviceStatus} disabled={lockedDisabled} />
         </Section>
       )}
 

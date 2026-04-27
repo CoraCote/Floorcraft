@@ -79,6 +79,21 @@ export function categoryForElement(el: CanvasElement): LayerCategory {
     case 'whiteboard':
       return 'furniture'
 
+    // IT/AV/Network/Power infrastructure (M2). These six element types
+    // are non-assignable physical devices that ride on top of the floor
+    // plan rather than belonging to walls, seating, or decor. They
+    // collapse into a single `'it-device'` category at the LayerVisibility
+    // grain so the user has one toggle for "hide all infrastructure";
+    // the per-sub-layer (network/av/security/power) refinement lives on
+    // `useITLayerStore` and is surfaced through the View menu instead.
+    case 'access-point':
+    case 'network-jack':
+    case 'display':
+    case 'video-bar':
+    case 'badge-reader':
+    case 'outlet':
+      return 'it-device'
+
     default:
       // Unknown / future element types land here. Returning 'furniture'
       // keeps them visible under the most general toggle rather than

@@ -61,19 +61,17 @@ const EXPECTED: Record<ElementType, LayerCategory> = {
   plant: 'furniture',
   printer: 'furniture',
   whiteboard: 'furniture',
-  // IT/AV/Network/Power layer (M1) — currently fall through the
-  // `default` branch in `categoryForElement` to 'furniture' so they're
-  // visible under the existing furniture toggle. M2 will introduce
-  // dedicated `viewITLayer` / per-sub-layer toggles; until then
-  // 'furniture' keeps these elements visible-by-default for legacy
-  // offices that don't have any IT devices yet (no behaviour change)
-  // and visible-but-grouped-with-decor for offices that do.
-  'access-point': 'furniture',
-  'network-jack': 'furniture',
-  display: 'furniture',
-  'video-bar': 'furniture',
-  'badge-reader': 'furniture',
-  outlet: 'furniture',
+  // IT/AV/Network/Power layer (M2) — promoted into a dedicated
+  // `'it-device'` category so the LayerVisibilityPanel can group them
+  // separately from furniture, the View menu can hide entire sub-layers
+  // (network/av/security/power) via `useITLayerStore`, and the future
+  // Devices panel (M3) has a single discriminant to filter on.
+  'access-point': 'it-device',
+  'network-jack': 'it-device',
+  display: 'it-device',
+  'video-bar': 'it-device',
+  'badge-reader': 'it-device',
+  outlet: 'it-device',
 }
 
 describe('categoryForElement', () => {

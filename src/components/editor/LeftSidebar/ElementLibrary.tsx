@@ -39,7 +39,14 @@ import type {
   DecorElement,
   DecorShape,
   CustomSvgElement,
+  AccessPointElement,
+  NetworkJackElement,
+  DisplayElement,
+  VideoBarElement,
+  BadgeReaderElement,
+  OutletElement,
 } from '../../../types/elements'
+import { IT_DEVICE_TYPES } from '../../../types/elements'
 import { useElementsStore } from '../../../stores/elementsStore'
 import { useCanvasStore } from '../../../stores/canvasStore'
 import { useCan } from '../../../hooks/useCan'
@@ -109,6 +116,16 @@ const TILE_DESCRIPTIONS: Record<string, string> = {
   whiteboard: 'Whiteboard footprint.',
   'custom-shape': 'Generic custom outline — resize freely.',
   'text-label': 'Free-form text label.',
+  // IT/AV/Network/Power layer (M2). Tooltip copy doubles as the
+  // "what is this and why would I drop it on the floor" hint, so the
+  // descriptions lean concrete: name the device class + the most common
+  // form factor, not a vague "infrastructure" gloss.
+  'access-point': 'Wireless access point — wifi coverage device.',
+  'network-jack': 'Network jack / wall outlet for an Ethernet drop.',
+  display: 'Wall-mounted display, monitor, or TV.',
+  'video-bar': 'Conference video bar (camera + mic + speaker).',
+  'badge-reader': 'Door access / badge reader.',
+  outlet: 'Power receptacle (single or duplex outlet, USB combo, floor box).',
 }
 
 /** Same key shape as the recents helper so descriptions follow shape variants. */
@@ -163,10 +180,31 @@ const LIBRARY_ITEMS: LibraryItem[] = [
   { type: 'printer',           label: 'Printer',         category: 'Furniture' },
   { type: 'whiteboard',        label: 'Whiteboard',      category: 'Furniture' },
 
+  // IT / Infrastructure (M2). Six tiles for the new IT-device family
+  // shipped in M1. Sentence-case labels match the user-facing copy in
+  // tooltips and the View-menu toggles for consistency. Single category
+  // (rather than four sub-categories per logical layer) because the
+  // family is small enough that a flat group reads cleaner — the
+  // sub-layer is exposed at the View-menu level instead.
+  { type: 'access-point',      label: 'Access point',    category: 'IT / Infrastructure' },
+  { type: 'network-jack',      label: 'Network jack',    category: 'IT / Infrastructure' },
+  { type: 'display',           label: 'Display',         category: 'IT / Infrastructure' },
+  { type: 'video-bar',         label: 'Video bar',       category: 'IT / Infrastructure' },
+  { type: 'badge-reader',      label: 'Badge reader',    category: 'IT / Infrastructure' },
+  { type: 'outlet',            label: 'Outlet',          category: 'IT / Infrastructure' },
+
   // Other
   { type: 'custom-shape',      label: 'Custom Shape',    category: 'Other' },
   { type: 'text-label',        label: 'Text Label',      category: 'Other' },
 ]
+
+/**
+ * Set of IT-device types — used to filter library items when the viewer
+ * lacks the `viewITLayer` permission so the tiles disappear cleanly.
+ * Built from the canonical M1 tuple so adding a new device type only
+ * requires editing `IT_DEVICE_TYPES` in `types/elements.ts`.
+ */
+const IT_DEVICE_TYPE_SET = new Set<ElementType>(IT_DEVICE_TYPES)
 
 function isTableType(type: ElementType): type is TableType {
   return type === 'table-rect' || type === 'table-conference' || type === 'table-round' || type === 'table-oval'
@@ -181,6 +219,15 @@ type AnyLibraryElement =
   | PhoneBoothElement
   | CommonAreaElement
   | DecorElement
+  // IT/AV/Network/Power layer (M2). Each lands in `addElement` as its
+  // own discriminated-union member so `ElementRenderer` can dispatch to
+  // the renderer the M1 wave shipped without an extra cast.
+  | AccessPointElement
+  | NetworkJackElement
+  | DisplayElement
+  | VideoBarElement
+  | BadgeReaderElement
+  | OutletElement
   | BaseElement
 
 /**
@@ -325,6 +372,36 @@ export function buildLibraryElement(
       type: 'custom-svg',
       svgSource: item.svgSource,
     }
+    return el
+  }
+
+  // IT/AV/Network/Power layer (M2). Each device starts blank — no model,
+  // no serial, status-undefined — because the M3 Devices panel + the
+  // properties form are where users fill in the real metadata. Returning
+  // a typed shell here keeps the discriminated union honest at construct
+  // time so `ElementRenderer` doesn't need a defensive runtime check.
+  if (item.type === 'access-point') {
+    const el: AccessPointElement = { ...baseProps, type: 'access-point' }
+    return el
+  }
+  if (item.type === 'network-jack') {
+    const el: NetworkJackElement = { ...baseProps, type: 'network-jack' }
+    return el
+  }
+  if (item.type === 'display') {
+    const el: DisplayElement = { ...baseProps, type: 'display' }
+    return el
+  }
+  if (item.type === 'video-bar') {
+    const el: VideoBarElement = { ...baseProps, type: 'video-bar' }
+    return el
+  }
+  if (item.type === 'badge-reader') {
+    const el: BadgeReaderElement = { ...baseProps, type: 'badge-reader' }
+    return el
+  }
+  if (item.type === 'outlet') {
+    const el: OutletElement = { ...baseProps, type: 'outlet' }
     return el
   }
 
@@ -593,6 +670,11 @@ export function ElementLibrary() {
   // happy (`useCan('a') || useCan('b')` would short-circuit).
   const canEditRosterForAnnotations = useCan('editRoster')
   const canAnnotate = canEdit || canEditRosterForAnnotations
+  // M2: IT-device tiles only appear for users who have `viewITLayer`.
+  // The canvas-level renderer ALSO gates on this permission, but
+  // hiding the tiles up here is the defensive primary surface — a
+  // user without permission shouldn't see an affordance they can drag.
+  const canViewITLayer = useCan('viewITLayer')
   const activeTool = useCanvasStore((s) => s.activeTool)
   const setActiveTool = useCanvasStore((s) => s.setActiveTool)
   const addElement = useElementsStore((s) => s.addElement)
@@ -799,9 +881,22 @@ export function ElementLibrary() {
       target.addEventListener('dragend', onEnd)
     }
 
+  // IT-device tiles fold out of the library entirely when the viewer
+  // lacks `viewITLayer`. Computing the visible list here lets every
+  // downstream loop (categories, favorites, search filter) use the
+  // permission-respecting subset without each having to know about the
+  // gate.
+  const visibleLibraryItems = useMemo(
+    () =>
+      canViewITLayer
+        ? LIBRARY_ITEMS
+        : LIBRARY_ITEMS.filter((i) => !IT_DEVICE_TYPE_SET.has(i.type)),
+    [canViewITLayer],
+  )
+
   const categories = useMemo(
-    () => [...new Set(LIBRARY_ITEMS.map((i) => i.category))],
-    [],
+    () => [...new Set(visibleLibraryItems.map((i) => i.category))],
+    [visibleLibraryItems],
   )
 
   // Project each persisted CustomShape into a LibraryItem so it flows through
@@ -840,13 +935,13 @@ export function ElementLibrary() {
   const filtered = useMemo(
     () =>
       isSearching
-        ? [...LIBRARY_ITEMS, ...customShapeItems].filter(matchesQuery)
+        ? [...visibleLibraryItems, ...customShapeItems].filter(matchesQuery)
         : [],
-    [isSearching, customShapeItems, matchesQuery],
+    [isSearching, visibleLibraryItems, customShapeItems, matchesQuery],
   )
   const favoriteItems = useMemo(
-    () => LIBRARY_ITEMS.filter((i) => favoriteSet.has(favoriteKey(i))),
-    [favoriteSet],
+    () => visibleLibraryItems.filter((i) => favoriteSet.has(favoriteKey(i))),
+    [visibleLibraryItems, favoriteSet],
   )
 
   // Viewers can't place anything — the library is inert for them. Hiding
@@ -1029,7 +1124,7 @@ export function ElementLibrary() {
           users see a helpful placard instead of an unexplained blank panel.
           The check covers built-ins + custom shapes; recents are excluded
           (a recents-only library would still be useful). */}
-      {LIBRARY_ITEMS.length === 0 && customShapeItems.length === 0 ? (
+      {visibleLibraryItems.length === 0 && customShapeItems.length === 0 ? (
         <div
           role="status"
           className="flex flex-col items-center gap-2 py-8 px-3 text-xs text-gray-500 dark:text-gray-400 rounded-md border border-dashed border-gray-200 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-900/40 text-center"
@@ -1087,7 +1182,7 @@ export function ElementLibrary() {
               />
             )}
             {categories.map((cat, idx) => {
-              const matched = LIBRARY_ITEMS.filter(
+              const matched = visibleLibraryItems.filter(
                 (i) => i.category === cat && matchesQuery(i),
               )
               if (matched.length === 0) return null
@@ -1142,7 +1237,7 @@ export function ElementLibrary() {
               key={cat}
               id={cat}
               title={cat}
-              items={LIBRARY_ITEMS.filter((i) => i.category === cat)}
+              items={visibleLibraryItems.filter((i) => i.category === cat)}
               showDivider={idx > 0}
               onClick={handleAddElement}
               onDragStart={handleDragStart}

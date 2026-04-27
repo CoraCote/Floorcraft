@@ -14,6 +14,11 @@ const CATEGORY_LABELS: Record<LayerCategory, string> = {
   rooms: 'Rooms',
   furniture: 'Furniture',
   annotations: 'Annotations',
+  // M2: IT/AV/Network/Power infrastructure devices (APs, jacks, displays,
+  // video bars, badge readers, outlets). Hiding this category collapses
+  // every IT device in one click; finer-grained per-sub-layer toggles
+  // (network/av/security/power) live on the View menu.
+  'it-device': 'Infrastructure',
   neighborhoods: 'Neighborhoods',
 }
 
@@ -52,6 +57,7 @@ export function LayerVisibilityPanel() {
       rooms: 0,
       furniture: 0,
       annotations: 0,
+      'it-device': 0,
       neighborhoods: 0,
     }
     for (const el of Object.values(elements)) {
