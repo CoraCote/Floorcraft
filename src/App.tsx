@@ -120,6 +120,9 @@ const ShareView = lazy(() =>
     default: m.ShareView,
   })),
 )
+const NotFoundPage = lazy(() =>
+  import('./components/NotFoundPage').then((m) => ({ default: m.NotFoundPage })),
+)
 
 /**
  * Bridge components that pull `{ team, isAdmin }` from the parent
@@ -252,7 +255,11 @@ function App() {
                 local-only, so there's no server-side lookup possible. */}
             <Route path="/project/*" element={<Navigate to="/dashboard" replace />} />
 
-            <Route path="*" element={<Navigate to="/" replace />} />
+            {/* Wave 18A: a real 404 instead of a silent redirect to /.
+                A typo in the URL used to drop the user on the marketing
+                landing page with no explanation; now they see what
+                happened and have an obvious way back. */}
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Suspense>
         </AuthProvider>

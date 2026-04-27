@@ -4,9 +4,13 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { AuditLogPage } from '../components/admin/AuditLogPage'
 import { useProjectStore } from '../stores/projectStore'
 import * as repo from '../lib/auditRepository'
+import * as teamRepo from '../lib/teams/teamRepository'
 
 vi.mock('../lib/auditRepository', () => ({
   listEvents: vi.fn(),
+}))
+vi.mock('../lib/teams/teamRepository', () => ({
+  listTeamMembers: vi.fn(),
 }))
 
 beforeEach(() => {
@@ -37,6 +41,7 @@ beforeEach(() => {
       created_at: '2026-04-21T11:00:00Z',
     },
   ])
+  vi.mocked(teamRepo.listTeamMembers).mockResolvedValue([])
 })
 
 function mount() {
@@ -52,13 +57,26 @@ function mount() {
 describe('AuditLogPage', () => {
   it('renders events from repository', async () => {
     mount()
-    await waitFor(() => expect(screen.getByText('employee.create')).toBeInTheDocument())
-    expect(screen.getByText('seat.assign')).toBeInTheDocument()
+    // The action label appears both in the table cell pill AND in the
+    // filter <select> options, so we scope to the table to disambiguate.
+    await waitFor(() => {
+      const table = screen.getByRole('table')
+      expect(table).toHaveTextContent('employee.create')
+      expect(table).toHaveTextContent('seat.assign')
+    })
   })
 
   it('hides page for viewer role', async () => {
     useProjectStore.setState({ currentOfficeRole: 'viewer' } as never)
     mount()
     await waitFor(() => expect(screen.getByText(/not authorized/i)).toBeInTheDocument())
+  })
+
+  it('renders the polished page header and subtitle', async () => {
+    mount()
+    expect(
+      await screen.findByRole('heading', { level: 1, name: /audit log/i }),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/last 200 events/i)).toBeInTheDocument()
   })
 })
