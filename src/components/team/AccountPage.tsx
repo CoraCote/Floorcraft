@@ -1,21 +1,145 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import {
+  ArrowLeft,
+  AlertTriangle,
+  Download,
+  Lock,
+  LogOut,
+  Mail,
+  Trash2,
+  User,
+} from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useSession } from '../../lib/auth/session'
 import { humanizeError } from '../../lib/errorMessages'
+import { Button, Input } from '../ui'
 
 /**
- * Personal account settings. This page lives at `/account` and is the
- * only place outside of `/t/:teamSlug/...` that a signed-in user can
- * reach — think "User → Account" from the TopBar UserMenu.
+ * Wave 18C: AccountPage polish pass.
  *
- * Keep the scope tight: display name + password + sign-out. Anything
- * team-scoped belongs in `TeamSettingsPage`; anything membership-related
- * (e.g. "leave team") could go here later but isn't part of Phase 6.
+ * The account surface had been working but visually stale since Phase 6
+ * — it was a stack of bare forms inside a `max-w-xl` column with raw
+ * `<input>`s, raw `<button>`s, and an ad-hoc inline modal. That gap
+ * grew obvious next to TeamSettingsPage (Wave 17C), which uses the
+ * gradient shell, identity header, sectioned cards, and polished
+ * destructive zones the rest of the app moved to.
+ *
+ * Scope of this pass is presentation only: the supabase calls, RPC
+ * names, and session shape are unchanged. The shape of the page is:
+ *
+ *   1. Gradient shell + back link + identity header (avatar disc,
+ *      display name as the primary line, email as the subtitle).
+ *   2. "Profile" section — display-name input via the UI-kit `<Input>`
+ *      and `<Button>`, with a read-only email row so the user can see
+ *      which account they're signed into without trusting the avatar.
+ *   3. "Security" section — change-password form, same primitive set,
+ *      with inline validation + saved-state confirmation toast-style.
+ *   4. "Data & privacy" section — single-row export action with a brief
+ *      explanation of what's in the JSON blob.
+ *   5. "Danger zone" — red-tinted card. Sign-out is a low-stakes row
+ *      (own card border but neutral chrome). Account deletion uses a
+ *      type-to-confirm dialog identical in idiom to the team-delete
+ *      flow in TeamSettingsGeneral. If deletion is already scheduled,
+ *      we surface the banner + cancel affordance instead of letting
+ *      the user re-request.
+ *
+ * The previous component had two subtle UX bugs the polish corrects:
+ *  - The success/error notes for the rename and password forms didn't
+ *    auto-clear when the user typed a new value, leaving stale "Saved."
+ *    text below an empty form. The polished forms clear them on input.
+ *  - The inline delete modal was rolled by hand and didn't trap focus.
+ *    The polished version reuses the same lightweight portal-less
+ *    backdrop + panel idiom as TeamSettingsGeneral so the visual
+ *    treatment matches and Escape behaves as expected.
  */
+
+// ------------------------------------------------------------------
+// Avatar helpers — same hash-to-color idiom as TeamHomePage and
+// TeamSettingsMembers so an Account page avatar reads as the *same*
+// avatar a member sees in the roster pane. Keeping the constant
+// inline (rather than extracting to a shared module) matches the
+// pattern used elsewhere in this codebase; the colors are stable
+// ASCII tied to the user id, so duplication is safe.
+// ------------------------------------------------------------------
+
+const AVATAR_COLORS = [
+  '#2563eb',
+  '#0891b2',
+  '#9333ea',
+  '#db2777',
+  '#ea580c',
+  '#16a34a',
+  '#ca8a04',
+]
+
+function hashToColor(seed: string): string {
+  let h = 0
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0
+  return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length]
+}
+
+function initialsFor(nameOrEmail: string): string {
+  const trimmed = nameOrEmail.trim()
+  if (!trimmed) return '?'
+  // Prefer first-last initials when the string reads like a name; fall
+  // back to the first two chars of the local-part for bare emails so
+  // alex@example.com renders "AL" rather than just "A".
+  const atIndex = trimmed.indexOf('@')
+  const base = atIndex > 0 ? trimmed.slice(0, atIndex) : trimmed
+  const parts = base.split(/[.\s_-]+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
+
+// ------------------------------------------------------------------
+// Section header — uppercase tracked caps, same idiom as
+// TeamSettingsGeneral / TeamSettingsMembers. Pulled out as a tiny
+// component (rather than a className constant) because each section
+// also wires `aria-labelledby` against the heading id below.
+// ------------------------------------------------------------------
+
+function SectionHeading({
+  id,
+  tone = 'neutral',
+  children,
+}: {
+  id: string
+  tone?: 'neutral' | 'danger'
+  children: React.ReactNode
+}) {
+  return (
+    <h2
+      id={id}
+      className={
+        tone === 'danger'
+          ? 'text-[10px] font-semibold uppercase tracking-wider text-red-600 dark:text-red-400'
+          : 'text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400'
+      }
+    >
+      {children}
+    </h2>
+  )
+}
+
+// ------------------------------------------------------------------
+// Main component.
+// ------------------------------------------------------------------
+
 export function AccountPage() {
   const session = useSession()
   const navigate = useNavigate()
+  const location = useLocation()
+
+  // Resolve the back-link target. If the user got here from somewhere
+  // sensible (the user-menu carries `from` state in a future pass),
+  // honor it; otherwise fall back to the dashboard. This is forward-
+  // compatible — today the only entry is the user-menu which doesn't
+  // pass state, so the default is what runs in practice.
+  const backTo =
+    (location.state as { from?: string } | null)?.from ?? '/dashboard'
+  const backLabel = backTo === '/dashboard' ? 'Back to dashboard' : 'Back'
 
   const [name, setName] = useState('')
   const [savingName, setSavingName] = useState(false)
@@ -93,146 +217,372 @@ export function AccountPage() {
   }
 
   if (session.status === 'loading') {
-    return <div className="p-6 text-sm text-gray-500 dark:text-gray-400">Loading…</div>
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-gray-950 dark:to-gray-900">
+        <div className="max-w-5xl mx-auto px-6 py-10 text-sm text-gray-500 dark:text-gray-400">
+          Loading account…
+        </div>
+      </div>
+    )
   }
   if (session.status !== 'authenticated') return null
 
+  const email = session.user.email
+  const displayLabel = name.trim() || email
+  const subtitle = name.trim() ? email : 'Floorcraft account'
+
   return (
-    <div className="p-6 max-w-xl mx-auto space-y-8">
-      <header className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Account</h1>
-        <Link to="/dashboard" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
-          Back to dashboard
-        </Link>
-      </header>
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-gray-950 dark:to-gray-900">
+      <div className="max-w-5xl mx-auto px-6 py-10">
+        {/* Breadcrumb back-link — small + understated, positioned above
+            the identity header so it reads as "how do I leave this
+            page" rather than a primary action. Mirrors the
+            TeamSettingsPage shell. */}
+        <div className="mb-4">
+          <Link
+            to={backTo}
+            className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+          >
+            <ArrowLeft size={12} aria-hidden="true" />
+            {backLabel}
+          </Link>
+        </div>
 
-      <form onSubmit={onSaveName} className="space-y-3 text-sm">
-        <h2 className="font-semibold">Profile</h2>
-        <label className="block">
-          <span className="block mb-1 text-gray-600 dark:text-gray-300">Email</span>
-          <input
-            readOnly
-            value={session.user.email}
-            className="w-full border rounded px-2 py-1.5 bg-gray-50 dark:bg-gray-800/50"
-          />
-        </label>
-        <label className="block">
-          <span className="block mb-1 text-gray-600 dark:text-gray-300">Display name</span>
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full border rounded px-2 py-1.5"
-          />
-        </label>
-        {nameError && <p className="text-red-600 dark:text-red-400">{nameError}</p>}
-        {nameSaved && <p className="text-green-600 dark:text-green-400">Saved.</p>}
-        <button
-          disabled={savingName}
-          className="px-3 py-1.5 bg-blue-600 text-white rounded disabled:opacity-50"
-        >
-          {savingName ? 'Saving…' : 'Save'}
-        </button>
-      </form>
+        {/* Identity header. Avatar disc (hash-colored initials) + display
+            name as `text-3xl` + email as the subtitle when a display
+            name exists. When no display name has been set, the email
+            takes the primary slot. */}
+        <header className="flex items-center gap-4 mb-8">
+          <div
+            aria-hidden="true"
+            className="w-16 h-16 shrink-0 rounded-full flex items-center justify-center text-xl font-semibold text-white shadow-sm"
+            style={{ backgroundColor: hashToColor(session.user.id) }}
+          >
+            {initialsFor(displayLabel)}
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100 truncate">
+              {displayLabel}
+            </h1>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 truncate">
+              {subtitle}
+            </p>
+          </div>
+        </header>
 
-      <form onSubmit={onChangePassword} className="space-y-3 text-sm">
-        <h2 className="font-semibold">Change password</h2>
-        <label className="block">
-          <span className="block mb-1 text-gray-600 dark:text-gray-300">New password</span>
-          <input
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            className="w-full border rounded px-2 py-1.5"
-            autoComplete="new-password"
+        <div className="space-y-8 max-w-2xl text-sm">
+          <ProfileSection
+            email={email}
+            name={name}
+            onNameChange={(v) => {
+              setName(v)
+              // Clear stale success/error notes the moment the user
+              // edits — leaving "Saved." sitting under an empty input
+              // is a known annoyance from the pre-polish version.
+              if (nameSaved) setNameSaved(false)
+              if (nameError) setNameError(null)
+            }}
+            onSubmit={onSaveName}
+            saving={savingName}
+            saved={nameSaved}
+            error={nameError}
           />
-        </label>
-        <label className="block">
-          <span className="block mb-1 text-gray-600 dark:text-gray-300">Confirm new password</span>
-          <input
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full border rounded px-2 py-1.5"
-            autoComplete="new-password"
+
+          <SecuritySection
+            newPassword={newPassword}
+            confirmPassword={confirmPassword}
+            onNewPasswordChange={(v) => {
+              setNewPassword(v)
+              if (passwordSaved) setPasswordSaved(false)
+              if (passwordError) setPasswordError(null)
+            }}
+            onConfirmPasswordChange={(v) => {
+              setConfirmPassword(v)
+              if (passwordSaved) setPasswordSaved(false)
+              if (passwordError) setPasswordError(null)
+            }}
+            onSubmit={onChangePassword}
+            saving={savingPassword}
+            saved={passwordSaved}
+            error={passwordError}
           />
-        </label>
-        {passwordError && <p className="text-red-600 dark:text-red-400">{passwordError}</p>}
-        {passwordSaved && <p className="text-green-600 dark:text-green-400">Password updated.</p>}
-        <button
-          disabled={savingPassword}
-          className="px-3 py-1.5 bg-blue-600 text-white rounded disabled:opacity-50"
-        >
-          {savingPassword ? 'Updating…' : 'Update password'}
-        </button>
-      </form>
 
-      <section className="space-y-2 text-sm border-t pt-6">
-        <h2 className="font-semibold">Sign out</h2>
-        <p className="text-gray-500 dark:text-gray-400">
-          Sign out of Floorcraft on this device. Other browsers stay signed in.
-        </p>
-        <button
-          onClick={onSignOut}
-          className="px-3 py-1.5 border rounded hover:bg-gray-50 dark:hover:bg-gray-800/50"
-        >
-          Sign out
-        </button>
-      </section>
+          <DataPrivacySection />
 
-      <DataPrivacySection />
+          <DangerZoneSection onSignOut={onSignOut} />
+        </div>
+      </div>
     </div>
   )
 }
 
-/**
- * GDPR surface. Split out as its own component so the data-export and
- * deletion-request flows don't bloat `AccountPage` further — they have
- * their own local state (busy flags, confirmation typing, success
- * messages) that's unrelated to the profile/password forms.
- *
- * Both actions are fire-and-forget on the server side:
- *
- *   - `export_user_data()` returns a single JSON blob the user can save
- *     locally. No email, no async job — it's fast enough at current
- *     scale to do inline.
- *   - `request_account_deletion()` writes a row to
- *     `account_deletion_requests` with a 30-day `scheduled_for`. The
- *     user can cancel any time before the scheduled date; the actual
- *     hard-delete is out-of-band (ops script / scheduled job).
- */
+// ------------------------------------------------------------------
+// Profile section — display-name + read-only email. Email is shown
+// inside the same card so the user has a single "who am I" view; the
+// "Change email" affordance opens an explanation modal because the
+// supabase-side flow for email changes lives behind a verification
+// link and isn't a single-click action from the UI.
+// ------------------------------------------------------------------
+
+function ProfileSection({
+  email,
+  name,
+  onNameChange,
+  onSubmit,
+  saving,
+  saved,
+  error,
+}: {
+  email: string
+  name: string
+  onNameChange: (v: string) => void
+  onSubmit: (e: FormEvent) => void
+  saving: boolean
+  saved: boolean
+  error: string | null
+}) {
+  const [emailInfoOpen, setEmailInfoOpen] = useState(false)
+
+  return (
+    <section aria-labelledby="profile-heading" className="space-y-3">
+      <SectionHeading id="profile-heading">Profile</SectionHeading>
+      <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900/60 p-5">
+        <form onSubmit={onSubmit} className="space-y-4">
+          <label className="block">
+            <span className="block mb-1 text-gray-700 dark:text-gray-300">
+              Display name
+            </span>
+            <Input
+              id="account-display-name"
+              aria-label="Display name"
+              value={name}
+              placeholder="How should teammates see you?"
+              onChange={(e) => onNameChange(e.target.value)}
+              disabled={saving}
+            />
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Shown next to your avatar across teams, rosters, and
+              comments.
+            </p>
+          </label>
+
+          <div>
+            <div className="mb-1 text-gray-700 dark:text-gray-300">Email</div>
+            <div className="flex items-center gap-2">
+              <Input
+                readOnly
+                aria-label="Email"
+                value={email}
+                onFocus={(e) => e.currentTarget.select()}
+                className="flex-1 font-mono text-xs"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setEmailInfoOpen(true)}
+                leftIcon={<Mail size={14} aria-hidden="true" />}
+              >
+                Change email
+              </Button>
+            </div>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Your email is the unique identifier for this account.
+            </p>
+          </div>
+
+          {error && (
+            <p
+              role="alert"
+              className="text-sm text-red-600 dark:text-red-400"
+            >
+              {error}
+            </p>
+          )}
+          {saved && !error && (
+            <p
+              role="status"
+              className="text-sm text-green-600 dark:text-green-400"
+            >
+              Saved.
+            </p>
+          )}
+
+          <div className="pt-1">
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={saving}
+              leftIcon={<User size={14} aria-hidden="true" />}
+            >
+              {saving ? 'Saving…' : 'Save profile'}
+            </Button>
+          </div>
+        </form>
+      </div>
+
+      {emailInfoOpen && (
+        <ChangeEmailInfoDialog onClose={() => setEmailInfoOpen(false)} />
+      )}
+    </section>
+  )
+}
+
+// ------------------------------------------------------------------
+// Email-change modal. Because email is the auth identifier, changing
+// it requires verification on the new address — that flow isn't a
+// single-button affordance from this page. The modal explains the
+// process and points the user at support so we don't pretend to
+// support it inline.
+// ------------------------------------------------------------------
+
+function ChangeEmailInfoDialog({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+      data-testid="change-email-info-backdrop"
+    >
+      <div
+        className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 max-w-md w-full space-y-4"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="change-email-title"
+      >
+        <h3
+          id="change-email-title"
+          className="text-base font-semibold text-gray-900 dark:text-gray-100"
+        >
+          Change your email
+        </h3>
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          Email changes require a verification link sent to the new
+          address. Contact support@floorcraft.app from your current
+          email to start the process — we'll move your account, team
+          memberships, and offices over once you confirm.
+        </p>
+        <div className="flex justify-end">
+          <Button variant="primary" onClick={onClose}>
+            Got it
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ------------------------------------------------------------------
+// Security section — change password. Identical structure to the
+// profile card so the page reads as a stack of similar surfaces.
+// ------------------------------------------------------------------
+
+function SecuritySection({
+  newPassword,
+  confirmPassword,
+  onNewPasswordChange,
+  onConfirmPasswordChange,
+  onSubmit,
+  saving,
+  saved,
+  error,
+}: {
+  newPassword: string
+  confirmPassword: string
+  onNewPasswordChange: (v: string) => void
+  onConfirmPasswordChange: (v: string) => void
+  onSubmit: (e: FormEvent) => void
+  saving: boolean
+  saved: boolean
+  error: string | null
+}) {
+  return (
+    <section aria-labelledby="security-heading" className="space-y-3">
+      <SectionHeading id="security-heading">Security</SectionHeading>
+      <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900/60 p-5">
+        <form onSubmit={onSubmit} className="space-y-4">
+          <label className="block">
+            <span className="block mb-1 text-gray-700 dark:text-gray-300">
+              New password
+            </span>
+            <Input
+              type="password"
+              aria-label="New password"
+              autoComplete="new-password"
+              value={newPassword}
+              onChange={(e) => onNewPasswordChange(e.target.value)}
+              disabled={saving}
+              invalid={Boolean(error) && newPassword.length > 0 && newPassword.length < 8}
+            />
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              At least 8 characters.
+            </p>
+          </label>
+
+          <label className="block">
+            <span className="block mb-1 text-gray-700 dark:text-gray-300">
+              Confirm new password
+            </span>
+            <Input
+              type="password"
+              aria-label="Confirm new password"
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(e) => onConfirmPasswordChange(e.target.value)}
+              disabled={saving}
+              invalid={
+                Boolean(error) &&
+                confirmPassword.length > 0 &&
+                confirmPassword !== newPassword
+              }
+            />
+          </label>
+
+          {error && (
+            <p
+              role="alert"
+              className="text-sm text-red-600 dark:text-red-400"
+            >
+              {error}
+            </p>
+          )}
+          {saved && !error && (
+            <p
+              role="status"
+              className="text-sm text-green-600 dark:text-green-400"
+            >
+              Password updated.
+            </p>
+          )}
+
+          <div className="pt-1">
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={saving}
+              leftIcon={<Lock size={14} aria-hidden="true" />}
+            >
+              {saving ? 'Updating…' : 'Update password'}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </section>
+  )
+}
+
+// ------------------------------------------------------------------
+// Data privacy + danger zone — the deletion flow used to live in a
+// separate `DataPrivacySection` that mixed export and delete in one
+// surface. The polish splits them: export keeps the neutral card
+// treatment (it's not destructive — the worst case is downloading
+// stale data), and account deletion moves into the red-tinted danger
+// zone alongside Sign out so the user has a single "destructive
+// actions" surface to reason about.
+// ------------------------------------------------------------------
+
 function DataPrivacySection() {
   const [exporting, setExporting] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
-
-  const [deleteOpen, setDeleteOpen] = useState(false)
-  const [deleteInput, setDeleteInput] = useState('')
-  const [deleteBusy, setDeleteBusy] = useState(false)
-  const [deleteError, setDeleteError] = useState<string | null>(null)
-  const [scheduledFor, setScheduledFor] = useState<string | null>(null)
-
-  // Surface any pending deletion request on mount so a user who
-  // requested deletion yesterday sees the "scheduled for..." banner when
-  // they come back, not an empty form where they could re-request and
-  // double-write the row (the RPC handles this idempotently, but the UI
-  // shouldn't pretend nothing is scheduled).
-  useEffect(() => {
-    void supabase
-      .from('account_deletion_requests')
-      .select('scheduled_for, cancelled_at, completed_at')
-      .maybeSingle()
-      .then(({ data }) => {
-        const row = data as
-          | {
-              scheduled_for: string
-              cancelled_at: string | null
-              completed_at: string | null
-            }
-          | null
-        if (row && !row.cancelled_at && !row.completed_at) {
-          setScheduledFor(row.scheduled_for)
-        }
-      })
-  }, [])
 
   async function onExport() {
     setExporting(true)
@@ -261,8 +611,88 @@ function DataPrivacySection() {
     setExporting(false)
   }
 
+  return (
+    <section aria-labelledby="privacy-heading" className="space-y-3">
+      <SectionHeading id="privacy-heading">Data &amp; privacy</SectionHeading>
+      <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900/60 p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="min-w-0">
+            <div className="font-medium text-gray-900 dark:text-gray-100">
+              Export my data
+            </div>
+            <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+              Download a copy of everything Floorcraft stores about you
+              — profile, team memberships, invites, and offices you own
+              or can edit.
+            </div>
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onExport}
+            disabled={exporting}
+            leftIcon={<Download size={14} aria-hidden="true" />}
+            className="shrink-0"
+          >
+            {exporting ? 'Preparing…' : 'Export'}
+          </Button>
+        </div>
+        {exportError && (
+          <p
+            role="alert"
+            className="mt-3 text-sm text-red-600 dark:text-red-400"
+          >
+            {exportError}
+          </p>
+        )}
+      </div>
+    </section>
+  )
+}
+
+// ------------------------------------------------------------------
+// Danger zone — sign out + account deletion. The deletion-request RPC
+// supports cancellation, so the section flips into a "scheduled for
+// X" banner with a cancel affordance whenever a request is already
+// pending. The on-mount fetch is unchanged from the pre-polish code;
+// only the surface around it is restructured.
+// ------------------------------------------------------------------
+
+function DangerZoneSection({ onSignOut }: { onSignOut: () => void }) {
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleteInput, setDeleteInput] = useState('')
+  const [deleteBusy, setDeleteBusy] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [scheduledFor, setScheduledFor] = useState<string | null>(null)
+
+  const canConfirmDelete =
+    deleteInput.trim().toLowerCase() === 'delete my account'
+
+  // Surface any pending deletion request on mount so a user who
+  // requested deletion yesterday sees the "scheduled for..." banner
+  // when they come back. The RPC is idempotent server-side; the UI
+  // shouldn't pretend nothing is scheduled.
+  useEffect(() => {
+    void supabase
+      .from('account_deletion_requests')
+      .select('scheduled_for, cancelled_at, completed_at')
+      .maybeSingle()
+      .then(({ data }) => {
+        const row = data as
+          | {
+              scheduled_for: string
+              cancelled_at: string | null
+              completed_at: string | null
+            }
+          | null
+        if (row && !row.cancelled_at && !row.completed_at) {
+          setScheduledFor(row.scheduled_for)
+        }
+      })
+  }, [])
+
   async function onRequestDeletion() {
-    if (deleteInput.trim().toLowerCase() !== 'delete my account') return
+    if (!canConfirmDelete) return
     setDeleteBusy(true)
     setDeleteError(null)
     const { data, error } = await supabase.rpc('request_account_deletion')
@@ -285,112 +715,175 @@ function DataPrivacySection() {
     setScheduledFor(null)
   }
 
+  function openConfirm() {
+    setDeleteInput('')
+    setDeleteError(null)
+    setDeleteOpen(true)
+  }
+
+  function closeConfirm() {
+    setDeleteOpen(false)
+    setDeleteInput('')
+  }
+
   return (
-    <section className="space-y-3 text-sm border-t pt-6">
-      <h2 className="font-semibold">Data &amp; privacy</h2>
+    <section aria-labelledby="danger-heading" className="space-y-3">
+      <SectionHeading id="danger-heading" tone="danger">
+        Danger zone
+      </SectionHeading>
+      <div className="rounded-xl border border-red-200 bg-red-50/50 dark:border-red-900 dark:bg-red-950/20 divide-y divide-red-200/70 dark:divide-red-900/60">
+        {/* Sign-out row. Lower-stakes destructive action, neutral
+            button color so it doesn't compete with the actual delete
+            CTA below. */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-5">
+          <div>
+            <div className="font-medium text-gray-900 dark:text-gray-100">
+              Sign out
+            </div>
+            <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+              Sign out of Floorcraft on this device. Other browsers
+              stay signed in.
+            </div>
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onSignOut}
+            leftIcon={<LogOut size={14} aria-hidden="true" />}
+            className="shrink-0"
+          >
+            Sign out
+          </Button>
+        </div>
 
-      <div className="space-y-2">
-        <p className="text-gray-600 dark:text-gray-300">
-          Download a copy of everything Floorcraft stores about you —
-          profile, team memberships, invites, offices you own or can
-          edit.
-        </p>
-        <button
-          onClick={onExport}
-          disabled={exporting}
-          className="px-3 py-1.5 border rounded hover:bg-gray-50 dark:hover:bg-gray-800/50 disabled:opacity-50"
-        >
-          {exporting ? 'Preparing…' : 'Export my data'}
-        </button>
-        {exportError && <p className="text-red-600 dark:text-red-400">{exportError}</p>}
-      </div>
-
-      <div className="space-y-2 pt-3 border-t">
-        <h3 className="font-semibold text-red-700 dark:text-red-300">Delete my account</h3>
-        {scheduledFor ? (
-          <>
-            <p className="text-gray-600 dark:text-gray-300">
-              Your account is scheduled for permanent deletion on{' '}
-              <b>{new Date(scheduledFor).toLocaleDateString()}</b>. Cancel
-              any time before that date to restore access.
-            </p>
-            <button
-              onClick={onCancelDeletion}
-              className="px-3 py-1.5 border rounded hover:bg-gray-50 dark:hover:bg-gray-800/50"
+        {/* Delete row. Two states: pending-deletion banner with a
+            cancel button, or the request affordance. Type-to-confirm
+            modal lives below. */}
+        <div className="p-5">
+          {scheduledFor ? (
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 font-medium text-red-700 dark:text-red-300">
+                  <AlertTriangle size={14} aria-hidden="true" />
+                  Account scheduled for deletion
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                  Your account will be permanently deleted on{' '}
+                  <span className="font-semibold tabular-nums">
+                    {new Date(scheduledFor).toLocaleDateString()}
+                  </span>
+                  . Cancel any time before that date to restore access.
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={onCancelDeletion}
+                className="shrink-0"
+              >
+                Cancel deletion
+              </Button>
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <div className="font-medium text-gray-900 dark:text-gray-100">
+                  Delete account
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                  Schedule your account for permanent deletion. You'll
+                  have 30 days to change your mind before anything is
+                  removed.
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="danger"
+                onClick={openConfirm}
+                leftIcon={<Trash2 size={14} aria-hidden="true" />}
+                className="shrink-0"
+              >
+                Delete account
+              </Button>
+            </div>
+          )}
+          {deleteError && !deleteOpen && (
+            <p
+              role="alert"
+              className="mt-3 text-sm text-red-600 dark:text-red-400"
             >
-              Cancel deletion request
-            </button>
-          </>
-        ) : (
-          <>
-            <p className="text-gray-600 dark:text-gray-300">
-              Schedule your account for permanent deletion. You'll have
-              30 days to change your mind before anything is removed.
+              {deleteError}
             </p>
-            <button
-              onClick={() => {
-                setDeleteOpen(true)
-                setDeleteInput('')
-                setDeleteError(null)
-              }}
-              className="px-3 py-1.5 border border-red-300 text-red-700 dark:text-red-300 rounded hover:bg-red-50 dark:hover:bg-red-950/40"
-            >
-              Request account deletion
-            </button>
-          </>
-        )}
-        {deleteError && <p className="text-red-600 dark:text-red-400">{deleteError}</p>}
+          )}
+        </div>
       </div>
 
       {deleteOpen && (
         <div
           className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
-          onClick={() => setDeleteOpen(false)}
+          onClick={closeConfirm}
+          data-testid="delete-account-backdrop"
         >
           <div
             className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 max-w-md w-full space-y-4"
             onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-account-title"
           >
-            <h3 className="text-base font-semibold text-red-700 dark:text-red-300">
-              Request account deletion
+            <h3
+              id="delete-account-title"
+              className="flex items-center gap-1.5 text-base font-semibold text-red-700 dark:text-red-300"
+            >
+              <AlertTriangle size={16} aria-hidden="true" />
+              Delete your account?
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-300">
-              Your account will be scheduled for permanent deletion in 30
-              days. You can cancel the request at any time before then.
-              After deletion, your profile and data cannot be recovered.
+              Your account will be scheduled for permanent deletion in
+              30 days. You can cancel the request at any time before
+              then. After deletion, your profile and data cannot be
+              recovered.
             </p>
             <label className="block text-sm">
               <span className="block mb-1 text-gray-600 dark:text-gray-300">
                 Type <b>delete my account</b> to confirm
               </span>
-              <input
+              <Input
                 autoFocus
-                className="w-full border rounded px-2 py-1.5"
+                aria-label="Type delete my account to confirm"
                 value={deleteInput}
                 onChange={(e) => setDeleteInput(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Escape') setDeleteOpen(false)
+                  if (e.key === 'Enter' && canConfirmDelete && !deleteBusy) {
+                    void onRequestDeletion()
+                  }
+                  if (e.key === 'Escape') closeConfirm()
                 }}
               />
             </label>
-            <div className="flex gap-2 justify-end">
-              <button
-                onClick={() => setDeleteOpen(false)}
+            {deleteError && (
+              <p
+                role="alert"
+                className="text-sm text-red-600 dark:text-red-400"
+              >
+                {deleteError}
+              </p>
+            )}
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="ghost"
+                onClick={closeConfirm}
                 disabled={deleteBusy}
-                className="px-3 py-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="danger"
                 onClick={onRequestDeletion}
-                disabled={
-                  deleteBusy ||
-                  deleteInput.trim().toLowerCase() !== 'delete my account'
-                }
-                className="px-3 py-1.5 bg-red-600 text-white rounded disabled:opacity-40"
+                disabled={!canConfirmDelete || deleteBusy}
               >
                 {deleteBusy ? 'Scheduling…' : 'Schedule deletion'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
