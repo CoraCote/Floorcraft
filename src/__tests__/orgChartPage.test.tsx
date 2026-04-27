@@ -136,12 +136,15 @@ describe('OrgChartPage', () => {
     renderAtRoute()
     expect(screen.getByText(/No reporting data/i)).toBeTruthy()
     // The empty-state prompt names the managerId field. We check the
-    // surrounding text ("Set … on employees to build…") separately from
-    // the <code>managerId</code> span so the test doesn't depend on the
-    // exact DOM split.
-    expect(screen.getByText(/Set/i)).toBeTruthy()
+    // surrounding text ("Set … to start building the org tree") separately
+    // from the <code>managerId</code> span so the test doesn't depend on
+    // the exact DOM split. Wave 18B refreshed the copy from "on employees
+    // to build this chart" → "on at least one employee in the roster to
+    // start building the org tree."
     expect(screen.getByText('managerId')).toBeTruthy()
-    expect(screen.getByText(/on employees to build this chart/i)).toBeTruthy()
+    expect(
+      screen.getByText(/on at least one employee in the roster to start building the org tree/i),
+    ).toBeTruthy()
   })
 
   it('renders a cycle banner and refuses to draw when a loop is present', () => {
