@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Cloud, CloudOff, RefreshCw, UploadCloud } from 'lucide-react'
+import {
+  Cloud,
+  CloudOff,
+  LayoutDashboard,
+  RefreshCw,
+  UploadCloud,
+} from 'lucide-react'
 import { nanoid } from 'nanoid'
 import { Button } from '../ui'
 import { useCan } from '../../hooks/useCan'
@@ -11,6 +17,11 @@ import {
   type TopologyEdgeType,
   type TopologyNodeType,
 } from '../../types/networkTopology'
+// `nextDefaultPosition` is still used as a fallback when the topology
+// is locked (the user has manually arranged things and we should NOT
+// reshuffle on add). When unlocked, `addNode` itself runs the
+// auto-layout pass so the supplied position is overwritten — but we
+// still need a numerically-sensible default to satisfy the type.
 import { TopologyCanvas } from './networkTopology/TopologyCanvas'
 import { PropertiesPanel } from './networkTopology/PropertiesPanel'
 import { AddNodeDropdown } from './networkTopology/AddNodeDropdown'
@@ -57,7 +68,7 @@ export function NetworkTopologyPage() {
   const setTopology = useNetworkTopologyStore((s) => s.setTopology)
   const addNode = useNetworkTopologyStore((s) => s.addNode)
   const addEdge = useNetworkTopologyStore((s) => s.addEdge)
-  const resetTopology = useNetworkTopologyStore((s) => s.resetTopology)
+  const applyAutoLayout = useNetworkTopologyStore((s) => s.applyAutoLayout)
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [connectionDraft, setConnectionDraft] = useState<ConnectionDraft | null>(null)
@@ -145,17 +156,30 @@ export function NetworkTopologyPage() {
     setConnectionDraft(null)
   }
 
-  const handleReset = () => {
-    if (!officeId) return
-    if (
-      !window.confirm(
-        'Reset the topology? This removes every node and connection — the change saves automatically.',
-      )
-    ) {
-      return
-    }
-    resetTopology(officeId)
-    setSelectedId(null)
+  /**
+   * "Reset layout" — the user's escape hatch from a messy manual
+   * arrangement. Does NOT remove nodes or edges; just runs
+   * `applyAutoLayout`, which clears `layoutLocked` and snaps every
+   * node back to its band-correct position. M6.2 deliberately moved
+   * away from M6.1's destructive "wipe everything" semantics — the
+   * only path to wholesale removal is now the per-node delete in the
+   * Properties panel.
+   */
+  const handleResetLayout = () => {
+    applyAutoLayout()
+  }
+
+  /**
+   * "Auto-arrange" — primary entry point for the layered layout. We
+   * keep it as a separate button (alongside Reset layout) because the
+   * mental model is different: Auto-arrange is "tidy up what I have",
+   * while Reset layout is the same thing PLUS clearing the manual
+   * lock flag. In M6.2 they actually do the same work — `applyAutoLayout`
+   * clears the lock either way — but the UI surfaces both names for
+   * discoverability.
+   */
+  const handleAutoArrange = () => {
+    applyAutoLayout()
   }
 
   return (
@@ -178,13 +202,26 @@ export function NetworkTopologyPage() {
             <AddNodeDropdown onSelect={handleAddNode} variant="primary" />
             <Button
               variant="secondary"
+              leftIcon={<LayoutDashboard size={14} aria-hidden="true" />}
+              onClick={handleAutoArrange}
+              disabled={isEmpty}
+              title={
+                isEmpty
+                  ? 'Nothing to arrange — the topology is empty'
+                  : 'Snap every node to its band-correct position'
+              }
+            >
+              Auto-arrange
+            </Button>
+            <Button
+              variant="secondary"
               leftIcon={<RefreshCw size={14} aria-hidden="true" />}
-              onClick={handleReset}
+              onClick={handleResetLayout}
               disabled={isEmpty}
               title={
                 isEmpty
                   ? 'Nothing to reset — the topology is empty'
-                  : 'Remove every node and connection'
+                  : 'Reset positions back to the layered hierarchy'
               }
             >
               Reset layout

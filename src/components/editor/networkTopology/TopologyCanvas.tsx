@@ -132,6 +132,12 @@ function CanvasInner({ selectedId, onSelectNode, onRequestConnection }: Props) {
       // user fighting pixel drift.
       snapToGrid
       snapGrid={[12, 12]}
+      // M6.2: smoothstep is the default routing for any edge that
+      // doesn't get re-keyed through our custom `topology` renderer.
+      // The custom renderer already uses `getSmoothStepPath`, so this
+      // is belt-and-braces for the brief window between connect and
+      // store-write where react-flow may render with a default style.
+      defaultEdgeOptions={{ type: 'smoothstep' }}
       proOptions={{ hideAttribution: true }}
       colorMode="system"
     >

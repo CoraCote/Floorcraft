@@ -6,6 +6,7 @@ import {
   type TopologyNode,
   createEmptyTopology,
 } from '../types/networkTopology'
+import { layeredLayout } from '../lib/networkTopologyLayout'
 
 /**
  * M6.1 — Network topology store.
@@ -69,6 +70,16 @@ interface NetworkTopologyState {
   // ---- react-flow bulk bridges ----
   applyNodeChanges: (changes: NodeChange[]) => void
   applyEdgeChanges: (changes: EdgeChange[]) => void
+
+  // ---- M6.2 — auto-layout ----
+  /**
+   * Snap every node to its band-correct position via `layeredLayout`
+   * and clear `layoutLocked`. Idempotent — running twice with no
+   * intervening drag yields the same positions. Used by the
+   * "Auto-arrange" button and (in the unlocked default) implicitly
+   * after `addNode`.
+   */
+  applyAutoLayout: () => void
 }
 
 /**
@@ -92,10 +103,27 @@ export const useNetworkTopologyStore = create<NetworkTopologyState>((set, get) =
   addNode: (node) =>
     set((s) => {
       if (!s.topology) return s
+      const nextNodes = { ...s.topology.nodes, [node.id]: node }
+      // M6.2: while the user hasn't manually arranged the canvas
+      // (`layoutLocked === false`), every add re-flows the whole
+      // graph into the layered hierarchy. The cost is a pure-function
+      // pass over a ~50-node map; the win is a fresh canvas that
+      // Just Looks Right after the first few clicks. Once the user
+      // drags a node, `layoutLocked` flips and adds stop reshuffling.
+      let nextNodesPositioned = nextNodes
+      if (!s.topology.layoutLocked) {
+        const positions = layeredLayout(nextNodes)
+        const repositioned: Record<string, TopologyNode> = {}
+        for (const [id, n] of Object.entries(nextNodes)) {
+          const p = positions[id]
+          repositioned[id] = p ? { ...n, position: { x: p.x, y: p.y } } : n
+        }
+        nextNodesPositioned = repositioned
+      }
       return {
         topology: withTouched({
           ...s.topology,
-          nodes: { ...s.topology.nodes, [node.id]: node },
+          nodes: nextNodesPositioned,
         }),
       }
     }),
@@ -145,9 +173,16 @@ export const useNetworkTopologyStore = create<NetworkTopologyState>((set, get) =
       // owns the snap behavior at the canvas level (we configure it
       // on the <ReactFlow> component). Doing it here too would either
       // double-snap or fight react-flow's own internal coordinates.
+      //
+      // M6.2: a manual position update flips `layoutLocked` to true.
+      // From now on, auto-layout is opt-in only via the button.
+      // `setNodePosition` is the path the canvas dispatches to on
+      // drag-end (via `applyNodeChanges` → position change), so this
+      // is the correct boundary to mark "user took control".
       return {
         topology: withTouched({
           ...s.topology,
+          layoutLocked: true,
           nodes: {
             ...s.topology.nodes,
             [id]: { ...existing, position: { x, y } },
@@ -210,6 +245,11 @@ export const useNetworkTopologyStore = create<NetworkTopologyState>((set, get) =
     let nextNodes = t.nodes
     let nextEdges = t.edges
     let mutated = false
+    // M6.2: any position change in the react-flow change stream
+    // counts as a manual drag (react-flow only emits this on user
+    // movement, not on programmatic position assignment via our
+    // batch updates), so we flip `layoutLocked` once we see one.
+    let lockLayout = false
     for (const c of changes) {
       if (c.type === 'position') {
         const id = c.id
@@ -220,6 +260,7 @@ export const useNetworkTopologyStore = create<NetworkTopologyState>((set, get) =
           [id]: { ...existing, position: { x: c.position.x, y: c.position.y } },
         }
         mutated = true
+        lockLayout = true
       } else if (c.type === 'remove') {
         const id = c.id
         if (!nextNodes[id]) continue
@@ -238,7 +279,14 @@ export const useNetworkTopologyStore = create<NetworkTopologyState>((set, get) =
       }
     }
     if (!mutated) return
-    set({ topology: withTouched({ ...t, nodes: nextNodes, edges: nextEdges }) })
+    set({
+      topology: withTouched({
+        ...t,
+        nodes: nextNodes,
+        edges: nextEdges,
+        layoutLocked: t.layoutLocked || lockLayout,
+      }),
+    })
   },
 
   applyEdgeChanges: (changes) => {
@@ -261,4 +309,30 @@ export const useNetworkTopologyStore = create<NetworkTopologyState>((set, get) =
     if (!mutated) return
     set({ topology: withTouched({ ...t, edges: nextEdges }) })
   },
+
+  applyAutoLayout: () =>
+    set((s) => {
+      if (!s.topology) return s
+      // Pure layout pass — see `layeredLayout` for the algorithm.
+      // We re-key the nodes map immutably so react-flow re-renders
+      // every node in one frame, rather than animating each
+      // position write separately (which would visibly cascade).
+      const positions = layeredLayout(s.topology.nodes)
+      const repositioned: Record<string, TopologyNode> = {}
+      for (const [id, n] of Object.entries(s.topology.nodes)) {
+        const p = positions[id]
+        repositioned[id] = p ? { ...n, position: { x: p.x, y: p.y } } : n
+      }
+      return {
+        topology: withTouched({
+          ...s.topology,
+          // Auto-layout is the user's escape hatch from a messy manual
+          // arrangement. Clearing the lock here means a subsequent add
+          // will continue to land in its band-correct spot — until the
+          // user drags again.
+          layoutLocked: false,
+          nodes: repositioned,
+        }),
+      }
+    }),
 }))
