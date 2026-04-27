@@ -196,7 +196,7 @@ export function OfficeSwitcher({
           role="menu"
           aria-label="Office switcher"
           className={cn(
-            'absolute left-0 mt-1 w-72 bg-white border border-gray-200 rounded shadow dark:bg-gray-900 dark:border-gray-800 dark:shadow-black/40 z-30 py-1 origin-top-left',
+            'absolute left-0 mt-1 w-72 bg-white border border-gray-200 rounded shadow dark:bg-gray-900 dark:border-gray-800 dark:shadow-black/40 z-50 py-1 origin-top-left',
             !reduceMotion && 'dropdown-enter',
           )}
           data-testid="office-switcher-panel"

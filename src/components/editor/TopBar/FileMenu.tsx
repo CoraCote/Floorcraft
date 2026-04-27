@@ -174,7 +174,7 @@ export function FileMenu({ groups, triggerId }: FileMenuProps) {
           role="menu"
           aria-label="File"
           onKeyDown={handleMenuKey}
-          className="absolute left-0 mt-1 w-64 bg-white border border-gray-200 rounded shadow dark:bg-gray-900 dark:border-gray-800 dark:shadow-black/40 z-30 py-1"
+          className="absolute left-0 mt-1 w-64 bg-white border border-gray-200 rounded shadow dark:bg-gray-900 dark:border-gray-800 dark:shadow-black/40 z-50 py-1"
           data-testid="file-menu-panel"
         >
           {groups.map((group, gi) => (

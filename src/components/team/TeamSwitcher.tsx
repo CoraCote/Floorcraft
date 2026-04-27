@@ -125,7 +125,7 @@ export function TeamSwitcher({ currentSlug }: { currentSlug: string | undefined 
           role="menu"
           aria-label="Team switcher"
           className={cn(
-            'absolute left-0 mt-1 w-64 bg-white border border-gray-200 rounded shadow dark:bg-gray-900 dark:border-gray-800 dark:shadow-black/40 z-30 py-1 origin-top-left',
+            'absolute left-0 mt-1 w-64 bg-white border border-gray-200 rounded shadow dark:bg-gray-900 dark:border-gray-800 dark:shadow-black/40 z-50 py-1 origin-top-left',
             !reduceMotion && 'dropdown-enter',
           )}
           data-testid="team-switcher-panel"

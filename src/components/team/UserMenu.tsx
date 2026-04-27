@@ -104,7 +104,7 @@ export function UserMenu() {
           role="menu"
           aria-label="Account"
           className={cn(
-            'absolute right-0 mt-1 w-64 bg-white border border-gray-200 rounded shadow dark:bg-gray-900 dark:border-gray-800 dark:shadow-black/40 z-30 py-1 origin-top-right',
+            'absolute right-0 mt-1 w-64 bg-white border border-gray-200 rounded shadow dark:bg-gray-900 dark:border-gray-800 dark:shadow-black/40 z-50 py-1 origin-top-right',
             !reduceMotion && 'dropdown-enter',
           )}
           data-testid="user-menu-panel"

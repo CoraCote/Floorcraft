@@ -371,7 +371,7 @@ export function TopBar() {
         {viewMenuOpen && (
           <div
             role="menu"
-            className="absolute left-0 mt-1 w-56 bg-white border border-gray-200 rounded shadow dark:bg-gray-900 dark:border-gray-700 dark:shadow-black/40 z-30 py-1"
+            className="absolute left-0 mt-1 w-56 bg-white border border-gray-200 rounded shadow dark:bg-gray-900 dark:border-gray-700 dark:shadow-black/40 z-50 py-1"
           >
             <button
               role="menuitem"
