@@ -580,11 +580,14 @@ export function TeamHomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-gray-950 dark:to-gray-900">
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-6 sm:py-8">
         {/* Team identity header. Logo + name on the left, CTAs on
             the right. The "+ New office" button is only rendered for
             team admins / members — viewers (invited share recipients
-            who happened to get a team_member row) fall through. */}
+            who happened to get a team_member row) fall through.
+            Wave 20A: at narrow widths the action cluster wraps to a
+            second row (`flex-wrap`), so all four buttons stay
+            tappable without clipping. */}
         <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-2">
           <div className="flex items-center gap-3 min-w-0">
             {team.logo_url ? (
@@ -603,7 +606,7 @@ export function TeamHomePage() {
               </div>
             )}
             <div className="min-w-0">
-              <h1 className="text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100 truncate">
+              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100 truncate">
                 {team.name}
               </h1>
               {/*
@@ -620,7 +623,7 @@ export function TeamHomePage() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
             {canCreateOffices && (
               <>
                 <button
@@ -684,7 +687,7 @@ export function TeamHomePage() {
             </span>
             <ul
               className="grid gap-6 mt-6"
-              style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
+              style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))' }}
               aria-hidden="true"
             >
               <li>
@@ -780,7 +783,7 @@ export function TeamHomePage() {
                 </h2>
                 <ul
                   className="grid gap-6"
-                  style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
+                  style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))' }}
                 >
                   {recentOffices.map((o) => {
                     const stats = officeStats.get(o.id) ?? {
@@ -830,7 +833,7 @@ export function TeamHomePage() {
                 )}
                 <ul
                   className="grid gap-6"
-                  style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
+                  style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))' }}
                 >
                   {visible.map((o) => {
                     const stats = officeStats.get(o.id) ?? {

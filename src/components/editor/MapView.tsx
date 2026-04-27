@@ -1,5 +1,7 @@
 import { useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { EditorDesktopGate } from './EditorDesktopGate'
+import { useViewportNarrow, BREAKPOINT } from '../../hooks/useViewportNarrow'
 import { FloorSwitcher } from './FloorSwitcher'
 import { ToolSelector } from './LeftSidebar/ToolSelector'
 import { LayerVisibilityPanel } from './LeftSidebar/LayerVisibilityPanel'
@@ -52,6 +54,12 @@ export function MapView() {
   // as `true`.
   const showNorthArrow = useCanvasStore((s) => s.settings.showNorthArrow ?? true)
   const [searchParams, setSearchParams] = useSearchParams()
+  // Hard desktop gate. Below `lg` (1024 px) the sidebars + canvas
+  // can't coexist in any usable way — see EditorDesktopGate for the
+  // multi-paragraph rationale. We keep presentation mode (hosted
+  // at the same route) untouched: presenters might cast from a phone
+  // and shouldn't lose their slides.
+  const isNarrow = useViewportNarrow(BREAKPOINT.lg)
 
   useEffect(() => {
     const floorId = searchParams.get('floor')
@@ -139,6 +147,14 @@ export function MapView() {
       title: 'Press Esc or P to exit presentation mode.',
     })
   }, [presentationMode])
+
+  // Render the desktop-only gate FIRST, before the regular map shell —
+  // but always after the presentation-mode branch so a phone-cast
+  // scenario still works. Other MapView states (signed-out / not-found)
+  // are owned by ProjectShell, so we don't have to mirror them here.
+  if (!presentationMode && isNarrow) {
+    return <EditorDesktopGate />
+  }
 
   if (presentationMode) {
     return (

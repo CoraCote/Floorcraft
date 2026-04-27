@@ -43,6 +43,7 @@ import { ConfirmDialog } from './ConfirmDialog'
 import { downloadCSV, employeesToCSV } from '../../lib/employeeCsv'
 import { computeRosterStats } from '../../lib/rosterStats'
 import { prefersReducedMotion } from '../../lib/prefersReducedMotion'
+import { useViewportNarrow, BREAKPOINT } from '../../hooks/useViewportNarrow'
 
 type SortColumn = 'name' | 'department' | 'title' | 'seat' | 'status'
 type SortDir = 'asc' | 'desc'
@@ -179,7 +180,24 @@ export function RosterPage() {
   // `view` controls layout (list vs. cards) and is deliberately kept out of
   // `hasAnyFilter` — switching to cards doesn't hide people, so the "Clear
   // filters" button shouldn't appear just because the user picked cards.
-  const viewMode: ViewMode = searchParams.get('view') === 'cards' ? 'cards' : 'list'
+  //
+  // Wave 20A — mobile default: below `md` the table layout overflows the
+  // viewport even with horizontal scroll (each row carries an avatar +
+  // four columns + actions). Default to `cards` when the user hasn't
+  // pinned a value via the URL — they can still flip back to list with
+  // the toggle. We DON'T mirror their choice into the URL automatically;
+  // a phone user picking list and rotating their device still wants
+  // their pick respected.
+  const isNarrow = useViewportNarrow(BREAKPOINT.md)
+  const viewParam = searchParams.get('view')
+  const viewMode: ViewMode =
+    viewParam === 'cards'
+      ? 'cards'
+      : viewParam === 'list'
+        ? 'list'
+        : isNarrow
+          ? 'cards'
+          : 'list'
   const hasAnyFilter = Boolean(
     q || deptFilter || statusFilter || floorFilter || seatFilter || dayFilter || presetFilter || equipFilter,
   )
@@ -1249,7 +1267,7 @@ export function RosterPage() {
           aria-label="View mode"
         >
           <button
-            onClick={() => setFilter('view', '')}
+            onClick={() => setFilter('view', 'list')}
             className={`flex items-center gap-1 px-2 py-1.5 text-xs font-medium ${
               viewMode === 'list'
                 ? 'bg-gray-800 text-white'

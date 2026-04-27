@@ -305,7 +305,7 @@ function InviteRow({
           Sent {sentAgo(invite.created_at)}
         </div>
       </div>
-      <div className="shrink-0 flex items-center gap-2">
+      <div className="shrink-0 flex items-center gap-2 flex-wrap justify-end">
         {expired ? (
           <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-400">
             Expired

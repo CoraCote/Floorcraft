@@ -65,9 +65,14 @@ export function Modal({
     }
   }
 
+  // Wave 20A: pad the backdrop so a narrow viewport never lets the
+  // dialog kiss the screen edge — `p-3 sm:p-4` gives a minimum 12px
+  // gutter at 375px while staying generous on tablet+. The dialog
+  // itself caps height at `90vh` and scrolls its body so a long form
+  // (CSV import preview, share modal) can't overflow off-screen.
   const panel = (
     <div
-      className="fixed inset-0 z-50 bg-black/40 dark:bg-black/60 flex items-center justify-center"
+      className="fixed inset-0 z-50 bg-black/40 dark:bg-black/60 flex items-center justify-center p-3 sm:p-4"
       onMouseDown={onBackdropClick}
       data-testid="modal-backdrop"
     >
@@ -78,7 +83,7 @@ export function Modal({
         aria-labelledby={resolvedLabelledBy}
         tabIndex={-1}
         className={cn(
-          'bg-white dark:bg-gray-900 rounded-lg shadow-lg dark:shadow-xl dark:shadow-black/40 w-full outline-none',
+          'bg-white dark:bg-gray-900 rounded-lg shadow-lg dark:shadow-xl dark:shadow-black/40 w-full outline-none max-h-[90vh] overflow-y-auto',
           SIZE_CLASS[size],
         )}
       >
@@ -106,7 +111,7 @@ export function ModalHeader({ children, onClose, titleId, className }: ModalHead
   return (
     <div
       className={cn(
-        'flex items-center justify-between gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-800',
+        'flex items-center justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-800',
         className,
       )}
     >
@@ -133,7 +138,7 @@ interface ModalBodyProps {
 }
 
 export function ModalBody({ children, className }: ModalBodyProps) {
-  return <div className={cn('p-6', className)}>{children}</div>
+  return <div className={cn('p-4 sm:p-6', className)}>{children}</div>
 }
 
 interface ModalFooterProps {
@@ -143,7 +148,7 @@ interface ModalFooterProps {
 
 export function ModalFooter({ children, className }: ModalFooterProps) {
   return (
-    <div className={cn('flex justify-end gap-2 px-6 py-4 border-t border-gray-200 dark:border-gray-800', className)}>
+    <div className={cn('flex flex-wrap justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 dark:border-gray-800', className)}>
       {children}
     </div>
   )

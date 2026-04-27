@@ -73,14 +73,14 @@ export function LandingPage() {
       {/* Hero */}
       <section
         aria-labelledby="hero-heading"
-        className="max-w-5xl mx-auto px-6 pt-16 pb-20 sm:pt-24 sm:pb-28 text-center"
+        className="max-w-5xl mx-auto px-4 sm:px-6 pt-12 pb-16 sm:pt-24 sm:pb-28 text-center"
       >
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500 dark:text-blue-400 mb-5">
           Workplace planning, reimagined
         </p>
         <h1
           id="hero-heading"
-          className="text-5xl sm:text-6xl font-bold tracking-tight text-gray-900 dark:text-gray-100 mb-4"
+          className="text-4xl sm:text-6xl font-bold tracking-tight text-gray-900 dark:text-gray-100 mb-4"
         >
           Plan your office.
           <br />
@@ -93,7 +93,7 @@ export function LandingPage() {
             minutes, publish in an afternoon — which is the actual
             value prop for someone debating whether to click Start
             free. */}
-        <p className="text-xl text-gray-500 dark:text-gray-400 mb-10 max-w-2xl mx-auto">
+        <p className="text-base sm:text-xl text-gray-500 dark:text-gray-400 mb-10 max-w-2xl mx-auto">
           Draft a floor plan in minutes, seat your whole team by the afternoon, and share a
           living map with every stakeholder that needs it.
         </p>
@@ -124,7 +124,7 @@ export function LandingPage() {
           the first-wave polish. */}
       <section
         aria-labelledby="features-heading"
-        className="max-w-5xl mx-auto px-6 pb-20 sm:pb-24"
+        className="max-w-5xl mx-auto px-4 sm:px-6 pb-20 sm:pb-24"
       >
         <h2
           id="features-heading"
@@ -173,7 +173,7 @@ export function LandingPage() {
           feel like a logo strip rather than a tag dump. */}
       <section
         aria-labelledby="trusted-heading"
-        className="max-w-4xl mx-auto px-6 pb-20"
+        className="max-w-4xl mx-auto px-4 sm:px-6 pb-20"
       >
         <h2
           id="trusted-heading"
@@ -202,7 +202,7 @@ export function LandingPage() {
         aria-labelledby="cta-heading"
         className="bg-gradient-to-r from-blue-600 to-indigo-700 scroll-mt-16"
       >
-        <div className="max-w-4xl mx-auto px-6 py-16 sm:py-20 text-center">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-16 sm:py-20 text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-200 mb-4">
             Free for teams up to 25
           </p>

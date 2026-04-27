@@ -2,7 +2,6 @@ import { Outlet, useLocation, useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { TopBar } from './TopBar'
 import { ImpersonationBanner } from './ImpersonationBanner'
-import { NarrowScreenBanner } from './NarrowScreenBanner'
 import { ContextMenu } from './ContextMenu'
 import { KeyboardShortcutsOverlay } from './KeyboardShortcutsOverlay'
 import { CommandPalette } from './CommandPalette'
@@ -323,13 +322,14 @@ export function ProjectShell() {
       >
         Skip to main content
       </a>
-      {/* NarrowScreenBanner sits at the very top so the map view's
-          "editor works best on a larger screen" warning is visible
-          before the operator tries to use the canvas. Only renders on
-          the map route and when narrower than the lg breakpoint.
-          Impersonation banner sits below it so the amber "you're
-          impersonating" strip is still prominent when present. */}
-      <NarrowScreenBanner />
+      {/* Wave 20A: the in-banner narrow-screen warning was replaced by
+          the full-page `EditorDesktopGate` rendered inside MapView at
+          <lg widths. ProjectShell still mounts the TopBar so other
+          views (roster, reports, audit, org-chart, help) on narrow
+          screens keep their navigation chrome — only the canvas itself
+          is gated.
+          ImpersonationBanner stays here so the amber "you're
+          impersonating" strip is still prominent across every view. */}
       <ImpersonationBanner />
       <TopBar />
       <main id="main-content" tabIndex={-1} className="contents">

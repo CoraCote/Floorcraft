@@ -70,7 +70,12 @@ export function Toaster() {
       role="region"
       aria-live="polite"
       aria-label="Notifications"
-      className="pointer-events-none fixed bottom-4 right-4 z-50 flex max-w-sm flex-col gap-2"
+      // Wave 20A: at narrow widths the toast region anchors to the
+      // bottom and stretches edge-to-edge with a small gutter, so a
+      // long error message doesn't get squished under `max-w-sm` on a
+      // 375 px phone. At `sm+` the original right-aligned floating
+      // stack returns. `inset-x-0` plus `mx-3` gives the gutters.
+      className="pointer-events-none fixed bottom-3 sm:bottom-4 inset-x-0 sm:inset-x-auto sm:right-4 z-50 flex flex-col gap-2 max-w-full sm:max-w-sm mx-3 sm:mx-0"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >

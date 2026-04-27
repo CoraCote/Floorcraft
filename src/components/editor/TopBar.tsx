@@ -20,7 +20,7 @@ import { exportFloorAsPng } from '../../lib/pngExport'
 import { buildExportFilename } from '../../lib/exportFilename'
 import { getActiveStage } from '../../lib/stageRegistry'
 import { useState, useRef, useEffect } from 'react'
-import { NavLink, useParams } from 'react-router-dom'
+import { NavLink, useNavigate, useLocation, useParams } from 'react-router-dom'
 import { useTemporalState } from '../../hooks/useTemporalState'
 import { formatRelative } from '../../lib/time'
 import { useCan } from '../../hooks/useCan'
@@ -270,7 +270,15 @@ export function TopBar() {
   ]
 
   return (
-    <div className="h-14 bg-white border-b border-gray-200 dark:bg-gray-900 dark:border-gray-800 flex items-center px-4 gap-3 flex-shrink-0">
+    <div className="h-14 bg-white border-b border-gray-200 dark:bg-gray-900 dark:border-gray-800 flex items-center px-3 sm:px-4 gap-2 sm:gap-3 flex-shrink-0 overflow-x-auto whitespace-nowrap">
+      {/* Wave 20A: the TopBar packs identity + save state + viewport
+          controls + view nav + account into a single row. Below `md`
+          the editor canvas itself is gated, so on the OTHER editor
+          views (roster, reports) on narrow widths we collapse the
+          editor-only controls (undo/redo, view menu, grid stepper,
+          scale popover, presentation toggle) and lean on the
+          `<select>`-style mobile view-nav at the right. The full row
+          re-appears at `md+`. */}
       {/* ───── Identity cluster ─────
           Who am I, what file, is it saved, can I undo? These answer the
           "where am I" and "am I safe" mental-model questions that precede
@@ -286,17 +294,28 @@ export function TopBar() {
       {/* Unified File menu — Wave 8B. Consolidates export and share
           into a single Linear/JSON-Crack-style dropdown so the
           TopBar's right cluster reads as actions on the canvas, not on
-          the file. */}
-      <FileMenu groups={fileMenuGroups} />
+          the file. Hidden below `md` — export/share at phone widths
+          aren't realistic flows, and the unified File trigger crowds
+          the row. */}
+      <div className="hidden md:block">
+        <FileMenu groups={fileMenuGroups} />
+      </div>
 
       {/* Hairline divider between the identity cluster and the
           save/undo cluster — JSON-Crack idiom that helps the eye
           group otherwise unrelated chips. */}
-      <div className="w-px h-6 bg-gray-200 dark:bg-gray-700" />
+      <div className="hidden md:block w-px h-6 bg-gray-200 dark:bg-gray-700" />
 
-      <SaveIndicator saveState={saveState} lastSavedAt={lastSavedAt} />
+      <div className="hidden md:flex items-center">
+        <SaveIndicator saveState={saveState} lastSavedAt={lastSavedAt} />
+      </div>
 
-      <div className="flex items-center gap-1">
+      {/* Editor-only viewport controls (undo/redo, view dropdown, grid
+          input, scale picker) live under the canvas mental model. Below
+          `md` we hide them: the canvas itself is gated below `lg`, and
+          on tablet the roster/reports views are still useful but those
+          controls have no effect there. */}
+      <div className="hidden md:flex items-center gap-1">
         <button
           onClick={() => undo()}
           disabled={!canUndo}
@@ -317,7 +336,7 @@ export function TopBar() {
         </button>
       </div>
 
-      <div className="w-px h-6 bg-gray-200 dark:bg-gray-700" />
+      <div className="hidden md:block w-px h-6 bg-gray-200 dark:bg-gray-700" />
 
       {/* ───── Viewport cluster ─────
           Everything that changes how the canvas LOOKS without changing its
@@ -325,8 +344,9 @@ export function TopBar() {
           zoom/grid/dimensions toggles collapsed into the View dropdown so
           the TopBar no longer reads as a row of twenty identical icons;
           the scale popover and numeric grid-size stepper stay inline
-          because they hold persistent values the user wants to see. */}
-      <div className="relative" ref={viewMenuRef}>
+          because they hold persistent values the user wants to see.
+          Hidden below `md` — see the editor-controls comment above. */}
+      <div className="relative hidden md:block" ref={viewMenuRef}>
         <button
           onClick={() => setViewMenuOpen((o) => !o)}
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800 rounded"
@@ -475,7 +495,7 @@ export function TopBar() {
       {/* Grid-size stepper stays inline: it holds a persistent numeric
           value the user wants to see at a glance (12px vs 48px changes
           visibly on the canvas), so burying it in a dropdown would hide
-          state. */}
+          state. Hidden below `md` along with the View menu. */}
       <input
         type="number"
         min={4}
@@ -483,7 +503,7 @@ export function TopBar() {
         step={2}
         value={settings.gridSize}
         onChange={(e) => setSettings({ gridSize: Number(e.target.value) })}
-        className="w-[60px] text-xs bg-white text-gray-900 border border-gray-200 rounded px-1 py-1 focus:outline-none focus:border-blue-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
+        className="hidden md:block w-[60px] text-xs bg-white text-gray-900 border border-gray-200 rounded px-1 py-1 focus:outline-none focus:border-blue-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
         title="Grid size"
         aria-label="Grid size"
       />
@@ -491,8 +511,10 @@ export function TopBar() {
       {/* Scale + unit picker. Same rationale as the grid-size stepper —
           the active scale (1:100, feet vs meters) drives every dimension
           label on the canvas, so keeping it visible avoids round-trips
-          into a menu. */}
-      <ScaleSettingsPopover />
+          into a menu. Hidden below `md`. */}
+      <div className="hidden md:block">
+        <ScaleSettingsPopover />
+      </div>
 
       <div className="flex-1" />
 
@@ -501,11 +523,12 @@ export function TopBar() {
           present, share, export, navigate between views, manage account. */}
 
       {/* Selection chip — clickable to clear, makes it obvious why
-          Delete/Duplicate shortcuts are live. */}
+          Delete/Duplicate shortcuts are live. Hidden below `md` —
+          selection only matters on the canvas, which is desktop-only. */}
       {selectedIds.length > 0 && (
         <button
           onClick={clearSelection}
-          className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 dark:text-blue-300 dark:bg-blue-950/40 dark:hover:bg-blue-900/40 rounded"
+          className="hidden md:flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 dark:text-blue-300 dark:bg-blue-950/40 dark:hover:bg-blue-900/40 rounded"
           title="Clear selection"
           aria-label={`Clear selection (${selectedIds.length} selected)`}
         >
@@ -526,7 +549,7 @@ export function TopBar() {
       */}
       <button
         onClick={() => setPresentationMode(!presentationMode)}
-        className={`p-1.5 rounded flex items-center gap-1 ${
+        className={`hidden md:flex p-1.5 rounded items-center gap-1 ${
           presentationMode
             ? 'bg-gray-900 text-white hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200'
             : 'hover:bg-gray-100 text-gray-600 dark:text-gray-400 dark:hover:bg-gray-800'
@@ -567,9 +590,20 @@ export function TopBar() {
           we don't need UI-store bookkeeping. Moved to the action cluster
           alongside Share/Export because jumping between Map and Roster is
           a navigation action, not part of identity. Guarded on both
-          params so the hotkeys are inert outside the editor routes. */}
+          params so the hotkeys are inert outside the editor routes.
+          Below `md` we render a compact `<MobileViewNav>` (a styled
+          `<select>`) instead of the pill row — see that component for
+          the rationale. */}
       {teamSlug && officeSlug && (
-        <nav aria-label="Project views" className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-md p-0.5">
+        <MobileViewNav
+          teamSlug={teamSlug}
+          officeSlug={officeSlug}
+          canViewAudit={canViewAudit}
+          canViewReports={canViewReports}
+        />
+      )}
+      {teamSlug && officeSlug && (
+        <nav aria-label="Project views" className="hidden md:flex items-center bg-gray-100 dark:bg-gray-800 rounded-md p-0.5">
           <NavLink
             to={`/t/${teamSlug}/o/${officeSlug}/map`}
             className={({ isActive }) =>
@@ -647,10 +681,12 @@ export function TopBar() {
       {/* Owner-only "View as…" menu. Rendered to the left of the account
           avatar so it reads as an admin tool rather than part of the user's
           own session state. The component self-gates on role so non-owners
-          don't see it at all. */}
-      <ViewAsMenu />
-
-      <PlanHealthPill />
+          don't see it at all. Hidden below `md` — admin tooling that
+          assumes a desktop. */}
+      <div className="hidden md:flex items-center">
+        <ViewAsMenu />
+        <PlanHealthPill />
+      </div>
 
       {/* Account block — Wave 15D gives the avatar visual weight by
           parking it inside its own bordered cluster. The left hairline
@@ -661,6 +697,72 @@ export function TopBar() {
         <UserMenu />
       </div>
     </div>
+  )
+}
+
+/**
+ * Compact mobile view-nav. The desktop TopBar renders a row of NavLink
+ * pills (Map / Roster / Audit / Reports / Org-Chart) which doesn't fit
+ * below `md`. Rather than horizontal-scrolling the row (gesture-hostile
+ * on touch), we collapse to a styled `<select>` that drives router
+ * navigation on change.
+ *
+ * Why a `<select>` and not a hamburger drawer: this is a small fixed
+ * set of destinations (≤5) all at the same hierarchy level — exactly
+ * the pattern HTML `<select>` was designed for. A drawer would carry
+ * extra animation + focus-trap weight for no functional gain. The
+ * native control also picks up the OS theme colors / focus ring on
+ * mobile, which a custom drawer wouldn't.
+ *
+ * Active option mirrors the current route prefix; we can't rely on
+ * `<NavLink>`'s isActive because there's no children API on the option
+ * elements. The path-suffix string match is fine here because the
+ * editor routes have predictable shapes.
+ */
+function MobileViewNav({
+  teamSlug,
+  officeSlug,
+  canViewAudit,
+  canViewReports,
+}: {
+  teamSlug: string
+  officeSlug: string
+  canViewAudit: boolean
+  canViewReports: boolean
+}) {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const path = location.pathname
+  // Identify the active view by matching the route suffix. Default to
+  // 'map' when the path doesn't match a known view (rare — happens only
+  // when the user lands on the bare /o/:slug route, which itself
+  // redirects to /map).
+  const active: 'map' | 'roster' | 'audit' | 'reports' | 'org-chart' =
+    path.endsWith('/roster')
+      ? 'roster'
+      : path.endsWith('/audit')
+        ? 'audit'
+        : path.endsWith('/reports')
+          ? 'reports'
+          : path.endsWith('/org-chart')
+            ? 'org-chart'
+            : 'map'
+  return (
+    <select
+      aria-label="Switch view"
+      value={active}
+      onChange={(e) => {
+        const next = e.target.value
+        navigate(`/t/${teamSlug}/o/${officeSlug}/${next}`)
+      }}
+      className="md:hidden text-xs font-semibold uppercase tracking-wide bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-md px-2 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+    >
+      <option value="map">Map</option>
+      <option value="roster">Roster</option>
+      {canViewAudit && <option value="audit">Audit</option>}
+      {canViewReports && <option value="reports">Reports</option>}
+      {canViewReports && <option value="org-chart">Org chart</option>}
+    </select>
   )
 }
 

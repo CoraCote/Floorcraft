@@ -219,7 +219,7 @@ export function AccountPage() {
   if (session.status === 'loading') {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-gray-950 dark:to-gray-900">
-        <div className="max-w-5xl mx-auto px-6 py-10 text-sm text-gray-500 dark:text-gray-400">
+        <div className="max-w-5xl mx-auto px-3 sm:px-6 py-6 sm:py-10 text-sm text-gray-500 dark:text-gray-400">
           Loading account…
         </div>
       </div>
@@ -233,7 +233,7 @@ export function AccountPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-gray-950 dark:to-gray-900">
-      <div className="max-w-5xl mx-auto px-6 py-10">
+      <div className="max-w-5xl mx-auto px-3 sm:px-6 py-6 sm:py-10">
         {/* Breadcrumb back-link — small + understated, positioned above
             the identity header so it reads as "how do I leave this
             page" rather than a primary action. Mirrors the
@@ -261,7 +261,7 @@ export function AccountPage() {
             {initialsFor(displayLabel)}
           </div>
           <div className="min-w-0">
-            <h1 className="text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100 truncate">
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100 truncate">
               {displayLabel}
             </h1>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 truncate">

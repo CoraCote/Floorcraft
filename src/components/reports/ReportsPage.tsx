@@ -119,7 +119,7 @@ export function ReportsPage() {
   }
 
   return (
-    <div className="p-6 max-w-5xl">
+    <div className="p-3 sm:p-6 max-w-5xl">
       {/* KPI strip. Matches the card idiom used by FileMenu and
           PropertiesPanel sections: white/gray-900 surface, gray border,
           tabular-nums for the big value so alignment stays tidy. */}
@@ -158,7 +158,7 @@ export function ReportsPage() {
         role="tablist"
         aria-label="Reports sections"
         onKeyDown={onTablistKeyDown}
-        className="sticky top-0 z-10 flex items-center gap-1 mt-5 mb-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900"
+        className="sticky top-0 z-10 flex items-center gap-1 mt-5 mb-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-x-auto whitespace-nowrap"
       >
         {TABS.map((tab) => {
           const selected = tab.id === activeTab
@@ -203,7 +203,8 @@ export function ReportsPage() {
             title="Floor utilization"
             onExport={() => downloadCsv('floor-utilization.csv', utilizationCsv(utilRows))}
           >
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[460px]">
               <thead>
                 <tr className="text-left border-b border-gray-200 dark:border-gray-800">
                   <th className="py-2">Floor</th>
@@ -230,6 +231,7 @@ export function ReportsPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </Card>
         )}
 
@@ -238,7 +240,8 @@ export function ReportsPage() {
             title="Department headcount"
             onExport={() => downloadCsv('department-headcount.csv', headcountCsv(deptRows))}
           >
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[420px]">
               <thead>
                 <tr className="text-left border-b border-gray-200 dark:border-gray-800">
                   <th className="py-2">Department</th>
@@ -258,6 +261,7 @@ export function ReportsPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </Card>
         )}
 
@@ -360,7 +364,7 @@ function EmptyState({
   const rosterHref =
     teamSlug && officeSlug ? `/t/${teamSlug}/o/${officeSlug}/roster` : null
   return (
-    <div className="p-6 max-w-5xl">
+    <div className="p-3 sm:p-6 max-w-5xl">
       <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-10 text-center">
         <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 mb-4">
           <Users size={22} aria-hidden="true" />
