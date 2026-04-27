@@ -6,6 +6,8 @@ import { nanoid } from 'nanoid'
 import type { WallElement } from '../types/elements'
 import { snapToGrid } from '../lib/geometry'
 import { signedPerpOffset, clampBulge } from '../lib/wallEditing'
+import { findNearestWallVertex } from '../lib/wallAttachment'
+import { lockToCardinal, ENDPOINT_SNAP_PX } from '../lib/wallSnap'
 
 /** Min pointer travel (canvas units) before a press counts as a drag. */
 const DRAG_THRESHOLD_PX = 4
@@ -89,12 +91,62 @@ export function useWallDrawing() {
    *  (e.g. user pulls to pre-view, then releases at the anchor). */
   const dragEndpointRef = useRef<{ x: number; y: number } | null>(null)
 
+  /**
+   * Resolve a raw canvas-coord pointer into a snapped vertex coordinate.
+   *
+   * Snap precedence (first hit wins; later steps see the previously
+   * snapped value):
+   *   1. Cardinal lock — if Shift is held AND there is a previous vertex
+   *      to anchor to (`shiftLock`), project the point onto the nearest
+   *      0°/45°/90°/135° ray from that anchor. This runs first so the
+   *      committed segment is exactly axis-aligned regardless of grid.
+   *   2. Endpoint snap — search every other wall's vertices for one
+   *      within `ENDPOINT_SNAP_PX / stageScale` canvas units. If found,
+   *      return that vertex exactly so the new wall and the existing
+   *      one share an endpoint. Excludes vertices that already exist on
+   *      the in-progress wall (the indices in the current session) so
+   *      the live preview can't snap to its own previous click.
+   *   3. Grid snap — fall through to the existing grid-snap behaviour
+   *      when grid is on.
+   */
   const snapPoint = useCallback(
-    (x: number, y: number) => {
-      if (showGrid) {
-        return { x: snapToGrid(x, gridSize), y: snapToGrid(y, gridSize) }
+    (
+      x: number,
+      y: number,
+      opts: {
+        shiftLock?: { ax: number; ay: number } | null
+        excludeOwnSessionVertices?: boolean
+      } = {},
+    ) => {
+      let cx = x
+      let cy = y
+
+      if (opts.shiftLock) {
+        const locked = lockToCardinal(opts.shiftLock.ax, opts.shiftLock.ay, cx, cy)
+        cx = locked.x
+        cy = locked.y
       }
-      return { x, y }
+
+      // Endpoint snap — runs against the live elements map so it stays
+      // current with every commit. Stage scale converts the screen-pixel
+      // radius to canvas units; at 1× they're equal.
+      const stageScale = useCanvasStore.getState().stageScale || 1
+      const radius = ENDPOINT_SNAP_PX / stageScale
+      const elements = useElementsStore.getState().elements
+      // Skip in-session vertices: while drawing, the elements map doesn't
+      // yet contain the in-progress wall (it's only added on dblclick), so
+      // there's nothing to exclude. The flag is reserved for future use
+      // (e.g. dragging a vertex of an already-placed wall).
+      void opts.excludeOwnSessionVertices
+      const hit = findNearestWallVertex(elements, cx, cy, radius)
+      if (hit) {
+        return { x: hit.x, y: hit.y }
+      }
+
+      if (showGrid) {
+        return { x: snapToGrid(cx, gridSize), y: snapToGrid(cy, gridSize) }
+      }
+      return { x: cx, y: cy }
     },
     [gridSize, showGrid],
   )
@@ -171,6 +223,17 @@ export function useWallDrawing() {
     }
   }, [])
 
+  /** Anchor for cardinal (Shift) lock: the last committed vertex while
+   *  drawing, or null if there is no prior vertex (the very first click). */
+  const cardinalAnchor = useCallback((): { ax: number; ay: number } | null => {
+    const prev = sessionRef.current
+    if (!prev.isDrawing || prev.points.length < 2) return null
+    return {
+      ax: prev.points[prev.points.length - 2],
+      ay: prev.points[prev.points.length - 1],
+    }
+  }, [])
+
   const handleCanvasMouseDown = useCallback(
     (canvasX: number, canvasY: number) => {
       if (activeTool !== 'wall') return
@@ -181,13 +244,16 @@ export function useWallDrawing() {
   )
 
   const handleCanvasMouseMove = useCallback(
-    (canvasX: number, canvasY: number) => {
+    (canvasX: number, canvasY: number, shiftKey = false) => {
       if (activeTool !== 'wall') return
       // Track live drag endpoint whenever a press is active.
       if (pressRef.current) {
         dragEndpointRef.current = { x: canvasX, y: canvasY }
       }
-      const snapped = snapPoint(canvasX, canvasY)
+      // Shift-held during the rubber-band phase locks the preview to a
+      // cardinal/diagonal direction so the user sees what they will commit.
+      const lockAnchor = shiftKey ? cardinalAnchor() : null
+      const snapped = snapPoint(canvasX, canvasY, { shiftLock: lockAnchor })
       const prev = sessionRef.current
       if (!prev.isDrawing) {
         scheduleSession({ ...prev, currentPoint: snapped })
@@ -201,7 +267,9 @@ export function useWallDrawing() {
         const dy = canvasY - pressRef.current.y
         const travel2 = dx * dx + dy * dy
         if (travel2 >= DRAG_THRESHOLD_SQ) {
-          const pressSnap = snapPoint(pressRef.current.x, pressRef.current.y)
+          const pressSnap = snapPoint(pressRef.current.x, pressRef.current.y, {
+            shiftLock: lockAnchor,
+          })
           const chord = Math.hypot(pressSnap.x - lastX, pressSnap.y - lastY)
           const raw = signedPerpOffset(
             lastX,
@@ -221,11 +289,11 @@ export function useWallDrawing() {
       }
       scheduleSession({ ...prev, currentPoint: snapped, previewBulge: null })
     },
-    [activeTool, snapPoint, scheduleSession],
+    [activeTool, snapPoint, scheduleSession, cardinalAnchor],
   )
 
   const handleCanvasMouseUp = useCallback(
-    (canvasX: number, canvasY: number) => {
+    (canvasX: number, canvasY: number, shiftKey = false) => {
       if (activeTool !== 'wall' || !pressRef.current) return
       const press = pressRef.current
       // Prefer the last mousemove position (a drag may end back at press
@@ -234,7 +302,11 @@ export function useWallDrawing() {
       const endpoint = dragEndpointRef.current ?? { x: canvasX, y: canvasY }
       pressRef.current = null
       dragEndpointRef.current = null
-      const snapped = snapPoint(press.x, press.y)
+      // Shift-held at commit projects the candidate vertex onto the
+      // nearest 0°/45°/90°/135° ray from the previous committed vertex
+      // before any other snap step runs.
+      const lockAnchor = shiftKey ? cardinalAnchor() : null
+      const snapped = snapPoint(press.x, press.y, { shiftLock: lockAnchor })
       const dx = endpoint.x - press.x
       const dy = endpoint.y - press.y
       const isDrag = dx * dx + dy * dy >= DRAG_THRESHOLD_SQ
@@ -278,7 +350,7 @@ export function useWallDrawing() {
         previewBulge: null,
       })
     },
-    [activeTool, snapPoint, commitSession, flushSession],
+    [activeTool, snapPoint, commitSession, flushSession, cardinalAnchor],
   )
 
   const handleCanvasDoubleClick = useCallback(() => {

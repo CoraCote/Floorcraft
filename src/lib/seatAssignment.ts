@@ -2,6 +2,8 @@ import { useEmployeeStore } from '../stores/employeeStore'
 import { useElementsStore } from '../stores/elementsStore'
 import { useFloorStore } from '../stores/floorStore'
 import { useProjectStore } from '../stores/projectStore'
+import { useToastStore } from '../stores/toastStore'
+import type { Employee } from '../types/employee'
 import {
   useSeatHistoryStore,
   withHistoryRecording,
@@ -608,6 +610,40 @@ export function deleteElements(elementIds: string[]): void {
     }
   }
 
+  // Capture the pre-delete element + employee snapshots BEFORE writing —
+  // we need them for the cascade-delete undo toast. We capture only the
+  // affected entries so undo doesn't blow away unrelated edits the user
+  // made between the delete and the undo click.
+  const cascadeChildIds: string[] = []
+  for (const id of toDelete) {
+    if (validIds.includes(id)) continue // skip the directly-deleted ids
+    cascadeChildIds.push(id)
+  }
+  const wallsWithCascadeIds = validIds.filter((id) => {
+    const el = elementsState[id]
+    return el && isWallElement(el)
+  })
+  const shouldShowCascadeToast =
+    wallsWithCascadeIds.length > 0 && cascadeChildIds.length > 0
+
+  let cascadeSnapshot: {
+    elements: Record<string, CanvasElement>
+    employees: Record<string, Employee>
+  } | null = null
+  if (shouldShowCascadeToast) {
+    const elemSnap: Record<string, CanvasElement> = {}
+    for (const id of toDelete) {
+      const el = elementsState[id]
+      if (el) elemSnap[id] = el
+    }
+    const empSnap: Record<string, Employee> = {}
+    for (const empId of employeesToUnassign) {
+      const emp = employeesState[empId]
+      if (emp) empSnap[empId] = emp
+    }
+    cascadeSnapshot = { elements: elemSnap, employees: empSnap }
+  }
+
   // elementsStore is the temporal (zundo-tracked) store. Write elements first,
   // then employees — employees are excluded from the undo partialize so their
   // update can be applied separately without affecting the snapshot count.
@@ -616,6 +652,42 @@ export function deleteElements(elementIds: string[]): void {
 
   for (const id of toDelete) {
     void emit('element.delete', 'element', id, {})
+  }
+
+  // Cascade-delete toast: when deleting a wall also cascade-removed
+  // attached doors/windows, surface a single info toast with an Undo
+  // button so the user has visible feedback that children were removed
+  // and a one-click recovery path. The toast's onClick re-merges the
+  // captured snapshots back into the live stores — preserving any
+  // unrelated edits the user made between the delete and the undo —
+  // and dismisses the toast.
+  if (shouldShowCascadeToast && cascadeSnapshot) {
+    const wallCount = wallsWithCascadeIds.length
+    const childCount = cascadeChildIds.length
+    const wallLabel = wallCount === 1 ? 'wall' : 'walls'
+    const childLabel = childCount === 1 ? 'attached element' : 'attached elements'
+    const title =
+      wallCount === 1
+        ? `Wall and ${childCount} ${childLabel} deleted`
+        : `${wallCount} ${wallLabel} and ${childCount} ${childLabel} deleted`
+    const snapshot = cascadeSnapshot
+    const toasts = useToastStore.getState()
+    const toastId = toasts.push({
+      tone: 'info',
+      title,
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          const cur = useElementsStore.getState().elements
+          const restoredElements = { ...cur, ...snapshot.elements }
+          useElementsStore.setState({ elements: restoredElements })
+          const curEmps = useEmployeeStore.getState().employees
+          const restoredEmps = { ...curEmps, ...snapshot.employees }
+          useEmployeeStore.setState({ employees: restoredEmps })
+          useToastStore.getState().dismiss(toastId)
+        },
+      },
+    })
   }
 }
 

@@ -68,6 +68,7 @@ import { OutletRenderer } from './OutletRenderer'
 import { useCallback, useState, type ReactNode } from 'react'
 import type Konva from 'konva'
 import { snapToGrid, getSnappedPosition } from '../../../lib/geometry'
+import { translateWall } from '../../../lib/wallEditing'
 import { elementBounds } from '../../../lib/elementBounds'
 import { ALIGNMENT_THRESHOLD } from '../../../lib/constants'
 import { isBookableRoom } from '../../../lib/roomBookings'
@@ -229,6 +230,27 @@ export function ElementRenderer() {
 
   const handleDragEnd = useCallback(
     (id: string, e: Konva.KonvaEventObject<DragEvent>) => {
+      const el = useElementsStore.getState().elements[id]
+      // Walls own their position via `points[]`, not `x`/`y` (the
+      // `ownsPosition` rendering contract). The wrapping Konva Group is
+      // mounted at (0, 0) on every render, so the drag delta is the
+      // Group's current x/y at dragEnd. Translate the wall geometry by
+      // that delta and snap the Group back to (0, 0) so the next render
+      // doesn't double-apply the offset. Doors and windows attached via
+      // `parentWallId` follow automatically because they resolve their
+      // world position from the parent wall's points.
+      if (el && isWallElement(el)) {
+        let dx = e.target.x()
+        let dy = e.target.y()
+        if (showGrid) {
+          dx = snapToGrid(dx, gridSize)
+          dy = snapToGrid(dy, gridSize)
+        }
+        translateWall(id, dx, dy)
+        e.target.position({ x: 0, y: 0 })
+        clearDragAlignmentGuides()
+        return
+      }
       let x = e.target.x()
       let y = e.target.y()
       if (showGrid) {

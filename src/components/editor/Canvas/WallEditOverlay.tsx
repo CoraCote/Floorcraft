@@ -125,7 +125,12 @@ export function WallEditOverlay() {
                   onDragMove={(e: Konva.KonvaEventObject<DragEvent>) => {
                     const node = e.target
                     if (tickDrag(key, node.x(), node.y())) {
-                      applyVertexMove(wall.id, vi, { x: node.x(), y: node.y() })
+                      applyVertexMove(
+                        wall.id,
+                        vi,
+                        { x: node.x(), y: node.y() },
+                        { shiftKey: !!e.evt?.shiftKey },
+                      )
                     }
                   }}
                   onDragEnd={(e: Konva.KonvaEventObject<DragEvent>) => {
@@ -135,7 +140,9 @@ export function WallEditOverlay() {
                       // Commit the drag result at the final pointer. This
                       // ensures dragEnd applies even if dragMove never fired
                       // or was throttled between the last move and release.
-                      applyVertexMove(wall.id, vi, pointer)
+                      applyVertexMove(wall.id, vi, pointer, {
+                        shiftKey: !!e.evt?.shiftKey,
+                      })
                     } else {
                       // Sub-threshold: treat as a click — snap the handle
                       // back to the vertex so the next drag starts clean.

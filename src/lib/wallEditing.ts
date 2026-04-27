@@ -4,8 +4,11 @@
  * (keeps react-refresh happy).
  */
 import { useElementsStore } from '../stores/elementsStore'
+import { useCanvasStore } from '../stores/canvasStore'
 import { isWallElement } from '../types/elements'
 import { wallSegments } from './wallPath'
+import { findNearestWallVertex } from './wallAttachment'
+import { ENDPOINT_SNAP_PX, lockToCardinal } from './wallSnap'
 
 export const BULGE_DEADZONE_PX = 2
 export const BULGE_ROUND_DECIMALS = 2
@@ -86,14 +89,47 @@ export function applyVertexMove(
   wallId: string,
   vertexIndex: number,
   pointer: { x: number; y: number },
+  options: { shiftKey?: boolean } = {},
 ): void {
   const store = useElementsStore.getState()
   const el = store.elements[wallId]
   if (!el || !isWallElement(el)) return
 
+  // Snap precedence at the dragged vertex matches the drawing tool:
+  //   1. Cardinal lock (Shift held) — relative to the adjacent vertex
+  //      (the one before this vertex in `points[]`, falling back to the
+  //      one after if the user is dragging the very first vertex).
+  //   2. Endpoint snap — to any other wall's vertex within
+  //      `ENDPOINT_SNAP_PX / stageScale` canvas units. Excludes vertices
+  //      on the wall being edited so we never snap a vertex onto its
+  //      own neighbour and collapse the segment.
+  let px = pointer.x
+  let py = pointer.y
+
+  if (options.shiftKey) {
+    const adjacentIdx = vertexIndex > 0 ? vertexIndex - 1 : 1
+    if (adjacentIdx * 2 + 1 < el.points.length) {
+      const ax = el.points[adjacentIdx * 2]
+      const ay = el.points[adjacentIdx * 2 + 1]
+      const locked = lockToCardinal(ax, ay, px, py)
+      px = locked.x
+      py = locked.y
+    }
+  }
+
+  const stageScale = useCanvasStore.getState().stageScale || 1
+  const radius = ENDPOINT_SNAP_PX / stageScale
+  const hit = findNearestWallVertex(store.elements, px, py, radius, {
+    excludeWallId: wallId,
+  })
+  if (hit) {
+    px = hit.x
+    py = hit.y
+  }
+
   const nextPoints = [...el.points]
-  nextPoints[vertexIndex * 2] = pointer.x
-  nextPoints[vertexIndex * 2 + 1] = pointer.y
+  nextPoints[vertexIndex * 2] = px
+  nextPoints[vertexIndex * 2 + 1] = py
 
   // Vertex v touches at most two segments: [v-1 -> v] as seg (v-1) and
   // [v -> v+1] as seg v. Skip bulge work when the wall has no bulges array
@@ -120,4 +156,32 @@ export function applyVertexMove(
   reclampAt(vertexIndex)
 
   store.updateElement(wallId, { points: nextPoints, bulges: nextBulges })
+}
+
+/**
+ * Translate every vertex of a wall by (dx, dy). Used by the body-drag path
+ * in ElementRenderer: walls are rendered with their wrapping <Group> at
+ * (0, 0) and the geometry baked into `points[]`, so dragging the Group
+ * delivers a (dx, dy) delta on dragEnd that must be applied to every point
+ * — writing `{x, y}` to the element does nothing because the renderer
+ * ignores those fields for walls (the `ownsPosition` contract).
+ *
+ * Doors and windows attached via `parentWallId` follow automatically:
+ * their world position is resolved from the parent wall's `points`, so a
+ * uniform translation of all wall vertices moves the resolved world point
+ * by the same delta (`positionOnWall` is parametric and unchanged).
+ *
+ * Bulges are not touched: the chord lengths between consecutive vertices
+ * are preserved by a rigid translation, so `|bulge| ≤ chord/2` still holds.
+ */
+export function translateWall(wallId: string, dx: number, dy: number): void {
+  if (dx === 0 && dy === 0) return
+  const store = useElementsStore.getState()
+  const el = store.elements[wallId]
+  if (!el || !isWallElement(el)) return
+  const nextPoints = new Array<number>(el.points.length)
+  for (let i = 0; i < el.points.length; i++) {
+    nextPoints[i] = el.points[i] + (i % 2 === 0 ? dx : dy)
+  }
+  store.updateElement(wallId, { points: nextPoints })
 }

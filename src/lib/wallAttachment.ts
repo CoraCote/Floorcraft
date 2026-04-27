@@ -103,3 +103,50 @@ export function findNearestStraightWallHit(
   }
   return best
 }
+
+/**
+ * Find the nearest wall vertex (endpoint or intermediate) within
+ * `maxDistance` canvas units of `(px, py)`. Used during wall drawing and
+ * vertex-drag to snap to existing corners so adjacent walls actually meet
+ * cleanly. Returns the snapped point or `null` if no vertex is in range.
+ *
+ * `excludeWallId` lets the caller skip a specific wall — used while
+ * dragging a vertex of that wall, so the dragged vertex doesn't try to
+ * snap to itself or its own neighbouring vertices on the same wall.
+ *
+ * The `excludeIndices` set lets the caller exclude specific vertex
+ * indices on the in-progress wall. During drawing we pass the indices of
+ * the vertices already committed in the current session so the live
+ * preview doesn't snap onto its own previous click.
+ */
+export function findNearestWallVertex(
+  elements: Record<string, { id: string; type: string }>,
+  px: number,
+  py: number,
+  maxDistance: number,
+  options: {
+    excludeWallId?: string
+    excludeIndices?: Iterable<number>
+  } = {},
+): { x: number; y: number; distance: number } | null {
+  const excludeIndexSet = options.excludeIndices
+    ? new Set(options.excludeIndices)
+    : null
+  let best: { x: number; y: number; distance: number } | null = null
+  for (const el of Object.values(elements) as unknown as WallElement[]) {
+    if (!isWallElement(el)) continue
+    if (el.visible === false) continue
+    const isExcludedWall = options.excludeWallId === el.id
+    const points = el.points
+    for (let i = 0; i < points.length; i += 2) {
+      if (isExcludedWall && excludeIndexSet?.has(i / 2)) continue
+      const vx = points[i]
+      const vy = points[i + 1]
+      const d = Math.hypot(vx - px, vy - py)
+      if (d <= maxDistance && (!best || d < best.distance)) {
+        best = { x: vx, y: vy, distance: d }
+      }
+    }
+  }
+  return best
+}

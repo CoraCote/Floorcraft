@@ -783,7 +783,7 @@ export function CanvasStage() {
         if (!pointer) return
         const canvasX = (pointer.x - stageX) / stageScale
         const canvasY = (pointer.y - stageY) / stageScale
-        handleCanvasMouseMove(canvasX, canvasY)
+        handleCanvasMouseMove(canvasX, canvasY, !!e.evt.shiftKey)
       }
 
       // Calibrate-scale live tracking: feed the cursor into the store so
@@ -1027,7 +1027,7 @@ export function CanvasStage() {
     }
   }, [activeTool, handleCanvasDoubleClick])
 
-  const handleMouseUp = useCallback(() => {
+  const handleMouseUp = useCallback((e?: Konva.KonvaEventObject<MouseEvent>) => {
     const wasPanning = isPanning.current
     const panOrigin = panOriginRef.current
     const panMoved = panMovedRef.current
@@ -1090,7 +1090,8 @@ export function CanvasStage() {
       if (!pointer) return
       const canvasX = (pointer.x - stageX) / stageScale
       const canvasY = (pointer.y - stageY) / stageScale
-      onWallMouseUp(canvasX, canvasY)
+      const shiftKey = !!e?.evt?.shiftKey
+      onWallMouseUp(canvasX, canvasY, shiftKey)
     }
 
     // Neighborhood drag commit. Threshold of 8 canvas units so a
