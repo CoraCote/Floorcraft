@@ -17,7 +17,7 @@ interface UIState {
 
   // Panels
   rightSidebarOpen: boolean
-  rightSidebarTab: 'properties' | 'people' | 'reports' | 'insights'
+  rightSidebarTab: 'properties' | 'people' | 'reports' | 'devices' | 'insights'
 
   // Modals
   shareModalOpen: boolean

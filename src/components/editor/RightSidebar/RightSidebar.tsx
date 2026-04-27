@@ -1,14 +1,16 @@
 import { useId, useMemo, useRef, type KeyboardEvent, type ReactNode } from 'react'
-import { AlertTriangle, BarChart3, Settings, Users } from 'lucide-react'
+import { AlertTriangle, BarChart3, Settings, Users, Wifi } from 'lucide-react'
 import { useInsightsStore } from '../../../stores/insightsStore'
 import { useUIStore } from '../../../stores/uiStore'
+import { useCan } from '../../../hooks/useCan'
+import { DevicesPanel } from './DevicesPanel'
 import { InsightsPanel } from './InsightsPanel'
 import { PeoplePanel } from './PeoplePanel'
 import { PropertiesPanel } from './PropertiesPanel'
 import { ReportsPanel } from './ReportsPanel'
 import { SidebarToggle } from './SidebarToggle'
 
-type TabId = 'properties' | 'people' | 'reports' | 'insights'
+type TabId = 'properties' | 'people' | 'reports' | 'devices' | 'insights'
 
 export function RightSidebar() {
   const tab = useUIStore((s) => s.rightSidebarTab)
@@ -26,12 +28,24 @@ export function RightSidebar() {
     return critical + warning
   }, [insights])
 
-  const tabs: { id: TabId; label: string; icon: ReactNode }[] = [
-    { id: 'properties', label: 'Properties', icon: <Settings size={14} aria-hidden="true" /> },
-    { id: 'people', label: 'People', icon: <Users size={14} aria-hidden="true" /> },
-    { id: 'reports', label: 'Reports', icon: <BarChart3 size={14} aria-hidden="true" /> },
-    { id: 'insights', label: 'Insights', icon: <AlertTriangle size={14} aria-hidden="true" /> },
-  ]
+  // Devices tab is permission-gated on `viewITLayer` (added in M2). The
+  // stand-in `editMap` gate from the original M3 PR has been retired
+  // now that M2's permission landed on main. Granted to owner / editor
+  // / space-planner; denied to hr-editor / viewer / shareViewer.
+  const canViewDevices = useCan('viewITLayer')
+
+  const tabs: { id: TabId; label: string; icon: ReactNode }[] = useMemo(() => {
+    const list: { id: TabId; label: string; icon: ReactNode }[] = [
+      { id: 'properties', label: 'Properties', icon: <Settings size={14} aria-hidden="true" /> },
+      { id: 'people', label: 'People', icon: <Users size={14} aria-hidden="true" /> },
+      { id: 'reports', label: 'Reports', icon: <BarChart3 size={14} aria-hidden="true" /> },
+    ]
+    if (canViewDevices) {
+      list.push({ id: 'devices', label: 'Devices', icon: <Wifi size={14} aria-hidden="true" /> })
+    }
+    list.push({ id: 'insights', label: 'Insights', icon: <AlertTriangle size={14} aria-hidden="true" /> })
+    return list
+  }, [canViewDevices])
 
   // Stable id prefix so each tab <-> panel pair can reference each other
   // via aria-controls / aria-labelledby without colliding if multiple
@@ -44,6 +58,7 @@ export function RightSidebar() {
     properties: null,
     people: null,
     reports: null,
+    devices: null,
     insights: null,
   })
 
@@ -52,10 +67,17 @@ export function RightSidebar() {
   // updates in lockstep — that's the "automatic activation" variant,
   // which is the right default for lightweight tabs like these (no
   // async panel content, no expensive mount).
+  // If the persisted/active tab id isn't in the visible set (e.g. a
+  // user previously selected Devices, then their permission was
+  // revoked), fall back to Properties so the empty tabpanel isn't
+  // rendered. This is purely a render-time guard — we don't mutate the
+  // store from here so a permission re-grant restores the prior tab.
+  const safeTab: TabId = tabs.some((t) => t.id === tab) ? tab : 'properties'
+
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'Home' && e.key !== 'End') return
     e.preventDefault()
-    const idx = tabs.findIndex((t) => t.id === tab)
+    const idx = tabs.findIndex((t) => t.id === safeTab)
     let next = idx
     if (e.key === 'ArrowLeft') next = (idx - 1 + tabs.length) % tabs.length
     else if (e.key === 'ArrowRight') next = (idx + 1) % tabs.length
@@ -80,7 +102,7 @@ export function RightSidebar() {
           onKeyDown={onKeyDown}
         >
         {tabs.map((t) => {
-          const selected = tab === t.id
+          const selected = safeTab === t.id
           return (
             <button
               key={t.id}
@@ -114,14 +136,15 @@ export function RightSidebar() {
       </div>
       <div
         role="tabpanel"
-        id={panelId(tab)}
-        aria-labelledby={tabId(tab)}
+        id={panelId(safeTab)}
+        aria-labelledby={tabId(safeTab)}
         className="flex-1 overflow-y-auto p-3"
       >
-        {tab === 'properties' && <PropertiesPanel />}
-        {tab === 'people' && <PeoplePanel />}
-        {tab === 'reports' && <ReportsPanel />}
-        {tab === 'insights' && <InsightsPanel />}
+        {safeTab === 'properties' && <PropertiesPanel />}
+        {safeTab === 'people' && <PeoplePanel />}
+        {safeTab === 'reports' && <ReportsPanel />}
+        {safeTab === 'devices' && canViewDevices && <DevicesPanel />}
+        {safeTab === 'insights' && <InsightsPanel />}
       </div>
     </div>
   )
