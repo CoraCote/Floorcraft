@@ -20,6 +20,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@supabase/supabase-js": "^2.104.0",
     "@tanstack/react-virtual": "^3.13.23",
+    "@xyflow/react": "^12.10.2",
     "jspdf": "^4.2.1",
     "konva": "^10.2.5",
     "lucide-react": "^1.8.0",

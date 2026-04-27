@@ -659,6 +659,7 @@ export function TopBar() {
           officeSlug={officeSlug}
           canViewAudit={canViewAudit}
           canViewReports={canViewReports}
+          canViewITLayer={canViewITLayer}
         />
       )}
       {teamSlug && officeSlug && (
@@ -713,6 +714,24 @@ export function TopBar() {
               }
             >
               Reports
+            </NavLink>
+          )}
+          {/* M6.1 — Network topology pill. Permission-gated on
+              `viewITLayer` so HR-editors and viewers don't see the
+              affordance; the page itself also self-gates so a typed
+              URL hits the same denial. */}
+          {canViewITLayer && (
+            <NavLink
+              to={`/t/${teamSlug}/o/${officeSlug}/network`}
+              className={({ isActive }) =>
+                `px-3 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
+                  isActive
+                    ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100'
+                    : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+                }`
+              }
+            >
+              Network
             </NavLink>
           )}
           {canViewReports && (
@@ -783,11 +802,13 @@ function MobileViewNav({
   officeSlug,
   canViewAudit,
   canViewReports,
+  canViewITLayer,
 }: {
   teamSlug: string
   officeSlug: string
   canViewAudit: boolean
   canViewReports: boolean
+  canViewITLayer: boolean
 }) {
   const navigate = useNavigate()
   const location = useLocation()
@@ -796,16 +817,18 @@ function MobileViewNav({
   // 'map' when the path doesn't match a known view (rare — happens only
   // when the user lands on the bare /o/:slug route, which itself
   // redirects to /map).
-  const active: 'map' | 'roster' | 'audit' | 'reports' | 'org-chart' =
+  const active: 'map' | 'roster' | 'audit' | 'reports' | 'network' | 'org-chart' =
     path.endsWith('/roster')
       ? 'roster'
       : path.endsWith('/audit')
         ? 'audit'
         : path.endsWith('/reports')
           ? 'reports'
-          : path.endsWith('/org-chart')
-            ? 'org-chart'
-            : 'map'
+          : path.endsWith('/network')
+            ? 'network'
+            : path.endsWith('/org-chart')
+              ? 'org-chart'
+              : 'map'
   return (
     <select
       aria-label="Switch view"
@@ -820,6 +843,7 @@ function MobileViewNav({
       <option value="roster">Roster</option>
       {canViewAudit && <option value="audit">Audit</option>}
       {canViewReports && <option value="reports">Reports</option>}
+      {canViewITLayer && <option value="network">Network</option>}
       {canViewReports && <option value="org-chart">Org chart</option>}
     </select>
   )

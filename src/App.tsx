@@ -105,6 +105,11 @@ const OrgChartPage = lazy(() =>
     default: m.OrgChartPage,
   })),
 )
+const NetworkTopologyPage = lazy(() =>
+  import('./components/editor/NetworkTopologyPage').then((m) => ({
+    default: m.NetworkTopologyPage,
+  })),
+)
 const ReservationsPage = lazy(() =>
   import('./components/editor/ReservationsPage').then((m) => ({
     default: m.ReservationsPage,
@@ -243,6 +248,11 @@ function App() {
               <Route path="reports" element={<ReportsPage />} />
               <Route path="reports/scenarios" element={<ScenariosPage />} />
               <Route path="reports/floor-compare" element={<FloorComparePage />} />
+              {/* M6.1 — Network topology page. Sits between `audit` and
+                  `org-chart` per the route ordering convention; the
+                  page itself self-gates on `viewITLayer` so unauthorized
+                  visitors see a denial message instead of a redirect. */}
+              <Route path="network" element={<NetworkTopologyPage />} />
               <Route path="org-chart" element={<OrgChartPage />} />
               <Route path="reservations" element={<ReservationsPage />} />
             </Route>

@@ -11,6 +11,7 @@ import { useRoomBookingsStore } from '../../stores/roomBookingsStore'
 import { useAnnotationsStore } from '../../stores/annotationsStore'
 import { useSeatSwapsStore } from '../../stores/seatSwapsStore'
 import { useShareLinksStore } from '../../stores/shareLinksStore'
+import { useNetworkTopologyStore } from '../../stores/networkTopologyStore'
 import { saveOffice, saveOfficeForce } from './officeRepository'
 
 /**
@@ -72,6 +73,12 @@ function buildCurrentPayload(): Record<string, unknown> {
   // D6 view-only share links. Persisted as a top-level Record so they
   // survive reloads and co-editors see each other's tokens + revocations.
   const shareLinks = useShareLinksStore.getState().links
+  // M6.1 — Network topology lives on its own top-level key alongside the
+  // floor-plan data. Read at save-time (rather than inside a selector)
+  // so a topology mutation that lands during a 15s retry backoff still
+  // ships in the next attempt, matching how every other slice on this
+  // payload is sourced.
+  const networkTopology = useNetworkTopologyStore.getState().topology
   return {
     version: 2,
     elements,
@@ -94,6 +101,7 @@ function buildCurrentPayload(): Record<string, unknown> {
     annotations,
     seatSwaps,
     shareLinks,
+    networkTopology,
   }
 }
 
@@ -115,6 +123,9 @@ export function useOfficeSync() {
   const annotations = useAnnotationsStore((s) => s.annotations)
   const seatSwaps = useSeatSwapsStore((s) => s.requests)
   const shareLinks = useShareLinksStore((s) => s.links)
+  // M6.1 — subscribe to topology so a node add/remove/move debounces
+  // a save the same way an `elements` mutation already does.
+  const networkTopology = useNetworkTopologyStore((s) => s.topology)
 
   const seatHistory = useSeatHistoryStore((s) => s.entries)
 
@@ -140,7 +151,7 @@ export function useOfficeSync() {
 
   useEffect(() => {
     if (!officeId || !loadedVersion) return
-    const snapshot = { elements, employees, departmentColors, floors, settings, seatHistory, neighborhoods, reservations, annotations, seatSwaps, roomBookings, shareLinks }
+    const snapshot = { elements, employees, departmentColors, floors, settings, seatHistory, neighborhoods, reservations, annotations, seatSwaps, roomBookings, shareLinks, networkTopology }
 
     if (initialSnapshotRef.current === null) {
       initialSnapshotRef.current = snapshot
@@ -194,6 +205,7 @@ export function useOfficeSync() {
           seatSwaps: useSeatSwapsStore.getState().requests,
           roomBookings: useRoomBookingsStore.getState().bookings,
           shareLinks: useShareLinksStore.getState().links,
+          networkTopology: useNetworkTopologyStore.getState().topology,
         })
         return
       }
@@ -232,6 +244,7 @@ export function useOfficeSync() {
     annotations,
     seatSwaps,
     shareLinks,
+    networkTopology,
     setSaveState,
     setLastSavedAt,
     setLoadedVersion,

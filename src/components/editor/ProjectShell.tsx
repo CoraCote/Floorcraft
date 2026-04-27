@@ -33,6 +33,7 @@ import { useNeighborhoodStore } from '../../stores/neighborhoodStore'
 import { useAnnotationsStore } from '../../stores/annotationsStore'
 import { useSeatSwapsStore } from '../../stores/seatSwapsStore'
 import { useShareLinksStore } from '../../stores/shareLinksStore'
+import { useNetworkTopologyStore } from '../../stores/networkTopologyStore'
 import type { Neighborhood } from '../../types/neighborhood'
 import type { ShareLink } from '../../types/shareLinks'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
@@ -46,6 +47,7 @@ import { isEmployeeStatus, type Employee } from '../../types/employee'
 import {
   migrateAnnotations,
   migrateEmployees,
+  migrateNetworkTopology,
   migrateSeatSwaps,
 } from '../../lib/offices/loadFromLegacyPayload'
 import { commitDueStatusChanges } from '../../lib/commitDueStatusChanges'
@@ -241,6 +243,13 @@ export function ProjectShell() {
           rawShareLinks && typeof rawShareLinks === 'object'
             ? (rawShareLinks as Record<string, ShareLink>)
             : {},
+      })
+
+      // M6.1 — hydrate the network topology. `migrateNetworkTopology`
+      // returns a fresh empty topology when the key is missing, so the
+      // store always lands in a non-null state for the page to render.
+      useNetworkTopologyStore.setState({
+        topology: migrateNetworkTopology(p.networkTopology, office.id),
       })
 
       // Seed the project facade so UI that reads `currentProject` (share

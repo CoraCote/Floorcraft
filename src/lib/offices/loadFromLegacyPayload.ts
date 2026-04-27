@@ -18,6 +18,15 @@ import {
   isSeatSwapStatus,
   type SeatSwapRequest,
 } from '../../types/seatSwaps'
+import {
+  createEmptyTopology,
+  isTopologyEdgeType,
+  isTopologyNodeStatus,
+  isTopologyNodeType,
+  type NetworkTopology,
+  type TopologyEdge,
+  type TopologyNode,
+} from '../../types/networkTopology'
 
 /**
  * Legacy-payload migration helpers.
@@ -563,4 +572,139 @@ export function loadAutoSave(): AutoSavePayload | null {
     payload.employees = migrateEmployees(ensureRecord(rawObj.employees))
   }
   return payload
+}
+
+/**
+ * Coerce a single unknown value into a `TopologyNode` or drop it.
+ * Required fields: non-empty `id`, valid `type`, string `label`, and a
+ * finite `position` pair. Optional vendor metadata coerces to `null`
+ * when missing/invalid; status coerces against the enum guard.
+ *
+ * Anything that doesn't match is dropped with a `console.warn` so a
+ * hand-edited blob surfaces during devtools triage, matching the rest
+ * of the migration helpers in this module.
+ */
+function coerceTopologyNode(raw: unknown): TopologyNode | null {
+  if (!raw || typeof raw !== 'object') return null
+  const n = raw as Record<string, unknown>
+  if (!isNonEmptyString(n.id)) {
+    console.warn('[networkTopology migration] dropping node with missing id', n)
+    return null
+  }
+  if (!isTopologyNodeType(n.type)) {
+    console.warn(
+      `[networkTopology migration] dropping node ${n.id}: unknown type ${String(n.type)}`,
+    )
+    return null
+  }
+  const pos = n.position as Record<string, unknown> | null | undefined
+  if (
+    !pos ||
+    typeof pos !== 'object' ||
+    typeof pos.x !== 'number' ||
+    typeof pos.y !== 'number' ||
+    !Number.isFinite(pos.x) ||
+    !Number.isFinite(pos.y)
+  ) {
+    console.warn(`[networkTopology migration] dropping node ${n.id}: bad position`)
+    return null
+  }
+  const label = typeof n.label === 'string' ? n.label : ''
+  return {
+    id: n.id,
+    type: n.type,
+    label,
+    model: isNonEmptyString(n.model) ? n.model : null,
+    sku: isNonEmptyString(n.sku) ? n.sku : null,
+    vendor: isNonEmptyString(n.vendor) ? n.vendor : null,
+    serialNumber: isNonEmptyString(n.serialNumber) ? n.serialNumber : null,
+    floorElementId: isNonEmptyString(n.floorElementId) ? n.floorElementId : null,
+    status: isTopologyNodeStatus(n.status) ? n.status : null,
+    notes: isNonEmptyString(n.notes) ? n.notes : null,
+    position: { x: pos.x, y: pos.y },
+  }
+}
+
+/**
+ * Coerce a single unknown value into a `TopologyEdge` or drop it.
+ * An edge missing either endpoint is silently dropped — the renderer
+ * cannot draw a line to nowhere, so persisting one would just churn
+ * a warning loop on every load.
+ */
+function coerceTopologyEdge(raw: unknown): TopologyEdge | null {
+  if (!raw || typeof raw !== 'object') return null
+  const e = raw as Record<string, unknown>
+  if (!isNonEmptyString(e.id)) {
+    console.warn('[networkTopology migration] dropping edge with missing id', e)
+    return null
+  }
+  if (!isNonEmptyString(e.source) || !isNonEmptyString(e.target)) {
+    console.warn(`[networkTopology migration] dropping edge ${e.id}: missing endpoint`)
+    return null
+  }
+  if (!isTopologyEdgeType(e.type)) {
+    console.warn(
+      `[networkTopology migration] dropping edge ${e.id}: unknown type ${String(e.type)}`,
+    )
+    return null
+  }
+  return {
+    id: e.id,
+    source: e.source,
+    target: e.target,
+    type: e.type,
+    label: isNonEmptyString(e.label) ? e.label : null,
+  }
+}
+
+/**
+ * Migrate the top-level `networkTopology` payload slot. Legacy /
+ * brand-new offices simply omit the key — the helper falls back to a
+ * fresh empty topology keyed on the office id so the load path can
+ * always set a non-null topology into the store. Nodes whose endpoints
+ * vanish during migration also have their incident edges dropped,
+ * matching the cascade invariant the store enforces at runtime.
+ */
+export function migrateNetworkTopology(
+  raw: unknown,
+  officeId: string,
+): NetworkTopology {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return createEmptyTopology(officeId)
+  }
+  const r = raw as Record<string, unknown>
+  const rawNodes = r.nodes && typeof r.nodes === 'object' && !Array.isArray(r.nodes)
+    ? (r.nodes as Record<string, unknown>)
+    : {}
+  const rawEdges = r.edges && typeof r.edges === 'object' && !Array.isArray(r.edges)
+    ? (r.edges as Record<string, unknown>)
+    : {}
+  const nodes: Record<string, TopologyNode> = {}
+  for (const [id, value] of Object.entries(rawNodes)) {
+    const coerced = coerceTopologyNode(value)
+    if (coerced && coerced.id === id) nodes[id] = coerced
+  }
+  const edges: Record<string, TopologyEdge> = {}
+  for (const [id, value] of Object.entries(rawEdges)) {
+    const coerced = coerceTopologyEdge(value)
+    if (!coerced || coerced.id !== id) continue
+    // Cascade: drop any edge referencing a node we already dropped.
+    if (!nodes[coerced.source] || !nodes[coerced.target]) {
+      console.warn(
+        `[networkTopology migration] dropping edge ${id}: references a node that didn't survive migration`,
+      )
+      continue
+    }
+    edges[id] = coerced
+  }
+  const empty = createEmptyTopology(officeId)
+  return {
+    id: isNonEmptyString(r.id) ? r.id : empty.id,
+    officeId,
+    nodes,
+    edges,
+    layoutLocked: r.layoutLocked === true,
+    createdAt: isNonEmptyString(r.createdAt) ? r.createdAt : empty.createdAt,
+    updatedAt: isNonEmptyString(r.updatedAt) ? r.updatedAt : empty.updatedAt,
+  }
 }
