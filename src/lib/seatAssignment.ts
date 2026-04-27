@@ -3,6 +3,7 @@ import { useElementsStore } from '../stores/elementsStore'
 import { useFloorStore } from '../stores/floorStore'
 import { useProjectStore } from '../stores/projectStore'
 import { useToastStore } from '../stores/toastStore'
+import { useUIStore } from '../stores/uiStore'
 import type { Employee } from '../types/employee'
 import {
   useSeatHistoryStore,
@@ -19,6 +20,8 @@ import {
   isTableElement,
   isWallElement,
 } from '../types/elements'
+import { removeVertex } from './wallEditing'
+import { locateOnStraightSegments } from './wallPath'
 import type { SeatHistoryAction } from '../types/seatHistory'
 
 /**
@@ -684,6 +687,169 @@ export function deleteElements(elementIds: string[]): void {
           const curEmps = useEmployeeStore.getState().employees
           const restoredEmps = { ...curEmps, ...snapshot.employees }
           useEmployeeStore.setState({ employees: restoredEmps })
+          useToastStore.getState().dismiss(toastId)
+        },
+      },
+    })
+  }
+}
+
+/**
+ * Remove a single vertex from a wall, cascading any doors/windows whose
+ * `positionOnWall` falls on the removed segment(s) and surfacing the same
+ * Undo-toast pattern as `deleteElements`. The whole operation lands in one
+ * zundo snapshot so a single Cmd+Z restores the vertex AND every cascaded
+ * child.
+ *
+ * Cascade rule (matches the recommendation in PR #156's planning notes):
+ *
+ *   - Endpoint vertex removed → drop the single segment that touches that
+ *     endpoint. Doors/windows whose `positionOnWall` maps to that segment
+ *     are cascade-deleted. (We don't try to re-anchor them onto the
+ *     surviving wall by spatial proximity — the user just changed the
+ *     wall's shape, the original anchor point is gone, and silently
+ *     repositioning a door is more surprising than removing it. The
+ *     Undo toast restores the door if the user wants it back.)
+ *   - Interior vertex removed → segments (i-1) and (i) collapse into one.
+ *     Doors/windows on either of those two original segments are
+ *     cascade-deleted. Same rationale.
+ *   - Wall would become degenerate (≤ 1 vertex) → fall back to the
+ *     standard `deleteElements` path so the wall and ALL its children are
+ *     removed in one go (and surface the existing wall-delete toast).
+ *
+ * `positionOnWall` is a parametric `[0, 1]` measured against the
+ * concatenated length of straight segments. We use
+ * `locateOnStraightSegments` to map each child's position to a segment
+ * index and compare against the segments slated for removal.
+ */
+export function removeWallVertex(wallId: string, vertexIndex: number): void {
+  const elementsState = useElementsStore.getState().elements
+  const wall = elementsState[wallId]
+  if (!wall || !isWallElement(wall) || wall.locked) return
+
+  const vertexCount = wall.points.length / 2
+  if (vertexIndex < 0 || vertexIndex >= vertexCount) return
+
+  // Degenerate-wall path: fall back to the existing wall-delete cascade.
+  // `removeVertex` returning null means "the resulting wall would have
+  // < 2 vertices and isn't a wall any more" — same outcome as deleting
+  // the whole element, so reuse the existing helper for one toast and
+  // one undo entry.
+  const removed = removeVertex(wall, vertexIndex)
+  if (!removed) {
+    deleteElements([wallId])
+    // Clear the now-stale active-vertex state so a future Backspace doesn't
+    // refer to a wall that no longer exists.
+    useUIStore.getState().setActiveVertex(null)
+    return
+  }
+
+  // Determine which ORIGINAL segment indices were removed. Endpoint
+  // vertex i = 0           → segment 0 dropped.
+  // Endpoint vertex i = N-1 → segment (N-2) dropped.
+  // Interior vertex i      → segments (i-1) and (i) dropped (collapse).
+  const originalSegCount = vertexCount - 1
+  const removedSegments = new Set<number>()
+  if (vertexIndex === 0) {
+    removedSegments.add(0)
+  } else if (vertexIndex === vertexCount - 1) {
+    removedSegments.add(originalSegCount - 1)
+  } else {
+    removedSegments.add(vertexIndex - 1)
+    removedSegments.add(vertexIndex)
+  }
+
+  // Find doors/windows attached to this wall whose anchor falls on one of
+  // the removed segments. Children with arc anchors (positionOnWall on a
+  // bulged segment) currently can't exist — door/window placement gates
+  // on `findNearestStraightWallHit` and the `WallElement` schema only
+  // permits anchoring against straight runs. If a future migration adds
+  // arc-anchored children, `locateOnStraightSegments` returns null for
+  // arc segments and we conservatively treat that as "remove" so an
+  // orphaned-anchor child doesn't survive a vertex collapse.
+  const childIdsToRemove: string[] = []
+  for (const [childId, child] of Object.entries(elementsState)) {
+    if (child.type !== 'door' && child.type !== 'window') continue
+    const c = child as DoorElement | WindowElement
+    if (c.parentWallId !== wallId) continue
+    const located = locateOnStraightSegments(
+      wall.points,
+      wall.bulges,
+      c.positionOnWall,
+    )
+    if (located === null || removedSegments.has(located.segmentIndex)) {
+      childIdsToRemove.push(childId)
+    }
+  }
+
+  // Snapshot pre-mutation so the Undo toast can restore the wall geometry
+  // AND the cascaded children in one click. We snapshot the wall element
+  // (not just its points/bulges) so a user who tweaked label/wallType
+  // between the vertex delete and the undo doesn't lose those edits — the
+  // undo merges into the live element map, restoring only what was
+  // actually mutated by this call.
+  const wallSnap: Record<string, CanvasElement> = { [wallId]: wall }
+  const childSnap: Record<string, CanvasElement> = {}
+  for (const id of childIdsToRemove) {
+    const child = elementsState[id]
+    if (child) childSnap[id] = child
+  }
+
+  // Apply: write the updated wall AND remove the cascaded children in one
+  // store mutation so zundo records ONE entry. Going through the
+  // store-internal `setState` rather than chaining `updateElement` +
+  // `removeElement` lets the partialize step serialise the result
+  // exactly once.
+  const nextElements = { ...elementsState }
+  nextElements[wallId] = removed
+  for (const id of childIdsToRemove) delete nextElements[id]
+  useElementsStore.setState({ elements: nextElements })
+
+  // Audit log mirrors `deleteElements`: one event per cascaded child so a
+  // downstream reporting layer can correlate "wall N's vertex was removed"
+  // with the door/window deletions that fell out of it.
+  for (const id of childIdsToRemove) {
+    void emit('element.delete', 'element', id, {})
+  }
+
+  // Re-target the active vertex: the surviving wall has one fewer vertex,
+  // and the index we just deleted no longer exists. Clamp the active
+  // vertex to a sensible neighbour so the next Backspace doesn't no-op or
+  // accidentally remove the wrong vertex; clear when the wall is selected
+  // but no vertex makes sense to highlight.
+  const survivingVertexCount = removed.points.length / 2
+  if (survivingVertexCount >= 2) {
+    const nextActive = Math.max(0, Math.min(vertexIndex, survivingVertexCount - 1))
+    useUIStore.getState().setActiveVertex({
+      wallId,
+      vertexIndex: nextActive,
+    })
+  } else {
+    useUIStore.getState().setActiveVertex(null)
+  }
+
+  // Cascade toast: only when at least one child was removed. A vertex
+  // delete that didn't take any children is uneventful — no toast needed,
+  // because the wall geometry change is already visible. Mirrors PR #155's
+  // "wall deleted with N children" toast pattern but says "vertex" instead.
+  if (childIdsToRemove.length > 0) {
+    const childCount = childIdsToRemove.length
+    const childLabel = childCount === 1 ? 'attached element' : 'attached elements'
+    const title = `Vertex and ${childCount} ${childLabel} removed`
+    const toasts = useToastStore.getState()
+    const toastId = toasts.push({
+      tone: 'info',
+      title,
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          const cur = useElementsStore.getState().elements
+          // Restore: wall geometry first (overwrite the trimmed version
+          // with the original), then re-add cascaded children. Going
+          // through the elements map directly so a single setState
+          // produces a single undo entry on the UNDO action itself.
+          const restored = { ...cur, ...wallSnap, ...childSnap }
+          useElementsStore.setState({ elements: restored })
           useToastStore.getState().dismiss(toastId)
         },
       },

@@ -79,6 +79,26 @@ interface UIState {
   setAssignmentQueue: (ids: string[]) => void
   clearAssignmentQueue: () => void
 
+  /**
+   * Active wall-vertex selection. When a single wall is selected AND the
+   * user has clicked on (or just dropped) one of its vertex handles, the
+   * matching vertex index is recorded here. Drives the larger filled-circle
+   * highlight in `WallEditOverlay` and the Backspace/Delete keyboard handler
+   * in `useKeyboardShortcuts` that removes the vertex (cascading attached
+   * doors/windows on the removed segment in the same zundo step).
+   *
+   * Stored as `{ wallId, vertexIndex }` rather than a bare number so the
+   * keyboard handler can validate the vertex against the currently-selected
+   * wall: switching selection to a different wall, or deselecting the wall,
+   * automatically clears `activeVertex` so a stale index can't refer into a
+   * different wall's points array.
+   *
+   * `null` = no active vertex (the default; common case is "wall is
+   * selected, but the user hasn't focused a specific vertex yet").
+   */
+  activeVertex: { wallId: string; vertexIndex: number } | null
+  setActiveVertex: (v: { wallId: string; vertexIndex: number } | null) => void
+
   // Reports & overlays
   activeReport: string | null
   orgChartOverlayEnabled: boolean
@@ -157,21 +177,32 @@ function createUIStore() {
   assignmentQueue: [],
   setAssignmentQueue: (ids) => set({ assignmentQueue: ids }),
   clearAssignmentQueue: () => set({ assignmentQueue: [] }),
+  activeVertex: null,
+  setActiveVertex: (v) => set({ activeVertex: v }),
   dragAlignmentGuides: [],
   setDragAlignmentGuides: (guides) => set({ dragAlignmentGuides: guides }),
   clearDragAlignmentGuides: () => set({ dragAlignmentGuides: [] }),
 
-  setSelectedIds: (ids) => set({ selectedIds: ids }),
-  addToSelection: (id) => set((s) => ({ selectedIds: [...s.selectedIds, id] })),
+  // Selection changes always clear `activeVertex`: a stale vertex pointer
+  // from a previously-selected wall would point into a different wall's
+  // points[] (or no wall at all) and the keyboard delete handler would
+  // either no-op or hit the wrong wall. Clearing on every selection edit
+  // is cheap and removes an entire class of stale-state bug.
+  setSelectedIds: (ids) => set({ selectedIds: ids, activeVertex: null }),
+  addToSelection: (id) =>
+    set((s) => ({ selectedIds: [...s.selectedIds, id], activeVertex: null })),
   removeFromSelection: (id) =>
-    set((s) => ({ selectedIds: s.selectedIds.filter((i) => i !== id) })),
+    set((s) => ({
+      selectedIds: s.selectedIds.filter((i) => i !== id),
+      activeVertex: null,
+    })),
   toggleSelection: (id) =>
     set((s) =>
       s.selectedIds.includes(id)
-        ? { selectedIds: s.selectedIds.filter((i) => i !== id) }
-        : { selectedIds: [...s.selectedIds, id] }
+        ? { selectedIds: s.selectedIds.filter((i) => i !== id), activeVertex: null }
+        : { selectedIds: [...s.selectedIds, id], activeVertex: null }
     ),
-  clearSelection: () => set({ selectedIds: [] }),
+  clearSelection: () => set({ selectedIds: [], activeVertex: null }),
   setHoveredId: (id) => set({ hoveredId: id }),
   setRightSidebarOpen: (open) => set({ rightSidebarOpen: open }),
   setRightSidebarTab: (tab) => set({ rightSidebarTab: tab, rightSidebarOpen: true }),

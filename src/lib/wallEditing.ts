@@ -5,7 +5,7 @@
  */
 import { useElementsStore } from '../stores/elementsStore'
 import { useCanvasStore } from '../stores/canvasStore'
-import { isWallElement } from '../types/elements'
+import { isWallElement, type WallElement } from '../types/elements'
 import { wallSegments } from './wallPath'
 import { findNearestWallVertex } from './wallAttachment'
 import { ENDPOINT_SNAP_PX, lockToCardinal } from './wallSnap'
@@ -174,6 +174,163 @@ export function applyVertexMove(
  * Bulges are not touched: the chord lengths between consecutive vertices
  * are preserved by a rigid translation, so `|bulge| ≤ chord/2` still holds.
  */
+/**
+ * Insert a new vertex into a wall at the given canvas-space point, on the
+ * specified segment. Returns the updated wall (caller writes to the store)
+ * along with the index of the newly-inserted vertex so the UI can mark it
+ * "active" for an immediate Backspace-to-undo or drag-to-fine-tune.
+ *
+ * Bulge handling for curved segments:
+ *
+ *   When the user clicks mid-arc, splitting one curved segment into two
+ *   should keep the rendered shape visually continuous — we don't want a
+ *   click to flatten a bulged wall into two straight sub-segments and lose
+ *   the user's curvature. We pick a simple, geometrically reasonable
+ *   inheritance rule: each half-segment gets `bulge / 2`. This is exact
+ *   for the special case where the click lands at the chord midpoint
+ *   (`t = 0.5`) and the new vertex sits on the chord; the two sub-arcs
+ *   then visibly continue along a similar curvature. For off-midpoint
+ *   splits the result is a slight "kink" at the new vertex (each sub-arc
+ *   has a different radius from the original arc), but the user just
+ *   created a new vertex precisely so they could drag it — they have an
+ *   immediate way to refine the curvature. Pursuing exact arc-preserving
+ *   sub-bulges (which would require solving for two arc midpoints
+ *   constrained to lie on the original arc) would be more elegant but
+ *   isn't worth the complexity for a v1 affordance whose load-bearing
+ *   case is splitting *straight* segments to add a corner. Straight
+ *   splits — the common case — have `bulge = 0` and both halves stay
+ *   `0` automatically.
+ *
+ * No store mutation here: the caller (typically the click handler) is
+ * responsible for `useElementsStore.updateElement` so it can also flip
+ * the active-vertex selection state in the same render tick.
+ */
+export function addVertexAt(
+  wall: WallElement,
+  segmentIndex: number,
+  point: { x: number; y: number },
+): { wall: WallElement; insertedVertexIndex: number } | null {
+  const segCount = Math.max(0, wall.points.length / 2 - 1)
+  if (segmentIndex < 0 || segmentIndex >= segCount) return null
+
+  // Insert the new (x, y) AFTER the segment's start vertex — i.e. at
+  // position (segmentIndex + 1) in vertex space, which is index
+  // 2 * (segmentIndex + 1) in the flat number array. The two boundary
+  // vertices are at points[segmentIndex*2..+1] and [+2..+3]; the new
+  // vertex sits between them.
+  const insertVertexIdx = segmentIndex + 1
+  const insertFlatIdx = insertVertexIdx * 2
+
+  const nextPoints = [
+    ...wall.points.slice(0, insertFlatIdx),
+    point.x,
+    point.y,
+    ...wall.points.slice(insertFlatIdx),
+  ]
+
+  // Bulges array length === segments count. Splitting one segment into two
+  // turns N segments into N+1; we replace the affected slot with two
+  // halved-bulge entries (see rationale in the JSDoc above).
+  let nextBulges: number[] | undefined = undefined
+  if (wall.bulges && wall.bulges.length > 0) {
+    const oldBulge = wall.bulges[segmentIndex] ?? 0
+    const halved = oldBulge / 2
+    nextBulges = [
+      ...wall.bulges.slice(0, segmentIndex),
+      halved,
+      halved,
+      ...wall.bulges.slice(segmentIndex + 1),
+    ]
+  }
+
+  const updated: WallElement = {
+    ...wall,
+    points: nextPoints,
+    ...(nextBulges ? { bulges: nextBulges } : {}),
+  }
+  return { wall: updated, insertedVertexIndex: insertVertexIdx }
+}
+
+/**
+ * Remove the vertex at `vertexIndex` from a wall and return the updated
+ * geometry. Returns `null` when the removal would leave a degenerate wall
+ * (≤ 1 vertex remaining) — the caller is responsible for deleting the
+ * whole wall (and cascading attached doors/windows) in that case.
+ *
+ * Bulge handling: removing a vertex that bridges two segments collapses
+ * those two segments into one. We do NOT try to merge the two adjacent
+ * bulges into a single arc through three points (that would need solving
+ * for a circle through the surviving vertices, which is geometrically
+ * fine but rarely matches the user's intent — they almost always want to
+ * SIMPLIFY the wall, not invent a curvature). Instead, the merged
+ * segment becomes straight (`bulge = 0`). Removing an *endpoint* vertex
+ * (index 0 or last) just drops the adjacent segment's bulge entry.
+ *
+ * Co-linear-vertex auto-merge is intentionally NOT done here. A 3-vertex
+ * wall that happens to be collinear after a vertex removal stays
+ * 3-vertex — that's the user's choice, and silently merging would steal
+ * a vertex they might still want to drag. The product callsite confirmed
+ * this is the desired behaviour for v1; revisit if the data shows users
+ * routinely producing collinear 3-vertex walls and being surprised that
+ * the vertex stayed.
+ *
+ * Like `addVertexAt`, this returns the new wall instead of writing to the
+ * store directly — the caller bundles the wall update with any cascade
+ * deletes (attached doors/windows on the removed segment) and the active-
+ * vertex state reset into a single zundo snapshot.
+ */
+export function removeVertex(
+  wall: WallElement,
+  vertexIndex: number,
+): WallElement | null {
+  const vertexCount = wall.points.length / 2
+  if (vertexIndex < 0 || vertexIndex >= vertexCount) return null
+  // Wall would become degenerate (a single point or empty). Caller deletes.
+  if (vertexCount - 1 < 2) return null
+
+  const flatIdx = vertexIndex * 2
+  const nextPoints = [
+    ...wall.points.slice(0, flatIdx),
+    ...wall.points.slice(flatIdx + 2),
+  ]
+
+  let nextBulges: number[] | undefined = undefined
+  if (wall.bulges && wall.bulges.length > 0) {
+    const segCount = Math.max(0, wall.points.length / 2 - 1)
+    const filled: number[] = Array.from(
+      { length: segCount },
+      (_, i) => wall.bulges?.[i] ?? 0,
+    )
+    if (vertexIndex === 0) {
+      // Drop segment 0 (the segment LEAVING vertex 0).
+      nextBulges = filled.slice(1)
+    } else if (vertexIndex === vertexCount - 1) {
+      // Drop the last segment (entering the last vertex).
+      nextBulges = filled.slice(0, -1)
+    } else {
+      // Interior vertex: collapse segments (vertexIndex - 1) and
+      // (vertexIndex) into one straight segment. See JSDoc for why
+      // straight-not-merged-arc.
+      nextBulges = [
+        ...filled.slice(0, vertexIndex - 1),
+        0,
+        ...filled.slice(vertexIndex + 1),
+      ]
+    }
+  }
+
+  // After the splice, validate the wall still has ≥ 2 vertices (it must,
+  // given the early return above, but belt-and-braces).
+  if (nextPoints.length < 4) return null
+
+  const updated: WallElement = {
+    ...wall,
+    points: nextPoints,
+    ...(nextBulges ? { bulges: nextBulges } : {}),
+  }
+  return updated
+}
+
 export function translateWall(wallId: string, dx: number, dy: number): void {
   if (dx === 0 && dy === 0) return
   const store = useElementsStore.getState()

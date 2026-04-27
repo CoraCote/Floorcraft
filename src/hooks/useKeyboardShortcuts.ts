@@ -7,7 +7,7 @@ import { useUIStore } from '../stores/uiStore'
 import { useProjectStore } from '../stores/projectStore'
 import { useCanvasFinderStore } from '../stores/canvasFinderStore'
 import { useShallow } from 'zustand/react/shallow'
-import { deleteElements } from '../lib/seatAssignment'
+import { deleteElements, removeWallVertex } from '../lib/seatAssignment'
 import { isWallElement } from '../types/elements'
 
 export function useKeyboardShortcuts() {
@@ -152,6 +152,26 @@ export function useKeyboardShortcuts() {
 
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedIds.length > 0) {
         e.preventDefault()
+        // Vertex-level delete (P2): when a wall is selected AND a specific
+        // vertex on it is "active" (the user clicked it or just dropped a
+        // drag), Backspace/Delete prunes that vertex instead of nuking the
+        // whole wall. This is the keyboard half of the P2 reshape pair —
+        // mid-edge clicks add vertices, this removes them. Falls through
+        // to the generic delete-elements path when no active vertex,
+        // which is the common case (multi-element selection, no vertex
+        // focus, Backspace meaning "delete what I have selected").
+        const activeVertex = useUIStore.getState().activeVertex
+        if (
+          activeVertex &&
+          selectedIds.length === 1 &&
+          selectedIds[0] === activeVertex.wallId
+        ) {
+          const el = elements[activeVertex.wallId]
+          if (el && isWallElement(el)) {
+            removeWallVertex(activeVertex.wallId, activeVertex.vertexIndex)
+            return
+          }
+        }
         deleteElements(selectedIds)
         clearSelection()
         return
