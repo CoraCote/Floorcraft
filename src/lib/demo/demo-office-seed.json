@@ -1,0 +1,5342 @@
+{
+  "version": "1.0",
+  "project": {
+    "name": "Demo office",
+    "settings": {
+      "gridSize": 12,
+      "scale": 1,
+      "scaleUnit": "ft",
+      "showGrid": true,
+      "showDimensions": false,
+      "northRotation": 0,
+      "showNorthArrow": true,
+      "seatLabelStyle": "pill",
+      "showDeskIds": false
+    }
+  },
+  "elements": [
+    {
+      "x": 320,
+      "y": 280,
+      "id": "2DSSgap7kIlwP0MCNz8Li",
+      "type": "desk",
+      "label": "Frontend squad 6",
+      "style": {
+        "fill": "#FEF3C7",
+        "stroke": "#D97706",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 72,
+      "deskId": "E-FE06",
+      "height": 48,
+      "locked": false,
+      "zIndex": 2,
+      "groupId": null,
+      "visible": true,
+      "capacity": 1,
+      "rotation": 0,
+      "equipment": [
+        "monitor"
+      ],
+      "assignedEmployeeId": "xHl5kraujl9nlbfbRjoIp"
+    },
+    {
+      "x": 200,
+      "y": 480,
+      "id": "2mU5dc2dYj6edcCSeHGwL",
+      "type": "desk",
+      "label": "DevOps/SRE 2",
+      "style": {
+        "fill": "#FEF3C7",
+        "stroke": "#D97706",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 72,
+      "deskId": "E-DO02",
+      "height": 48,
+      "locked": false,
+      "zIndex": 2,
+      "groupId": null,
+      "visible": true,
+      "capacity": 1,
+      "rotation": 0,
+      "equipment": [
+        "monitor"
+      ],
+      "assignedEmployeeId": "l_TEYlR1t61zpDPfWLQ_D"
+    },
+    {
+      "x": 1188,
+      "y": 180,
+      "id": "666bUZGIej-1VvHaPPiYw",
+      "type": "window",
+      "label": "Window",
+      "style": {
+        "fill": "#DBEAFE",
+        "stroke": "#2563EB",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 100,
+      "height": 8,
+      "locked": false,
+      "zIndex": 1,
+      "groupId": null,
+      "visible": true,
+      "rotation": 0,
+      "parentWallId": "aVDZg_bI3XYEIMp9-_zxR",
+      "positionOnWall": 0.2
+    },
+    {
+      "x": 0,
+      "y": 760,
+      "id": "ESmUnKldfQmN0_ZRQT7io",
+      "type": "wall",
+      "label": "South wall",
+      "style": {
+        "fill": "#9CA3AF",
+        "stroke": "#4B5563",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 1112,
+      "height": 40,
+      "locked": false,
+      "points": [
+        0,
+        0,
+        1112,
+        40
+      ],
+      "zIndex": 0,
+      "groupId": null,
+      "visible": true,
+      "rotation": 0,
+      "wallType": "solid",
+      "thickness": 8
+    },
+    {
+      "x": 1080,
+      "y": 640,
+      "id": "EZ3V4kXyAH5xax8bEFTS_",
+      "type": "table-conference",
+      "label": "Conference table",
+      "seats": [],
+      "style": {
+        "fill": "#FAFAF9",
+        "stroke": "#78716C",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 120,
+      "height": 70,
+      "locked": false,
+      "zIndex": 3,
+      "groupId": null,
+      "visible": true,
+      "rotation": 0,
+      "seatCount": 4,
+      "seatLayout": "around"
+    },
+    {
+      "x": 820,
+      "y": 480,
+      "id": "IBkjUgCg2rgTPhvgpRjPw",
+      "type": "desk",
+      "label": "Platform 3",
+      "style": {
+        "fill": "#FEF3C7",
+        "stroke": "#D97706",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 72,
+      "deskId": "E-PL03",
+      "height": 48,
+      "locked": false,
+      "zIndex": 2,
+      "groupId": null,
+      "visible": true,
+      "capacity": 1,
+      "rotation": 0,
+      "equipment": [
+        "monitor",
+        "standing-desk"
+      ],
+      "assignedEmployeeId": "4RCxvEjmZoiNTVO819LUz"
+    },
+    {
+      "x": 60,
+      "y": 720,
+      "id": "N2Ynl1IM2ZII-ZulsHzcG",
+      "type": "plant",
+      "label": "Plant",
+      "style": {
+        "fill": "#BBF7D0",
+        "stroke": "#16A34A",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 40,
+      "height": 40,
+      "locked": false,
+      "zIndex": 3,
+      "groupId": null,
+      "visible": true,
+      "rotation": 0
+    },
+    {
+      "x": 820,
+      "y": 280,
+      "id": "R-LCjh--_PUP3vQ6BvfcE",
+      "type": "desk",
+      "label": "Backend core 6",
+      "style": {
+        "fill": "#FEF3C7",
+        "stroke": "#D97706",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 72,
+      "deskId": "E-BE06",
+      "height": 48,
+      "locked": false,
+      "zIndex": 2,
+      "groupId": null,
+      "visible": true,
+      "capacity": 1,
+      "rotation": 0,
+      "equipment": [
+        "monitor"
+      ],
+      "assignedEmployeeId": "Lv-LgF6qhPeT2_W5hlmob"
+    },
+    {
+      "x": 1080,
+      "y": 640,
+      "id": "VXIQqhuPx1dT__m9dLgfI",
+      "type": "conference-room",
+      "label": "Huddle (4p)",
+      "style": {
+        "fill": "#DBEAFE",
+        "stroke": "#2563EB",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 160,
+      "height": 120,
+      "locked": false,
+      "zIndex": 2,
+      "groupId": null,
+      "visible": true,
+      "capacity": 4,
+      "roomName": "Huddle (4p)",
+      "rotation": 0
+    },
+    {
+      "x": 820,
+      "y": 600,
+      "id": "X8YJkXZz0Z3HHsHqsoCd2",
+      "type": "desk",
+      "label": "Platform 6",
+      "style": {
+        "fill": "#FEF3C7",
+        "stroke": "#D97706",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 72,
+      "deskId": "E-PL06",
+      "height": 48,
+      "locked": false,
+      "zIndex": 2,
+      "groupId": null,
+      "visible": true,
+      "capacity": 1,
+      "rotation": 0,
+      "equipment": [
+        "monitor"
+      ],
+      "assignedEmployeeId": null
+    },
+    {
+      "x": 700,
+      "y": 600,
+      "id": "ZfMwsKk5XqH6azGVOXPtI",
+      "type": "desk",
+      "label": "Platform 5",
+      "style": {
+        "fill": "#FEF3C7",
+        "stroke": "#D97706",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 72,
+      "deskId": "E-PL05",
+      "height": 48,
+      "locked": false,
+      "zIndex": 2,
+      "groupId": null,
+      "visible": true,
+      "capacity": 1,
+      "rotation": 0,
+      "equipment": [
+        "monitor"
+      ],
+      "assignedEmployeeId": null
+    },
+    {
+      "x": 560,
+      "y": 720,
+      "id": "a1_gWaV6l2Dj5AM8MmXC5",
+      "type": "sofa",
+      "label": "Sofa",
+      "style": {
+        "fill": "#E5E7EB",
+        "stroke": "#4B5563",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 160,
+      "height": 54,
+      "locked": false,
+      "zIndex": 3,
+      "groupId": null,
+      "visible": true,
+      "rotation": 0
+    },
+    {
+      "x": 1192,
+      "y": 40,
+      "id": "aVDZg_bI3XYEIMp9-_zxR",
+      "type": "wall",
+      "label": "East wall",
+      "style": {
+        "fill": "#9CA3AF",
+        "stroke": "#4B5563",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 80,
+      "bulges": [
+        0,
+        -30
+      ],
+      "height": 760,
+      "locked": false,
+      "points": [
+        0,
+        0,
+        0,
+        700,
+        -80,
+        760
+      ],
+      "zIndex": 0,
+      "groupId": null,
+      "visible": true,
+      "rotation": 0,
+      "wallType": "solid",
+      "thickness": 8
+    },
+    {
+      "x": 700,
+      "y": 480,
+      "id": "dJhcBtJPCo8FC7FKRYFjv",
+      "type": "desk",
+      "label": "Platform 2",
+      "style": {
+        "fill": "#FEF3C7",
+        "stroke": "#D97706",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 72,
+      "deskId": "E-PL02",
+      "height": 48,
+      "locked": false,
+      "zIndex": 2,
+      "groupId": null,
+      "visible": true,
+      "capacity": 1,
+      "rotation": 0,
+      "equipment": [
+        "monitor"
+      ],
+      "assignedEmployeeId": "8c-rhEwG0Yn9f6XvAV-zw"
+    },
+    {
+      "x": 820,
+      "y": 160,
+      "id": "dPQfXN7V1dx14Uellv-Sm",
+      "type": "desk",
+      "label": "Backend core 3",
+      "style": {
+        "fill": "#FEF3C7",
+        "stroke": "#D97706",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 72,
+      "deskId": "E-BE03",
+      "height": 48,
+      "locked": false,
+      "zIndex": 2,
+      "groupId": null,
+      "visible": true,
+      "capacity": 1,
+      "rotation": 0,
+      "equipment": [
+        "monitor",
+        "standing-desk"
+      ],
+      "assignedEmployeeId": "oyM3eFclmlVPQ6CWvlU9-"
+    },
+    {
+      "x": 200,
+      "y": 160,
+      "id": "fGJMyhGP0bFICp-1D5mdS",
+      "type": "desk",
+      "label": "Frontend squad 2",
+      "style": {
+        "fill": "#FEF3C7",
+        "stroke": "#D97706",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 72,
+      "deskId": "E-FE02",
+      "height": 48,
+      "locked": false,
+      "zIndex": 2,
+      "groupId": null,
+      "visible": true,
+      "capacity": 1,
+      "rotation": 0,
+      "equipment": [
+        "monitor"
+      ],
+      "assignedEmployeeId": "B5d9yyQGk61P4ki_QZnG4"
+    },
+    {
+      "x": 700,
+      "y": 160,
+      "id": "gZHnNQHg1bisxF_m7Rsvt",
+      "type": "desk",
+      "label": "Backend core 2",
+      "style": {
+        "fill": "#FEF3C7",
+        "stroke": "#D97706",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 72,
+      "deskId": "E-BE02",
+      "height": 48,
+      "locked": false,
+      "zIndex": 2,
+      "groupId": null,
+      "visible": true,
+      "capacity": 1,
+      "rotation": 0,
+      "equipment": [
+        "monitor"
+      ],
+      "assignedEmployeeId": "weANmrDbD4ou6USPyGJ23"
+    },
+    {
+      "x": 60,
+      "y": 60,
+      "id": "h54TD5qbqWcXdjSG15p6N",
+      "type": "plant",
+      "label": "Plant",
+      "style": {
+        "fill": "#BBF7D0",
+        "stroke": "#16A34A",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 40,
+      "height": 40,
+      "locked": false,
+      "zIndex": 3,
+      "groupId": null,
+      "visible": true,
+      "rotation": 0
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "id": "hUHFHocTreDbA-MvP--e8",
+      "type": "wall",
+      "label": "West wall",
+      "style": {
+        "fill": "#9CA3AF",
+        "stroke": "#4B5563",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 8,
+      "height": 760,
+      "locked": false,
+      "points": [
+        0,
+        0,
+        0,
+        760
+      ],
+      "zIndex": 0,
+      "groupId": null,
+      "visible": true,
+      "rotation": 0,
+      "wallType": "solid",
+      "thickness": 8
+    },
+    {
+      "x": 560,
+      "y": 380,
+      "id": "h_76nBHVcudYbyTIYtoL4",
+      "type": "workstation",
+      "label": "Workstation (4)",
+      "style": {
+        "fill": "#FEF3C7",
+        "stroke": "#D97706",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 288,
+      "deskId": "E-W01",
+      "height": 48,
+      "locked": false,
+      "zIndex": 2,
+      "groupId": null,
+      "visible": true,
+      "rotation": 0,
+      "equipment": [
+        "docking-station"
+      ],
+      "positions": 4,
+      "assignedEmployeeIds": [
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "x": 580,
+      "y": 160,
+      "id": "hhuHAQG-T_L4ybx0SoayS",
+      "type": "desk",
+      "label": "Backend core 1",
+      "style": {
+        "fill": "#FEF3C7",
+        "stroke": "#D97706",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 72,
+      "deskId": "E-BE01",
+      "height": 48,
+      "locked": false,
+      "zIndex": 2,
+      "groupId": null,
+      "visible": true,
+      "capacity": 1,
+      "rotation": 0,
+      "equipment": [
+        "monitor"
+      ],
+      "assignedEmployeeId": "XXVlrGqaskyB8gMjHKW2U"
+    },
+    {
+      "x": 580,
+      "y": 480,
+      "id": "iweyYErDKTXlm1-OuE2x-",
+      "type": "desk",
+      "label": "Platform 1",
+      "style": {
+        "fill": "#FEF3C7",
+        "stroke": "#D97706",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 72,
+      "deskId": "E-PL01",
+      "height": 48,
+      "locked": false,
+      "zIndex": 2,
+      "groupId": null,
+      "visible": true,
+      "capacity": 1,
+      "rotation": 0,
+      "equipment": [
+        "monitor"
+      ],
+      "assignedEmployeeId": "B40wnjTT2B0xWnIjCBwO6"
+    },
+    {
+      "x": 580,
+      "y": 280,
+      "id": "k680UowvXK1zKtKVU1i9U",
+      "type": "desk",
+      "label": "Backend core 4",
+      "style": {
+        "fill": "#FEF3C7",
+        "stroke": "#D97706",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 72,
+      "deskId": "E-BE04",
+      "height": 48,
+      "locked": false,
+      "zIndex": 2,
+      "groupId": null,
+      "visible": true,
+      "capacity": 1,
+      "rotation": 0,
+      "equipment": [
+        "monitor"
+      ],
+      "assignedEmployeeId": "Q6cWsPflPRJgQuCAjyJ6v"
+    },
+    {
+      "x": 1140,
+      "y": 60,
+      "id": "mNq943Xp60Rm0ge6-bB9p",
+      "type": "plant",
+      "label": "Plant",
+      "style": {
+        "fill": "#BBF7D0",
+        "stroke": "#16A34A",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 40,
+      "height": 40,
+      "locked": false,
+      "zIndex": 3,
+      "groupId": null,
+      "visible": true,
+      "rotation": 0
+    },
+    {
+      "x": 80,
+      "y": 480,
+      "id": "n1FwSTS79rmxpqsMuyZlh",
+      "type": "desk",
+      "label": "DevOps/SRE 1",
+      "style": {
+        "fill": "#FEF3C7",
+        "stroke": "#D97706",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 72,
+      "deskId": "E-DO01",
+      "height": 48,
+      "locked": false,
+      "zIndex": 2,
+      "groupId": null,
+      "visible": true,
+      "capacity": 1,
+      "rotation": 0,
+      "equipment": [
+        "monitor"
+      ],
+      "assignedEmployeeId": "4CPJEzLuDe8JuZTLQ5izM"
+    },
+    {
+      "x": 320,
+      "y": 600,
+      "id": "oqAEXcesD-srvvXijX4Ha",
+      "type": "desk",
+      "label": "DevOps/SRE 6",
+      "style": {
+        "fill": "#FEF3C7",
+        "stroke": "#D97706",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 72,
+      "deskId": "E-DO06",
+      "height": 48,
+      "locked": false,
+      "zIndex": 2,
+      "groupId": null,
+      "visible": true,
+      "capacity": 1,
+      "rotation": 0,
+      "equipment": [
+        "monitor"
+      ],
+      "assignedEmployeeId": null
+    },
+    {
+      "x": 320,
+      "y": 160,
+      "id": "pA6FHepaUu2MoX3xc0z5Z",
+      "type": "desk",
+      "label": "Frontend squad 3",
+      "style": {
+        "fill": "#FEF3C7",
+        "stroke": "#D97706",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 72,
+      "deskId": "E-FE03",
+      "height": 48,
+      "locked": false,
+      "zIndex": 2,
+      "groupId": null,
+      "visible": true,
+      "capacity": 1,
+      "rotation": 0,
+      "equipment": [
+        "monitor",
+        "standing-desk"
+      ],
+      "assignedEmployeeId": "po5Zkn-yc-FHVOZ2wFYTt"
+    },
+    {
+      "x": 80,
+      "y": 160,
+      "id": "pXT0YjUMXldKXU5AkbVlj",
+      "type": "desk",
+      "label": "Frontend squad 1",
+      "style": {
+        "fill": "#FEF3C7",
+        "stroke": "#D97706",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 72,
+      "deskId": "E-FE01",
+      "height": 48,
+      "locked": false,
+      "zIndex": 2,
+      "groupId": null,
+      "visible": true,
+      "capacity": 1,
+      "rotation": 0,
+      "equipment": [
+        "monitor"
+      ],
+      "assignedEmployeeId": "_dM6iLqFfw3mfwrnwIOeD"
+    },
+    {
+      "x": 320,
+      "y": 480,
+      "id": "pwgZv0VU_shROCmUrDY5V",
+      "type": "desk",
+      "label": "DevOps/SRE 3",
+      "style": {
+        "fill": "#FEF3C7",
+        "stroke": "#D97706",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 72,
+      "deskId": "E-DO03",
+      "height": 48,
+      "locked": false,
+      "zIndex": 2,
+      "groupId": null,
+      "visible": true,
+      "capacity": 1,
+      "rotation": 0,
+      "equipment": [
+        "monitor",
+        "standing-desk"
+      ],
+      "assignedEmployeeId": "wyG4iZYDlBlSKZzYFkJGH"
+    },
+    {
+      "x": 80,
+      "y": 600,
+      "id": "qTHJuQhuSHZmnWfVJaYhv",
+      "type": "desk",
+      "label": "DevOps/SRE 4",
+      "style": {
+        "fill": "#FEF3C7",
+        "stroke": "#D97706",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 72,
+      "deskId": "E-DO04",
+      "height": 48,
+      "locked": false,
+      "zIndex": 2,
+      "groupId": null,
+      "visible": true,
+      "capacity": 1,
+      "rotation": 0,
+      "equipment": [
+        "monitor"
+      ],
+      "assignedEmployeeId": "v5VOCg4LVt2isVez8_n4d"
+    },
+    {
+      "x": 700,
+      "y": 280,
+      "id": "r7grpcQQWXkuPhQ7Synps",
+      "type": "desk",
+      "label": "Backend core 5",
+      "style": {
+        "fill": "#FEF3C7",
+        "stroke": "#D97706",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 72,
+      "deskId": "E-BE05",
+      "height": 48,
+      "locked": false,
+      "zIndex": 2,
+      "groupId": null,
+      "visible": true,
+      "capacity": 1,
+      "rotation": 0,
+      "equipment": [
+        "monitor"
+      ],
+      "assignedEmployeeId": "UIQWnUnxhElXcc5v5dHo8"
+    },
+    {
+      "x": 580,
+      "y": 600,
+      "id": "rn06WNl4kQifjTzVICeQp",
+      "type": "desk",
+      "label": "Platform 4",
+      "style": {
+        "fill": "#FEF3C7",
+        "stroke": "#D97706",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 72,
+      "deskId": "E-PL04",
+      "height": 48,
+      "locked": false,
+      "zIndex": 2,
+      "groupId": null,
+      "visible": true,
+      "capacity": 1,
+      "rotation": 0,
+      "equipment": [
+        "monitor"
+      ],
+      "assignedEmployeeId": "HF4niHaGE7HEDPd-XTVuN"
+    },
+    {
+      "x": 80,
+      "y": 280,
+      "id": "trPwCIh_mp6it_URo6BZG",
+      "type": "desk",
+      "label": "Frontend squad 4",
+      "style": {
+        "fill": "#FEF3C7",
+        "stroke": "#D97706",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 72,
+      "deskId": "E-FE04",
+      "height": 48,
+      "locked": false,
+      "zIndex": 2,
+      "groupId": null,
+      "visible": true,
+      "capacity": 1,
+      "rotation": 0,
+      "equipment": [
+        "monitor"
+      ],
+      "assignedEmployeeId": "7p87hjtiQVHfsEDjbM94H"
+    },
+    {
+      "x": 1188,
+      "y": 500,
+      "id": "uJ3CjHN9WBB3adzAZ3qI0",
+      "type": "window",
+      "label": "Window",
+      "style": {
+        "fill": "#DBEAFE",
+        "stroke": "#2563EB",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 100,
+      "height": 8,
+      "locked": false,
+      "zIndex": 1,
+      "groupId": null,
+      "visible": true,
+      "rotation": 0,
+      "parentWallId": "aVDZg_bI3XYEIMp9-_zxR",
+      "positionOnWall": 0.6
+    },
+    {
+      "x": 200,
+      "y": 600,
+      "id": "v7ZBA4WbP3AV41916twGE",
+      "type": "desk",
+      "label": "DevOps/SRE 5",
+      "style": {
+        "fill": "#FEF3C7",
+        "stroke": "#D97706",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 72,
+      "deskId": "E-DO05",
+      "height": 48,
+      "locked": false,
+      "zIndex": 2,
+      "groupId": null,
+      "visible": true,
+      "capacity": 1,
+      "rotation": 0,
+      "equipment": [
+        "monitor"
+      ],
+      "assignedEmployeeId": null
+    },
+    {
+      "x": 200,
+      "y": 280,
+      "id": "wPIsMxCAHxYmGAMwi1ewk",
+      "type": "desk",
+      "label": "Frontend squad 5",
+      "style": {
+        "fill": "#FEF3C7",
+        "stroke": "#D97706",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 72,
+      "deskId": "E-FE05",
+      "height": 48,
+      "locked": false,
+      "zIndex": 2,
+      "groupId": null,
+      "visible": true,
+      "capacity": 1,
+      "rotation": 0,
+      "equipment": [
+        "monitor"
+      ],
+      "assignedEmployeeId": "O6FQAwyAEx5zZaLzM3qhz"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "id": "weup71EuW5QkZ3FuUNPKz",
+      "type": "wall",
+      "label": "North wall",
+      "style": {
+        "fill": "#9CA3AF",
+        "stroke": "#4B5563",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 1200,
+      "height": 40,
+      "locked": false,
+      "points": [
+        0,
+        0,
+        100,
+        40,
+        1200,
+        40
+      ],
+      "zIndex": 0,
+      "groupId": null,
+      "visible": true,
+      "rotation": 0,
+      "wallType": "solid",
+      "thickness": 8
+    },
+    {
+      "x": -4,
+      "y": 380,
+      "id": "x2eocRQSaBxKnecQ7lz-C",
+      "type": "door",
+      "label": "Stairwell",
+      "style": {
+        "fill": "#F3F4F6",
+        "stroke": "#6B7280",
+        "opacity": 1,
+        "strokeWidth": 2
+      },
+      "width": 32,
+      "height": 8,
+      "locked": false,
+      "zIndex": 1,
+      "groupId": null,
+      "visible": true,
+      "rotation": 0,
+      "openAngle": 90,
+      "parentWallId": "hUHFHocTreDbA-MvP--e8",
+      "positionOnWall": 0.5,
+      "swingDirection": "right"
+    }
+  ],
+  "employees": [
+    {
+      "id": "-kSEv_PyCCpPu-ex9okMf",
+      "name": "Rohan Kapoor",
+      "tags": [],
+      "team": null,
+      "email": "rohan.kapoor@demo.co",
+      "title": "Senior Product Designer",
+      "seatId": "UZS46DXg-w_ueTOmNqjXf",
+      "status": "active",
+      "endDate": null,
+      "floorId": "53VNjM6voACjjHxJzTWo6",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2022-07-18",
+      "department": "Design",
+      "leaveNotes": null,
+      "officeDays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "3JOFE30lXZbVeZRX43KX2",
+      "name": "Alejandro Ruiz",
+      "tags": [],
+      "team": null,
+      "email": "alejandro.ruiz@demo.co",
+      "title": "Product Designer",
+      "seatId": null,
+      "status": "active",
+      "endDate": null,
+      "floorId": null,
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2026-04-13",
+      "department": "Design",
+      "leaveNotes": null,
+      "officeDays": [
+        "Tue",
+        "Wed",
+        "Thu"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor",
+        "tablet"
+      ],
+      "equipmentStatus": "pending",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "4CPJEzLuDe8JuZTLQ5izM",
+      "name": "Sana Haidari",
+      "tags": [],
+      "team": null,
+      "email": "sana.haidari@demo.co",
+      "title": "SRE Manager",
+      "seatId": "n1FwSTS79rmxpqsMuyZlh",
+      "status": "active",
+      "endDate": null,
+      "floorId": "POMh9pcGOL9yuu_yFTJZ4",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2020-07-01",
+      "department": "Engineering",
+      "leaveNotes": null,
+      "officeDays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "4CdwdsQUvSftay2WdoxXu",
+      "name": "Marta Ribeiro",
+      "tags": [],
+      "team": null,
+      "email": "marta.ribeiro@demo.co",
+      "title": "Director, Marketing",
+      "seatId": "MpjqwoEf1i1QwptnMVQOv",
+      "status": "active",
+      "endDate": null,
+      "floorId": "9-CCXGewlHmUdGMmFtqFy",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2021-05-03",
+      "department": "Marketing",
+      "leaveNotes": null,
+      "officeDays": [
+        "Tue",
+        "Wed",
+        "Thu"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "4RCxvEjmZoiNTVO819LUz",
+      "name": "Kai Wilson",
+      "tags": [],
+      "team": null,
+      "email": "kai.wilson@demo.co",
+      "title": "Platform Engineer",
+      "seatId": "IBkjUgCg2rgTPhvgpRjPw",
+      "status": "active",
+      "endDate": null,
+      "floorId": "POMh9pcGOL9yuu_yFTJZ4",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2023-08-14",
+      "department": "Engineering",
+      "leaveNotes": null,
+      "officeDays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "5A1pwMmc_AHTOnU5zRzyR",
+      "name": "Mei Lin",
+      "tags": [],
+      "team": null,
+      "email": "mei.lin@demo.co",
+      "title": "Growth Marketer",
+      "seatId": null,
+      "status": "active",
+      "endDate": null,
+      "floorId": null,
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2026-04-24",
+      "department": "Marketing",
+      "leaveNotes": null,
+      "officeDays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop"
+      ],
+      "equipmentStatus": "pending",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "7K2T-onVOaWkneaP_iH7t",
+      "name": "Fatima Al-Hassan",
+      "tags": [],
+      "team": null,
+      "email": "fatima.alhassan@demo.co",
+      "title": "Frontend Engineer",
+      "seatId": null,
+      "status": "active",
+      "endDate": "2026-06-26",
+      "floorId": null,
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2024-09-12",
+      "department": "Engineering",
+      "leaveNotes": null,
+      "officeDays": [],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "contractor",
+      "equipmentNeeds": [
+        "laptop"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "7p87hjtiQVHfsEDjbM94H",
+      "name": "Louis Beaumont",
+      "tags": [],
+      "team": null,
+      "email": "louis.beaumont@demo.co",
+      "title": "Staff Frontend Engineer",
+      "seatId": "trPwCIh_mp6it_URo6BZG",
+      "status": "active",
+      "endDate": null,
+      "floorId": "POMh9pcGOL9yuu_yFTJZ4",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2019-01-12",
+      "department": "Engineering",
+      "leaveNotes": null,
+      "officeDays": [
+        "Tue",
+        "Wed",
+        "Thu"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "8c-rhEwG0Yn9f6XvAV-zw",
+      "name": "Harini Raj",
+      "tags": [],
+      "team": null,
+      "email": "harini.raj@demo.co",
+      "title": "Senior Platform Engineer",
+      "seatId": "dJhcBtJPCo8FC7FKRYFjv",
+      "status": "active",
+      "endDate": null,
+      "floorId": "POMh9pcGOL9yuu_yFTJZ4",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2021-09-20",
+      "department": "Engineering",
+      "leaveNotes": null,
+      "officeDays": [
+        "Tue",
+        "Wed",
+        "Thu"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "B40wnjTT2B0xWnIjCBwO6",
+      "name": "Ivan Petrov",
+      "tags": [],
+      "team": null,
+      "email": "ivan.petrov@demo.co",
+      "title": "Platform Lead",
+      "seatId": "iweyYErDKTXlm1-OuE2x-",
+      "status": "active",
+      "endDate": null,
+      "floorId": "POMh9pcGOL9yuu_yFTJZ4",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2019-12-02",
+      "department": "Engineering",
+      "leaveNotes": null,
+      "officeDays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "B5d9yyQGk61P4ki_QZnG4",
+      "name": "Alice Kim",
+      "tags": [],
+      "team": null,
+      "email": "alice.kim@demo.co",
+      "title": "Senior Frontend Engineer",
+      "seatId": "fGJMyhGP0bFICp-1D5mdS",
+      "status": "active",
+      "endDate": null,
+      "floorId": "POMh9pcGOL9yuu_yFTJZ4",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2022-03-01",
+      "department": "Engineering",
+      "leaveNotes": null,
+      "officeDays": [
+        "Mon",
+        "Wed",
+        "Fri"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "H4QZeDpTR5sOpyEb40-g_",
+      "name": "Jamal Williams",
+      "tags": [],
+      "team": null,
+      "email": "jamal.williams@demo.co",
+      "title": "Product Manager",
+      "seatId": "kNgsENIAAK16VEb3ZGXfl",
+      "status": "active",
+      "endDate": null,
+      "floorId": "53VNjM6voACjjHxJzTWo6",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2023-02-09",
+      "department": "Product",
+      "leaveNotes": null,
+      "officeDays": [
+        "Tue",
+        "Wed",
+        "Thu"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "HF4niHaGE7HEDPd-XTVuN",
+      "name": "Lena Hoffmann",
+      "tags": [],
+      "team": null,
+      "email": "lena.hoffmann@demo.co",
+      "title": "Platform Engineer",
+      "seatId": "rn06WNl4kQifjTzVICeQp",
+      "status": "active",
+      "endDate": null,
+      "floorId": "POMh9pcGOL9yuu_yFTJZ4",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2024-02-05",
+      "department": "Engineering",
+      "leaveNotes": null,
+      "officeDays": [
+        "Tue",
+        "Wed",
+        "Thu"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "pending",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "LOJniNWqjdGRkzkPo_Jhs",
+      "name": "Oliver Bennet",
+      "tags": [],
+      "team": null,
+      "email": "oliver.bennet@demo.co",
+      "title": "Operations Analyst",
+      "seatId": null,
+      "status": "active",
+      "endDate": null,
+      "floorId": null,
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2024-11-04",
+      "department": "Operations",
+      "leaveNotes": null,
+      "officeDays": [
+        "Tue",
+        "Wed",
+        "Thu"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "Lv-LgF6qhPeT2_W5hlmob",
+      "name": "Adebayo Olu",
+      "tags": [],
+      "team": null,
+      "email": "adebayo.olu@demo.co",
+      "title": "Backend Engineer",
+      "seatId": "R-LCjh--_PUP3vQ6BvfcE",
+      "status": "active",
+      "endDate": null,
+      "floorId": "POMh9pcGOL9yuu_yFTJZ4",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2023-04-11",
+      "department": "Engineering",
+      "leaveNotes": null,
+      "officeDays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "O6FQAwyAEx5zZaLzM3qhz",
+      "name": "Emma Lindqvist",
+      "tags": [],
+      "team": null,
+      "email": "emma.lindqvist@demo.co",
+      "title": "Frontend Engineer",
+      "seatId": "wPIsMxCAHxYmGAMwi1ewk",
+      "status": "active",
+      "endDate": null,
+      "floorId": "POMh9pcGOL9yuu_yFTJZ4",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2024-01-22",
+      "department": "Engineering",
+      "leaveNotes": null,
+      "officeDays": [
+        "Tue",
+        "Wed",
+        "Thu"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "Q6cWsPflPRJgQuCAjyJ6v",
+      "name": "Chen Wei",
+      "tags": [],
+      "team": null,
+      "email": "chen.wei@demo.co",
+      "title": "Backend Engineer",
+      "seatId": "k680UowvXK1zKtKVU1i9U",
+      "status": "active",
+      "endDate": null,
+      "floorId": "POMh9pcGOL9yuu_yFTJZ4",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2024-03-05",
+      "department": "Engineering",
+      "leaveNotes": null,
+      "officeDays": [
+        "Mon",
+        "Wed",
+        "Fri"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "pending",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "TYlca4BGlEb0cfrMo2h4o",
+      "name": "Celia Navarro",
+      "tags": [],
+      "team": null,
+      "email": "celia.navarro@demo.co",
+      "title": "Product Manager",
+      "seatId": "R3ZFm4NOHVjqBu_AlVA8s",
+      "status": "active",
+      "endDate": null,
+      "floorId": "53VNjM6voACjjHxJzTWo6",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2024-05-20",
+      "department": "Product",
+      "leaveNotes": null,
+      "officeDays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "pending",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "TkN4uN7PTOn1OVKmYeg9k",
+      "name": "Nora Abiola",
+      "tags": [],
+      "team": null,
+      "email": "nora.abiola@demo.co",
+      "title": "People Partner",
+      "seatId": "v7TRtufciZaklBTB2whME",
+      "status": "active",
+      "endDate": null,
+      "floorId": "9-CCXGewlHmUdGMmFtqFy",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2022-01-10",
+      "department": "People",
+      "leaveNotes": null,
+      "officeDays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri"
+      ],
+      "departureDate": null,
+      "accommodations": [
+        {
+          "id": "kCmL3fhif_YpJXbmzSbH0",
+          "type": "wheelchair-access",
+          "notes": null,
+          "createdAt": "2026-04-27T22:58:04.926Z"
+        }
+      ],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "UIQWnUnxhElXcc5v5dHo8",
+      "name": "Yuki Watanabe",
+      "tags": [],
+      "team": null,
+      "email": "yuki.watanabe@demo.co",
+      "title": "Backend Engineer",
+      "seatId": "r7grpcQQWXkuPhQ7Synps",
+      "status": "on-leave",
+      "endDate": null,
+      "floorId": "POMh9pcGOL9yuu_yFTJZ4",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2022-11-21",
+      "department": "Engineering",
+      "leaveNotes": null,
+      "officeDays": [
+        "Tue",
+        "Wed",
+        "Thu"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "UT3D1v-Eig_Hj8XmU9M85",
+      "name": "Ravi Krishnan",
+      "tags": [],
+      "team": null,
+      "email": "ravi.krishnan@demo.co",
+      "title": "Senior Accountant",
+      "seatId": "1zWP_b-tYfFEKZ7MgdMw1",
+      "status": "active",
+      "endDate": null,
+      "floorId": "9-CCXGewlHmUdGMmFtqFy",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2021-11-29",
+      "department": "Finance",
+      "leaveNotes": null,
+      "officeDays": [
+        "Mon",
+        "Wed",
+        "Fri"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "pending",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "WRUXOAyZ2ScLuPlQyWHnp",
+      "name": "Priya Shah",
+      "tags": [],
+      "team": null,
+      "email": "priya.shah@demo.co",
+      "title": "Head of Operations",
+      "seatId": "uvQ9Ox3Nefvu2dP_9RALO",
+      "status": "active",
+      "endDate": null,
+      "floorId": "9-CCXGewlHmUdGMmFtqFy",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2019-09-30",
+      "department": "Operations",
+      "leaveNotes": null,
+      "officeDays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "XXVlrGqaskyB8gMjHKW2U",
+      "name": "Rahul Mehta",
+      "tags": [],
+      "team": null,
+      "email": "rahul.mehta@demo.co",
+      "title": "Engineering Manager, Backend",
+      "seatId": "hhuHAQG-T_L4ybx0SoayS",
+      "status": "active",
+      "endDate": null,
+      "floorId": "POMh9pcGOL9yuu_yFTJZ4",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2019-10-04",
+      "department": "Engineering",
+      "leaveNotes": null,
+      "officeDays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "Yw4dldI2soj9VgLaYLYVE",
+      "name": "Daria Okafor",
+      "tags": [],
+      "team": null,
+      "email": "daria.okafor@demo.co",
+      "title": "Head of People",
+      "seatId": "1r8vsq7VHgw8XGHekVHQW",
+      "status": "active",
+      "endDate": null,
+      "floorId": "9-CCXGewlHmUdGMmFtqFy",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2020-02-17",
+      "department": "People",
+      "leaveNotes": null,
+      "officeDays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "Z4RDSNHh9-Vub_9hIr1Wi",
+      "name": "Adrienne Moreau",
+      "tags": [],
+      "team": null,
+      "email": "adrienne.moreau@demo.co",
+      "title": "CEO",
+      "seatId": "quCkh1c31t9CeVnBxbQOm",
+      "status": "active",
+      "endDate": null,
+      "floorId": "53VNjM6voACjjHxJzTWo6",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2018-04-02",
+      "department": "Product",
+      "leaveNotes": null,
+      "officeDays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "ZJef1bkIWcw2SE_wUfJ50",
+      "name": "Kenji Tanaka",
+      "tags": [],
+      "team": null,
+      "email": "kenji.tanaka@demo.co",
+      "title": "VP Design",
+      "seatId": "SXtZZ6YBvi9RCMBo8Mjyf",
+      "status": "active",
+      "endDate": null,
+      "floorId": "53VNjM6voACjjHxJzTWo6",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2020-01-13",
+      "department": "Design",
+      "leaveNotes": null,
+      "officeDays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor",
+        "tablet"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "ZSffTgODBJ24l3pHB7fvn",
+      "name": "Luna Vasquez",
+      "tags": [],
+      "team": null,
+      "email": "luna.vasquez@demo.co",
+      "title": "Design Intern",
+      "seatId": "O38QocUlx8L1NAAFehZ54",
+      "status": "active",
+      "endDate": "2026-06-11",
+      "floorId": "53VNjM6voACjjHxJzTWo6",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2026-01-27",
+      "department": "Design",
+      "leaveNotes": null,
+      "officeDays": [
+        "Tue",
+        "Thu"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "intern",
+      "equipmentNeeds": [
+        "laptop"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "ZwXfs22Rj6Rty_T5o8SNa",
+      "name": "Ivy Ross",
+      "tags": [],
+      "team": null,
+      "email": "ivy.ross@demo.co",
+      "title": "Staff Product Designer",
+      "seatId": "zweRq1snh-ArOmMhxj90i",
+      "status": "active",
+      "endDate": null,
+      "floorId": "53VNjM6voACjjHxJzTWo6",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2021-03-01",
+      "department": "Design",
+      "leaveNotes": null,
+      "officeDays": [
+        "Tue",
+        "Wed",
+        "Thu"
+      ],
+      "departureDate": null,
+      "accommodations": [
+        {
+          "id": "-FcYPjMa3kwts309_YYrb",
+          "type": "natural-light",
+          "notes": null,
+          "createdAt": "2026-04-27T22:58:04.926Z"
+        }
+      ],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor",
+        "tablet"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "_dM6iLqFfw3mfwrnwIOeD",
+      "name": "Mia Chen",
+      "tags": [],
+      "team": null,
+      "email": "mia.chen@demo.co",
+      "title": "Engineering Manager, Frontend",
+      "seatId": "pXT0YjUMXldKXU5AkbVlj",
+      "status": "active",
+      "endDate": null,
+      "floorId": "POMh9pcGOL9yuu_yFTJZ4",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2020-06-14",
+      "department": "Engineering",
+      "leaveNotes": null,
+      "officeDays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "h7ouTd4SW6HVlOQvdFt5Z",
+      "name": "Miguel Castillo",
+      "tags": [],
+      "team": null,
+      "email": "miguel.castillo@demo.co",
+      "title": "Brand Designer",
+      "seatId": "Zdbkojo5Wiu-Px2hN8vK7",
+      "status": "active",
+      "endDate": null,
+      "floorId": "9-CCXGewlHmUdGMmFtqFy",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2023-06-12",
+      "department": "Marketing",
+      "leaveNotes": null,
+      "officeDays": [
+        "Tue",
+        "Wed",
+        "Thu"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "i6NyeKxYeSUf3YHckUnde",
+      "name": "Vera Sokolova",
+      "tags": [],
+      "team": null,
+      "email": "vera.sokolova@demo.co",
+      "title": "Chief Product Officer",
+      "seatId": "gJ7SjZXJ2cv18cTEf5HZ_",
+      "status": "active",
+      "endDate": null,
+      "floorId": "53VNjM6voACjjHxJzTWo6",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2019-08-19",
+      "department": "Product",
+      "leaveNotes": null,
+      "officeDays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "l_TEYlR1t61zpDPfWLQ_D",
+      "name": "Noah Eriksson",
+      "tags": [],
+      "team": null,
+      "email": "noah.eriksson@demo.co",
+      "title": "Senior SRE",
+      "seatId": "2mU5dc2dYj6edcCSeHGwL",
+      "status": "active",
+      "endDate": null,
+      "floorId": "POMh9pcGOL9yuu_yFTJZ4",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2021-02-14",
+      "department": "Engineering",
+      "leaveNotes": null,
+      "officeDays": [
+        "Tue",
+        "Wed",
+        "Thu"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "m1LjfW6OOJNeu-u1V3QGk",
+      "name": "Aisha Yusuf",
+      "tags": [],
+      "team": null,
+      "email": "aisha.yusuf@demo.co",
+      "title": "Office Coordinator",
+      "seatId": "g4dt_g6aR3Fmoub0tknHF",
+      "status": "active",
+      "endDate": null,
+      "floorId": "9-CCXGewlHmUdGMmFtqFy",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2023-09-04",
+      "department": "Operations",
+      "leaveNotes": null,
+      "officeDays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "oyM3eFclmlVPQ6CWvlU9-",
+      "name": "Owen Ferrell",
+      "tags": [],
+      "team": null,
+      "email": "owen.ferrell@demo.co",
+      "title": "Senior Backend Engineer",
+      "seatId": "dPQfXN7V1dx14Uellv-Sm",
+      "status": "active",
+      "endDate": null,
+      "floorId": "POMh9pcGOL9yuu_yFTJZ4",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2022-09-15",
+      "department": "Engineering",
+      "leaveNotes": null,
+      "officeDays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri"
+      ],
+      "departureDate": null,
+      "accommodations": [
+        {
+          "id": "FPR0jCXs9q7lRX8315GYc",
+          "type": "standing-desk",
+          "notes": null,
+          "createdAt": "2026-04-27T22:58:04.926Z"
+        }
+      ],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor",
+        "standing-desk"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "p8zYv1E7tdJncPObSJlvt",
+      "name": "Jamie Walker",
+      "tags": [],
+      "team": null,
+      "email": "jamie.walker@demo.co",
+      "title": "Content Strategist",
+      "seatId": "S5ym0KExtdsAziACMHw6C",
+      "status": "on-leave",
+      "endDate": null,
+      "floorId": "9-CCXGewlHmUdGMmFtqFy",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2021-03-08",
+      "department": "Marketing",
+      "leaveNotes": null,
+      "officeDays": [
+        "Tue",
+        "Wed",
+        "Thu"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "po5Zkn-yc-FHVOZ2wFYTt",
+      "name": "Danielle Park",
+      "tags": [],
+      "team": null,
+      "email": "danielle.park@demo.co",
+      "title": "Frontend Engineer",
+      "seatId": "pA6FHepaUu2MoX3xc0z5Z",
+      "status": "active",
+      "endDate": null,
+      "floorId": "POMh9pcGOL9yuu_yFTJZ4",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2023-10-03",
+      "department": "Engineering",
+      "leaveNotes": null,
+      "officeDays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri"
+      ],
+      "departureDate": null,
+      "accommodations": [
+        {
+          "id": "QeuTvm0TUx8rOWTFvm0Zz",
+          "type": "standing-desk",
+          "notes": null,
+          "createdAt": "2026-04-27T22:58:04.926Z"
+        }
+      ],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor",
+        "standing-desk"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "q5tvcb7NpVtLuVzziecmt",
+      "name": "Theo Nakamura",
+      "tags": [],
+      "team": null,
+      "email": "theo.nakamura@demo.co",
+      "title": "FP&A Partner",
+      "seatId": "EgGLeOqL5TAoYfSLyiGZH",
+      "status": "active",
+      "endDate": null,
+      "floorId": "9-CCXGewlHmUdGMmFtqFy",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2022-08-15",
+      "department": "Finance",
+      "leaveNotes": null,
+      "officeDays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "rOoA58DbUTCKrSPAlNEjJ",
+      "name": "Parker Donovan",
+      "tags": [],
+      "team": null,
+      "email": "parker.donovan@demo.co",
+      "title": "Backend Engineer",
+      "seatId": null,
+      "status": "active",
+      "endDate": null,
+      "floorId": null,
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2026-04-20",
+      "department": "Engineering",
+      "leaveNotes": null,
+      "officeDays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "pending",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "stWZydaHwd1zjvOJ1xIGK",
+      "name": "Grace Park",
+      "tags": [],
+      "team": null,
+      "email": "grace.park@demo.co",
+      "title": "Recruiter",
+      "seatId": null,
+      "status": "on-leave",
+      "endDate": null,
+      "floorId": null,
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2021-08-16",
+      "department": "People",
+      "leaveNotes": null,
+      "officeDays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "u5O1vuKhqwyfh_IpMC-NM",
+      "name": "Henri Dubois",
+      "tags": [],
+      "team": null,
+      "email": "henri.dubois@demo.co",
+      "title": "Financial Analyst",
+      "seatId": null,
+      "status": "active",
+      "endDate": null,
+      "floorId": null,
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2023-04-24",
+      "department": "Finance",
+      "leaveNotes": null,
+      "officeDays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "uLQh3x0mO1FHhkLM91HcO",
+      "name": "Bernard Huang",
+      "tags": [],
+      "team": null,
+      "email": "bernard.huang@demo.co",
+      "title": "CFO",
+      "seatId": "UDULTuFwQ-06dP6hKvoPX",
+      "status": "active",
+      "endDate": null,
+      "floorId": "53VNjM6voACjjHxJzTWo6",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2019-01-15",
+      "department": "Finance",
+      "leaveNotes": null,
+      "officeDays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "uWajQuIOH9_EBRvV_IpW5",
+      "name": "Beatrice Thompson",
+      "tags": [],
+      "team": null,
+      "email": "beatrice.thompson@demo.co",
+      "title": "Senior Product Manager",
+      "seatId": "YvBrBoQRq65MZAP3goAuO",
+      "status": "active",
+      "endDate": null,
+      "floorId": "53VNjM6voACjjHxJzTWo6",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2021-11-04",
+      "department": "Product",
+      "leaveNotes": null,
+      "officeDays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "v5VOCg4LVt2isVez8_n4d",
+      "name": "Gabriel Silva",
+      "tags": [],
+      "team": null,
+      "email": "gabriel.silva@demo.co",
+      "title": "DevOps Engineer",
+      "seatId": "qTHJuQhuSHZmnWfVJaYhv",
+      "status": "active",
+      "endDate": null,
+      "floorId": "POMh9pcGOL9yuu_yFTJZ4",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2023-01-09",
+      "department": "Engineering",
+      "leaveNotes": null,
+      "officeDays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "weANmrDbD4ou6USPyGJ23",
+      "name": "Sofia Moretti",
+      "tags": [],
+      "team": null,
+      "email": "sofia.moretti@demo.co",
+      "title": "Staff Backend Engineer",
+      "seatId": "gZHnNQHg1bisxF_m7Rsvt",
+      "status": "active",
+      "endDate": null,
+      "floorId": "POMh9pcGOL9yuu_yFTJZ4",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2020-05-18",
+      "department": "Engineering",
+      "leaveNotes": null,
+      "officeDays": [
+        "Tue",
+        "Wed",
+        "Thu"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "wyG4iZYDlBlSKZzYFkJGH",
+      "name": "Keiko Yamamoto",
+      "tags": [],
+      "team": null,
+      "email": "keiko.yamamoto@demo.co",
+      "title": "DevOps Engineer",
+      "seatId": "pwgZv0VU_shROCmUrDY5V",
+      "status": "active",
+      "endDate": null,
+      "floorId": "POMh9pcGOL9yuu_yFTJZ4",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2024-06-03",
+      "department": "Engineering",
+      "leaveNotes": null,
+      "officeDays": [
+        "Mon",
+        "Wed",
+        "Fri"
+      ],
+      "departureDate": null,
+      "accommodations": [
+        {
+          "id": "ncB9t87q4SqsaEFvZ2yUY",
+          "type": "quiet-zone",
+          "notes": null,
+          "createdAt": "2026-04-27T22:58:04.926Z"
+        }
+      ],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "pending",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "xHl5kraujl9nlbfbRjoIp",
+      "name": "Hassan Demir",
+      "tags": [],
+      "team": null,
+      "email": "hassan.demir@demo.co",
+      "title": "Frontend Engineer",
+      "seatId": "2DSSgap7kIlwP0MCNz8Li",
+      "status": "active",
+      "endDate": null,
+      "floorId": "POMh9pcGOL9yuu_yFTJZ4",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2023-07-10",
+      "department": "Engineering",
+      "leaveNotes": null,
+      "officeDays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "full-time",
+      "equipmentNeeds": [
+        "laptop",
+        "monitor"
+      ],
+      "equipmentStatus": "provisioned",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    },
+    {
+      "id": "z_7f-ECQG_LhzBo8bPKt8",
+      "name": "Felix Ng",
+      "tags": [],
+      "team": null,
+      "email": "felix.ng@demo.co",
+      "title": "IT Operations Lead",
+      "seatId": "SHjAg_7s_V_KRnjGwF3Tg",
+      "status": "active",
+      "endDate": "2026-05-22",
+      "floorId": "9-CCXGewlHmUdGMmFtqFy",
+      "photoUrl": null,
+      "createdAt": "2026-04-27T22:58:04.926Z",
+      "leaveType": null,
+      "managerId": null,
+      "startDate": "2024-07-19",
+      "department": "Operations",
+      "leaveNotes": null,
+      "officeDays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri"
+      ],
+      "departureDate": null,
+      "accommodations": [],
+      "employmentType": "contractor",
+      "equipmentNeeds": [
+        "laptop",
+        "headset"
+      ],
+      "equipmentStatus": "pending",
+      "sensitivityTags": [],
+      "coverageEmployeeId": null,
+      "expectedReturnDate": null,
+      "pendingStatusChanges": []
+    }
+  ],
+  "floors": [
+    {
+      "id": "9-CCXGewlHmUdGMmFtqFy",
+      "name": "1. Ground floor",
+      "order": 0,
+      "elements": {
+        "0Nn-obzV_w-R4Eh_GxVgx": {
+          "x": 0,
+          "y": 0,
+          "id": "0Nn-obzV_w-R4Eh_GxVgx",
+          "type": "wall",
+          "label": "West wall",
+          "style": {
+            "fill": "#9CA3AF",
+            "stroke": "#4B5563",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 8,
+          "height": 800,
+          "locked": false,
+          "points": [
+            0,
+            0,
+            0,
+            800
+          ],
+          "zIndex": 0,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0,
+          "wallType": "solid",
+          "thickness": 8
+        },
+        "1Mix_Ck-dBQJ3qWu2Qobo": {
+          "x": 170,
+          "y": 80,
+          "id": "1Mix_Ck-dBQJ3qWu2Qobo",
+          "type": "common-area",
+          "label": "Reception",
+          "style": {
+            "fill": "#D1FAE5",
+            "stroke": "#059669",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 280,
+          "height": 100,
+          "locked": false,
+          "zIndex": 1,
+          "groupId": null,
+          "visible": true,
+          "areaName": "Reception",
+          "rotation": 0
+        },
+        "1r8vsq7VHgw8XGHekVHQW": {
+          "x": 110,
+          "y": 450,
+          "id": "1r8vsq7VHgw8XGHekVHQW",
+          "type": "private-office",
+          "label": "People office",
+          "style": {
+            "fill": "#E0E7FF",
+            "stroke": "#4338CA",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 160,
+          "deskId": "G-P02",
+          "height": 110,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor"
+          ],
+          "assignedEmployeeIds": [
+            "Yw4dldI2soj9VgLaYLYVE"
+          ]
+        },
+        "1zWP_b-tYfFEKZ7MgdMw1": {
+          "x": 528,
+          "y": 700,
+          "id": "1zWP_b-tYfFEKZ7MgdMw1",
+          "type": "desk",
+          "label": "Desk",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "G-D04",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "assignedEmployeeId": "UT3D1v-Eig_Hj8XmU9M85"
+        },
+        "2LzdJ1XsLDgvK815VVK2N": {
+          "x": 900,
+          "y": 480,
+          "id": "2LzdJ1XsLDgvK815VVK2N",
+          "type": "sofa",
+          "label": "Sofa",
+          "style": {
+            "fill": "#E5E7EB",
+            "stroke": "#4B5563",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 180,
+          "height": 60,
+          "locked": false,
+          "zIndex": 3,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0
+        },
+        "5roj7hXVvVamNnfbq26H_": {
+          "x": 820,
+          "y": 160,
+          "id": "5roj7hXVvVamNnfbq26H_",
+          "type": "conference-room",
+          "label": "Atlas (6p)",
+          "style": {
+            "fill": "#DBEAFE",
+            "stroke": "#2563EB",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 200,
+          "height": 180,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 6,
+          "roomName": "Atlas (6p)",
+          "rotation": 0
+        },
+        "B8mJ1EA-Wz53gKFcHLj_9": {
+          "x": 1192,
+          "y": 60,
+          "id": "B8mJ1EA-Wz53gKFcHLj_9",
+          "type": "wall",
+          "label": "East wall",
+          "style": {
+            "fill": "#9CA3AF",
+            "stroke": "#4B5563",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 8,
+          "height": 740,
+          "locked": false,
+          "points": [
+            0,
+            0,
+            0,
+            740
+          ],
+          "zIndex": 0,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0,
+          "wallType": "solid",
+          "thickness": 8
+        },
+        "C8v_mAIJ-4FjTuZ1Cmxia": {
+          "x": 370,
+          "y": 200,
+          "id": "C8v_mAIJ-4FjTuZ1Cmxia",
+          "type": "phone-booth",
+          "label": "Booth 2",
+          "style": {
+            "fill": "#F3E8FF",
+            "stroke": "#7C3AED",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 60,
+          "height": 60,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0
+        },
+        "ECAKj27eqhTL72HGaY1-T": {
+          "x": 1080,
+          "y": 480,
+          "id": "ECAKj27eqhTL72HGaY1-T",
+          "type": "plant",
+          "label": "Plant",
+          "style": {
+            "fill": "#BBF7D0",
+            "stroke": "#16A34A",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 40,
+          "height": 40,
+          "locked": false,
+          "zIndex": 3,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0
+        },
+        "EgGLeOqL5TAoYfSLyiGZH": {
+          "x": 110,
+          "y": 710,
+          "id": "EgGLeOqL5TAoYfSLyiGZH",
+          "type": "private-office",
+          "label": "Finance partner",
+          "style": {
+            "fill": "#E0E7FF",
+            "stroke": "#4338CA",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 160,
+          "deskId": "G-P04",
+          "height": 80,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "assignedEmployeeIds": [
+            "q5tvcb7NpVtLuVzziecmt"
+          ]
+        },
+        "ElrEkgndDhL0tYLqUTIqI": {
+          "x": 1188,
+          "y": 600,
+          "id": "ElrEkgndDhL0tYLqUTIqI",
+          "type": "window",
+          "label": "Window",
+          "style": {
+            "fill": "#DBEAFE",
+            "stroke": "#2563EB",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 80,
+          "height": 8,
+          "locked": false,
+          "zIndex": 1,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0,
+          "parentWallId": "B8mJ1EA-Wz53gKFcHLj_9",
+          "positionOnWall": 0.7
+        },
+        "I4f7YXmQOzuHzOh97uRoV": {
+          "x": 820,
+          "y": 160,
+          "id": "I4f7YXmQOzuHzOh97uRoV",
+          "type": "table-conference",
+          "label": "Conference table",
+          "seats": [],
+          "style": {
+            "fill": "#FAFAF9",
+            "stroke": "#78716C",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 140,
+          "height": 90,
+          "locked": false,
+          "zIndex": 3,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0,
+          "seatCount": 6,
+          "seatLayout": "around"
+        },
+        "MpjqwoEf1i1QwptnMVQOv": {
+          "x": 110,
+          "y": 580,
+          "id": "MpjqwoEf1i1QwptnMVQOv",
+          "type": "private-office",
+          "label": "Marketing office",
+          "style": {
+            "fill": "#E0E7FF",
+            "stroke": "#4338CA",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 160,
+          "deskId": "G-P03",
+          "height": 110,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "assignedEmployeeIds": [
+            "4CdwdsQUvSftay2WdoxXu"
+          ]
+        },
+        "NKpAgZo9BURPde0QluXfG": {
+          "x": 970,
+          "y": 200,
+          "id": "NKpAgZo9BURPde0QluXfG",
+          "type": "phone-booth",
+          "label": "Booth 4",
+          "style": {
+            "fill": "#F3E8FF",
+            "stroke": "#7C3AED",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 60,
+          "height": 60,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0
+        },
+        "NVBCZ02wCFj2gv0e3nirL": {
+          "x": 0,
+          "y": 0,
+          "id": "NVBCZ02wCFj2gv0e3nirL",
+          "type": "wall",
+          "label": "North wall",
+          "style": {
+            "fill": "#9CA3AF",
+            "stroke": "#4B5563",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 1200,
+          "height": 60,
+          "locked": false,
+          "points": [
+            0,
+            0,
+            900,
+            0,
+            1000,
+            60,
+            1200,
+            60
+          ],
+          "zIndex": 0,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0,
+          "wallType": "solid",
+          "thickness": 8
+        },
+        "QJ51jWBkQSpg7ikaMvP3Q": {
+          "x": 520,
+          "y": 160,
+          "id": "QJ51jWBkQSpg7ikaMvP3Q",
+          "type": "conference-room",
+          "label": "Odyssey (10p)",
+          "style": {
+            "fill": "#DBEAFE",
+            "stroke": "#2563EB",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 220,
+          "height": 180,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 10,
+          "roomName": "Odyssey (10p)",
+          "rotation": 0
+        },
+        "S5ym0KExtdsAziACMHw6C": {
+          "x": 616,
+          "y": 620,
+          "id": "S5ym0KExtdsAziACMHw6C",
+          "type": "desk",
+          "label": "Desk",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "G-D05",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "assignedEmployeeId": "p8zYv1E7tdJncPObSJlvt"
+        },
+        "SHjAg_7s_V_KRnjGwF3Tg": {
+          "x": 616,
+          "y": 700,
+          "id": "SHjAg_7s_V_KRnjGwF3Tg",
+          "type": "desk",
+          "label": "Desk",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "G-D06",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "assignedEmployeeId": "z_7f-ECQG_LhzBo8bPKt8"
+        },
+        "T5VLFsNu80TsYFwm40aLO": {
+          "x": 1020,
+          "y": 660,
+          "id": "T5VLFsNu80TsYFwm40aLO",
+          "type": "sofa",
+          "label": "Sofa",
+          "style": {
+            "fill": "#E5E7EB",
+            "stroke": "#4B5563",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 160,
+          "height": 60,
+          "locked": false,
+          "zIndex": 3,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0
+        },
+        "YpsV7H9axs8IsAp2BNAkW": {
+          "x": 760,
+          "y": 600,
+          "id": "YpsV7H9axs8IsAp2BNAkW",
+          "type": "common-area",
+          "label": "Kitchen / Lounge",
+          "style": {
+            "fill": "#D1FAE5",
+            "stroke": "#059669",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 700,
+          "height": 340,
+          "locked": false,
+          "zIndex": 1,
+          "groupId": null,
+          "visible": true,
+          "areaName": "Kitchen / Lounge",
+          "rotation": 0
+        },
+        "Zdbkojo5Wiu-Px2hN8vK7": {
+          "x": 440,
+          "y": 700,
+          "id": "Zdbkojo5Wiu-Px2hN8vK7",
+          "type": "desk",
+          "label": "Desk",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "G-D02",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "assignedEmployeeId": "h7ouTd4SW6HVlOQvdFt5Z"
+        },
+        "aqaDqrwygnfKcCeqUMhuF": {
+          "x": 624,
+          "y": 336,
+          "id": "aqaDqrwygnfKcCeqUMhuF",
+          "type": "workstation",
+          "label": "Workstation (6)",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 432,
+          "deskId": "G-W01",
+          "height": 54,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0,
+          "equipment": [
+            "monitor",
+            "docking-station"
+          ],
+          "positions": 6,
+          "assignedEmployeeIds": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        "cacgSBnRUfI3JO-OH1Azx": {
+          "x": 170,
+          "y": 95,
+          "id": "cacgSBnRUfI3JO-OH1Azx",
+          "type": "sofa",
+          "label": "Sofa",
+          "style": {
+            "fill": "#E5E7EB",
+            "stroke": "#4B5563",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 140,
+          "height": 40,
+          "locked": false,
+          "zIndex": 3,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0
+        },
+        "dTjowlx_ctuIqKQIq_ZTA": {
+          "x": 1188,
+          "y": 400,
+          "id": "dTjowlx_ctuIqKQIq_ZTA",
+          "type": "door",
+          "label": "Side exit",
+          "style": {
+            "fill": "#F3F4F6",
+            "stroke": "#6B7280",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 32,
+          "height": 8,
+          "locked": false,
+          "zIndex": 1,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0,
+          "openAngle": 90,
+          "parentWallId": "B8mJ1EA-Wz53gKFcHLj_9",
+          "positionOnWall": 0.42,
+          "swingDirection": "right"
+        },
+        "eCr8khKfg6eqOOFFSUJMh": {
+          "x": 1080,
+          "y": 720,
+          "id": "eCr8khKfg6eqOOFFSUJMh",
+          "type": "plant",
+          "label": "Plant",
+          "style": {
+            "fill": "#BBF7D0",
+            "stroke": "#16A34A",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 40,
+          "height": 40,
+          "locked": false,
+          "zIndex": 3,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0
+        },
+        "g4dt_g6aR3Fmoub0tknHF": {
+          "x": 528,
+          "y": 620,
+          "id": "g4dt_g6aR3Fmoub0tknHF",
+          "type": "desk",
+          "label": "Desk",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "G-D03",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "assignedEmployeeId": "m1LjfW6OOJNeu-u1V3QGk"
+        },
+        "iaqTJDaxZul3Xmq9XGtkO": {
+          "x": 1188,
+          "y": 250,
+          "id": "iaqTJDaxZul3Xmq9XGtkO",
+          "type": "window",
+          "label": "Window",
+          "style": {
+            "fill": "#DBEAFE",
+            "stroke": "#2563EB",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 80,
+          "height": 8,
+          "locked": false,
+          "zIndex": 1,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0,
+          "parentWallId": "B8mJ1EA-Wz53gKFcHLj_9",
+          "positionOnWall": 0.24
+        },
+        "l-UBx_m8fyoobwrEUTS0U": {
+          "x": 970,
+          "y": 130,
+          "id": "l-UBx_m8fyoobwrEUTS0U",
+          "type": "phone-booth",
+          "label": "Booth 3",
+          "style": {
+            "fill": "#F3E8FF",
+            "stroke": "#7C3AED",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 60,
+          "height": 60,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0
+        },
+        "lP0_I86uzeVPnK9NWmMIq": {
+          "x": 0,
+          "y": 800,
+          "id": "lP0_I86uzeVPnK9NWmMIq",
+          "type": "wall",
+          "label": "South wall",
+          "style": {
+            "fill": "#9CA3AF",
+            "stroke": "#4B5563",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 1200,
+          "height": 8,
+          "locked": false,
+          "points": [
+            0,
+            0,
+            1200,
+            0
+          ],
+          "zIndex": 0,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0,
+          "wallType": "solid",
+          "thickness": 8
+        },
+        "oxe4MBhNPQI5IRElBtIMT": {
+          "x": 520,
+          "y": 160,
+          "id": "oxe4MBhNPQI5IRElBtIMT",
+          "type": "table-conference",
+          "label": "Conference table",
+          "seats": [],
+          "style": {
+            "fill": "#FAFAF9",
+            "stroke": "#78716C",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 160,
+          "height": 100,
+          "locked": false,
+          "zIndex": 3,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0,
+          "seatCount": 8,
+          "seatLayout": "around"
+        },
+        "qM6V5Dn5SQM0XRjvO_oxf": {
+          "x": 370,
+          "y": 130,
+          "id": "qM6V5Dn5SQM0XRjvO_oxf",
+          "type": "phone-booth",
+          "label": "Booth 1",
+          "style": {
+            "fill": "#F3E8FF",
+            "stroke": "#7C3AED",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 60,
+          "height": 60,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0
+        },
+        "qh6DDvtWU4RZHH39jIm5V": {
+          "x": 500,
+          "y": 4,
+          "id": "qh6DDvtWU4RZHH39jIm5V",
+          "type": "window",
+          "label": "Window",
+          "style": {
+            "fill": "#DBEAFE",
+            "stroke": "#2563EB",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 120,
+          "height": 8,
+          "locked": false,
+          "zIndex": 1,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0,
+          "parentWallId": "NVBCZ02wCFj2gv0e3nirL",
+          "positionOnWall": 0.5
+        },
+        "uvQ9Ox3Nefvu2dP_9RALO": {
+          "x": 110,
+          "y": 320,
+          "id": "uvQ9Ox3Nefvu2dP_9RALO",
+          "type": "private-office",
+          "label": "Operations office",
+          "style": {
+            "fill": "#E0E7FF",
+            "stroke": "#4338CA",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 160,
+          "deskId": "G-P01",
+          "height": 110,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor"
+          ],
+          "assignedEmployeeIds": [
+            "WRUXOAyZ2ScLuPlQyWHnp"
+          ]
+        },
+        "v7TRtufciZaklBTB2whME": {
+          "x": 440,
+          "y": 620,
+          "id": "v7TRtufciZaklBTB2whME",
+          "type": "desk",
+          "label": "Desk",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "G-D01",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "assignedEmployeeId": "TkN4uN7PTOn1OVKmYeg9k"
+        },
+        "ySNBGYnr8_BFmj181-nTi": {
+          "x": 290,
+          "y": 60,
+          "id": "ySNBGYnr8_BFmj181-nTi",
+          "type": "plant",
+          "label": "Plant",
+          "style": {
+            "fill": "#BBF7D0",
+            "stroke": "#16A34A",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 40,
+          "height": 40,
+          "locked": false,
+          "zIndex": 3,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0
+        },
+        "yVx5gUPZjb0sJo7t-fd8X": {
+          "x": 600,
+          "y": 796,
+          "id": "yVx5gUPZjb0sJo7t-fd8X",
+          "type": "door",
+          "label": "Main entrance",
+          "style": {
+            "fill": "#F3F4F6",
+            "stroke": "#6B7280",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 32,
+          "height": 8,
+          "locked": false,
+          "zIndex": 1,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0,
+          "openAngle": 90,
+          "parentWallId": "lP0_I86uzeVPnK9NWmMIq",
+          "positionOnWall": 0.5,
+          "swingDirection": "right"
+        },
+        "zDXsFDEDPA6VnEyvRRHI-": {
+          "x": 4,
+          "y": 400,
+          "id": "zDXsFDEDPA6VnEyvRRHI-",
+          "type": "door",
+          "label": "Stairwell",
+          "style": {
+            "fill": "#F3F4F6",
+            "stroke": "#6B7280",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 32,
+          "height": 8,
+          "locked": false,
+          "zIndex": 1,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0,
+          "openAngle": 90,
+          "parentWallId": "0Nn-obzV_w-R4Eh_GxVgx",
+          "positionOnWall": 0.5,
+          "swingDirection": "right"
+        }
+      }
+    },
+    {
+      "id": "POMh9pcGOL9yuu_yFTJZ4",
+      "name": "2. Engineering loft",
+      "order": 1,
+      "elements": {
+        "2DSSgap7kIlwP0MCNz8Li": {
+          "x": 320,
+          "y": 280,
+          "id": "2DSSgap7kIlwP0MCNz8Li",
+          "type": "desk",
+          "label": "Frontend squad 6",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "E-FE06",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor"
+          ],
+          "assignedEmployeeId": "xHl5kraujl9nlbfbRjoIp"
+        },
+        "2mU5dc2dYj6edcCSeHGwL": {
+          "x": 200,
+          "y": 480,
+          "id": "2mU5dc2dYj6edcCSeHGwL",
+          "type": "desk",
+          "label": "DevOps/SRE 2",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "E-DO02",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor"
+          ],
+          "assignedEmployeeId": "l_TEYlR1t61zpDPfWLQ_D"
+        },
+        "666bUZGIej-1VvHaPPiYw": {
+          "x": 1188,
+          "y": 180,
+          "id": "666bUZGIej-1VvHaPPiYw",
+          "type": "window",
+          "label": "Window",
+          "style": {
+            "fill": "#DBEAFE",
+            "stroke": "#2563EB",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 100,
+          "height": 8,
+          "locked": false,
+          "zIndex": 1,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0,
+          "parentWallId": "aVDZg_bI3XYEIMp9-_zxR",
+          "positionOnWall": 0.2
+        },
+        "ESmUnKldfQmN0_ZRQT7io": {
+          "x": 0,
+          "y": 760,
+          "id": "ESmUnKldfQmN0_ZRQT7io",
+          "type": "wall",
+          "label": "South wall",
+          "style": {
+            "fill": "#9CA3AF",
+            "stroke": "#4B5563",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 1112,
+          "height": 40,
+          "locked": false,
+          "points": [
+            0,
+            0,
+            1112,
+            40
+          ],
+          "zIndex": 0,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0,
+          "wallType": "solid",
+          "thickness": 8
+        },
+        "EZ3V4kXyAH5xax8bEFTS_": {
+          "x": 1080,
+          "y": 640,
+          "id": "EZ3V4kXyAH5xax8bEFTS_",
+          "type": "table-conference",
+          "label": "Conference table",
+          "seats": [],
+          "style": {
+            "fill": "#FAFAF9",
+            "stroke": "#78716C",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 120,
+          "height": 70,
+          "locked": false,
+          "zIndex": 3,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0,
+          "seatCount": 4,
+          "seatLayout": "around"
+        },
+        "IBkjUgCg2rgTPhvgpRjPw": {
+          "x": 820,
+          "y": 480,
+          "id": "IBkjUgCg2rgTPhvgpRjPw",
+          "type": "desk",
+          "label": "Platform 3",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "E-PL03",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor",
+            "standing-desk"
+          ],
+          "assignedEmployeeId": "4RCxvEjmZoiNTVO819LUz"
+        },
+        "N2Ynl1IM2ZII-ZulsHzcG": {
+          "x": 60,
+          "y": 720,
+          "id": "N2Ynl1IM2ZII-ZulsHzcG",
+          "type": "plant",
+          "label": "Plant",
+          "style": {
+            "fill": "#BBF7D0",
+            "stroke": "#16A34A",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 40,
+          "height": 40,
+          "locked": false,
+          "zIndex": 3,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0
+        },
+        "R-LCjh--_PUP3vQ6BvfcE": {
+          "x": 820,
+          "y": 280,
+          "id": "R-LCjh--_PUP3vQ6BvfcE",
+          "type": "desk",
+          "label": "Backend core 6",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "E-BE06",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor"
+          ],
+          "assignedEmployeeId": "Lv-LgF6qhPeT2_W5hlmob"
+        },
+        "VXIQqhuPx1dT__m9dLgfI": {
+          "x": 1080,
+          "y": 640,
+          "id": "VXIQqhuPx1dT__m9dLgfI",
+          "type": "conference-room",
+          "label": "Huddle (4p)",
+          "style": {
+            "fill": "#DBEAFE",
+            "stroke": "#2563EB",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 160,
+          "height": 120,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 4,
+          "roomName": "Huddle (4p)",
+          "rotation": 0
+        },
+        "X8YJkXZz0Z3HHsHqsoCd2": {
+          "x": 820,
+          "y": 600,
+          "id": "X8YJkXZz0Z3HHsHqsoCd2",
+          "type": "desk",
+          "label": "Platform 6",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "E-PL06",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor"
+          ],
+          "assignedEmployeeId": null
+        },
+        "ZfMwsKk5XqH6azGVOXPtI": {
+          "x": 700,
+          "y": 600,
+          "id": "ZfMwsKk5XqH6azGVOXPtI",
+          "type": "desk",
+          "label": "Platform 5",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "E-PL05",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor"
+          ],
+          "assignedEmployeeId": null
+        },
+        "a1_gWaV6l2Dj5AM8MmXC5": {
+          "x": 560,
+          "y": 720,
+          "id": "a1_gWaV6l2Dj5AM8MmXC5",
+          "type": "sofa",
+          "label": "Sofa",
+          "style": {
+            "fill": "#E5E7EB",
+            "stroke": "#4B5563",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 160,
+          "height": 54,
+          "locked": false,
+          "zIndex": 3,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0
+        },
+        "aVDZg_bI3XYEIMp9-_zxR": {
+          "x": 1192,
+          "y": 40,
+          "id": "aVDZg_bI3XYEIMp9-_zxR",
+          "type": "wall",
+          "label": "East wall",
+          "style": {
+            "fill": "#9CA3AF",
+            "stroke": "#4B5563",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 80,
+          "bulges": [
+            0,
+            -30
+          ],
+          "height": 760,
+          "locked": false,
+          "points": [
+            0,
+            0,
+            0,
+            700,
+            -80,
+            760
+          ],
+          "zIndex": 0,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0,
+          "wallType": "solid",
+          "thickness": 8
+        },
+        "dJhcBtJPCo8FC7FKRYFjv": {
+          "x": 700,
+          "y": 480,
+          "id": "dJhcBtJPCo8FC7FKRYFjv",
+          "type": "desk",
+          "label": "Platform 2",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "E-PL02",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor"
+          ],
+          "assignedEmployeeId": "8c-rhEwG0Yn9f6XvAV-zw"
+        },
+        "dPQfXN7V1dx14Uellv-Sm": {
+          "x": 820,
+          "y": 160,
+          "id": "dPQfXN7V1dx14Uellv-Sm",
+          "type": "desk",
+          "label": "Backend core 3",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "E-BE03",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor",
+            "standing-desk"
+          ],
+          "assignedEmployeeId": "oyM3eFclmlVPQ6CWvlU9-"
+        },
+        "fGJMyhGP0bFICp-1D5mdS": {
+          "x": 200,
+          "y": 160,
+          "id": "fGJMyhGP0bFICp-1D5mdS",
+          "type": "desk",
+          "label": "Frontend squad 2",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "E-FE02",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor"
+          ],
+          "assignedEmployeeId": "B5d9yyQGk61P4ki_QZnG4"
+        },
+        "gZHnNQHg1bisxF_m7Rsvt": {
+          "x": 700,
+          "y": 160,
+          "id": "gZHnNQHg1bisxF_m7Rsvt",
+          "type": "desk",
+          "label": "Backend core 2",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "E-BE02",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor"
+          ],
+          "assignedEmployeeId": "weANmrDbD4ou6USPyGJ23"
+        },
+        "h54TD5qbqWcXdjSG15p6N": {
+          "x": 60,
+          "y": 60,
+          "id": "h54TD5qbqWcXdjSG15p6N",
+          "type": "plant",
+          "label": "Plant",
+          "style": {
+            "fill": "#BBF7D0",
+            "stroke": "#16A34A",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 40,
+          "height": 40,
+          "locked": false,
+          "zIndex": 3,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0
+        },
+        "hUHFHocTreDbA-MvP--e8": {
+          "x": 0,
+          "y": 0,
+          "id": "hUHFHocTreDbA-MvP--e8",
+          "type": "wall",
+          "label": "West wall",
+          "style": {
+            "fill": "#9CA3AF",
+            "stroke": "#4B5563",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 8,
+          "height": 760,
+          "locked": false,
+          "points": [
+            0,
+            0,
+            0,
+            760
+          ],
+          "zIndex": 0,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0,
+          "wallType": "solid",
+          "thickness": 8
+        },
+        "h_76nBHVcudYbyTIYtoL4": {
+          "x": 560,
+          "y": 380,
+          "id": "h_76nBHVcudYbyTIYtoL4",
+          "type": "workstation",
+          "label": "Workstation (4)",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 288,
+          "deskId": "E-W01",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0,
+          "equipment": [
+            "docking-station"
+          ],
+          "positions": 4,
+          "assignedEmployeeIds": [
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        "hhuHAQG-T_L4ybx0SoayS": {
+          "x": 580,
+          "y": 160,
+          "id": "hhuHAQG-T_L4ybx0SoayS",
+          "type": "desk",
+          "label": "Backend core 1",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "E-BE01",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor"
+          ],
+          "assignedEmployeeId": "XXVlrGqaskyB8gMjHKW2U"
+        },
+        "iweyYErDKTXlm1-OuE2x-": {
+          "x": 580,
+          "y": 480,
+          "id": "iweyYErDKTXlm1-OuE2x-",
+          "type": "desk",
+          "label": "Platform 1",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "E-PL01",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor"
+          ],
+          "assignedEmployeeId": "B40wnjTT2B0xWnIjCBwO6"
+        },
+        "k680UowvXK1zKtKVU1i9U": {
+          "x": 580,
+          "y": 280,
+          "id": "k680UowvXK1zKtKVU1i9U",
+          "type": "desk",
+          "label": "Backend core 4",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "E-BE04",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor"
+          ],
+          "assignedEmployeeId": "Q6cWsPflPRJgQuCAjyJ6v"
+        },
+        "mNq943Xp60Rm0ge6-bB9p": {
+          "x": 1140,
+          "y": 60,
+          "id": "mNq943Xp60Rm0ge6-bB9p",
+          "type": "plant",
+          "label": "Plant",
+          "style": {
+            "fill": "#BBF7D0",
+            "stroke": "#16A34A",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 40,
+          "height": 40,
+          "locked": false,
+          "zIndex": 3,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0
+        },
+        "n1FwSTS79rmxpqsMuyZlh": {
+          "x": 80,
+          "y": 480,
+          "id": "n1FwSTS79rmxpqsMuyZlh",
+          "type": "desk",
+          "label": "DevOps/SRE 1",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "E-DO01",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor"
+          ],
+          "assignedEmployeeId": "4CPJEzLuDe8JuZTLQ5izM"
+        },
+        "oqAEXcesD-srvvXijX4Ha": {
+          "x": 320,
+          "y": 600,
+          "id": "oqAEXcesD-srvvXijX4Ha",
+          "type": "desk",
+          "label": "DevOps/SRE 6",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "E-DO06",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor"
+          ],
+          "assignedEmployeeId": null
+        },
+        "pA6FHepaUu2MoX3xc0z5Z": {
+          "x": 320,
+          "y": 160,
+          "id": "pA6FHepaUu2MoX3xc0z5Z",
+          "type": "desk",
+          "label": "Frontend squad 3",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "E-FE03",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor",
+            "standing-desk"
+          ],
+          "assignedEmployeeId": "po5Zkn-yc-FHVOZ2wFYTt"
+        },
+        "pXT0YjUMXldKXU5AkbVlj": {
+          "x": 80,
+          "y": 160,
+          "id": "pXT0YjUMXldKXU5AkbVlj",
+          "type": "desk",
+          "label": "Frontend squad 1",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "E-FE01",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor"
+          ],
+          "assignedEmployeeId": "_dM6iLqFfw3mfwrnwIOeD"
+        },
+        "pwgZv0VU_shROCmUrDY5V": {
+          "x": 320,
+          "y": 480,
+          "id": "pwgZv0VU_shROCmUrDY5V",
+          "type": "desk",
+          "label": "DevOps/SRE 3",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "E-DO03",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor",
+            "standing-desk"
+          ],
+          "assignedEmployeeId": "wyG4iZYDlBlSKZzYFkJGH"
+        },
+        "qTHJuQhuSHZmnWfVJaYhv": {
+          "x": 80,
+          "y": 600,
+          "id": "qTHJuQhuSHZmnWfVJaYhv",
+          "type": "desk",
+          "label": "DevOps/SRE 4",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "E-DO04",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor"
+          ],
+          "assignedEmployeeId": "v5VOCg4LVt2isVez8_n4d"
+        },
+        "r7grpcQQWXkuPhQ7Synps": {
+          "x": 700,
+          "y": 280,
+          "id": "r7grpcQQWXkuPhQ7Synps",
+          "type": "desk",
+          "label": "Backend core 5",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "E-BE05",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor"
+          ],
+          "assignedEmployeeId": "UIQWnUnxhElXcc5v5dHo8"
+        },
+        "rn06WNl4kQifjTzVICeQp": {
+          "x": 580,
+          "y": 600,
+          "id": "rn06WNl4kQifjTzVICeQp",
+          "type": "desk",
+          "label": "Platform 4",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "E-PL04",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor"
+          ],
+          "assignedEmployeeId": "HF4niHaGE7HEDPd-XTVuN"
+        },
+        "trPwCIh_mp6it_URo6BZG": {
+          "x": 80,
+          "y": 280,
+          "id": "trPwCIh_mp6it_URo6BZG",
+          "type": "desk",
+          "label": "Frontend squad 4",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "E-FE04",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor"
+          ],
+          "assignedEmployeeId": "7p87hjtiQVHfsEDjbM94H"
+        },
+        "uJ3CjHN9WBB3adzAZ3qI0": {
+          "x": 1188,
+          "y": 500,
+          "id": "uJ3CjHN9WBB3adzAZ3qI0",
+          "type": "window",
+          "label": "Window",
+          "style": {
+            "fill": "#DBEAFE",
+            "stroke": "#2563EB",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 100,
+          "height": 8,
+          "locked": false,
+          "zIndex": 1,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0,
+          "parentWallId": "aVDZg_bI3XYEIMp9-_zxR",
+          "positionOnWall": 0.6
+        },
+        "v7ZBA4WbP3AV41916twGE": {
+          "x": 200,
+          "y": 600,
+          "id": "v7ZBA4WbP3AV41916twGE",
+          "type": "desk",
+          "label": "DevOps/SRE 5",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "E-DO05",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor"
+          ],
+          "assignedEmployeeId": null
+        },
+        "wPIsMxCAHxYmGAMwi1ewk": {
+          "x": 200,
+          "y": 280,
+          "id": "wPIsMxCAHxYmGAMwi1ewk",
+          "type": "desk",
+          "label": "Frontend squad 5",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "E-FE05",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor"
+          ],
+          "assignedEmployeeId": "O6FQAwyAEx5zZaLzM3qhz"
+        },
+        "weup71EuW5QkZ3FuUNPKz": {
+          "x": 0,
+          "y": 0,
+          "id": "weup71EuW5QkZ3FuUNPKz",
+          "type": "wall",
+          "label": "North wall",
+          "style": {
+            "fill": "#9CA3AF",
+            "stroke": "#4B5563",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 1200,
+          "height": 40,
+          "locked": false,
+          "points": [
+            0,
+            0,
+            100,
+            40,
+            1200,
+            40
+          ],
+          "zIndex": 0,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0,
+          "wallType": "solid",
+          "thickness": 8
+        },
+        "x2eocRQSaBxKnecQ7lz-C": {
+          "x": -4,
+          "y": 380,
+          "id": "x2eocRQSaBxKnecQ7lz-C",
+          "type": "door",
+          "label": "Stairwell",
+          "style": {
+            "fill": "#F3F4F6",
+            "stroke": "#6B7280",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 32,
+          "height": 8,
+          "locked": false,
+          "zIndex": 1,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0,
+          "openAngle": 90,
+          "parentWallId": "hUHFHocTreDbA-MvP--e8",
+          "positionOnWall": 0.5,
+          "swingDirection": "right"
+        }
+      }
+    },
+    {
+      "id": "53VNjM6voACjjHxJzTWo6",
+      "name": "3. Leadership & Design",
+      "order": 2,
+      "elements": {
+        "34sSRhjvaYpYCSmClupzF": {
+          "x": 200,
+          "y": 100,
+          "id": "34sSRhjvaYpYCSmClupzF",
+          "type": "phone-booth",
+          "label": "Booth 1",
+          "style": {
+            "fill": "#F3E8FF",
+            "stroke": "#7C3AED",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 60,
+          "height": 60,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0
+        },
+        "3z7GjaeLR9gyQgZnjOsc5": {
+          "x": 600,
+          "y": 300,
+          "id": "3z7GjaeLR9gyQgZnjOsc5",
+          "type": "table-conference",
+          "label": "Conference table",
+          "seats": [],
+          "style": {
+            "fill": "#FAFAF9",
+            "stroke": "#78716C",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 180,
+          "height": 80,
+          "locked": false,
+          "zIndex": 3,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0,
+          "seatCount": 8,
+          "seatLayout": "around"
+        },
+        "4DswrXHyvJzgMVW-yLQIB": {
+          "x": 60,
+          "y": 540,
+          "id": "4DswrXHyvJzgMVW-yLQIB",
+          "type": "plant",
+          "label": "Plant",
+          "style": {
+            "fill": "#BBF7D0",
+            "stroke": "#16A34A",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 40,
+          "height": 40,
+          "locked": false,
+          "zIndex": 3,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0
+        },
+        "E4b4AHcyrYThuW9YuUUfV": {
+          "x": 660,
+          "y": 390,
+          "id": "E4b4AHcyrYThuW9YuUUfV",
+          "type": "desk",
+          "label": "Design 7",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "L-D07",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor"
+          ],
+          "assignedEmployeeId": null
+        },
+        "HCUhT8j6qiWFfpTbObkQl": {
+          "x": 780,
+          "y": 390,
+          "id": "HCUhT8j6qiWFfpTbObkQl",
+          "type": "desk",
+          "label": "Design 8",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "L-D08",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor"
+          ],
+          "assignedEmployeeId": null
+        },
+        "JIP6Z6Dbnokz_LsaqtXBS": {
+          "x": 0,
+          "y": 0,
+          "id": "JIP6Z6Dbnokz_LsaqtXBS",
+          "type": "wall",
+          "label": "North wall",
+          "style": {
+            "fill": "#9CA3AF",
+            "stroke": "#4B5563",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 1200,
+          "bulges": [
+            0,
+            40
+          ],
+          "height": 80,
+          "locked": false,
+          "points": [
+            0,
+            0,
+            1000,
+            0,
+            1200,
+            80
+          ],
+          "zIndex": 0,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0,
+          "wallType": "solid",
+          "thickness": 8
+        },
+        "Nto8xD0nXSo-EDMRyu6x5": {
+          "x": 900,
+          "y": 100,
+          "id": "Nto8xD0nXSo-EDMRyu6x5",
+          "type": "phone-booth",
+          "label": "Booth 3",
+          "style": {
+            "fill": "#F3E8FF",
+            "stroke": "#7C3AED",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 60,
+          "height": 60,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0
+        },
+        "O38QocUlx8L1NAAFehZ54": {
+          "x": 660,
+          "y": 210,
+          "id": "O38QocUlx8L1NAAFehZ54",
+          "type": "desk",
+          "label": "Design 3",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "L-D03",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor"
+          ],
+          "assignedEmployeeId": "ZSffTgODBJ24l3pHB7fvn"
+        },
+        "PrSkmoYOrIEcKn3_gL6HE": {
+          "x": 60,
+          "y": 200,
+          "id": "PrSkmoYOrIEcKn3_gL6HE",
+          "type": "plant",
+          "label": "Plant",
+          "style": {
+            "fill": "#BBF7D0",
+            "stroke": "#16A34A",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 40,
+          "height": 40,
+          "locked": false,
+          "zIndex": 3,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0
+        },
+        "QBMbKU_FS7ih85qeQXHEy": {
+          "x": 1060,
+          "y": 180,
+          "id": "QBMbKU_FS7ih85qeQXHEy",
+          "type": "common-area",
+          "label": "Executive lounge",
+          "style": {
+            "fill": "#D1FAE5",
+            "stroke": "#059669",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 240,
+          "height": 140,
+          "locked": false,
+          "zIndex": 1,
+          "groupId": null,
+          "visible": true,
+          "areaName": "Executive lounge",
+          "rotation": 0
+        },
+        "R3ZFm4NOHVjqBu_AlVA8s": {
+          "x": 540,
+          "y": 390,
+          "id": "R3ZFm4NOHVjqBu_AlVA8s",
+          "type": "desk",
+          "label": "Design 6",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "L-D06",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor"
+          ],
+          "assignedEmployeeId": "TYlca4BGlEb0cfrMo2h4o"
+        },
+        "SXtZZ6YBvi9RCMBo8Mjyf": {
+          "x": 810,
+          "y": 690,
+          "id": "SXtZZ6YBvi9RCMBo8Mjyf",
+          "type": "private-office",
+          "label": "VP Design",
+          "style": {
+            "fill": "#E0E7FF",
+            "stroke": "#4338CA",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 180,
+          "deskId": "L-P04",
+          "height": 140,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor",
+            "docking-station"
+          ],
+          "assignedEmployeeIds": [
+            "ZJef1bkIWcw2SE_wUfJ50"
+          ]
+        },
+        "Ss6sAPhtSxhTMDdyPRSH5": {
+          "x": 1188,
+          "y": 200,
+          "id": "Ss6sAPhtSxhTMDdyPRSH5",
+          "type": "window",
+          "label": "Window",
+          "style": {
+            "fill": "#DBEAFE",
+            "stroke": "#2563EB",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 120,
+          "height": 8,
+          "locked": false,
+          "zIndex": 1,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0,
+          "parentWallId": "fDO7X-2bLmvMiBgdXvRj-",
+          "positionOnWall": 0.17
+        },
+        "UDULTuFwQ-06dP6hKvoPX": {
+          "x": 370,
+          "y": 690,
+          "id": "UDULTuFwQ-06dP6hKvoPX",
+          "type": "private-office",
+          "label": "CFO office",
+          "style": {
+            "fill": "#E0E7FF",
+            "stroke": "#4338CA",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 180,
+          "deskId": "L-P02",
+          "height": 140,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor",
+            "docking-station"
+          ],
+          "assignedEmployeeIds": [
+            "uLQh3x0mO1FHhkLM91HcO"
+          ]
+        },
+        "UZS46DXg-w_ueTOmNqjXf": {
+          "x": 540,
+          "y": 210,
+          "id": "UZS46DXg-w_ueTOmNqjXf",
+          "type": "desk",
+          "label": "Design 2",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "L-D02",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor"
+          ],
+          "assignedEmployeeId": "-kSEv_PyCCpPu-ex9okMf"
+        },
+        "VKcGFUWBlsW9CTpCJZZA7": {
+          "x": 0,
+          "y": 0,
+          "id": "VKcGFUWBlsW9CTpCJZZA7",
+          "type": "wall",
+          "label": "West wall",
+          "style": {
+            "fill": "#9CA3AF",
+            "stroke": "#4B5563",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 8,
+          "height": 800,
+          "locked": false,
+          "points": [
+            0,
+            0,
+            0,
+            800
+          ],
+          "zIndex": 0,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0,
+          "wallType": "solid",
+          "thickness": 8
+        },
+        "VmzQJI4lxu1_eDOWySWJu": {
+          "x": 1188,
+          "y": 560,
+          "id": "VmzQJI4lxu1_eDOWySWJu",
+          "type": "window",
+          "label": "Window",
+          "style": {
+            "fill": "#DBEAFE",
+            "stroke": "#2563EB",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 120,
+          "height": 8,
+          "locked": false,
+          "zIndex": 1,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0,
+          "parentWallId": "fDO7X-2bLmvMiBgdXvRj-",
+          "positionOnWall": 0.67
+        },
+        "YvBrBoQRq65MZAP3goAuO": {
+          "x": 780,
+          "y": 210,
+          "id": "YvBrBoQRq65MZAP3goAuO",
+          "type": "desk",
+          "label": "Design 4",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "L-D04",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor"
+          ],
+          "assignedEmployeeId": "uWajQuIOH9_EBRvV_IpW5"
+        },
+        "dSHuZhJteM2L3vqJ7KSvE": {
+          "x": 0,
+          "y": 800,
+          "id": "dSHuZhJteM2L3vqJ7KSvE",
+          "type": "wall",
+          "label": "South wall",
+          "style": {
+            "fill": "#9CA3AF",
+            "stroke": "#4B5563",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 1200,
+          "height": 8,
+          "locked": false,
+          "points": [
+            0,
+            0,
+            1200,
+            0
+          ],
+          "zIndex": 0,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0,
+          "wallType": "solid",
+          "thickness": 8
+        },
+        "fDO7X-2bLmvMiBgdXvRj-": {
+          "x": 1192,
+          "y": 80,
+          "id": "fDO7X-2bLmvMiBgdXvRj-",
+          "type": "wall",
+          "label": "East wall",
+          "style": {
+            "fill": "#9CA3AF",
+            "stroke": "#4B5563",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 8,
+          "height": 720,
+          "locked": false,
+          "points": [
+            0,
+            0,
+            0,
+            720
+          ],
+          "zIndex": 0,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0,
+          "wallType": "solid",
+          "thickness": 8
+        },
+        "gJ7SjZXJ2cv18cTEf5HZ_": {
+          "x": 590,
+          "y": 690,
+          "id": "gJ7SjZXJ2cv18cTEf5HZ_",
+          "type": "private-office",
+          "label": "CPO office",
+          "style": {
+            "fill": "#E0E7FF",
+            "stroke": "#4338CA",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 180,
+          "deskId": "L-P03",
+          "height": 140,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor",
+            "docking-station"
+          ],
+          "assignedEmployeeIds": [
+            "i6NyeKxYeSUf3YHckUnde"
+          ]
+        },
+        "g_p7f27TlYc_9hauzmOrM": {
+          "x": 600,
+          "y": 300,
+          "id": "g_p7f27TlYc_9hauzmOrM",
+          "type": "common-area",
+          "label": "Design pod",
+          "style": {
+            "fill": "#D1FAE5",
+            "stroke": "#059669",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 480,
+          "height": 260,
+          "locked": false,
+          "zIndex": 1,
+          "groupId": null,
+          "visible": true,
+          "areaName": "Design pod",
+          "rotation": 0
+        },
+        "hz07Q58XZQxDGLbKmCjkL": {
+          "x": 4,
+          "y": 400,
+          "id": "hz07Q58XZQxDGLbKmCjkL",
+          "type": "door",
+          "label": "Stairwell",
+          "style": {
+            "fill": "#F3F4F6",
+            "stroke": "#6B7280",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 32,
+          "height": 8,
+          "locked": false,
+          "zIndex": 1,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0,
+          "openAngle": 90,
+          "parentWallId": "VKcGFUWBlsW9CTpCJZZA7",
+          "positionOnWall": 0.5,
+          "swingDirection": "right"
+        },
+        "kNgsENIAAK16VEb3ZGXfl": {
+          "x": 420,
+          "y": 390,
+          "id": "kNgsENIAAK16VEb3ZGXfl",
+          "type": "desk",
+          "label": "Design 5",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "L-D05",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor"
+          ],
+          "assignedEmployeeId": "H4QZeDpTR5sOpyEb40-g_"
+        },
+        "lGTk6nSVa5WCVue5jL4-L": {
+          "x": 1060,
+          "y": 200,
+          "id": "lGTk6nSVa5WCVue5jL4-L",
+          "type": "sofa",
+          "label": "Sofa",
+          "style": {
+            "fill": "#E5E7EB",
+            "stroke": "#4B5563",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 180,
+          "height": 60,
+          "locked": false,
+          "zIndex": 3,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0
+        },
+        "lXktMCf3DJSH0ZY7WLZbt": {
+          "x": 400,
+          "y": 100,
+          "id": "lXktMCf3DJSH0ZY7WLZbt",
+          "type": "phone-booth",
+          "label": "Booth 2",
+          "style": {
+            "fill": "#F3E8FF",
+            "stroke": "#7C3AED",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 60,
+          "height": 60,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0
+        },
+        "o2TFOoFIEgtCNe3DrsahQ": {
+          "x": 1140,
+          "y": 230,
+          "id": "o2TFOoFIEgtCNe3DrsahQ",
+          "type": "plant",
+          "label": "Plant",
+          "style": {
+            "fill": "#BBF7D0",
+            "stroke": "#16A34A",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 40,
+          "height": 40,
+          "locked": false,
+          "zIndex": 3,
+          "groupId": null,
+          "visible": true,
+          "rotation": 0
+        },
+        "quCkh1c31t9CeVnBxbQOm": {
+          "x": 150,
+          "y": 690,
+          "id": "quCkh1c31t9CeVnBxbQOm",
+          "type": "private-office",
+          "label": "CEO office",
+          "style": {
+            "fill": "#E0E7FF",
+            "stroke": "#4338CA",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 180,
+          "deskId": "L-P01",
+          "height": 140,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor",
+            "docking-station"
+          ],
+          "assignedEmployeeIds": [
+            "Z4RDSNHh9-Vub_9hIr1Wi"
+          ]
+        },
+        "zweRq1snh-ArOmMhxj90i": {
+          "x": 420,
+          "y": 210,
+          "id": "zweRq1snh-ArOmMhxj90i",
+          "type": "desk",
+          "label": "Design 1",
+          "style": {
+            "fill": "#FEF3C7",
+            "stroke": "#D97706",
+            "opacity": 1,
+            "strokeWidth": 2
+          },
+          "width": 72,
+          "deskId": "L-D01",
+          "height": 48,
+          "locked": false,
+          "zIndex": 2,
+          "groupId": null,
+          "visible": true,
+          "capacity": 1,
+          "rotation": 0,
+          "equipment": [
+            "monitor",
+            "tablet"
+          ],
+          "assignedEmployeeId": "ZwXfs22Rj6Rty_T5o8SNa"
+        }
+      }
+    }
+  ],
+  "exportedAt": "2026-04-27T23:35:19.939Z"
+}

@@ -281,7 +281,17 @@ export function TopBar() {
   ]
 
   return (
-    <div className="h-14 bg-white border-b border-gray-200 dark:bg-gray-900 dark:border-gray-800 flex items-center px-3 sm:px-4 gap-2 sm:gap-3 flex-shrink-0 overflow-x-auto whitespace-nowrap">
+    /* CSS subtlety hidden by Wave 20A's responsive pass: `overflow-x:
+       auto` + default `overflow-y: visible` makes browsers compute
+       `overflow-y` to `auto` too — turning the topbar into a
+       vertically-scrollable container. Dropdown panels (`absolute
+       mt-1 …`) opened inside the topbar then become children of a
+       scrollable container and either get clipped to the topbar's
+       55px height or push `scrollTop` and shove every other item
+       off-screen. `overflow-x-clip` keeps narrow-viewport horizontal
+       protection while preserving `overflow-y: visible`, so
+       dropdowns paint cleanly outside the topbar's box. */
+    <div className="h-14 bg-white border-b border-gray-200 dark:bg-gray-900 dark:border-gray-800 flex items-center px-3 sm:px-4 gap-2 sm:gap-3 flex-shrink-0 overflow-x-clip whitespace-nowrap">
       {/* Wave 20A: the TopBar packs identity + save state + viewport
           controls + view nav + account into a single row. Below `md`
           the editor canvas itself is gated, so on the OTHER editor
