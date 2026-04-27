@@ -99,13 +99,32 @@ function PhoneBoothRenderer({ element, isSelected }: PhoneBoothRendererProps) {
         opacity={element.style.opacity}
       />
 
+      {/* Phone-icon glyph as the always-visible identity cue. The
+       * booth's label (e.g. "Booth 1", "Quiet pod", or whatever the
+       * user named it) renders below — falling back to a short
+       * "Booth" if the label is empty so the chrome reads cleanly on
+       * a default-named booth. The previous renderer hardcoded
+       * "Phone Booth" and ignored `element.label` entirely, which
+       * meant any user-customised name was silently dropped on the
+       * canvas (it still shows in the Properties panel and roster). */}
       <Text
-        text="Phone Booth"
+        text={'☎'}
+        x={-element.width / 2}
+        y={-element.height / 2 + 8}
+        width={element.width}
+        align="center"
+        fontSize={16}
+        fill="#16A34A"
+        listening={false}
+      />
+      <Text
+        text={element.label?.trim() || 'Booth'}
         x={-element.width / 2 + 2}
-        y={-5}
+        y={element.height / 2 - 16}
         width={element.width - 4}
         align="center"
         fontSize={9}
+        fontStyle="bold"
         fill="#166534"
         listening={false}
       />
