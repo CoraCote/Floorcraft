@@ -259,7 +259,7 @@ describe('CommandPalette', () => {
           locked: false, groupId: null, zIndex: 0, visible: true,
           label: '', // no label → should NOT surface as an element row
           style: { fill: '#fff', stroke: '#000', strokeWidth: 1, opacity: 1 },
-          points: [0, 0, 100, 0], thickness: 4, connectedWallIds: [], wallType: 'solid',
+          points: [0, 0, 100, 0], thickness: 4, wallType: 'solid',
         } as any,
       },
     })

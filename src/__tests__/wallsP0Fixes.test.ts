@@ -36,7 +36,6 @@ function makeWall(
     points,
     bulges: bulges ?? Array.from({ length: points.length / 2 - 1 }, () => 0),
     thickness: 6,
-    connectedWallIds: [],
     wallType: 'solid',
   }
 }

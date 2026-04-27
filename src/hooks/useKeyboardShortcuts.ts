@@ -286,6 +286,14 @@ export function useKeyboardShortcuts() {
           e.preventDefault()
           setActiveTool('measure'); return
         }
+        // Shift+O activates the rectangle/room tool ("rOom"). Plain O is
+        // already "jump to Org chart" on project routes; Shift-locking
+        // mirrors the door/window/measure pattern so the
+        // architectural-creation hotkeys cluster on the same modifier.
+        if (e.shiftKey && (e.key === 'O' || e.key === 'o')) {
+          e.preventDefault()
+          setActiveTool('room'); return
+        }
         if (!e.shiftKey && (e.key === 'r' || e.key === 'R') && !(teamSlug && officeSlug)) {
           setActiveTool('rect-shape'); return
         }

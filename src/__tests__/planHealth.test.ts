@@ -131,7 +131,6 @@ function wall(id: string, overrides: Partial<WallElement> = {}): WallElement {
     style: { fill: '#fff', stroke: '#000', strokeWidth: 1, opacity: 1 },
     points: [0, 0, 200, 0],
     thickness: 4,
-    connectedWallIds: [],
     wallType: 'solid',
     ...overrides,
   }

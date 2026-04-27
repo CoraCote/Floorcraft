@@ -213,9 +213,15 @@ describe('IT device migration — round-trip through loadFromLegacyPayload', () 
     expect(out.ap1).toBeDefined()
     expect(isAccessPointElement(out.ap1 as CanvasElement)).toBe(true)
     // Wall back-fill ran (bulges length === segments, wallType defaulted).
-    const w = out.w1 as unknown as { bulges: number[]; wallType: string; connectedWallIds: string[] }
+    // `connectedWallIds` was retired and is now dropped on load, so we
+    // assert its absence here too — it must not survive the migration.
+    const w = out.w1 as unknown as {
+      bulges: number[]
+      wallType: string
+      connectedWallIds?: unknown
+    }
     expect(w.bulges).toEqual([0, 0])
     expect(w.wallType).toBe('solid')
-    expect(w.connectedWallIds).toEqual([])
+    expect(w.connectedWallIds).toBeUndefined()
   })
 })

@@ -40,7 +40,6 @@ function wall(points: number[]): WallElement {
     style: { fill: 'transparent', stroke: '#000', strokeWidth: 4, opacity: 1 },
     points,
     thickness: 4,
-    connectedWallIds: [],
     wallType: 'solid',
   }
 }

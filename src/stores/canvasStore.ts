@@ -13,6 +13,13 @@ export type ToolType =
   | 'wall'
   | 'door'
   | 'window'
+  // Rectangle "room" tool. Click-drag from corner A to corner B to commit
+  // four connected wall elements forming a closed rectangle in a single
+  // undo step. Distinct from `rect-shape` (a single drawing-primitive
+  // rectangle): a room is a real architectural enclosure made of four
+  // `WallElement`s that doors and windows can attach to. See
+  // `useWallDrawing` for the shared snap behaviour the corners use.
+  | 'room'
   // Drawing primitives (Feature A)
   | 'rect-shape'
   | 'ellipse'

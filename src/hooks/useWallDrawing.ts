@@ -292,69 +292,17 @@ export function useWallDrawing() {
     [activeTool, snapPoint, scheduleSession, cardinalAnchor],
   )
 
-  const handleCanvasMouseUp = useCallback(
-    (canvasX: number, canvasY: number, shiftKey = false) => {
-      if (activeTool !== 'wall' || !pressRef.current) return
-      const press = pressRef.current
-      // Prefer the last mousemove position (a drag may end back at press
-      // coords after the user pulls and releases). Fall back to release
-      // coords if mousemove never fired.
-      const endpoint = dragEndpointRef.current ?? { x: canvasX, y: canvasY }
-      pressRef.current = null
-      dragEndpointRef.current = null
-      // Shift-held at commit projects the candidate vertex onto the
-      // nearest 0°/45°/90°/135° ray from the previous committed vertex
-      // before any other snap step runs.
-      const lockAnchor = shiftKey ? cardinalAnchor() : null
-      const snapped = snapPoint(press.x, press.y, { shiftLock: lockAnchor })
-      const dx = endpoint.x - press.x
-      const dy = endpoint.y - press.y
-      const isDrag = dx * dx + dy * dy >= DRAG_THRESHOLD_SQ
-
-      // Any pending scheduled preview is obsolete — this commit supersedes
-      // it. Flush synchronously so the committed state is immediately
-      // visible to the next event.
-      flushSession()
-      const prev = sessionRef.current
-      if (!prev.isDrawing) {
-        commitSession({
-          isDrawing: true,
-          points: [snapped.x, snapped.y],
-          bulges: [],
-          currentPoint: snapped,
-          previewBulge: null,
-        })
-        return
-      }
-
-      const lastX = prev.points[prev.points.length - 2]
-      const lastY = prev.points[prev.points.length - 1]
-      let committedBulge = 0
-      if (isDrag) {
-        const chord = Math.hypot(snapped.x - lastX, snapped.y - lastY)
-        const raw = signedPerpOffset(
-          lastX,
-          lastY,
-          snapped.x,
-          snapped.y,
-          endpoint.x,
-          endpoint.y,
-        )
-        committedBulge = clampBulge(raw, chord)
-      }
-      commitSession({
-        ...prev,
-        points: [...prev.points, snapped.x, snapped.y],
-        bulges: [...prev.bulges, committedBulge],
-        currentPoint: snapped,
-        previewBulge: null,
-      })
-    },
-    [activeTool, snapPoint, commitSession, flushSession, cardinalAnchor],
-  )
-
-  const handleCanvasDoubleClick = useCallback(() => {
-    if (activeTool !== 'wall' || !sessionRef.current.isDrawing) return
+  /**
+   * Internal: finalise the in-flight wall and reset the session. Shared
+   * between the explicit double-click finaliser and the auto-close path
+   * (Fix 3 — clicking near the starting vertex commits the close vertex
+   * and immediately finalises). Reads from `sessionRef` rather than
+   * the React-state mirror so it can be called from inside the same
+   * event-loop tick as a `commitSession` (the ref is updated
+   * synchronously; the React-state mirror catches up asynchronously).
+   */
+  const finaliseDrawing = useCallback(() => {
+    if (!sessionRef.current.isDrawing) return
     const { points, bulges } = sessionRef.current
     if (points.length >= 4) {
       const expectedBulges = points.length / 2 - 1
@@ -399,14 +347,124 @@ export function useWallDrawing() {
         points,
         bulges: normalizedBulges,
         thickness: 6,
-        connectedWallIds: [],
         wallType: 'solid',
         ...(wallDrawStyle && wallDrawStyle !== 'solid' ? { dashStyle: wallDrawStyle } : {}),
       }
       addElement(wall)
     }
     resetSession()
-  }, [activeTool, addElement, getMaxZIndex, resetSession])
+  }, [addElement, getMaxZIndex, resetSession])
+
+  const handleCanvasMouseUp = useCallback(
+    (canvasX: number, canvasY: number, shiftKey = false) => {
+      if (activeTool !== 'wall' || !pressRef.current) return
+      const press = pressRef.current
+      // Prefer the last mousemove position (a drag may end back at press
+      // coords after the user pulls and releases). Fall back to release
+      // coords if mousemove never fired.
+      const endpoint = dragEndpointRef.current ?? { x: canvasX, y: canvasY }
+      pressRef.current = null
+      dragEndpointRef.current = null
+      // Shift-held at commit projects the candidate vertex onto the
+      // nearest 0°/45°/90°/135° ray from the previous committed vertex
+      // before any other snap step runs.
+      const lockAnchor = shiftKey ? cardinalAnchor() : null
+      const snapped = snapPoint(press.x, press.y, { shiftLock: lockAnchor })
+      const dx = endpoint.x - press.x
+      const dy = endpoint.y - press.y
+      const isDrag = dx * dx + dy * dy >= DRAG_THRESHOLD_SQ
+
+      // Any pending scheduled preview is obsolete — this commit supersedes
+      // it. Flush synchronously so the committed state is immediately
+      // visible to the next event.
+      flushSession()
+      const prev = sessionRef.current
+      if (!prev.isDrawing) {
+        commitSession({
+          isDrawing: true,
+          points: [snapped.x, snapped.y],
+          bulges: [],
+          currentPoint: snapped,
+          previewBulge: null,
+        })
+        return
+      }
+
+      const lastX = prev.points[prev.points.length - 2]
+      const lastY = prev.points[prev.points.length - 1]
+
+      // Auto-close: if the candidate vertex (after all the normal snap
+      // steps above) is within `ENDPOINT_SNAP_PX / stageScale` canvas
+      // units of the FIRST committed vertex of the polyline, AND we
+      // already have at least three vertices (so closing makes a real
+      // closed shape, not a degenerate two-segment line), commit the
+      // closing vertex AT EXACTLY the start coords and auto-finalise
+      // the wall. The `closeSnapTarget` shortcut here over-rides the
+      // pre-snap `snapped` value so that small numerical drift in the
+      // existing snap pipeline can't leave a 1px gap at the closure.
+      //
+      // We require `prev.points.length >= 6` (3+ committed vertices, i.e.
+      // at least three corners of a polygon) to avoid auto-closing back
+      // onto the start before the user has drawn enough segments for a
+      // closed shape to make geometric sense. With exactly 2 committed
+      // vertices (`points.length === 4`), closing would commit a wall
+      // that walks out and immediately walks back — degenerate.
+      let closeX: number | null = null
+      let closeY: number | null = null
+      if (prev.points.length >= 6) {
+        const firstX = prev.points[0]
+        const firstY = prev.points[1]
+        const stageScale = useCanvasStore.getState().stageScale || 1
+        const closeRadius = ENDPOINT_SNAP_PX / stageScale
+        const dCloseX = snapped.x - firstX
+        const dCloseY = snapped.y - firstY
+        if (dCloseX * dCloseX + dCloseY * dCloseY <= closeRadius * closeRadius) {
+          closeX = firstX
+          closeY = firstY
+        }
+      }
+
+      let committedBulge = 0
+      const finalX = closeX !== null ? closeX : snapped.x
+      const finalY = closeY !== null ? closeY : snapped.y
+      if (isDrag) {
+        const chord = Math.hypot(finalX - lastX, finalY - lastY)
+        const raw = signedPerpOffset(
+          lastX,
+          lastY,
+          finalX,
+          finalY,
+          endpoint.x,
+          endpoint.y,
+        )
+        committedBulge = clampBulge(raw, chord)
+      }
+      commitSession({
+        ...prev,
+        points: [...prev.points, finalX, finalY],
+        bulges: [...prev.bulges, committedBulge],
+        currentPoint: { x: finalX, y: finalY },
+        previewBulge: null,
+      })
+
+      // After commit: if this click closed the polyline, immediately
+      // finalise the wall and reset — no double-click required. We
+      // schedule the finalise via a microtask (Promise.resolve().then)
+      // rather than calling `handleCanvasDoubleClick` synchronously so
+      // any setState that just batched in `commitSession` flushes
+      // first; the finalise reads `sessionRef.current` directly so
+      // it sees the just-appended closing vertex regardless.
+      if (closeX !== null && closeY !== null) {
+        finaliseDrawing()
+      }
+    },
+    [activeTool, snapPoint, commitSession, flushSession, cardinalAnchor, finaliseDrawing],
+  )
+
+  const handleCanvasDoubleClick = useCallback(() => {
+    if (activeTool !== 'wall') return
+    finaliseDrawing()
+  }, [activeTool, finaliseDrawing])
 
   return {
     wallDrawingState: state,

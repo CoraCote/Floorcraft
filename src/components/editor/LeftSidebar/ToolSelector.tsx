@@ -63,6 +63,21 @@ const tools: ToolDef[] = [
     shortcut: '⇧N',
     description: 'Click a wall to place a window along its length.',
   },
+  // Rectangle / room tool. Click and drag from one corner to the opposite
+  // corner; on release we commit four connected walls in a single undo
+  // step. Distinct from the `rect-shape` drawing primitive — that one
+  // creates a single filled rectangle annotation; this one creates four
+  // real `WallElement`s that doors and windows can attach to. The Square
+  // (lucide) icon mirrors what most floor-plan editors use for "room."
+  // Shortcut Shift+O ("rOom") sits next to Shift+D / Shift+N so the
+  // architectural-creation hotkeys cluster on the keyboard.
+  {
+    id: 'room',
+    label: 'Room',
+    icon: <Square size={18} aria-hidden="true" />,
+    shortcut: '⇧O',
+    description: 'Click and drag to draw a 4-wall rectangular room. Hold Shift for a square.',
+  },
   // Drawing primitives. Shortcut picks:
   //   R = rect, E = ellipse (C is already taken visually by "Circle" but we
   //   avoid the D/G/M/R conflicts in useKeyboardShortcuts), L = line,

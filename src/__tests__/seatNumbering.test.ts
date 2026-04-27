@@ -41,7 +41,7 @@ function wall(id = nanoid()): WallElement {
     id, type: 'wall', x: 0, y: 0, width: 100, height: 4, rotation: 0,
     locked: false, groupId: null, zIndex: 0, label: 'Wall', visible: true,
     style: { fill: '#000', stroke: '#000', strokeWidth: 2, opacity: 1 },
-    points: [0, 0, 100, 0], thickness: 4, connectedWallIds: [], wallType: 'solid',
+    points: [0, 0, 100, 0], thickness: 4, wallType: 'solid',
   }
 }
 

@@ -129,7 +129,6 @@ function makeWall(
     points,
     bulges: opts.bulges,
     thickness: 8,
-    connectedWallIds: [],
     wallType: opts.wallType ?? 'solid',
   }
 }

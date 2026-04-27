@@ -69,7 +69,6 @@ describe('Curved wall end-to-end flow', () => {
       points: [0, 0, 100, 0, 200, 0],
       bulges: [20, 0],
       thickness: 6,
-      connectedWallIds: [],
       wallType: 'solid',
     }
     useElementsStore.setState({ elements: { w1: w } })
@@ -98,7 +97,6 @@ describe('Curved wall end-to-end flow', () => {
       points: [0, 0, 100, 0],
       bulges: [0],
       thickness: 6,
-      connectedWallIds: [],
       wallType: 'solid',
     }
     useElementsStore.setState({ elements: { w1: w } })

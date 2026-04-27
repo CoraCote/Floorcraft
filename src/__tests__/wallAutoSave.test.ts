@@ -53,7 +53,6 @@ describe('Wall persistence', () => {
       points: [0, 0, 100, 0, 200, 0],
       bulges: [0, 10],
       thickness: 6,
-      connectedWallIds: [],
       wallType: 'solid',
     }
     const payload = {
@@ -109,8 +108,10 @@ describe('Wall persistence', () => {
     const w = (loaded.elements as Record<string, WallElement>).w1
     // Migration: a 2-vertex wall has 1 segment → bulges length 1, all zeros.
     expect(w.bulges).toEqual([0])
-    // Migration also back-fills connectedWallIds when absent — already had
-    // it here, so just confirm it's preserved as an array.
-    expect(Array.isArray(w.connectedWallIds)).toBe(true)
+    // The dead `connectedWallIds` slot is dropped on load — the migrated
+    // shape no longer carries it, even when the legacy payload did.
+    expect(
+      (w as unknown as Record<string, unknown>).connectedWallIds,
+    ).toBeUndefined()
   })
 })

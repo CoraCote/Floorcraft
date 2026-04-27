@@ -59,7 +59,6 @@ function makeWall(overrides: Partial<WallElement> = {}): WallElement {
     points: [0, 0, 200, 0],
     bulges: [0],
     thickness: 6,
-    connectedWallIds: [],
     wallType: 'solid',
     ...overrides,
   }

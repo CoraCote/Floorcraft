@@ -21,7 +21,6 @@ function seedWall(partial: Partial<WallElement> = {}): WallElement {
     points: [0, 0, 100, 0, 200, 0],
     bulges: [0, 0],
     thickness: 6,
-    connectedWallIds: [],
     wallType: 'solid',
     ...partial,
   }

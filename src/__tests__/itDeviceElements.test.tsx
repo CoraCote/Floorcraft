@@ -172,7 +172,7 @@ function makeWall(): WallElement {
     rotation: 0, locked: false, groupId: null, zIndex: 0,
     label: '', visible: true, style: baseStyle,
     points: [0, 0, 100, 0],
-    thickness: 4, connectedWallIds: [], wallType: 'solid',
+    thickness: 4, wallType: 'solid',
   }
 }
 function makeDoor(): DoorElement {

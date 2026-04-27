@@ -15,6 +15,15 @@ interface ElementsState {
 
   // CRUD
   addElement: (element: CanvasElement) => void
+  /**
+   * Batched additive create. The whole array is added in a single store
+   * mutation so zundo records ONE history entry — undo rolls back the
+   * entire batch. Used by the rectangle/room tool (4 walls in one
+   * gesture) and by anything else that creates multiple elements as a
+   * single user-visible action. `addElement` per-element would record
+   * N history entries instead and force the user to undo N times.
+   */
+  addElements: (elements: CanvasElement[]) => void
   updateElement: (id: string, updates: Partial<CanvasElement>) => void
   removeElement: (id: string) => void
   removeElements: (ids: string[]) => void
@@ -48,6 +57,14 @@ export const useElementsStore = create<ElementsState>()(
         set((state) => ({
           elements: { ...state.elements, [element.id]: element },
         })),
+
+      addElements: (els) =>
+        set((state) => {
+          if (els.length === 0) return state
+          const next = { ...state.elements }
+          for (const el of els) next[el.id] = el
+          return { elements: next }
+        }),
 
       updateElement: (id, updates) =>
         set((state) => {

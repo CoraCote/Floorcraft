@@ -68,10 +68,13 @@ type AutoSavePayload = {
 
 /**
  * Migrate a deserialized elements map. Older payloads predate the curved-walls
- * feature and don't have `bulges` or `connectedWallIds` on wall elements.
- * Back-fill these fields so consumers can safely `.some(b => b !== 0)` and
- * `.length === points.length/2 - 1` without first checking for undefined.
- * Unknown properties are preserved — this is a forward-compatible migration.
+ * feature and don't have `bulges` on wall elements; back-fill the array so
+ * consumers can safely `.some(b => b !== 0)` and `.length === points.length/2
+ * - 1` without first checking for undefined. Unknown properties are
+ * preserved — this is a forward-compatible migration. The dead
+ * `connectedWallIds` slot from earlier wall versions is dropped on load
+ * (see the wall branch of `migrateElements`) since the field is no longer
+ * part of `WallElement`.
  */
 /**
  * Seat-bearing element types carry an optional `equipment: string[]`
@@ -168,12 +171,22 @@ function migrateElements(
         (WALL_TYPES as readonly string[]).includes(el.wallType)
           ? (el.wallType as WallType)
           : 'solid'
+      // Drop the dead `connectedWallIds` field on load. Earlier versions of
+      // `WallElement` declared a connectivity-graph slot but never wrote or
+      // read it outside back-fill code paths. The field has now been
+      // removed from the type; here we strip it from any legacy payload
+      // that still ships it so downstream consumers see a clean shape.
+      // Spreading first then deleting is cheaper than reconstructing the
+      // object field-by-field, and keeps any *other* legacy fields we
+      // haven't catalogued yet flowing through unchanged.
+      const {
+        connectedWallIds: _legacyConnectedWallIds,
+        ...elWithoutDeadField
+      } = el
+      void _legacyConnectedWallIds
       out[id] = {
-        ...el,
+        ...elWithoutDeadField,
         bulges,
-        connectedWallIds: Array.isArray(el.connectedWallIds)
-          ? el.connectedWallIds
-          : [],
         wallType,
       }
     } else if (typeof el.type === 'string' && EQUIPPABLE_TYPES.has(el.type)) {

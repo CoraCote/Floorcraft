@@ -12,6 +12,7 @@ import { SelectionOverlay } from './SelectionOverlay'
 import { HoverOutline } from './HoverOutline'
 import { AlignmentGuides } from './AlignmentGuides'
 import { WallDrawingOverlay } from './WallDrawingOverlay'
+import { RoomDrawingOverlay } from './RoomDrawingOverlay'
 import { WallEditOverlay } from './WallEditOverlay'
 import { AttachmentGhost } from './AttachmentGhost'
 import { MarqueeOverlay } from './MarqueeOverlay'
@@ -30,7 +31,9 @@ import { useSeatDragStore } from '../../../stores/seatDragStore'
 import { useEmployeeStore } from '../../../stores/employeeStore'
 import { consumeQueueAtElement } from '../../../lib/multiSeatAssign'
 import { useToastStore } from '../../../stores/toastStore'
-import { findNearestStraightWallHit } from '../../../lib/wallAttachment'
+import { findNearestStraightWallHit, findNearestWallVertex } from '../../../lib/wallAttachment'
+import { buildRoomWalls, squareConstrain } from '../../../lib/buildRoom'
+import { ENDPOINT_SNAP_PX as WALL_SNAP_PX } from '../../../lib/wallSnap'
 import { nanoid } from 'nanoid'
 import type { DoorElement, WindowElement, CanvasElement } from '../../../types/elements'
 import { LIBRARY_DRAG_MIME, buildLibraryElement, type LibraryItem } from '../LeftSidebar/ElementLibrary'
@@ -329,6 +332,18 @@ export function CanvasStage() {
     { startX: number; startY: number; endX: number; endY: number } | null
   >(null)
 
+  // Room (rectangle) tool drag state. The press anchor lives in a ref so
+  // a fast double-render can't drop it between events; the live preview
+  // lives in React state so the dashed overlay re-renders during the
+  // drag. Kept separate from `shapeDragRef` because the tools have
+  // different commit paths (room → 4 walls in one batch; primitives →
+  // one shape) and a mid-drag tool switch should never leave one tool's
+  // state pending in the other tool's cleanup branch.
+  const roomDragRef = useRef<{ startX: number; startY: number } | null>(null)
+  const [roomPreview, setRoomPreview] = useState<
+    { startX: number; startY: number; endX: number; endY: number } | null
+  >(null)
+
   // Measure-tool session. Committed vertices live here as a flat array;
   // the active cursor position lives in React state (so the overlay
   // re-renders as the pointer moves). Cleared on Escape, tool switch, or
@@ -436,6 +451,7 @@ export function CanvasStage() {
         activeTool === 'wall' ||
         activeTool === 'door' ||
         activeTool === 'window' ||
+        activeTool === 'room' ||
         PRIMITIVE_TOOLS.has(activeTool)
       if (creationTool && !canEdit) {
         if (e.target === e.target.getStage()) {
@@ -484,6 +500,39 @@ export function CanvasStage() {
         const canvasX = (pointer.x - stageX) / stageScale
         const canvasY = (pointer.y - stageY) / stageScale
         onWallMouseDown(canvasX, canvasY)
+        return
+      }
+
+      // Room (rectangle) tool: press records the first corner; mousemove
+      // updates the dashed preview; release commits four walls in a
+      // single undo batch (see `buildRoomWalls`). The press happens on
+      // the stage itself or any element — the rectangle drag is
+      // intentionally allowed to start inside an existing element so
+      // users can carve a new room around or beside something they
+      // already placed.
+      if (activeTool === 'room' && e.evt.button === 0) {
+        const stage = stageRef.current
+        if (!stage) return
+        const pointer = stage.getPointerPosition()
+        if (!pointer) return
+        const canvasX = (pointer.x - stageX) / stageScale
+        const canvasY = (pointer.y - stageY) / stageScale
+        // Snap the start corner to a nearby wall vertex if one is in
+        // range — same helper the wall tool uses at click time. Lets a
+        // user start a new room from an existing room's corner without
+        // pixel-precise pointer aim.
+        const radius = WALL_SNAP_PX / (stageScale || 1)
+        const elements = useElementsStore.getState().elements
+        const hit = findNearestWallVertex(elements, canvasX, canvasY, radius)
+        const startX = hit ? hit.x : canvasX
+        const startY = hit ? hit.y : canvasY
+        roomDragRef.current = { startX, startY }
+        setRoomPreview({
+          startX,
+          startY,
+          endX: startX,
+          endY: startY,
+        })
         return
       }
 
@@ -820,6 +869,55 @@ export function CanvasStage() {
         )
       }
 
+      // Room tool drag: update the dashed preview rectangle on every
+      // pointer move while pressed. The endpoint snaps the same way the
+      // wall-tool corner snap does — drag near an existing wall vertex
+      // and the corresponding rectangle corner snaps onto it. We feed
+      // the SHIFTED corners into the preview when Shift is held so the
+      // user sees the square they'll commit, not the raw drag rect.
+      if (activeTool === 'room' && roomDragRef.current) {
+        const stage = stageRef.current
+        if (!stage) return
+        const pointer = stage.getPointerPosition()
+        if (!pointer) return
+        const canvasX = (pointer.x - stageX) / stageScale
+        const canvasY = (pointer.y - stageY) / stageScale
+        const start = roomDragRef.current
+        // Cardinal-square constrain when Shift is held; otherwise plain
+        // free rectangle. The same rule (`squareConstrain`) is reused
+        // at commit so the preview and the committed walls always
+        // agree on the dimensions.
+        const constrained = e.evt.shiftKey
+          ? (() => {
+              const c = squareConstrain({
+                ax: start.startX,
+                ay: start.startY,
+                bx: canvasX,
+                by: canvasY,
+              })
+              return { x: c.bx, y: c.by }
+            })()
+          : { x: canvasX, y: canvasY }
+        // Endpoint snap: if the dragged corner is within snap range of
+        // an existing wall vertex, jump onto it. Same helper the wall
+        // tool uses, same screen-pixel radius, same stageScale
+        // conversion. We do NOT snap the start corner mid-drag — once
+        // pressed, the start is fixed.
+        const stageScaleNow = useCanvasStore.getState().stageScale || 1
+        const radius = WALL_SNAP_PX / stageScaleNow
+        const elements = useElementsStore.getState().elements
+        const hit = findNearestWallVertex(elements, constrained.x, constrained.y, radius)
+        const endX = hit ? hit.x : constrained.x
+        const endY = hit ? hit.y : constrained.y
+        setRoomPreview({
+          startX: start.startX,
+          startY: start.startY,
+          endX,
+          endY,
+        })
+        return
+      }
+
       // Primitive drag: update preview rectangle / line every move while
       // pressed. No anchor ref means the user isn't dragging (press
       // happened on a non-canvas element or outside the stage) — bail.
@@ -919,6 +1017,14 @@ export function CanvasStage() {
       neighborhoodDragRef.current = null
       setNeighborhoodPreview(null)
     }
+    // Room drag — same pattern as the primitive/neighborhood cleanup.
+    // Drop the in-flight rectangle preview so it doesn't linger after
+    // the cursor leaves the canvas; the user expects a tool drag that
+    // wanders out of the canvas to be cancelled, not committed.
+    if (roomDragRef.current) {
+      roomDragRef.current = null
+      setRoomPreview(null)
+    }
     // Measure-tool: keep committed vertices visible, but drop the cursor
     // trail since its last-known value would be stale the moment the
     // pointer re-enters somewhere else.
@@ -946,6 +1052,10 @@ export function CanvasStage() {
       if (neighborhoodDragRef.current) {
         neighborhoodDragRef.current = null
         setNeighborhoodPreview(null)
+      }
+      if (roomDragRef.current) {
+        roomDragRef.current = null
+        setRoomPreview(null)
       }
       setMeasureSession((prev) =>
         prev.points.length > 0 || prev.cursor || prev.finalised
@@ -1094,6 +1204,33 @@ export function CanvasStage() {
       onWallMouseUp(canvasX, canvasY, shiftKey)
     }
 
+    // Room tool commit: build four walls in a single batch and reset.
+    // We bail without committing if the drag was effectively a click
+    // (zero-area rect) — same defensive behaviour as the primitive
+    // commit path so an accidental click doesn't spawn a flat
+    // four-wall stack on top of itself. After commit we auto-return
+    // to the select tool so the user can immediately style/move the
+    // new room (matches the behaviour of the primitive tools).
+    if (activeTool === 'room' && roomDragRef.current && roomPreview) {
+      const start = roomDragRef.current
+      const end = roomPreview
+      roomDragRef.current = null
+      setRoomPreview(null)
+      const elementsStore = useElementsStore.getState()
+      const baseZ = elementsStore.getMaxZIndex() + 1
+      const walls = buildRoomWalls(
+        { ax: start.startX, ay: start.startY, bx: end.endX, by: end.endY },
+        baseZ,
+      )
+      if (walls.length === 0) return
+      // Single batched add — zundo records ONE history entry, so a
+      // single Cmd+Z removes the entire rectangle.
+      elementsStore.addElements(walls)
+      useUIStore.getState().setSelectedIds(walls.map((w) => w.id))
+      useCanvasStore.getState().setActiveTool('select')
+      return
+    }
+
     // Neighborhood drag commit. Threshold of 8 canvas units so a
     // stray click doesn't silently paint a tiny zone. Less strict
     // than primitives because neighborhoods are explicitly meant to
@@ -1161,7 +1298,7 @@ export function CanvasStage() {
       useUIStore.getState().setSelectedIds([element.id])
       useCanvasStore.getState().setActiveTool('select')
     }
-  }, [activeTool, stageX, stageY, stageScale, onWallMouseUp, marquee, shapePreview, neighborhoodPreview, clearSelection, setContextMenu])
+  }, [activeTool, stageX, stageY, stageScale, onWallMouseUp, marquee, shapePreview, neighborhoodPreview, roomPreview, clearSelection, setContextMenu])
 
   // Base cursor per tool. For door/window we additionally flip to
   // `not-allowed` when the cursor is NOT over a wall in snap range — so the
@@ -1173,6 +1310,7 @@ export function CanvasStage() {
     cursor = ghostHasHit ? 'crosshair' : 'not-allowed'
   }
   if (PRIMITIVE_TOOLS.has(activeTool)) cursor = 'crosshair'
+  if (activeTool === 'room') cursor = 'crosshair'
   if (activeTool === 'measure') cursor = 'crosshair'
   if (activeTool === 'calibrate-scale') cursor = 'crosshair'
   if (activeTool === 'neighborhood') cursor = 'crosshair'
@@ -1417,6 +1555,7 @@ export function CanvasStage() {
         {seatMapColorMode && <SeatMapColorMode />}
         <AlignmentGuides guides={dragAlignmentGuides} />
         <WallDrawingOverlay {...wallDrawingState} />
+        <RoomDrawingOverlay preview={roomPreview} />
         <AttachmentGhost
           tool={activeTool}
           cursor={ghostCursor}

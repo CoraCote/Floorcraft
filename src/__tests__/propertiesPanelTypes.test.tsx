@@ -96,7 +96,6 @@ describe('PropertiesPanel — per-type render coverage', () => {
       ...baseProps,
       points: [0, 0, 100, 0],
       thickness: 4,
-      connectedWallIds: [],
       wallType: 'solid',
     }
     selectOne('w1', el)

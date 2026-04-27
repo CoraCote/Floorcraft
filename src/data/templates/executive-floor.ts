@@ -54,7 +54,6 @@ function makeWall(
     style: { fill: '#9CA3AF', stroke: '#4B5563', strokeWidth: 2, opacity: 1 },
     points,
     thickness: 8,
-    connectedWallIds: [],
     wallType: 'solid',
   }
 }

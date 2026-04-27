@@ -42,7 +42,6 @@ function wall(id: string): WallElement {
     visible: true,
     points: [0, 0, 100, 0, 100, 50],
     thickness: 4,
-    connectedWallIds: [],
     wallType: 'solid',
     style: { fill: 'transparent', stroke: '#111', strokeWidth: 4, opacity: 1 },
   }

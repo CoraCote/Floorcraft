@@ -16,7 +16,6 @@ function makeWall(id: string): WallElement {
     style: { fill: '#000', stroke: '#111827', strokeWidth: 6, opacity: 1 },
     points: [0, 0, 100, 0],
     thickness: 6,
-    connectedWallIds: [],
     wallType: 'solid',
   }
 }
