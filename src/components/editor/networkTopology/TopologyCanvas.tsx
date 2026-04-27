@@ -16,6 +16,7 @@ import {
 import '@xyflow/react/dist/style.css'
 import { useMemo } from 'react'
 import { useNetworkTopologyStore } from '../../../stores/networkTopologyStore'
+import { useFloorStore } from '../../../stores/floorStore'
 import { TopologyNodeCard, type TopologyNodeData } from './TopologyNode'
 import {
   TopologyEdgeRenderer,
@@ -63,25 +64,47 @@ function CanvasInner({ selectedId, onSelectNode, onRequestConnection }: Props) {
   const topology = useNetworkTopologyStore((s) => s.topology)
   const applyNodeChanges = useNetworkTopologyStore((s) => s.applyNodeChanges)
   const applyEdgeChanges = useNetworkTopologyStore((s) => s.applyEdgeChanges)
+  // M6.6: pull floors so the per-node link badge can resolve a friendly
+  // "AP-12 on Engineering loft" tooltip. The dependency means the badge
+  // re-renders if the linked element is renamed or its floor renamed —
+  // both rare events but worth getting right.
+  const floors = useFloorStore((s) => s.floors)
 
   // Transform store → react-flow shape. Recomputes on every topology
   // change; cheap because the maps are small (target ~50 nodes for an
   // enterprise office) and react-flow diffs internally.
   const nodes = useMemo<RFNode<TopologyNodeData>[]>(() => {
     if (!topology) return []
-    return Object.values(topology.nodes).map((n) => ({
-      id: n.id,
-      type: 'topology',
-      position: n.position,
-      data: {
-        type: n.type,
-        label: n.label,
-        model: n.model,
-        status: n.status,
-      },
-      selected: n.id === selectedId,
-    }))
-  }, [topology, selectedId])
+    return Object.values(topology.nodes).map((n) => {
+      let linkedLabel: string | null = null
+      if (n.floorElementId) {
+        // Walk floors for the element + owning floor name. O(floors ×
+        // elements) on a miss but only for linked nodes; an
+        // unenterprise office tops out at ~5 floors × 500 elements.
+        for (const f of floors) {
+          const el = f.elements[n.floorElementId]
+          if (el) {
+            linkedLabel = `${el.label || el.id} on ${f.name}`
+            break
+          }
+        }
+      }
+      return {
+        id: n.id,
+        type: 'topology',
+        position: n.position,
+        data: {
+          type: n.type,
+          label: n.label,
+          model: n.model,
+          status: n.status,
+          floorElementId: n.floorElementId ?? null,
+          linkedLabel,
+        },
+        selected: n.id === selectedId,
+      }
+    })
+  }, [topology, selectedId, floors])
 
   const edges = useMemo<RFEdge<TopologyEdgeData>[]>(() => {
     if (!topology) return []

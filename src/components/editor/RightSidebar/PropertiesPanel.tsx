@@ -27,6 +27,8 @@ import {
   Plug,
   Network,
   Video,
+  Link2,
+  ExternalLink,
   AlignHorizontalJustifyStart,
   AlignHorizontalJustifyCenter,
   AlignHorizontalJustifyEnd,
@@ -43,6 +45,15 @@ import { useElementsStore } from '../../../stores/elementsStore'
 import { useEmployeeStore } from '../../../stores/employeeStore'
 import { useVisibleEmployees } from '../../../hooks/useVisibleEmployees'
 import { useNeighborhoodStore } from '../../../stores/neighborhoodStore'
+import { useNetworkTopologyStore } from '../../../stores/networkTopologyStore'
+import { useProjectStore } from '../../../stores/projectStore'
+import {
+  findTopologyNodeForElement,
+  topologyNodeTypeForElement,
+} from '../../../lib/networkTopologyLinkage'
+import { NODE_META as TOPOLOGY_NODE_META } from '../networkTopology/topologyMeta'
+import { createEmptyTopology } from '../../../types/networkTopology'
+import { nanoid } from 'nanoid'
 import { NeighborhoodPropertiesPanel } from './NeighborhoodPropertiesPanel'
 import { PanelSection } from './PanelSection'
 import { PanelEmptyState } from './PanelEmptyState'
@@ -670,6 +681,142 @@ function ITDeviceStatusField({
         ))}
       </select>
     </div>
+  )
+}
+
+/**
+ * M6.6 — "Topology" section rendered inside the floor-plan
+ * Properties panel for any IT-device element type (the six from M1).
+ *
+ * Two states:
+ *
+ *   1. A topology node references this element (`floorElementId === el.id`).
+ *      Render a friendly "Linked to topology node 'Firewall A'" line +
+ *      an "Open in topology" link that navigates to /network with
+ *      `?focus=<nodeId>`. The receiving page picks up the param and
+ *      selects + pans to the node.
+ *
+ *   2. No topology node references it. Render a "Add to network
+ *      topology" button — when the element's type has a compatible
+ *      topology-node type (today: only `'access-point'` ↔ `'access-point'`),
+ *      clicking creates a new topology node with the right type and
+ *      pre-fills its label/serial/model from the element. The new
+ *      node is automatically linked.
+ *
+ * The "back-link" lookup is derived (not stored on the element) — see
+ * `findTopologyNodeForElement` for the rationale.
+ */
+function ElementTopologySection({ elementId }: { elementId: string }) {
+  const navigate = useNavigate()
+  const { teamSlug, officeSlug } = useParams<{ teamSlug: string; officeSlug: string }>()
+  const elements = useElementsStore((s) => s.elements)
+  const topology = useNetworkTopologyStore((s) => s.topology)
+  const officeId = useProjectStore((s) => s.officeId)
+  const setTopology = useNetworkTopologyStore((s) => s.setTopology)
+  const addNode = useNetworkTopologyStore((s) => s.addNode)
+  const linkNodeToElement = useNetworkTopologyStore((s) => s.linkNodeToElement)
+
+  const element = elements[elementId]
+  const linkedNode = findTopologyNodeForElement(topology, elementId)
+
+  if (!element) return null
+
+  // Compatibility check — only IT-device types with a non-empty
+  // `COMPATIBLE_FLOOR_TYPES` row can be added to topology. Today
+  // that's `'access-point'` only; see the COMPATIBLE_FLOOR_TYPES
+  // table for the full mapping.
+  const compatibleNodeType = topologyNodeTypeForElement(element.type)
+
+  const handleOpenInTopology = () => {
+    if (!linkedNode || !teamSlug || !officeSlug) return
+    navigate(
+      `/t/${teamSlug}/o/${officeSlug}/network?focus=${encodeURIComponent(linkedNode.id)}`,
+    )
+  }
+
+  const handleAddToTopology = () => {
+    if (!compatibleNodeType) return
+    // Lazily back-fill an empty topology if the office has none yet —
+    // a user can land on the floor plan first and the network-topology
+    // page may never have hydrated. Without this back-fill `addNode`
+    // would silently no-op (it short-circuits when the topology is null).
+    if (!topology && officeId) {
+      setTopology(createEmptyTopology(officeId))
+    }
+    const id = `node-${nanoid(8)}`
+    const meta = TOPOLOGY_NODE_META[compatibleNodeType]
+    // Pre-fill from the element's IT-device fields. Each IT type has
+    // the fields at predictable paths; we read off the loose shape
+    // (rather than narrowing to a specific element type) because all
+    // six IT interfaces share the relevant subset.
+    const elShape = element as {
+      label?: string
+      model?: string | null
+      serialNumber?: string | null
+      vendor?: string | null
+    }
+    addNode({
+      id,
+      type: compatibleNodeType,
+      label: elShape.label || `New ${meta.typeName}`,
+      model: elShape.model ?? null,
+      serialNumber: elShape.serialNumber ?? null,
+      vendor: elShape.vendor ?? null,
+      status: 'planned',
+      // Position is overwritten by the auto-layout pass on add when
+      // the topology isn't manually arranged; this default keeps
+      // TypeScript happy.
+      position: { x: 280, y: 200 },
+    })
+    // Two-step (add then link) so the store-side cardinality enforcement
+    // sees the same code path as a manual link from the picker — single
+    // source of truth for the rule "one element ↔ at most one node."
+    linkNodeToElement(id, elementId)
+  }
+
+  return (
+    <Section title="Topology" subtitle="Network diagram">
+      {linkedNode ? (
+        <div className="space-y-2">
+          <div className="text-xs text-gray-600 dark:text-gray-300">
+            Linked to topology node{' '}
+            <span className="font-medium text-gray-900 dark:text-gray-100">
+              {linkedNode.label || linkedNode.id}
+            </span>
+            {linkedNode.type && (
+              <>
+                {' '}
+                <span className="text-gray-500 dark:text-gray-400">
+                  ({TOPOLOGY_NODE_META[linkedNode.type]?.typeName ?? linkedNode.type})
+                </span>
+              </>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={handleOpenInTopology}
+            disabled={!teamSlug || !officeSlug}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900/50 hover:bg-blue-50 dark:hover:bg-blue-950/30 disabled:opacity-50 disabled:cursor-not-allowed"
+            data-testid="floor-properties-open-in-topology"
+          >
+            <ExternalLink size={12} aria-hidden="true" /> Open in topology
+          </button>
+        </div>
+      ) : compatibleNodeType ? (
+        <button
+          type="button"
+          onClick={handleAddToTopology}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+          data-testid="floor-properties-add-to-topology"
+        >
+          <Link2 size={12} aria-hidden="true" /> Add to network topology
+        </button>
+      ) : (
+        <div className="text-[11px] text-gray-500 dark:text-gray-400">
+          This device type doesn't yet have a topology equivalent.
+        </div>
+      )}
+    </Section>
   )
 }
 
@@ -2052,6 +2199,19 @@ export function PropertiesPanel() {
           <ITDeviceStatusField elementId={el.id} value={el.deviceStatus} disabled={lockedDisabled} />
         </Section>
       )}
+
+      {/* M6.6 — Topology section. Renders for IT-device elements only:
+          shows the linked topology node when one references this
+          element, or a "Add to network topology" CTA that creates a
+          new topology node + links it. The whole section is gated on
+          `isITDevice` so non-IT elements (walls, desks, decor) never
+          see this affordance — there's no topology equivalent for them. */}
+      {(isAccessPointElement(el) ||
+        isNetworkJackElement(el) ||
+        isDisplayElement(el) ||
+        isVideoBarElement(el) ||
+        isBadgeReaderElement(el) ||
+        isOutletElement(el)) && <ElementTopologySection elementId={el.id} />}
 
       <Section title="Actions">
         {/* Lock toggle is also in the header; keeping it here too means the

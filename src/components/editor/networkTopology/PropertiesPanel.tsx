@@ -1,13 +1,21 @@
 import { useState } from 'react'
-import { Trash2, X, Link2 } from 'lucide-react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { Trash2, X, Link2, Unlink, ExternalLink, Wand2 } from 'lucide-react'
 import { Button, Input } from '../../ui'
 import { useNetworkTopologyStore } from '../../../stores/networkTopologyStore'
+import { useFloorStore } from '../../../stores/floorStore'
 import {
   type TopologyNode,
   type TopologyNodeStatus,
   TOPOLOGY_NODE_STATUSES,
 } from '../../../types/networkTopology'
 import { NODE_META, STATUS_OPTIONS } from './topologyMeta'
+import { LinkFloorElementModal } from './LinkFloorElementModal'
+import {
+  COMPATIBLE_FLOOR_TYPES,
+  findElementsBySerial,
+  findUnlinkedFloorElements,
+} from '../../../lib/networkTopologyLinkage'
 
 /**
  * M6.1 — Floating properties panel for the selected topology node.
@@ -63,6 +71,13 @@ export function PropertiesPanel({ selectedId, onClose }: Props) {
 function NodeForm({ node, onClose }: { node: TopologyNode; onClose: () => void }) {
   const updateNode = useNetworkTopologyStore((s) => s.updateNode)
   const removeNode = useNetworkTopologyStore((s) => s.removeNode)
+  const unlinkNode = useNetworkTopologyStore((s) => s.unlinkNode)
+  const linkNodeToElement = useNetworkTopologyStore((s) => s.linkNodeToElement)
+  const topology = useNetworkTopologyStore((s) => s.topology)
+  const floors = useFloorStore((s) => s.floors)
+
+  const navigate = useNavigate()
+  const { teamSlug, officeSlug } = useParams<{ teamSlug: string; officeSlug: string }>()
 
   const [label, setLabel] = useState(node.label ?? '')
   const [model, setModel] = useState(node.model ?? '')
@@ -70,9 +85,72 @@ function NodeForm({ node, onClose }: { node: TopologyNode; onClose: () => void }
   const [vendor, setVendor] = useState(node.vendor ?? '')
   const [serialNumber, setSerialNumber] = useState(node.serialNumber ?? '')
   const [notes, setNotes] = useState(node.notes ?? '')
+  const [linkModalOpen, setLinkModalOpen] = useState(false)
 
   const meta = NODE_META[node.type]
   const Icon = meta.Icon
+
+  // Resolve the linked floor element + owning floor for the read-only
+  // "Linked to ..." display. Computed inline — the React Compiler
+  // tracks dependencies automatically and re-runs only when the inputs
+  // change. The lookup is O(floors × elements) on a miss, fine for an
+  // enterprise office (~50–500 elements / floor).
+  let linkedDetails: {
+    floor: (typeof floors)[number]
+    element: (typeof floors)[number]['elements'][string]
+  } | null = null
+  if (node.floorElementId) {
+    for (const floor of floors) {
+      const el = floor.elements[node.floorElementId]
+      if (el) {
+        linkedDetails = { floor, element: el }
+        break
+      }
+    }
+  }
+
+  // "Auto-link by serial" affordance on the unlinked-state view —
+  // counts the candidates so the link-button can show "3 candidates by
+  // serial number" as a one-click CTA. Computed inline (rather than
+  // memoised manually) so the React Compiler can manage memoisation
+  // without fighting our useMemo wrapper.
+  let candidateCount = 0
+  if (!node.floorElementId) {
+    const candidates = findUnlinkedFloorElements(floors, topology, node.type)
+    const matches = findElementsBySerial(floors, node.serialNumber).filter((m) =>
+      candidates.some((c) => c.element.id === m.element.id),
+    )
+    candidateCount = matches.length
+  }
+
+  // Compatibility gate — node types whose `COMPATIBLE_FLOOR_TYPES`
+  // entry is empty have no floor representation in M1 (ISP, cloud,
+  // endpoint group, switches). For those we still render the section
+  // header but show a disabled affordance with explanatory copy
+  // rather than a button that would open an empty picker.
+  const linkable = COMPATIBLE_FLOOR_TYPES[node.type].length > 0
+
+  const handleAutoLink = () => {
+    if (!node.serialNumber) return
+    const candidates = findUnlinkedFloorElements(floors, topology, node.type)
+    const matches = findElementsBySerial(floors, node.serialNumber).filter((m) =>
+      candidates.some((c) => c.element.id === m.element.id),
+    )
+    if (matches.length === 0) return
+    linkNodeToElement(node.id, matches[0].element.id)
+  }
+
+  const handleOpenOnFloorPlan = () => {
+    if (!linkedDetails || !teamSlug || !officeSlug) return
+    // The MapView ?focus=<id> handler walks every floor for an element
+    // with that id and switches to the owning floor + pans the canvas
+    // to it (M6.1 verified in research). The id alone is enough; we
+    // don't need to pass `floor=` because the focus handler picks the
+    // right floor automatically.
+    navigate(
+      `/t/${teamSlug}/o/${officeSlug}/map?focus=${encodeURIComponent(linkedDetails.element.id)}`,
+    )
+  }
 
   /**
    * Commit a single text field. Empty strings coerce to `null` so an
@@ -205,28 +283,82 @@ function NodeForm({ node, onClose }: { node: TopologyNode; onClose: () => void }
           />
         </Section>
 
-        {/* Floor placement section — M6.6 will wire this; M6.1 just
-            shows the read-only state when a link already exists, and
-            renders a non-functional "Link to floor element" affordance
-            with a tooltip when no link is set. */}
+        {/* Floor placement section — M6.6.
+            When linked: read-out + Open-on-floor-plan + Unlink.
+            When unlinked: Link-to-floor-element opens the picker, with
+            a secondary "Auto-link by serial" link-button when the
+            node has a serial that matches one or more compatible
+            floor elements. */}
         <Section title="Floor placement">
           {node.floorElementId ? (
-            <div className="text-xs text-gray-600 dark:text-gray-300">
-              Linked to{' '}
-              <span className="font-mono text-gray-900 dark:text-gray-100">
-                {node.floorElementId}
-              </span>
+            <div className="space-y-2">
+              {linkedDetails ? (
+                <div className="text-xs text-gray-600 dark:text-gray-300">
+                  Linked to{' '}
+                  <span className="font-medium text-gray-900 dark:text-gray-100">
+                    {linkedDetails.element.label || linkedDetails.element.id}
+                  </span>{' '}
+                  on{' '}
+                  <span className="font-medium text-gray-900 dark:text-gray-100">
+                    {linkedDetails.floor.name}
+                  </span>
+                </div>
+              ) : (
+                // The link points at an id we couldn't find — could
+                // happen mid-deletion or after a failed sync. Surface
+                // the dangling id so the operator can unlink and move
+                // on rather than seeing a silent empty state.
+                <div className="text-xs text-amber-700 dark:text-amber-300">
+                  Linked to a floor element that's no longer on any floor
+                  (<span className="font-mono">{node.floorElementId}</span>). Unlink to clean up.
+                </div>
+              )}
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  leftIcon={<ExternalLink size={12} aria-hidden="true" />}
+                  onClick={handleOpenOnFloorPlan}
+                  disabled={!linkedDetails || !teamSlug || !officeSlug}
+                >
+                  Open on floor plan
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  leftIcon={<Unlink size={12} aria-hidden="true" />}
+                  onClick={() => unlinkNode(node.id)}
+                >
+                  Unlink
+                </Button>
+              </div>
+            </div>
+          ) : linkable ? (
+            <div className="space-y-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                leftIcon={<Link2 size={12} aria-hidden="true" />}
+                onClick={() => setLinkModalOpen(true)}
+              >
+                Link to floor element
+              </Button>
+              {candidateCount > 0 && (
+                <button
+                  type="button"
+                  onClick={handleAutoLink}
+                  className="inline-flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-300 hover:underline"
+                >
+                  <Wand2 size={11} aria-hidden="true" />
+                  Auto-link by serial — {candidateCount} candidate
+                  {candidateCount === 1 ? '' : 's'}
+                </button>
+              )}
             </div>
           ) : (
-            <Button
-              variant="secondary"
-              size="sm"
-              leftIcon={<Link2 size={12} aria-hidden="true" />}
-              disabled
-              title="Coming soon — M6.6 will wire bidirectional sync with the floor plan"
-            >
-              Link to floor element
-            </Button>
+            <div className="text-[11px] text-gray-500 dark:text-gray-400">
+              {meta.typeName} nodes don't have a physical floor representation.
+            </div>
           )}
         </Section>
       </div>
@@ -246,6 +378,16 @@ function NodeForm({ node, onClose }: { node: TopologyNode; onClose: () => void }
           Delete node
         </Button>
       </div>
+
+      {/* Picker modal renders into a portal so it overlays the canvas
+          rather than being clipped to the Properties aside. */}
+      {linkModalOpen && (
+        <LinkFloorElementModal
+          open={linkModalOpen}
+          node={node}
+          onClose={() => setLinkModalOpen(false)}
+        />
+      )}
     </aside>
   )
 }

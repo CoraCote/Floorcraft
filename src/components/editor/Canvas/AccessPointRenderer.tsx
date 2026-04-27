@@ -2,6 +2,7 @@ import { Group, Rect, Circle, Arc, Text } from 'react-konva'
 import type { AccessPointElement } from '../../../types/elements'
 import { useUIStore } from '../../../stores/uiStore'
 import { truncateToWidth } from '../../../lib/textTruncate'
+import { TopologyLinkBadge } from './TopologyLinkBadge'
 
 interface Props {
   element: AccessPointElement
@@ -109,6 +110,17 @@ export function AccessPointRenderer({ element }: Props) {
           listening={false}
         />
       )}
+
+      {/* M6.6 — topology-link badge. Renders only when some topology
+          node references this element id. The badge derives its
+          presence from the topology store, so adding/removing a link
+          from the topology page is reflected on the floor plan
+          without any additional plumbing. */}
+      <TopologyLinkBadge
+        elementId={element.id}
+        elementWidth={w}
+        elementHeight={h}
+      />
     </Group>
   )
 }

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Cloud,
   CloudOff,
@@ -72,6 +73,7 @@ export function NetworkTopologyPage() {
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [connectionDraft, setConnectionDraft] = useState<ConnectionDraft | null>(null)
+  const [searchParams, setSearchParams] = useSearchParams()
 
   // Belt-and-braces: ProjectShell hydrates the store, but if the user
   // navigates here on a brand-new office that the shell hasn't yet
@@ -82,6 +84,39 @@ export function NetworkTopologyPage() {
       setTopology(createEmptyTopology(officeId))
     }
   }, [topology, officeId, setTopology])
+
+  /**
+   * M6.6 — `?focus=<nodeId>` query param. Floor PropertiesPanel
+   * navigates here from "Open in topology" with the linked node's id;
+   * we select it (so the Properties panel opens) and strip the param
+   * from the URL so a back-button doesn't re-trigger the focus on
+   * subsequent visits.
+   *
+   * The topology view doesn't have a programmatic pan/zoom API exposed
+   * outside react-flow's context (it's owned by `useReactFlow`, which
+   * only resolves inside the canvas). Selecting the node is sufficient
+   * for the flow described in the spec — the Properties panel opens,
+   * the canvas highlights the selection ring, and the user has a clear
+   * visual landing.
+   */
+  useEffect(() => {
+    const focusId = searchParams.get('focus')
+    if (!focusId) return
+    if (!topology) return
+    if (topology.nodes[focusId]) {
+      // External-system sync: the URL param is the input, our local
+      // selection is the output. The lint rule's general guidance is
+      // "don't `setState` in effects," but URL-param-driven selection
+      // is exactly the legitimate "subscribe to external state" use
+      // case the React docs call out as an exception. The same shape
+      // is used in CanvasStage's tool-switch sync effects.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSelectedId(focusId)
+    }
+    const next = new URLSearchParams(searchParams)
+    next.delete('focus')
+    setSearchParams(next, { replace: true })
+  }, [searchParams, setSearchParams, topology])
 
   // Tick a state every 10s so the "Saved Xs ago" label stays fresh —
   // same idiom the TopBar uses for its save indicator.

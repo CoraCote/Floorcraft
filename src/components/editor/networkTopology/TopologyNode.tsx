@@ -1,4 +1,5 @@
 import { Handle, Position, type NodeProps } from '@xyflow/react'
+import { MapPin } from 'lucide-react'
 import {
   type TopologyNodeStatus,
   type TopologyNodeType,
@@ -30,6 +31,16 @@ export interface TopologyNodeData extends Record<string, unknown> {
   label: string
   model?: string | null
   status?: TopologyNodeStatus | null
+  /**
+   * M6.6 — non-null when this node is linked to a physical floor-plan
+   * element. Drives the MapPin badge in the corner of the card so a
+   * user can see at-a-glance which nodes have a physical counterpart.
+   * The label of that counterpart sits in `linkedLabel` so the badge's
+   * tooltip can read "Linked to AP-12 on Engineering loft" without
+   * the canvas having to fetch the element + floor itself.
+   */
+  floorElementId?: string | null
+  linkedLabel?: string | null
 }
 
 /**
@@ -105,6 +116,30 @@ export function TopologyNodeCard({ data, selected }: NodeProps) {
         position={Position.Bottom}
         className="!w-3 !h-3 !bg-gray-400 !border-2 !border-white dark:!border-gray-900"
       />
+
+      {/* M6.6 — floor-link badge. Sits over the top-right corner so it
+          doesn't fight the type icon (top-left) or the status pill
+          (bottom-left). The native title attribute drives the tooltip
+          — same idiom the rest of the topology canvas uses for hover
+          metadata (the icon-tile, the edge type pills). */}
+      {d.floorElementId && (
+        <span
+          aria-label={
+            d.linkedLabel
+              ? `Linked to ${d.linkedLabel}`
+              : 'Linked to a floor element'
+          }
+          title={
+            d.linkedLabel
+              ? `Linked to ${d.linkedLabel}`
+              : 'Linked to a floor element'
+          }
+          className="absolute -top-1.5 -right-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full bg-emerald-500 text-white shadow ring-2 ring-white dark:ring-gray-900"
+          data-testid="topology-node-link-badge"
+        >
+          <MapPin size={10} aria-hidden="true" strokeWidth={2.5} />
+        </span>
+      )}
     </div>
   )
 }

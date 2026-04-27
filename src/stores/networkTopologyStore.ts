@@ -80,6 +80,32 @@ interface NetworkTopologyState {
    * after `addNode`.
    */
   applyAutoLayout: () => void
+
+  // ---- M6.6 — bidirectional floor-plan ↔ topology linkage ----
+  /**
+   * Link an existing topology node to a floor-plan element id.
+   *
+   * Returns `true` on success and `false` when the link is rejected
+   * because some OTHER topology node already references this element.
+   * (A topology node is allowed to re-link to the SAME element it's
+   * already pointing at — the operation is idempotent.)
+   *
+   * The cardinality is enforced here, not just at the picker boundary,
+   * because a stale picker ("I opened the modal before someone else
+   * linked this element") would otherwise create a double-link. The
+   * store is the only place where the relationship lives, so it's the
+   * only place that can authoritatively say "this element is taken."
+   */
+  linkNodeToElement: (nodeId: string, elementId: string) => boolean
+
+  /**
+   * Clear a node's `floorElementId` (set it back to `null`). No-op when
+   * the node doesn't exist or is already unlinked. The mirror to
+   * `linkNodeToElement` — the floor element it used to point at
+   * automatically becomes "unlinked" because the back-reference was
+   * derived (see `findTopologyNodeForElement`).
+   */
+  unlinkNode: (nodeId: string) => void
 }
 
 /**
@@ -332,6 +358,51 @@ export const useNetworkTopologyStore = create<NetworkTopologyState>((set, get) =
           // user drags again.
           layoutLocked: false,
           nodes: repositioned,
+        }),
+      }
+    }),
+
+  linkNodeToElement: (nodeId, elementId) => {
+    const t = get().topology
+    if (!t) return false
+    const target = t.nodes[nodeId]
+    if (!target) return false
+    // Reject the link if some OTHER topology node already references
+    // this element. The "OTHER" check matters: re-linking the same
+    // node to the same element should be a no-op success (idempotent),
+    // not a failure — that's the natural behaviour of clicking "Link"
+    // twice in the picker.
+    for (const other of Object.values(t.nodes)) {
+      if (other.id === nodeId) continue
+      if (other.floorElementId === elementId) return false
+    }
+    set({
+      topology: withTouched({
+        ...t,
+        nodes: {
+          ...t.nodes,
+          [nodeId]: { ...target, floorElementId: elementId },
+        },
+      }),
+    })
+    return true
+  },
+
+  unlinkNode: (nodeId) =>
+    set((s) => {
+      if (!s.topology) return s
+      const target = s.topology.nodes[nodeId]
+      if (!target) return s
+      // No-op when the node is already unlinked. Saves a touched
+      // timestamp on a state that didn't actually change.
+      if (target.floorElementId == null) return s
+      return {
+        topology: withTouched({
+          ...s.topology,
+          nodes: {
+            ...s.topology.nodes,
+            [nodeId]: { ...target, floorElementId: null },
+          },
         }),
       }
     }),
