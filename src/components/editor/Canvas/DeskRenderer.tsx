@@ -480,6 +480,55 @@ function WorkstationRenderer({ element, isSelected, employees, getDepartmentColo
         )
       })()}
 
+      {/* All-empty bench: when every slot is unoccupied, render ONE
+       * unified "Available · N seats" label centred on the bench
+       * instead of N individual "Open" tiles. The per-slot rendering
+       * below was originally designed for the partially-filled state
+       * — a row of six "Open" labels reads as "broken" rather than
+       * "available," which is the actual semantic of an empty hot-desk
+       * bench. The unified label restores the intended read. We keep
+       * the divider lines above so the bench's "this is a multi-seat
+       * surface" affordance stays. */}
+      {(() => {
+        const allEmpty = element.assignedEmployeeIds.every((id) => id == null)
+        if (!allEmpty) return null
+        // While a drag is in flight we want to surface per-slot drop
+        // outlines below — letting them through the all-empty branch
+        // would mean the user can't see which slot they're targeting.
+        if (dragState) return null
+        return (
+          <>
+            <Text
+              text={`${element.positions}-seat shared bench`}
+              x={-element.width / 2}
+              y={-4}
+              width={element.width}
+              height={12}
+              align="center"
+              verticalAlign="middle"
+              fontSize={10}
+              fontStyle="600"
+              fontFamily="Inter, system-ui, -apple-system, sans-serif"
+              fill="#6B7280"
+              listening={false}
+            />
+            <Text
+              text="Available · drop a teammate to assign"
+              x={-element.width / 2}
+              y={8}
+              width={element.width}
+              height={12}
+              align="center"
+              verticalAlign="middle"
+              fontSize={9}
+              fontFamily="Inter, system-ui, -apple-system, sans-serif"
+              fill="#9CA3AF"
+              listening={false}
+            />
+          </>
+        )
+      })()}
+
       {/* Position slots
        *
        * Each slot hosts one `<SeatLabel>`. The slot's usable area is the
@@ -496,7 +545,14 @@ function WorkstationRenderer({ element, isSelected, employees, getDepartmentColo
        * avatar style automatically falls back to a stacked layout
        * there; no slot-layout adjustments needed.
        */}
-      {Array.from({ length: element.positions }, (_, i) => {
+      {/* Suppress the per-slot rendering loop when the bench is fully
+       * empty and there's no active drag — the unified "Available"
+       * label above replaces the row of individual "Open" tiles. The
+       * loop still runs in any partial-fill state (where per-slot
+       * "Open" labels are informative — they tell the user which slot
+       * is free) and during a drag (where per-slot drop targets are
+       * the whole point). */}
+      {!(element.assignedEmployeeIds.every((id) => id == null) && !dragState) && Array.from({ length: element.positions }, (_, i) => {
         const employeeId = element.assignedEmployeeIds[i] || null
         const employee = employeeId ? employees[employeeId] : null
         const slotX = -element.width / 2 + slotWidth * i

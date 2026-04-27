@@ -49,6 +49,9 @@ function wall(id: string): WallElement {
 }
 
 beforeEach(() => {
+  // Minimap defaults to collapsed (Wave 18-style fix); these tests
+  // exercise the tile/selection rendering inside the expanded panel.
+  localStorage.setItem('floocraft.minimapCollapsed', '0')
   useElementsStore.setState({ elements: {} } as any)
   useUIStore.setState({ selectedIds: [] } as any)
   useCanvasStore.setState({ stageX: 0, stageY: 0, stageScale: 1 } as any)

@@ -1,7 +1,7 @@
 import { useElementsStore } from '../../stores/elementsStore'
 import { useCanvasStore } from '../../stores/canvasStore'
 import { useUIStore } from '../../stores/uiStore'
-import { useMemo, useCallback, useRef, useState, memo } from 'react'
+import { useMemo, useCallback, useRef, useState, useEffect, memo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { Minimize2, Maximize2 } from 'lucide-react'
 import { elementBounds } from '../../lib/elementBounds'
@@ -190,11 +190,29 @@ export function Minimap() {
     useShallow((s) => ({ setStagePosition: s.setStagePosition })),
   )
   const ref = useRef<HTMLDivElement>(null)
-  // Local collapse state — kept in-component on purpose. The user already
-  // has a global "hide minimap entirely" toggle in the action dock; this
-  // is the in-between state ("keep it nearby but out of the way").
-  // Session-scoped, intentionally not persisted.
-  const [collapsed, setCollapsed] = useState(false)
+  // Collapse state. Default to COLLAPSED — the expanded minimap is
+  // 180x120 and previously occupied the bottom-right corner, occluding
+  // canvas content (the user reported floor-plan elements being hidden
+  // behind it). The collapsed 40x40 handle is unobtrusive and the user
+  // can expand it on demand. Persists to localStorage so the user's
+  // explicit preference (expand or keep collapsed) survives reloads.
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    try {
+      // Default true (collapsed) when the key is absent.
+      const v = localStorage.getItem('floocraft.minimapCollapsed')
+      return v === null ? true : v === '1'
+    } catch {
+      return true
+    }
+  })
+  // Persist explicit user toggles so the preference sticks.
+  useEffect(() => {
+    try {
+      localStorage.setItem('floocraft.minimapCollapsed', collapsed ? '1' : '0')
+    } catch {
+      // ignore
+    }
+  }, [collapsed])
 
   const tiles = useTiles()
   const bounds = useBounds(tiles)
@@ -293,7 +311,7 @@ export function Minimap() {
         ref={ref}
         role="region"
         aria-label="Canvas overview"
-        className="absolute bottom-10 right-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg overflow-hidden flex items-center justify-center"
+        className="absolute bottom-12 right-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg overflow-hidden flex items-center justify-center"
         style={{ width: COLLAPSED_SIZE, height: COLLAPSED_SIZE }}
       >
         <button
@@ -315,7 +333,7 @@ export function Minimap() {
       ref={ref}
       role="region"
       aria-label="Canvas overview"
-      className="absolute bottom-10 right-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg overflow-hidden select-none touch-none cursor-grab active:cursor-grabbing"
+      className="absolute bottom-12 right-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg overflow-hidden select-none touch-none cursor-grab active:cursor-grabbing"
       style={{ width: MINIMAP_WIDTH, height: MINIMAP_HEIGHT }}
       onPointerDown={handlePointerDown}
     >

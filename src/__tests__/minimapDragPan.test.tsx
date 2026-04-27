@@ -36,6 +36,12 @@ function desk(id: string, x = 0, y = 0): DeskElement {
 }
 
 beforeEach(() => {
+  // Force the minimap into the expanded state for these interaction
+  // tests. The component now defaults to collapsed (Wave 18-style fix
+  // — the expanded minimap was occluding canvas content), but the
+  // pointer/drag handlers under test only attach when the panel is
+  // expanded.
+  localStorage.setItem('floocraft.minimapCollapsed', '0')
   useElementsStore.setState({ elements: { a: desk('a', 0, 0), b: desk('b', 400, 300) } } as any)
   useUIStore.setState({ selectedIds: [] } as any)
   useCanvasStore.setState({

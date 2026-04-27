@@ -186,6 +186,13 @@ function FirstRunDemoSeeder() {
 
       writeDemoDismissed()
       setDismissed(true)
+      // Suppress the step-by-step welcome tour as well: a user who just
+      // loaded sample content has explicit, dense visual material in
+      // front of them already, and the tour popover floating over the
+      // canvas competes for the same attention. Skipping the tour here
+      // is the right call — the tour can still be summoned from the
+      // Help menu or Cmd+K command palette by users who want it later.
+      writeSeen()
     } finally {
       setLoading(false)
     }

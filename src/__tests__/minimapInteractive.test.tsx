@@ -38,6 +38,9 @@ function desk(id: string, x = 0, y = 0): DeskElement {
 }
 
 beforeEach(() => {
+  // Minimap defaults to collapsed (Wave 18-style fix); these tests
+  // exercise the expanded panel's interaction surfaces, so override.
+  localStorage.setItem('floocraft.minimapCollapsed', '0')
   useElementsStore.setState({
     elements: { a: desk('a', 0, 0), b: desk('b', 400, 300) },
   } as any)
