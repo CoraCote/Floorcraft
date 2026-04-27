@@ -145,7 +145,7 @@ export function EmployeeDirectory() {
     { key: 'desk', label: 'Desk' },
     { key: 'manager', label: 'Manager' },
     { key: 'type', label: 'Type' },
-    { key: 'officeDays', label: 'Office Days' },
+    { key: 'officeDays', label: 'Office days' },
     { key: 'tags', label: 'Tags' },
   ]
 
@@ -158,7 +158,7 @@ export function EmployeeDirectory() {
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Employee Directory</h2>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Employee directory</h2>
           <button
             onClick={handleClose}
             className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
@@ -171,7 +171,7 @@ export function EmployeeDirectory() {
         <div className="px-6 py-3 border-b border-gray-100 dark:border-gray-800">
           <input
             type="text"
-            placeholder="Search by name, department, team, title, email, or tags..."
+            placeholder="Search by name, department, team, title, email, or tags…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"

@@ -22,7 +22,7 @@ describe('LoginPage', () => {
     renderLogin()
     fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'a@b.c' } })
     fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'hunter2' } })
-    fireEvent.click(screen.getByRole('button', { name: /log in/i }))
+    fireEvent.click(screen.getByRole('button', { name: /sign in/i }))
     await waitFor(() =>
       expect(signInMock).toHaveBeenCalledWith({ email: 'a@b.c', password: 'hunter2' }),
     )
@@ -33,7 +33,7 @@ describe('LoginPage', () => {
     renderLogin()
     fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'a@b.c' } })
     fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'bad' } })
-    fireEvent.click(screen.getByRole('button', { name: /log in/i }))
+    fireEvent.click(screen.getByRole('button', { name: /sign in/i }))
     await waitFor(() => expect(screen.getByText(/invalid login/i)).toBeInTheDocument())
   })
 })

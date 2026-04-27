@@ -71,7 +71,11 @@ export function ReportsPage() {
   })
 
   if (!canView) {
-    return <div className="p-6 text-gray-600 dark:text-gray-300">Not authorized to view reports.</div>
+    return (
+      <div className="p-6 text-gray-600 dark:text-gray-300">
+        Reports are restricted to editors and admins. Ask a team admin if you need access.
+      </div>
+    )
   }
 
   const floorCompareHref =
@@ -366,7 +370,7 @@ function EmptyState({
         </h2>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">
           Import your roster and lay out a floor to unlock occupancy,
-          utilisation and churn metrics.
+          utilization, and churn metrics.
         </p>
         {rosterHref ? (
           <Link

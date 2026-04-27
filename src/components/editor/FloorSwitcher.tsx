@@ -445,7 +445,7 @@ export function FloorSwitcher() {
             className="flex items-center gap-1 px-2 py-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
           >
             <Plus size={14} aria-hidden="true" />
-            <span>Add Floor</span>
+            <span>Add floor</span>
           </button>
         )}
       </div>

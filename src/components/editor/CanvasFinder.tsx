@@ -105,7 +105,7 @@ function CanvasFinderBody() {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Find on this floor..."
+        placeholder="Find on this floor…"
         aria-label="Find on this floor"
         data-testid="canvas-finder-input"
         className="text-sm bg-transparent focus:outline-none flex-1

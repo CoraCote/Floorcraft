@@ -22,10 +22,12 @@ function mount() {
 }
 
 describe('Reports permissions', () => {
-  it('viewer sees "Not authorized"', () => {
+  it('viewer sees the restricted-access message', () => {
     useProjectStore.setState({ currentOfficeRole: 'viewer' } as never)
     mount()
-    expect(screen.getByText(/not authorized/i)).toBeInTheDocument()
+    expect(
+      screen.getByText(/restricted to editors and admins/i),
+    ).toBeInTheDocument()
   })
 
   it('space-planner can view', () => {

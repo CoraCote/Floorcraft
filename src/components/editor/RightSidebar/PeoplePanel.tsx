@@ -150,7 +150,8 @@ export function PeoplePanel() {
         <div className="rounded-lg border border-gray-200 dark:border-gray-800 p-3 bg-gray-50 dark:bg-gray-900/50 mb-3 flex flex-col gap-2">
           <input
             className={INPUT_CLASS}
-            placeholder="Name"
+            placeholder="Jane Smith"
+            aria-label="Name"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => {
@@ -160,7 +161,8 @@ export function PeoplePanel() {
           />
           <input
             className={INPUT_CLASS}
-            placeholder="Email"
+            placeholder="jane@example.com"
+            aria-label="Email"
             value={newEmail}
             onChange={(e) => setNewEmail(e.target.value)}
             onKeyDown={(e) => {
@@ -169,7 +171,8 @@ export function PeoplePanel() {
           />
           <input
             className={INPUT_CLASS}
-            placeholder="Department"
+            placeholder="Engineering"
+            aria-label="Department"
             value={newDepartment}
             onChange={(e) => setNewDepartment(e.target.value)}
             onKeyDown={(e) => {
@@ -208,7 +211,7 @@ export function PeoplePanel() {
         <Search size={14} className="absolute left-2.5 top-2.5 text-gray-400 dark:text-gray-500" />
         <input
           className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-lg focus:outline-none focus:border-blue-400"
-          placeholder="Search people..."
+          placeholder="Search people…"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
@@ -255,7 +258,9 @@ export function PeoplePanel() {
             <div aria-hidden className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3">
               <Users size={20} className="text-gray-400 dark:text-gray-500" />
             </div>
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">No people found</p>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+              {searchQuery ? 'No people match your search' : 'No people on the roster yet'}
+            </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-4 max-w-[200px]">
               {searchQuery ? 'Try a different search term, or import a CSV to get started.' : 'Add a teammate manually or bulk-import from CSV.'}
             </p>

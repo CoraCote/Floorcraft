@@ -97,7 +97,7 @@ export function MovePlanner() {
     <div className="flex flex-col gap-3">
       {/* Yellow banner */}
       <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800">
-        <span className="font-semibold">Move Planner</span> — Plan seat changes before committing
+        <span className="font-semibold">Move planner</span> — plan seat changes before committing.
       </div>
 
       {/* Add Move form */}
@@ -108,7 +108,7 @@ export function MovePlanner() {
           onChange={(e) => setSelectedEmployeeId(e.target.value)}
           className="w-full px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
         >
-          <option value="">Select employee...</option>
+          <option value="">Select employee…</option>
           {allEmployees.map((emp) => (
             <option key={emp.id} value={emp.id}>
               {emp.name} {emp.seatId ? `(${emp.seatId})` : '(unassigned)'}
@@ -124,7 +124,7 @@ export function MovePlanner() {
           }}
           className="w-full px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
         >
-          <option value="">Target floor...</option>
+          <option value="">Target floor…</option>
           {floors.map((f) => (
             <option key={f.id} value={f.id}>{f.name}</option>
           ))}
@@ -136,7 +136,7 @@ export function MovePlanner() {
           className="w-full px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
           disabled={!selectedFloorId}
         >
-          <option value="">Target desk...</option>
+          <option value="">Target desk…</option>
           {assignableDesks.map((d) => (
             <option key={d.id} value={d.id}>{d.label}</option>
           ))}
@@ -148,7 +148,7 @@ export function MovePlanner() {
           className="flex items-center justify-center gap-1.5 w-full px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Plus size={12} />
-          Add Move
+          Add move
         </button>
       </div>
 
@@ -156,7 +156,7 @@ export function MovePlanner() {
       {pendingMoves.length > 0 && (
         <div className="flex flex-col gap-1.5">
           <div className="text-xs font-medium text-gray-500 dark:text-gray-400">
-            Pending Moves ({pendingMoves.length})
+            Pending moves ({pendingMoves.length})
           </div>
           {pendingMoves.map((move) => {
             const emp = employees[move.employeeId]
@@ -200,7 +200,7 @@ export function MovePlanner() {
           className="flex items-center justify-center gap-1.5 flex-1 px-3 py-2 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Check size={12} />
-          Apply All
+          Apply all
         </button>
         <button
           onClick={handleDiscard}

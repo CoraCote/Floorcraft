@@ -31,9 +31,9 @@ export function NewProjectModal() {
   }
 
   return (
-    <Modal open={open} onClose={close} title="New Project" size="lg">
+    <Modal open={open} onClose={close} title="New project" size="lg">
       <ModalBody>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Choose an office template or start with a blank canvas</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Choose an office template or start with a blank canvas.</p>
         <div className="grid grid-cols-2 gap-3">
           {TEMPLATES.map((t) => (
             <button

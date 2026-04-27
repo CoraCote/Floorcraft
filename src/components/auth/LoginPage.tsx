@@ -107,7 +107,7 @@ export function LoginPage() {
             ) : undefined
           }
         >
-          {busy ? 'Signing in…' : 'Log in'}
+          {busy ? 'Signing in…' : 'Sign in'}
         </Button>
       </form>
 

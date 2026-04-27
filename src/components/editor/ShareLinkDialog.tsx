@@ -153,7 +153,9 @@ export function ShareLinkDialog({ open, onClose }: Props) {
             Existing links ({activeLinks.length})
           </h3>
           {activeLinks.length === 0 && (
-            <p className="text-xs text-gray-500 dark:text-gray-400">No links yet.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              No share links yet. Generate one above to share view-only access.
+            </p>
           )}
           <ul className="space-y-2">
             {activeLinks.map((l) => {
