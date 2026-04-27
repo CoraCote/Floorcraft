@@ -90,6 +90,18 @@ export const ELEMENT_DEFAULTS: Record<string, { width: number; height: number; f
   'plant':      { width: 40,  height: 40, fill: '#86EFAC', stroke: '#166534' },
   'printer':    { width: 60,  height: 50, fill: '#E2E8F0', stroke: '#475569' },
   'whiteboard': { width: 180, height: 20, fill: '#FFFFFF', stroke: '#111827' },
+  // IT/AV/Network/Power layer (M1) — see `src/types/elements.ts`.
+  // Defaults are LOAD-BEARING: the per-type renderers consume them via
+  // `element.style.fill` / `style.stroke`, and the M2 library tiles
+  // will spawn elements at exactly these dimensions. Sizes were chosen
+  // to keep each silhouette readable at typical office-floor zoom
+  // (~0.5×–1×) without overwhelming the seating layer underneath.
+  'access-point':  { width: 30, height: 30, fill: '#FFFFFF', stroke: '#2563EB' },
+  'network-jack':  { width: 18, height: 18, fill: '#F3F4F6', stroke: '#6B7280' },
+  'display':       { width: 80, height: 16, fill: '#1F2937', stroke: '#111827' },
+  'video-bar':     { width: 90, height: 18, fill: '#374151', stroke: '#111827' },
+  'badge-reader':  { width: 18, height: 24, fill: '#F0F9FF', stroke: '#0369A1' },
+  'outlet':        { width: 16, height: 24, fill: '#FAFAF9', stroke: '#78716C' },
 }
 
 export const TABLE_SEAT_DEFAULTS: Record<string, number> = {

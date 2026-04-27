@@ -27,6 +27,12 @@ import {
   isPlantElement,
   isPrinterElement,
   isWhiteboardElement,
+  isAccessPointElement,
+  isNetworkJackElement,
+  isDisplayElement,
+  isVideoBarElement,
+  isBadgeReaderElement,
+  isOutletElement,
   type ConferenceRoomElement,
   type PhoneBoothElement,
   type CommonAreaElement,
@@ -49,6 +55,12 @@ import { SofaRenderer } from './SofaRenderer'
 import { PlantRenderer } from './PlantRenderer'
 import { PrinterRenderer } from './PrinterRenderer'
 import { WhiteboardRenderer } from './WhiteboardRenderer'
+import { AccessPointRenderer } from './AccessPointRenderer'
+import { NetworkJackRenderer } from './NetworkJackRenderer'
+import { DisplayRenderer } from './DisplayRenderer'
+import { VideoBarRenderer } from './VideoBarRenderer'
+import { BadgeReaderRenderer } from './BadgeReaderRenderer'
+import { OutletRenderer } from './OutletRenderer'
 import { useCallback, useState, type ReactNode } from 'react'
 import type Konva from 'konva'
 import { snapToGrid, getSnappedPosition } from '../../../lib/geometry'
@@ -321,6 +333,22 @@ export function ElementRenderer() {
             return <PrinterRenderer element={el} />
           if (isWhiteboardElement(el))
             return <WhiteboardRenderer element={el} />
+          // IT/AV/Network/Power layer (M1) — non-assignable infrastructure
+          // props. Each routes to its own renderer; like the furniture
+          // catalog they each have a distinct silhouette so they can't
+          // share the generic FurnitureRenderer fallback.
+          if (isAccessPointElement(el))
+            return <AccessPointRenderer element={el} />
+          if (isNetworkJackElement(el))
+            return <NetworkJackRenderer element={el} />
+          if (isDisplayElement(el))
+            return <DisplayRenderer element={el} />
+          if (isVideoBarElement(el))
+            return <VideoBarRenderer element={el} />
+          if (isBadgeReaderElement(el))
+            return <BadgeReaderRenderer element={el} />
+          if (isOutletElement(el))
+            return <OutletRenderer element={el} />
           return <FurnitureRenderer element={el} />
         })()
 

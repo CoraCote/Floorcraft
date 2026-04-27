@@ -40,6 +40,21 @@ export type ElementType =
   | 'free-text'
   // Custom SVG upload (Feature F)
   | 'custom-svg'
+  // IT/AV/Network/Power layer (M1) — physical infrastructure props that
+  // live on the floor next to seating/decor. Each is non-assignable (no
+  // employee, no neighborhood) and contributes to one of four logical
+  // sub-layers (network/av/security/power) used by the M2 view-toggle
+  // work. Listed individually rather than rolled into a single `device`
+  // discriminated union so that future per-type renderers, defaults, and
+  // analyzer carve-outs (utilisation, churn) follow the same one-type-→-
+  // one-renderer contract the existing furniture catalog established.
+  // See `IT_DEVICE_TYPES` and `itLayerOf` below.
+  | 'access-point'
+  | 'network-jack'
+  | 'display'
+  | 'video-bar'
+  | 'badge-reader'
+  | 'outlet'
 
 export interface ElementStyle {
   fill: string
@@ -298,6 +313,180 @@ export interface CustomSvgElement extends BaseElement {
   svgSource: string
 }
 
+// ---------------------------------------------------------------------------
+// IT/AV/Network/Power layer (M1)
+// ---------------------------------------------------------------------------
+//
+// These six element types represent physical infrastructure that sits on
+// the floor alongside seating and decor — wireless access points,
+// network jacks, displays, video bars, badge readers, and outlets — and
+// form the foundation of the upcoming "IT layer" feature.
+//
+// Each interface extends `BaseElement` with type-specific attribute
+// fields. Every IT-attribute is OPTIONAL on creation: a user can drop
+// the element from the library (M2) with nothing but a position, then
+// fill in serial numbers, vendors, and operational status in the
+// properties panel later. Coercing `null` rather than allowing
+// `undefined` keeps the field shape predictable across the round-trip
+// through Supabase / autosave (JSON has no `undefined`).
+//
+// `deviceStatus` is a small finite enum that several element types
+// share. Re-declaring the literal union on each interface (rather than
+// extracting a `DeviceStatus` alias) keeps each interface self-
+// describing for IDE go-to-definition; if M2/M3 grows the enum we can
+// hoist it then.
+//
+// The fields below are intentionally a subset of the full IT-asset
+// schema — model / serial / mac / ip / vendor / install date — that
+// recur across most device types in real-world office IT inventory.
+// Specifics (cable category for jacks, conferencing platform for video
+// bars, outlet receptacle type) live on the per-type interface.
+
+/**
+ * Wireless access point — a ceiling-mounted Wi-Fi radio. Drawn as a
+ * disc on the floor plan because that's the convention in commercial
+ * AV/IT drawings (the radio's antenna is omnidirectional, so the
+ * silhouette doesn't need to convey orientation).
+ */
+export interface AccessPointElement extends BaseElement {
+  type: 'access-point'
+  /** Vendor make + model — e.g. "Cisco Meraki MR46". Optional; renders as
+   *  the only label when present. */
+  model?: string | null
+  /** Serial number. Optional; surfaces in Properties + Devices panel
+   *  (M3). */
+  serialNumber?: string | null
+  /** MAC address (lowercase, colon-separated). Optional. */
+  macAddress?: string | null
+  /** Static IP if assigned. Optional. */
+  ipAddress?: string | null
+  /** Vendor / installer / managed-by org. Optional. */
+  vendor?: string | null
+  /** ISO date the device was installed. Optional. */
+  installDate?: string | null
+  /** Current operational state — read primarily by future monitoring
+   *  integration but a manual override is useful for "we know it's
+   *  broken, schedule the fix". */
+  deviceStatus?: 'planned' | 'installed' | 'live' | 'decommissioned' | 'broken' | null
+}
+
+/**
+ * Network jack (RJ45 wall outlet). Tiny by default because real jacks
+ * are small physical objects and the floor plan needs to convey their
+ * count + location, not their bulk.
+ */
+export interface NetworkJackElement extends BaseElement {
+  type: 'network-jack'
+  /** User-facing jack identifier — e.g. "J-101". */
+  jackId?: string | null
+  /** Cable category. */
+  cableCategory?: 'cat5e' | 'cat6' | 'cat6a' | 'cat7' | 'fiber' | null
+  /** Upstream switch identifier (free-form for now; M2 will turn this
+   *  into an element-id reference). */
+  upstreamSwitchLabel?: string | null
+  upstreamSwitchPort?: string | null
+  serialNumber?: string | null
+  installDate?: string | null
+  deviceStatus?: 'planned' | 'installed' | 'live' | 'decommissioned' | 'broken' | null
+}
+
+/**
+ * Display / monitor — any wall-mounted screen (room display, lobby
+ * sign, conference TV). The default footprint is wider than tall to
+ * match the most common landscape mount.
+ */
+export interface DisplayElement extends BaseElement {
+  type: 'display'
+  model?: string | null
+  serialNumber?: string | null
+  ipAddress?: string | null
+  vendor?: string | null
+  installDate?: string | null
+  /** Diagonal screen size in inches — display sizes are conventionally
+   *  named that way; the canvas footprint stays width×height in canvas
+   *  units. */
+  screenSizeInches?: number | null
+  /** What's connected to it: "MTR Logitech Rally", "Apple TV", etc. */
+  connectedDevice?: string | null
+  deviceStatus?: 'planned' | 'installed' | 'live' | 'decommissioned' | 'broken' | null
+}
+
+/**
+ * Video bar — a conference-room camera/mic/speaker bar (e.g. Logitech
+ * Rally, Poly Studio). Slim pill silhouette to convey the
+ * camera-and-mic-array form factor.
+ */
+export interface VideoBarElement extends BaseElement {
+  type: 'video-bar'
+  model?: string | null
+  serialNumber?: string | null
+  macAddress?: string | null
+  ipAddress?: string | null
+  vendor?: string | null
+  installDate?: string | null
+  /** Conferencing platform the bar is registered with. */
+  platform?: 'teams' | 'zoom' | 'meet' | 'webex' | 'other' | null
+  deviceStatus?: 'planned' | 'installed' | 'live' | 'decommissioned' | 'broken' | null
+}
+
+/**
+ * Badge reader — door-access card reader. Vertical pill matches the
+ * common wall-mounted form factor and helps it stand out next to the
+ * door element it controls.
+ */
+export interface BadgeReaderElement extends BaseElement {
+  type: 'badge-reader'
+  model?: string | null
+  serialNumber?: string | null
+  ipAddress?: string | null
+  vendor?: string | null
+  installDate?: string | null
+  /** Door / opening this reader controls — free-form for now, becomes a
+   *  door element-id reference in a later phase. */
+  controlsDoorLabel?: string | null
+  deviceStatus?: 'planned' | 'installed' | 'live' | 'decommissioned' | 'broken' | null
+}
+
+/**
+ * Electrical outlet / receptacle. Vertical orientation matches the
+ * standard US duplex glyph (two slots stacked + ground hole) so the
+ * silhouette is recognisable without a label.
+ */
+export interface OutletElement extends BaseElement {
+  type: 'outlet'
+  /** Receptacle type. */
+  outletType?: 'duplex' | 'quad' | 'usb-combo' | 'floor-box' | 'poke-through' | 'l5-20' | null
+  /** Voltage (US default 120). */
+  voltage?: number | null
+  /** Circuit identifier — free-form ("Panel A · Breaker 12"). */
+  circuit?: string | null
+  installDate?: string | null
+  deviceStatus?: 'planned' | 'installed' | 'live' | 'decommissioned' | 'broken' | null
+}
+
+/**
+ * Canonical list of IT-device element type strings. Used by the M2
+ * library + M3 devices panel to enumerate the full family without
+ * having to import every interface. Kept as a `readonly` tuple so the
+ * type-system can derive a literal-union from it (`typeof
+ * IT_DEVICE_TYPES[number]`) when M2 / M3 need it.
+ */
+export const IT_DEVICE_TYPES = [
+  'access-point',
+  'network-jack',
+  'display',
+  'video-bar',
+  'badge-reader',
+  'outlet',
+] as const
+
+/**
+ * Logical IT sub-layer an element belongs to. Used by the future
+ * View-menu layer toggles (M2) so users can hide/show e.g. "all power"
+ * without touching the broader furniture/walls toggles.
+ */
+export type ITLayer = 'network' | 'av' | 'security' | 'power'
+
 export type CanvasElement =
   | WallElement
   | DoorElement
@@ -321,6 +510,12 @@ export type CanvasElement =
   | ArrowElement
   | FreeTextElement
   | CustomSvgElement
+  | AccessPointElement
+  | NetworkJackElement
+  | DisplayElement
+  | VideoBarElement
+  | BadgeReaderElement
+  | OutletElement
   | BaseElement
 
 export function isWallElement(el: CanvasElement): el is WallElement {
@@ -417,4 +612,76 @@ export function isPrinterElement(el: CanvasElement): el is PrinterElement {
 
 export function isWhiteboardElement(el: CanvasElement): el is WhiteboardElement {
   return el.type === 'whiteboard'
+}
+
+// ---------------------------------------------------------------------------
+// IT/AV/Network/Power layer (M1) — type guards + layer router
+// ---------------------------------------------------------------------------
+//
+// One predicate per type matches the convention established by the
+// furniture catalog (sofa/plant/printer/whiteboard) above. `isITDevice`
+// is the composite predicate the M2 library + M3 devices panel use to
+// enumerate the family without re-listing every literal.
+
+export function isAccessPointElement(el: CanvasElement): el is AccessPointElement {
+  return el.type === 'access-point'
+}
+
+export function isNetworkJackElement(el: CanvasElement): el is NetworkJackElement {
+  return el.type === 'network-jack'
+}
+
+export function isDisplayElement(el: CanvasElement): el is DisplayElement {
+  return el.type === 'display'
+}
+
+export function isVideoBarElement(el: CanvasElement): el is VideoBarElement {
+  return el.type === 'video-bar'
+}
+
+export function isBadgeReaderElement(el: CanvasElement): el is BadgeReaderElement {
+  return el.type === 'badge-reader'
+}
+
+export function isOutletElement(el: CanvasElement): el is OutletElement {
+  return el.type === 'outlet'
+}
+
+/**
+ * Composite predicate — `true` for any of the six IT-device element
+ * types. Implemented via the `IT_DEVICE_TYPES` tuple so that adding a
+ * new device in a future PR only requires extending the tuple +
+ * shipping a renderer; the predicate updates automatically.
+ */
+export function isITDevice(el: CanvasElement): boolean {
+  return (IT_DEVICE_TYPES as readonly string[]).includes(el.type)
+}
+
+/**
+ * Map an IT-device element to its logical sub-layer. Returns `null`
+ * for non-IT elements (walls, desks, decor, etc.) so the M2 view-menu
+ * can short-circuit those without having to enumerate the negative.
+ *
+ * The mapping is intentionally one-to-one with `IT_DEVICE_TYPES`:
+ *
+ *   - `network`   access points, network jacks
+ *   - `av`        displays, video bars
+ *   - `security`  badge readers
+ *   - `power`     outlets
+ */
+export function itLayerOf(el: CanvasElement): ITLayer | null {
+  switch (el.type) {
+    case 'access-point':
+    case 'network-jack':
+      return 'network'
+    case 'display':
+    case 'video-bar':
+      return 'av'
+    case 'badge-reader':
+      return 'security'
+    case 'outlet':
+      return 'power'
+    default:
+      return null
+  }
 }

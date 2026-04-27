@@ -194,6 +194,17 @@ function migrateElements(
       }
       out[id] = migrated
     } else {
+      // Default branch — pass the element through unchanged. This
+      // covers every non-wall, non-equippable type: tables, doors,
+      // windows, decor, the furniture catalog (sofa/plant/printer/
+      // whiteboard), the drawing primitives, custom SVG, AND the
+      // M1 IT/AV/Network/Power layer (access-point, network-jack,
+      // display, video-bar, badge-reader, outlet). The migration
+      // intentionally has NO type-discriminant gate here — adding a
+      // new element type to `CanvasElement` should never require a
+      // change to this function. See `src/__tests__/itDeviceMigration
+      // .test.ts` for the round-trip assertion that holds this
+      // behaviour stable.
       out[id] = el
     }
   }
