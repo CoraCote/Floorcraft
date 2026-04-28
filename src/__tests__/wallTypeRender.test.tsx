@@ -5,9 +5,6 @@ import { Stage, Layer } from 'react-konva'
 import { WallRenderer } from '../components/editor/Canvas/WallRenderer'
 import type { WallElement, WallType } from '../types/elements'
 
-// jsdom does not implement HTMLCanvasElement.getContext; stub it so Konva
-// can mount. We only need the identity of the nodes + their props, not a
-// real draw, so a no-op 2d context is enough.
 beforeAll(() => {
   const mockCtx = {
     scale: () => {},
@@ -69,21 +66,25 @@ function wall(overrides: Partial<WallElement> = {}): WallElement {
   }
 }
 
-function renderWall(type: WallType) {
+function renderWall(type: WallType, extra: Partial<WallElement> = {}) {
   let stage: any
   render(
     <Stage width={200} height={200} ref={(s: any) => { stage = s }}>
       <Layer>
-        <WallRenderer element={wall({ wallType: type })} />
+        <WallRenderer element={wall({ wallType: type, ...extra })} />
       </Layer>
     </Stage>,
   )
   return stage
 }
 
+function lines(stage: any): any[] {
+  const out: any[] = []
+  stage.find('Line').forEach((l: any) => out.push(l))
+  return out
+}
+
 function paths(stage: any): any[] {
-  // Walk every descendant and pick out every Path node, regardless of the
-  // Group nesting the renderer introduces.
   const out: any[] = []
   stage.find('Path').forEach((p: any) => out.push(p))
   return out
@@ -95,47 +96,62 @@ function texts(stage: any): any[] {
   return out
 }
 
-describe('WallRenderer wall types', () => {
-  it('solid → one Path, full opacity, default stroke, no dash', () => {
+describe('WallRenderer wall types (P3 polygon body)', () => {
+  it('solid → one closed Line polygon, full opacity, no centerline overlay', () => {
     const stage = renderWall('solid')
-    const ps = paths(stage)
-    expect(ps).toHaveLength(1)
-    expect(ps[0].getAttr('stroke')).toBe('#111827')
-    // Group opacity wraps the stroke — assert via the wrapping node.
-    const group = ps[0].getParent()
-    expect(group.opacity()).toBe(1)
-    expect(ps[0].dash()).toBeUndefined()
+    const ls = lines(stage)
+    expect(ls).toHaveLength(1)
+    expect(ls[0].closed()).toBe(true)
+    // No accents on solid: no Path centerline overlay.
+    expect(paths(stage)).toHaveLength(0)
+    // Group opacity wraps the polygon.
+    expect(ls[0].getParent().opacity()).toBe(1)
   })
 
-  it('glass → lighter stroke + 0.4 opacity on wrapping group', () => {
+  it('glass → polygon body with translucent group opacity (~0.55)', () => {
     const stage = renderWall('glass')
-    const ps = paths(stage)
-    expect(ps).toHaveLength(1)
-    expect(ps[0].getAttr('stroke')).toBe('#93C5FD')
-    expect(ps[0].getParent().opacity()).toBeCloseTo(0.4)
+    const ls = lines(stage)
+    expect(ls).toHaveLength(1)
+    expect(ls[0].getParent().opacity()).toBeCloseTo(0.55)
   })
 
-  it('half-height → a secondary Path (dashed rail) is painted on top', () => {
+  it('half-height → polygon body + secondary dashed rail (Path) on top', () => {
     const stage = renderWall('half-height')
+    expect(lines(stage)).toHaveLength(1)
     const ps = paths(stage)
-    // Main stroke + dashed rail = two Paths. The main path has no dash;
-    // the rail path carries the dash array.
-    expect(ps).toHaveLength(2)
-    const dashed = ps.find((p) => p.dash() && p.dash().length > 0)
-    expect(dashed).toBeTruthy()
-    // Rail is thinner than the main stroke (signals "short wall").
-    const undashed = ps.find((p) => !p.dash() || p.dash().length === 0)
-    expect(dashed.strokeWidth()).toBeLessThan(undashed.strokeWidth())
+    // One dashed rail Path painted on the centerline.
+    expect(ps).toHaveLength(1)
+    expect(ps[0].dash()?.length).toBeGreaterThan(0)
+    // The rail is non-listening so the underlying polygon stays clickable.
+    expect(ps[0].listening()).toBe(false)
   })
 
-  it('demountable → dashed main stroke + an "M" Text marker at the midpoint', () => {
+  it('demountable → polygon body + dashed centerline overlay + "M" Text marker', () => {
     const stage = renderWall('demountable')
+    expect(lines(stage)).toHaveLength(1)
     const ps = paths(stage)
+    // Dashed centerline overlay (implied by demountable even without dashStyle).
     expect(ps).toHaveLength(1)
-    // Dash is implied by wallType even without explicit dashStyle.
-    expect(ps[0].dash()).toEqual([15, 9]) // thickness(6) * 2.5, thickness * 1.5
+    expect(ps[0].dash()).toEqual([15, 9]) // thickness(6)*2.5, thickness*1.5
     const ts = texts(stage)
     const marker = ts.find((t) => t.text() === 'M')
     expect(marker).toBeTruthy()
+  })
+
+  it('explicit dashStyle: dashed → dashed centerline overlay paints on top of polygon', () => {
+    const stage = renderWall('solid', { dashStyle: 'dashed' })
+    expect(lines(stage)).toHaveLength(1)
+    const ps = paths(stage)
+    expect(ps).toHaveLength(1)
+    expect(ps[0].dash()).toEqual([15, 9])
+  })
+
+  it('explicit dashStyle: dotted → short-dash centerline overlay', () => {
+    const stage = renderWall('solid', { dashStyle: 'dotted' })
+    const ps = paths(stage)
+    expect(ps).toHaveLength(1)
+    const dash = ps[0].dash()!
+    expect(dash[0]).toBeCloseTo(0.1)
+    expect(dash[1]).toBeCloseTo(8.4) // thickness(6)*1.4
   })
 })

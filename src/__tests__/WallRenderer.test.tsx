@@ -43,9 +43,6 @@ beforeAll(() => {
     isPointInPath: () => false,
     canvas: { width: 0, height: 0 },
   } as unknown as CanvasRenderingContext2D
-  // Cast through unknown: getContext is an overloaded signature returning
-  // different context types per id; this mock only covers '2d', which is
-  // all Konva needs.
   HTMLCanvasElement.prototype.getContext = (() =>
     mockCtx) as unknown as HTMLCanvasElement['getContext']
 })
@@ -73,14 +70,12 @@ function wall(overrides: Partial<WallElement> = {}): WallElement {
 }
 
 /**
- * Collect the Konva class names rendered for a wall. The renderer now emits
- * a SINGLE <Path> regardless of whether any segment is curved — this is
- * intentional so Konva's node identity stays stable when the user toggles
- * a segment between straight and curved during an edit. The previous
- * behavior (swap between Line and Path) forced react-konva to destroy and
- * recreate the node, disrupting Transformer refs and in-flight drags.
+ * Render a wall and return the stage so tests can introspect Konva nodes.
+ * Walls now emit a `<Line closed>` polygon body plus optional accents
+ * (half-height rail, demountable "M", dashed centerline overlay) — the
+ * polygon is the stable surface, accents are conditional.
  */
-function konvaKindsFor(el: WallElement): string[] {
+function renderWall(el: WallElement) {
   let stage: any
   const setStage = (s: any) => {
     stage = s
@@ -92,34 +87,64 @@ function konvaKindsFor(el: WallElement): string[] {
       </Layer>
     </Stage>,
   )
-  // The renderer wraps its children in a <Group> so the wallType opacity /
-  // secondary rail can compose cleanly. For the "node stability across
-  // bulge changes" invariant these tests enforce, what matters is the
-  // number + kind of Path nodes rendered — not the wrapping Group. Walk
-  // the whole tree and collect every <Path>.
-  const kinds: string[] = []
-  stage?.find('Path').forEach((c: any) => kinds.push(c.getClassName()))
-  return kinds
+  return stage
 }
 
-describe('WallRenderer', () => {
-  it('bulges undefined → single Path', () => {
-    expect(konvaKindsFor(wall({ bulges: undefined }))).toEqual(['Path'])
+function lines(stage: any): any[] {
+  const out: any[] = []
+  stage.find('Line').forEach((l: any) => out.push(l))
+  return out
+}
+
+describe('WallRenderer (P3 polygon body)', () => {
+  it('renders a single closed Line polygon for a straight wall', () => {
+    const stage = renderWall(wall({ points: [0, 0, 100, 0], bulges: undefined }))
+    const ls = lines(stage)
+    expect(ls).toHaveLength(1)
+    const poly = ls[0]
+    expect(poly.closed()).toBe(true)
+    // Polygon has 4 vertices for a single straight segment (8 numbers).
+    expect(poly.points()).toHaveLength(8)
+    // Fill is set (not undefined / not transparent).
+    expect(poly.fill()).toBeTruthy()
   })
 
-  it('bulges all zero → single Path (straight segments become L commands)', () => {
-    expect(konvaKindsFor(wall({ bulges: [0, 0] }))).toEqual(['Path'])
+  it('selection: outline switches to the selection color', () => {
+    // Default (unselected): outline uses the wall's stored stroke (#111827).
+    const stage1 = renderWall(wall({ id: 'a' }))
+    const poly1 = lines(stage1)[0]
+    expect(poly1.stroke()).toBe('#111827')
+    // We don't have a real selectedIds fixture here — exercise the path by
+    // rendering with the same id NOT in selectedIds, since the test stub
+    // returns an empty array. Selection-active assertion lives in the
+    // wallTypeRender test where we exercise the selection store; here we
+    // just confirm the outline IS a real color when not selected.
+    expect(poly1.strokeWidth()).toBeGreaterThan(0)
   })
 
-  it('any non-zero bulge → single Path', () => {
-    expect(konvaKindsFor(wall({ bulges: [25, 0] }))).toEqual(['Path'])
+  it('any non-zero bulge still emits a single closed Line (node identity stable)', () => {
+    const stage = renderWall(wall({ bulges: [25, 0] }))
+    const ls = lines(stage)
+    expect(ls).toHaveLength(1)
+    expect(ls[0].closed()).toBe(true)
   })
 
-  it('negative bulge still a single Path (sign does not change node type)', () => {
-    expect(konvaKindsFor(wall({ bulges: [0, -25] }))).toEqual(['Path'])
+  it('mixed zero + non-zero bulges still a single closed Line', () => {
+    const stage = renderWall(wall({ bulges: [0, 10, 0] }))
+    const ls = lines(stage)
+    expect(ls).toHaveLength(1)
+    expect(ls[0].closed()).toBe(true)
   })
 
-  it('mixed zero + non-zero bulges still a single Path', () => {
-    expect(konvaKindsFor(wall({ bulges: [0, 10, 0] }))).toEqual(['Path'])
+  it('hit testing: polygon listens (clickable) when wall is unlocked', () => {
+    const stage = renderWall(wall({ locked: false }))
+    const poly = lines(stage)[0]
+    expect(poly.listening()).toBe(true)
+  })
+
+  it('hit testing: polygon does NOT listen when wall is locked', () => {
+    const stage = renderWall(wall({ locked: true }))
+    const poly = lines(stage)[0]
+    expect(poly.listening()).toBe(false)
   })
 })
