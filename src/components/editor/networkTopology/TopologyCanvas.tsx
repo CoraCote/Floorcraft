@@ -4,6 +4,7 @@ import {
   Background,
   Controls,
   MiniMap,
+  useReactFlow,
   type Node as RFNode,
   type Edge as RFEdge,
   type Connection,
@@ -14,8 +15,12 @@ import {
   type NodeTypes,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useNetworkTopologyStore } from '../../../stores/networkTopologyStore'
+import {
+  captureTopologyImage,
+  type CapturedTopologyImage,
+} from './captureTopologyImage'
 import { useFloorStore } from '../../../stores/floorStore'
 import { TopologyNodeCard, type TopologyNodeData } from './TopologyNode'
 import {
@@ -51,19 +56,43 @@ import {
  * component directly — they should mock at the test boundary.
  */
 
+/**
+ * Imperative capture handle wired up via `onCaptureReady` so the page
+ * (`NetworkTopologyPage`) can trigger a PDF export from outside the
+ * react-flow provider. We can't expose `useReactFlow` directly to the
+ * page — it only resolves inside `ReactFlowProvider`. The handle
+ * pattern keeps the provider boundary clean while still letting the
+ * outer toolbar drive the export.
+ */
+export type TopologyCaptureFn = () => Promise<CapturedTopologyImage | null>
+
 interface Props {
   selectedId: string | null
   onSelectNode: (id: string | null) => void
   onRequestConnection: (source: string, target: string) => void
+  /**
+   * Receives a capture function once the canvas has mounted. The page
+   * stores the ref + invokes it on Export PDF. Pass `null` when the
+   * caller doesn't need export support (tests, future read-only
+   * surfaces).
+   */
+  onCaptureReady?: (capture: TopologyCaptureFn | null) => void
 }
 
 const NODE_TYPES: NodeTypes = { topology: TopologyNodeCard }
 const EDGE_TYPES: EdgeTypes = { topology: TopologyEdgeRenderer }
 
-function CanvasInner({ selectedId, onSelectNode, onRequestConnection }: Props) {
+function CanvasInner({
+  selectedId,
+  onSelectNode,
+  onRequestConnection,
+  onCaptureReady,
+}: Props) {
   const topology = useNetworkTopologyStore((s) => s.topology)
   const applyNodeChanges = useNetworkTopologyStore((s) => s.applyNodeChanges)
   const applyEdgeChanges = useNetworkTopologyStore((s) => s.applyEdgeChanges)
+  const reactFlow = useReactFlow()
+  const containerRef = useRef<HTMLDivElement | null>(null)
   // M6.6: pull floors so the per-node link badge can resolve a friendly
   // "AP-12 on Engineering loft" tooltip. The dependency means the badge
   // re-renders if the linked element is renamed or its floor renamed —
@@ -140,7 +169,30 @@ function CanvasInner({ selectedId, onSelectNode, onRequestConnection }: Props) {
     onRequestConnection(conn.source, conn.target)
   }
 
+  // Register the capture function with the parent. Re-runs when
+  // `reactFlow` is replaced (cheap and rare); we rebuild the closure
+  // each time so `getNodes()` reads the latest measured-dimension
+  // snapshot react-flow holds internally.
+  useEffect(() => {
+    if (!onCaptureReady) return
+    const capture: TopologyCaptureFn = async () => {
+      const container = containerRef.current
+      if (!container) return null
+      // `reactFlow.getNodes()` returns nodes with `measured` width/height
+      // populated by react-flow's internal observer — exactly what
+      // `getNodesBounds` needs to compute a non-degenerate bounding box.
+      const measured = reactFlow.getNodes()
+      return captureTopologyImage({ container, nodes: measured })
+    }
+    onCaptureReady(capture)
+    return () => onCaptureReady(null)
+  }, [onCaptureReady, reactFlow])
+
+  // Wrapper div owns the ref because `<ReactFlow ref>` types vary across
+  // xyflow minor versions; an outer div is type-stable and gives us a
+  // single querySelector root for the capture helper.
   return (
+    <div ref={containerRef} className="w-full h-full">
     <ReactFlow
       nodes={nodes}
       edges={edges}
@@ -173,6 +225,7 @@ function CanvasInner({ selectedId, onSelectNode, onRequestConnection }: Props) {
         maskColor="rgba(15, 23, 42, 0.06)"
       />
     </ReactFlow>
+    </div>
   )
 }
 

@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   Cloud,
   CloudOff,
+  Download,
   LayoutDashboard,
   RefreshCw,
   UploadCloud,
@@ -11,6 +12,7 @@ import { nanoid } from 'nanoid'
 import { Button } from '../ui'
 import { useCan } from '../../hooks/useCan'
 import { useProjectStore } from '../../stores/projectStore'
+import { useFloorStore } from '../../stores/floorStore'
 import { useNetworkTopologyStore } from '../../stores/networkTopologyStore'
 import {
   createEmptyTopology,
@@ -23,7 +25,10 @@ import {
 // reshuffle on add). When unlocked, `addNode` itself runs the
 // auto-layout pass so the supplied position is overwritten — but we
 // still need a numerically-sensible default to satisfy the type.
-import { TopologyCanvas } from './networkTopology/TopologyCanvas'
+import {
+  TopologyCanvas,
+  type TopologyCaptureFn,
+} from './networkTopology/TopologyCanvas'
 import { PropertiesPanel } from './networkTopology/PropertiesPanel'
 import { AddNodeDropdown } from './networkTopology/AddNodeDropdown'
 import {
@@ -32,6 +37,7 @@ import {
   NODE_META,
 } from './networkTopology/topologyMeta'
 import { formatRelative } from '../../lib/time'
+import { buildNetworkTopologyPdf } from '../../lib/networkTopologyPdfExport'
 
 /**
  * M6.1 — Network Topology page.
@@ -62,8 +68,10 @@ type ConnectionDraft = { source: string; target: string }
 export function NetworkTopologyPage() {
   const canViewIT = useCan('viewITLayer')
   const officeId = useProjectStore((s) => s.officeId)
+  const projectName = useProjectStore((s) => s.currentProject?.name ?? '')
   const saveState = useProjectStore((s) => s.saveState)
   const lastSavedAt = useProjectStore((s) => s.lastSavedAt)
+  const floors = useFloorStore((s) => s.floors)
 
   const topology = useNetworkTopologyStore((s) => s.topology)
   const setTopology = useNetworkTopologyStore((s) => s.setTopology)
@@ -74,6 +82,36 @@ export function NetworkTopologyPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [connectionDraft, setConnectionDraft] = useState<ConnectionDraft | null>(null)
   const [searchParams, setSearchParams] = useSearchParams()
+  const [exportState, setExportState] = useState<'idle' | 'exporting' | 'error'>('idle')
+  // Capture function lives behind a ref because the canvas registers it
+  // imperatively from inside the ReactFlowProvider. State updates would
+  // tear: we'd render the button as "ready" before the canvas has wired
+  // up, or the other way round. A ref reads the freshest closure on
+  // click without triggering re-renders.
+  const captureRef = useRef<TopologyCaptureFn | null>(null)
+  const handleCaptureReady = useCallback((fn: TopologyCaptureFn | null) => {
+    captureRef.current = fn
+  }, [])
+
+  /**
+   * Resolve a `floorElementId` to a friendly "Label on Floor name"
+   * string for the PDF inventory's "Floor location" column. Mirrors
+   * the same lookup `TopologyCanvas` does for in-canvas tooltips, so
+   * what a user sees on screen is what lands in the export.
+   *
+   * Declared above the permission early-return so the hook order
+   * stays stable regardless of whether the user has `viewITLayer`.
+   */
+  const floorElementLabel = useCallback(
+    (elementId: string): string | null => {
+      for (const f of floors) {
+        const el = f.elements[elementId]
+        if (el) return `${el.label || el.id} on ${f.name}`
+      }
+      return null
+    },
+    [floors],
+  )
 
   // Belt-and-braces: ProjectShell hydrates the store, but if the user
   // navigates here on a brand-new office that the shell hasn't yet
@@ -217,6 +255,58 @@ export function NetworkTopologyPage() {
     applyAutoLayout()
   }
 
+  /**
+   * Export-PDF handler. Captures the diagram (best-effort) and hands
+   * topology + capture into the pure PDF builder. We never block the
+   * export on a missing capture — if the canvas couldn't be
+   * rasterised we still produce a tables-only handoff document, which
+   * is more useful than nothing for a vendor.
+   */
+  const handleExportPdf = async () => {
+    if (!topology) return
+    setExportState('exporting')
+    let imageDataUrl: string | null = null
+    let imageAspect: number | undefined
+    try {
+      const captured = await captureRef.current?.()
+      if (captured) {
+        imageDataUrl = captured.dataUrl
+        imageAspect = captured.width / captured.height
+      }
+    } catch (err) {
+      // Capture failure is recoverable — log and fall through to
+      // tables-only export.
+      console.warn('Failed to capture topology image for PDF export', err)
+    }
+
+    try {
+      const { blob, fileName } = buildNetworkTopologyPdf({
+        topology,
+        projectName: projectName || 'Untitled office',
+        imageDataUrl,
+        imageAspect,
+        floorElementLabel,
+      })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = fileName
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      // Revoke on the next tick to give the browser a chance to start
+      // the download before we void the URL.
+      setTimeout(() => URL.revokeObjectURL(url), 1_000)
+      setExportState('idle')
+    } catch (err) {
+      console.error('Failed to build network topology PDF', err)
+      setExportState('error')
+      // Auto-clear the error chip after 4s so the button goes back to
+      // its idle state without forcing a click-to-dismiss.
+      setTimeout(() => setExportState('idle'), 4_000)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-gray-950 dark:to-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-10">
@@ -261,6 +351,26 @@ export function NetworkTopologyPage() {
             >
               Reset layout
             </Button>
+            <Button
+              variant="secondary"
+              leftIcon={<Download size={14} aria-hidden="true" />}
+              onClick={handleExportPdf}
+              disabled={isEmpty || exportState === 'exporting'}
+              title={
+                isEmpty
+                  ? 'Nothing to export — the topology is empty'
+                  : exportState === 'error'
+                    ? 'Export failed — try again'
+                    : 'Export this topology as a vendor-handoff PDF'
+              }
+              data-testid="topology-export-pdf"
+            >
+              {exportState === 'exporting'
+                ? 'Exporting…'
+                : exportState === 'error'
+                  ? 'Export failed'
+                  : 'Export PDF'}
+            </Button>
           </div>
         </div>
 
@@ -278,6 +388,7 @@ export function NetworkTopologyPage() {
                 selectedId={selectedId}
                 onSelectNode={setSelectedId}
                 onRequestConnection={handleConnectionRequest}
+                onCaptureReady={handleCaptureReady}
               />
               {selectedId && (
                 <PropertiesPanel
