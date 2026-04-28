@@ -303,7 +303,30 @@ src/
 
 ## Deployment
 
-Floorcraft deploys to **Netlify**. The `netlify.toml` sets the build command to `npm run build`, publishes `dist/`, and adds a catch-all redirect to `index.html` for client-side routing. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in Netlify → Project settings → Environment variables.
+Floorcraft deploys to **Netlify** at <https://floorcraft.space>. The `netlify.toml` sets the build command to `npm run build`, publishes `dist/`, and adds a catch-all redirect to `index.html` for client-side routing. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in Netlify → Project settings → Environment variables.
+
+### How a deploy happens
+
+The Netlify GitHub integration is wired to the `rcasto123/Floorcraft` repository with `main` as the production branch:
+
+| Trigger | What happens | Time | Context |
+|---|---|---|---|
+| Push (or merge) to `main` | Netlify auto-builds from the commit and ships to production | ~25–30 s | `production` |
+| Open / push to a non-main branch with an open PR | Netlify builds a deploy preview; URL lands as a PR check | ~25–30 s | `deploy-preview` |
+
+**You do not need to run `netlify deploy --prod` after merging a PR.** The merge commit triggers the auto-build, and the production URL updates automatically when it finishes. The CLI manual-deploy command is only useful for one-off pushes that bypass git (e.g. testing a hotfix dist/ before opening a PR), and it should be considered an exception, not part of the normal flow.
+
+To confirm the auto-deploy after a merge, watch the latest production deploy:
+
+```bash
+npx netlify-cli api listSiteDeploys \
+  --data='{"site_id":"<site-id>","per_page":3}' \
+  | jq -r '.[] | "\(.created_at) | \(.context) | \(.commit_ref[0:7]) | \(.state)"'
+```
+
+A row with `production`, your merge commit's SHA, and `state: "ready"` means the deploy is live.
+
+### Edge Functions
 
 Edge Functions are deployed to Supabase:
 
