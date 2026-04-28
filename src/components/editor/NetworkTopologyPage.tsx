@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   RefreshCw,
   UploadCloud,
+  Wifi,
 } from 'lucide-react'
 import { nanoid } from 'nanoid'
 import { Button } from '../ui'
@@ -38,6 +39,7 @@ import {
 } from './networkTopology/topologyMeta'
 import { formatRelative } from '../../lib/time'
 import { buildNetworkTopologyPdf } from '../../lib/networkTopologyPdfExport'
+import { MerakiSyncDialog } from './networkTopology/MerakiSyncDialog'
 
 /**
  * M6.1 — Network Topology page.
@@ -83,6 +85,7 @@ export function NetworkTopologyPage() {
   const [connectionDraft, setConnectionDraft] = useState<ConnectionDraft | null>(null)
   const [searchParams, setSearchParams] = useSearchParams()
   const [exportState, setExportState] = useState<'idle' | 'exporting' | 'error'>('idle')
+  const [merakiOpen, setMerakiOpen] = useState(false)
   // Capture function lives behind a ref because the canvas registers it
   // imperatively from inside the ReactFlowProvider. State updates would
   // tear: we'd render the button as "ready" before the canvas has wired
@@ -327,6 +330,15 @@ export function NetworkTopologyPage() {
             <AddNodeDropdown onSelect={handleAddNode} variant="primary" />
             <Button
               variant="secondary"
+              leftIcon={<Wifi size={14} aria-hidden="true" />}
+              onClick={() => setMerakiOpen(true)}
+              title="Pull device inventory from Cisco Meraki"
+              data-testid="topology-meraki-sync"
+            >
+              Sync from Meraki
+            </Button>
+            <Button
+              variant="secondary"
               leftIcon={<LayoutDashboard size={14} aria-hidden="true" />}
               onClick={handleAutoArrange}
               disabled={isEmpty}
@@ -410,6 +422,11 @@ export function NetworkTopologyPage() {
             onCancel={() => setConnectionDraft(null)}
           />
         )}
+
+        {/* M4 — Cisco Meraki sync dialog. Mounted unconditionally; the
+            Modal itself short-circuits when `open` is false so an
+            unmounted state never tears the user's selection mid-import. */}
+        <MerakiSyncDialog open={merakiOpen} onClose={() => setMerakiOpen(false)} />
       </div>
     </div>
   )
