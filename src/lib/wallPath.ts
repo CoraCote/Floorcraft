@@ -144,6 +144,99 @@ export function sampleArc(seg: WallSegment, samples: number): Point[] {
   return out
 }
 
+export interface SegmentAabb {
+  minX: number
+  minY: number
+  maxX: number
+  maxY: number
+}
+
+/**
+ * Tight axis-aligned bounding box for a single wall segment, exact for
+ * both straight chords and circular arcs.
+ *
+ * For a straight segment the AABB is just the chord endpoints. For an arc
+ * the endpoints alone aren't enough — the bulge can push the arc beyond
+ * the chord rectangle on either axis. The arc's extrema lie at the four
+ * cardinal points of its underlying circle ((cx±r, cy) and (cx, cy±r));
+ * we include each cardinal point only when it actually falls within the
+ * arc's angular sweep, otherwise the chord endpoint is the extremum.
+ *
+ * Used by `elementBounds` for selection rectangles, marquee picks, and
+ * fit-to-screen so curved walls aren't clipped or undershot — see the
+ * companion test in `__tests__/elementBoundsBulge.test.ts`.
+ */
+export function segmentBounds(seg: WallSegment): SegmentAabb {
+  const minX0 = Math.min(seg.x0, seg.x1)
+  const minY0 = Math.min(seg.y0, seg.y1)
+  const maxX0 = Math.max(seg.x0, seg.x1)
+  const maxY0 = Math.max(seg.y0, seg.y1)
+  if (seg.bulge === 0) {
+    return { minX: minX0, minY: minY0, maxX: maxX0, maxY: maxY0 }
+  }
+  const arc = arcFromBulge(seg)
+  if (!arc) {
+    // Defensive: zero-length chord with non-zero bulge; treat as straight.
+    return { minX: minX0, minY: minY0, maxX: maxX0, maxY: maxY0 }
+  }
+  const a0 = Math.atan2(seg.y0 - arc.cy, seg.x0 - arc.cx)
+  const a1 = Math.atan2(seg.y1 - arc.cy, seg.x1 - arc.cx)
+  // Match `sampleArc`'s convention: walk angles in the sweep direction.
+  let delta = a1 - a0
+  while (delta > Math.PI) delta -= 2 * Math.PI
+  while (delta < -Math.PI) delta += 2 * Math.PI
+  if (arc.sweep === 1 && delta < 0) delta += 2 * Math.PI
+  if (arc.sweep === 0 && delta > 0) delta -= 2 * Math.PI
+
+  let minX = minX0
+  let minY = minY0
+  let maxX = maxX0
+  let maxY = maxY0
+
+  // The four cardinal angles on the underlying circle (in screen y-down
+  // coords): right=0 → (+r, 0), bottom=π/2 → (0, +r), left=π → (-r, 0),
+  // top=-π/2 → (0, -r). Each is included in the AABB only when it lies
+  // on the actual arc.
+  const cardinals: Array<{ angle: number; x: number; y: number }> = [
+    { angle: 0, x: arc.cx + arc.radius, y: arc.cy },
+    { angle: Math.PI / 2, x: arc.cx, y: arc.cy + arc.radius },
+    { angle: Math.PI, x: arc.cx - arc.radius, y: arc.cy },
+    { angle: -Math.PI / 2, x: arc.cx, y: arc.cy - arc.radius },
+  ]
+
+  for (const card of cardinals) {
+    if (angleOnArc(a0, delta, card.angle)) {
+      if (card.x < minX) minX = card.x
+      if (card.x > maxX) maxX = card.x
+      if (card.y < minY) minY = card.y
+      if (card.y > maxY) maxY = card.y
+    }
+  }
+  return { minX, minY, maxX, maxY }
+}
+
+/**
+ * True iff angle `theta` lies on the arc spanning from `a0` along
+ * signed sweep `delta`. Folds `theta - a0` into the same half-plane as
+ * `delta` and compares magnitudes.
+ *
+ * A small ε on the comparison keeps half-circle arcs (|delta| = π)
+ * inclusive at their cardinal endpoints — without it, floating-point
+ * jitter in `a0` could drop the topmost/bottommost extremum from the
+ * AABB on a perfectly symmetric semicircle.
+ */
+function angleOnArc(a0: number, delta: number, theta: number): boolean {
+  if (delta === 0) return false
+  let d = theta - a0
+  if (delta > 0) {
+    while (d < -1e-9) d += 2 * Math.PI
+    return d <= delta + 1e-9
+  } else {
+    while (d > 1e-9) d -= 2 * Math.PI
+    return d >= delta - 1e-9
+  }
+}
+
 /** Unit tangent vector at parametric position t ∈ [0,1] along a segment. */
 export function tangentAt(seg: WallSegment, t: number): Point {
   if (seg.bulge === 0) {

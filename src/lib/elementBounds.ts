@@ -1,4 +1,5 @@
 import { isWallElement, type CanvasElement } from '../types/elements'
+import { segmentBounds, wallSegments } from './wallPath'
 
 export interface Bounds {
   x: number
@@ -11,9 +12,13 @@ export interface Bounds {
  * Axis-aligned bounding box for a single element in world coordinates.
  *
  * Most elements use center-origin x/y with width/height, but walls are the
- * exception — they live at (0, 0) with geometry baked into `points`. Handle
- * walls by scanning their points; everything else is a straightforward
- * `x ± width/2` expansion.
+ * exception — they live at (0, 0) with geometry baked into `points` plus
+ * an optional `bulges` array. For each segment we expand the bounds by
+ * the segment's exact AABB (`segmentBounds`), which considers arc
+ * extrema for curved walls and the chord endpoints for straight ones.
+ * Without the arc-aware path, a wall that bulges out to round a corner
+ * would report its chord rectangle and lose the curved portion in
+ * marquee picks, fit-to-screen, and the floor's union AABB.
  *
  * Returns null for zero-size elements and for walls whose points array is
  * empty (shouldn't happen in practice, but the caller shouldn't have to
@@ -22,17 +27,22 @@ export interface Bounds {
 export function elementBounds(el: CanvasElement): Bounds | null {
   if (isWallElement(el)) {
     if (el.points.length < 2) return null
+    if (el.points.length < 4) {
+      // Degenerate single-vertex "wall" — nothing has dimension. Surface
+      // it as the point itself so callers that need a place to anchor
+      // (e.g. select pulse) still get coordinates.
+      return { x: el.points[0], y: el.points[1], width: 0, height: 0 }
+    }
     let minX = Infinity
     let minY = Infinity
     let maxX = -Infinity
     let maxY = -Infinity
-    for (let i = 0; i < el.points.length; i += 2) {
-      const px = el.points[i]
-      const py = el.points[i + 1]
-      if (px < minX) minX = px
-      if (px > maxX) maxX = px
-      if (py < minY) minY = py
-      if (py > maxY) maxY = py
+    for (const seg of wallSegments(el.points, el.bulges)) {
+      const b = segmentBounds(seg)
+      if (b.minX < minX) minX = b.minX
+      if (b.minY < minY) minY = b.minY
+      if (b.maxX > maxX) maxX = b.maxX
+      if (b.maxY > maxY) maxY = b.maxY
     }
     return { x: minX, y: minY, width: maxX - minX, height: maxY - minY }
   }
