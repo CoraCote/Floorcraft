@@ -128,18 +128,29 @@ export function PeoplePanel() {
           )}
         </div>
         <div className="flex gap-1">
+          {/*
+            `type="button"` is explicit on each header action because
+            this whole panel may render inside a `<form>`-shaped parent
+            (e.g. the inline add form a few lines below) where a missing
+            `type` defaults to `"submit"` and accidentally fires the
+            wrong handler when a user hits Enter. Costs one attribute
+            per button and removes a class of submit-by-mistake bugs.
+          */}
           <button
+            type="button"
             onClick={() => setShowAddForm(!showAddForm)}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            aria-expanded={showAddForm}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-gray-900"
           >
-            <Plus size={12} />
+            <Plus size={12} aria-hidden="true" />
             Add
           </button>
           <button
+            type="button"
             onClick={() => setCsvImportOpen(true)}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800/50"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-gray-900"
           >
-            <Upload size={12} />
+            <Upload size={12} aria-hidden="true" />
             CSV
           </button>
         </div>
@@ -206,20 +217,42 @@ export function PeoplePanel() {
         </div>
       )}
 
-      {/* Search bar */}
+      {/*
+        Search bar — focus styling matches the editor-wide standard
+        (`focus-visible:ring-2 focus-visible:ring-blue-500`) used by
+        TeamHomePage, OrgChart, and the Help search palette. Pre-fix the
+        bare `focus:border-blue-400` change was so subtle that keyboard
+        users couldn't tell which input had focus, and the panel didn't
+        match the rest of the app.
+      */}
       <div className="relative mb-3">
-        <Search size={14} className="absolute left-2.5 top-2.5 text-gray-400 dark:text-gray-500" />
+        <Search size={14} className="absolute left-2.5 top-2.5 text-gray-400 dark:text-gray-500" aria-hidden="true" />
         <input
-          className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-lg focus:outline-none focus:border-blue-400"
+          className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-transparent"
           placeholder="Search people…"
+          aria-label="Search people"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
       </div>
 
-      {/* Quick filter pills */}
-      <div className="flex gap-1.5 mb-3 flex-wrap">
+      {/*
+        Quick filter pills — `role="group"` + per-button `aria-pressed`
+        match the pattern DevicesPanel uses (Wave 17D consistency) so a
+        screen reader announces "Unassigned, pressed" rather than a bare
+        button label, and the filter state is actually conveyed.
+        Sentence-case label ("New hires") aligns with PR #144's copy
+        audit; pre-fix it sat in Title Case alongside sentence-case
+        siblings ("All", "Unassigned").
+      */}
+      <div
+        className="flex gap-1.5 mb-3 flex-wrap"
+        role="group"
+        aria-label="Filter people"
+      >
         <button
+          type="button"
+          aria-pressed={filterBy === 'all'}
           onClick={() => setFilterBy('all')}
           className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${
             filterBy === 'all'
@@ -230,6 +263,8 @@ export function PeoplePanel() {
           All ({totalCount})
         </button>
         <button
+          type="button"
+          aria-pressed={filterBy === 'unassigned'}
           onClick={() => setFilterBy('unassigned')}
           className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${
             filterBy === 'unassigned'
@@ -240,6 +275,8 @@ export function PeoplePanel() {
           Unassigned ({unassignedCount})
         </button>
         <button
+          type="button"
+          aria-pressed={filterBy === 'new-hires'}
           onClick={() => setFilterBy('new-hires')}
           className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${
             filterBy === 'new-hires'
@@ -247,7 +284,7 @@ export function PeoplePanel() {
               : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
           }`}
         >
-          New Hires ({newHiresCount})
+          New hires ({newHiresCount})
         </button>
       </div>
 

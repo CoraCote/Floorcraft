@@ -5,6 +5,7 @@ import { useEmployeeStore } from '../../../stores/employeeStore'
 import { useProjectStore } from '../../../stores/projectStore'
 import { useCan } from '../../../hooks/useCan'
 import type { SeatSwapRequest, SeatSwapStatus } from '../../../types/seatSwaps'
+import { PanelEmptyState } from './PanelEmptyState'
 
 /**
  * Panel section mounted inside `InsightsPanel`. Lists seat-swap requests
@@ -45,12 +46,20 @@ export function SeatSwapsPanel() {
 
   const total = Object.keys(requests).length
   if (total === 0) {
+    // Use the shared `PanelEmptyState` so this section visually matches
+    // Annotations / Properties etc. (Wave 17D's empty-state grammar).
+    // The `compact` variant trims vertical padding because we live
+    // inside InsightsPanel — a fully padded block would push the other
+    // sub-sections too far down.
     return (
       <div className="mb-3">
         <Header count={0} />
-        <div className="text-xs text-gray-400 dark:text-gray-500 py-2">
-          No swap requests yet.
-        </div>
+        <PanelEmptyState
+          icon={ArrowLeftRight}
+          title="No swap requests yet"
+          body="When someone proposes a seat swap, the request lands here for approval."
+          compact
+        />
       </div>
     )
   }

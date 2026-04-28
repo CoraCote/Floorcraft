@@ -566,10 +566,45 @@ export function TeamHomePage() {
   }, [recentSlugs, offices])
 
   if (!team) {
+    // Initial team-record fetch. Pre-fix this branch rendered a bare
+    // "Loading…" string, which contrasted with the rich skeleton we
+    // already render below for offices — the page felt like it had
+    // collapsed for a moment before the real chrome painted in. Now
+    // we mirror the loaded layout's spine (header strip + stat-card
+    // row + skeleton grid) so the visual mass is steady from the
+    // first frame. Polite `aria-live` announces the load state for
+    // screen readers without re-firing once the team resolves.
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-gray-950 dark:to-gray-900">
-        <div className="p-6 max-w-7xl mx-auto px-6 text-sm text-gray-500 dark:text-gray-400">
-          Loading…
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 py-6 sm:py-8">
+          <span className="sr-only" role="status" aria-live="polite">
+            Loading team…
+          </span>
+          <div
+            className="flex items-center gap-3 mb-6 animate-pulse"
+            aria-hidden="true"
+          >
+            <div className="w-10 h-10 rounded-lg bg-gray-200 dark:bg-gray-800 shrink-0" />
+            <div className="flex-1 space-y-2">
+              <div className="h-6 bg-gray-200 dark:bg-gray-800 rounded w-48" />
+              <div className="h-3 bg-gray-100 dark:bg-gray-800/60 rounded w-72" />
+            </div>
+          </div>
+          <ul
+            className="grid gap-6"
+            style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))' }}
+            aria-hidden="true"
+          >
+            <li>
+              <OfficeCardSkeleton />
+            </li>
+            <li>
+              <OfficeCardSkeleton />
+            </li>
+            <li>
+              <OfficeCardSkeleton />
+            </li>
+          </ul>
         </div>
       </div>
     )

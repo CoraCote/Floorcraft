@@ -125,8 +125,17 @@ export function RightSidebar() {
               {t.icon}
               <span>{t.label}</span>
               {t.id === 'insights' && badgeCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 flex items-center justify-center text-[9px] font-bold text-white bg-red-500 rounded-full">
-                  {badgeCount}
+                // The bare numeric badge reads as just a number to a
+                // screen reader. Wrapping it with an `aria-label` and
+                // a visually-hidden long form ("3 active insights")
+                // turns the chip into something a non-sighted user can
+                // act on, while sighted users still see the compact
+                // count.
+                <span
+                  className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 flex items-center justify-center text-[9px] font-bold text-white bg-red-500 rounded-full"
+                  aria-label={`${badgeCount} active ${badgeCount === 1 ? 'insight' : 'insights'}`}
+                >
+                  <span aria-hidden="true">{badgeCount}</span>
                 </span>
               )}
             </button>

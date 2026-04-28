@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { CalendarClock, X } from 'lucide-react'
+import { PanelEmptyState } from './PanelEmptyState'
 import { useRoomBookingsStore } from '../../../stores/roomBookingsStore'
 import { useElementsStore } from '../../../stores/elementsStore'
 import { useFloorStore } from '../../../stores/floorStore'
@@ -78,15 +79,25 @@ export function RoomBookingsPanel() {
       </div>
 
       {rows.length === 0 ? (
-        <div className="text-xs text-gray-400 dark:text-gray-500 py-2">
-          No room bookings today. Use the book tool to reserve a room.
-        </div>
+        // Shared empty-state idiom (Wave 17D) — was a bare line of
+        // muted text that read as "we forgot to render something"
+        // rather than an intentional zero-state. `compact` because this
+        // section lives stacked inside InsightsPanel.
+        <PanelEmptyState
+          icon={CalendarClock}
+          title="No room bookings today"
+          body="Use the book tool to reserve a meeting room."
+          compact
+        />
       ) : (
         <div className="flex flex-col gap-2">
           {rows.map(([elementId, list]) => (
             <div
               key={elementId}
-              className="flex flex-col gap-1 p-2 rounded border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
+              // The row is keyboard-activatable (Enter / Space below)
+              // so it needs a visible focus ring — without one a tab
+              // user lands here with no signal they've arrived.
+              className="flex flex-col gap-1 p-2 rounded border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               role="button"
               tabIndex={0}
               onClick={() => focusElements([elementId])}
