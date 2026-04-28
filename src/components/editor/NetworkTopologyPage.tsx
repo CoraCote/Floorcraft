@@ -5,6 +5,7 @@ import {
   CloudOff,
   Download,
   LayoutDashboard,
+  LayoutTemplate,
   RefreshCw,
   UploadCloud,
   Wifi,
@@ -40,6 +41,7 @@ import {
 import { formatRelative } from '../../lib/time'
 import { buildNetworkTopologyPdf } from '../../lib/networkTopologyPdfExport'
 import { MerakiSyncDialog } from './networkTopology/MerakiSyncDialog'
+import { TemplatesDialog } from './networkTopology/TemplatesDialog'
 
 /**
  * M6.1 — Network Topology page.
@@ -86,6 +88,7 @@ export function NetworkTopologyPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [exportState, setExportState] = useState<'idle' | 'exporting' | 'error'>('idle')
   const [merakiOpen, setMerakiOpen] = useState(false)
+  const [templatesOpen, setTemplatesOpen] = useState(false)
   // Capture function lives behind a ref because the canvas registers it
   // imperatively from inside the ReactFlowProvider. State updates would
   // tear: we'd render the button as "ready" before the canvas has wired
@@ -330,6 +333,15 @@ export function NetworkTopologyPage() {
             <AddNodeDropdown onSelect={handleAddNode} variant="primary" />
             <Button
               variant="secondary"
+              leftIcon={<LayoutTemplate size={14} aria-hidden="true" />}
+              onClick={() => setTemplatesOpen(true)}
+              title="Start from a pre-built topology template"
+              data-testid="topology-templates"
+            >
+              Templates
+            </Button>
+            <Button
+              variant="secondary"
               leftIcon={<Wifi size={14} aria-hidden="true" />}
               onClick={() => setMerakiOpen(true)}
               title="Pull device inventory from Cisco Meraki"
@@ -427,6 +439,7 @@ export function NetworkTopologyPage() {
             Modal itself short-circuits when `open` is false so an
             unmounted state never tears the user's selection mid-import. */}
         <MerakiSyncDialog open={merakiOpen} onClose={() => setMerakiOpen(false)} />
+        <TemplatesDialog open={templatesOpen} onClose={() => setTemplatesOpen(false)} />
       </div>
     </div>
   )
