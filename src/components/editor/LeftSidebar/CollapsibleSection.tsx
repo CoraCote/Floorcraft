@@ -48,13 +48,18 @@ export function CollapsibleSection({ title, defaultOpen = true, storageKey, trai
         onClick={toggle}
         aria-expanded={open}
         aria-controls={panelId}
-        className="w-full flex items-center gap-1.5 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+        // `min-w-0` so the title truncates when its localisation grows
+        // past the available width rather than pushing the trailing slot
+        // off the right edge.
+        className="w-full flex items-center gap-1.5 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 min-w-0"
       >
-        {open
-          ? <ChevronDown size={12} aria-hidden="true" />
-          : <ChevronRight size={12} aria-hidden="true" />}
-        <span className="flex-1 text-left">{title}</span>
-        {trailing}
+        <span className="flex-shrink-0">
+          {open
+            ? <ChevronDown size={12} aria-hidden="true" />
+            : <ChevronRight size={12} aria-hidden="true" />}
+        </span>
+        <span className="flex-1 text-left truncate min-w-0">{title}</span>
+        {trailing && <span className="flex-shrink-0">{trailing}</span>}
       </button>
       {open && (
         <div id={panelId} role="region" aria-labelledby={buttonId}>

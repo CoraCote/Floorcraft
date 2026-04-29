@@ -76,19 +76,22 @@ export function LayerVisibilityPanel() {
           return (
             <label
               key={cat}
-              className="flex items-center gap-2 px-2 py-1.5 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
+              // `min-w-0` so the label degrades with an ellipsis (rather
+              // than pushing the count pill out) on a long localised
+              // category title or a 4-digit count badge.
+              className="flex items-center gap-2 px-2 py-1.5 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer min-w-0"
             >
               <input
                 type="checkbox"
                 checked={isOn}
                 onChange={() => toggle(cat)}
                 aria-label={`Toggle ${CATEGORY_LABELS[cat]}`}
-                className="rounded"
+                className="rounded flex-shrink-0"
               />
-              <span className={isOn ? '' : 'text-gray-400 dark:text-gray-500'}>
+              <span className={`min-w-0 truncate ${isOn ? '' : 'text-gray-400 dark:text-gray-500'}`}>
                 {CATEGORY_LABELS[cat]}
               </span>
-              <span className="ml-auto text-[11px] text-gray-400 dark:text-gray-500 font-mono">
+              <span className="ml-auto text-[11px] text-gray-400 dark:text-gray-500 font-mono flex-shrink-0">
                 {count}
               </span>
             </label>

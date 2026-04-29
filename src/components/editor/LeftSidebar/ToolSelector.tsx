@@ -178,7 +178,12 @@ export function ToolSelector() {
           const isRich = hoveredToolId === tool.id && showRichTooltip(tool.id)
           const tooltipId = `first-use-tooltip-${tool.id}`
           return (
-            <div key={tool.id} className="relative">
+            // `z-10` while the rich tooltip is showing so it stacks above
+            // sibling tool wrappers further down the rail. Without an
+            // explicit z-index the absolutely-positioned tooltip can
+            // disappear behind the next tool's hover background during
+            // keyboard nav.
+            <div key={tool.id} className={`relative ${isRich ? 'z-10' : ''}`}>
               <button
                 onClick={() => handleToolClick(tool)}
                 onMouseEnter={() => setHoveredToolId(tool.id)}
@@ -189,7 +194,10 @@ export function ToolSelector() {
                 onBlur={() =>
                   setHoveredToolId((prev) => (prev === tool.id ? null : prev))
                 }
-                className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded text-sm transition-colors ${
+                // `min-w-0` so the inner truncating label doesn't push the
+                // shortcut pill off the edge when a future / localised
+                // tool name exceeds the row width.
+                className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded text-sm transition-colors min-w-0 ${
                   activeTool === tool.id
                     ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-medium'
                     : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
@@ -197,10 +205,10 @@ export function ToolSelector() {
                 title={tool.shortcut ? `${tool.label} (${tool.shortcut})` : tool.label}
                 aria-describedby={isRich ? tooltipId : undefined}
               >
-                {tool.icon}
-                <span>{tool.label}</span>
+                <span className="flex-shrink-0">{tool.icon}</span>
+                <span className="truncate min-w-0">{tool.label}</span>
                 {tool.shortcut && (
-                  <span className="ml-auto text-[10px] text-gray-400 dark:text-gray-500 font-mono">{tool.shortcut}</span>
+                  <span className="ml-auto text-[10px] text-gray-400 dark:text-gray-500 font-mono flex-shrink-0">{tool.shortcut}</span>
                 )}
               </button>
               {isRich && (

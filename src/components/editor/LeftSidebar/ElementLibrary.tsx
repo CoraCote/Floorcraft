@@ -487,12 +487,14 @@ function LibraryTile({
       onDragEnd={() => setIsDragging(false)}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      role="button"
-      aria-label={`Add ${item.label} element to canvas`}
-      title="Drag onto the canvas, or click to add at viewport centre"
-      // The wrapper owns the drag; the inner <button> handles click-to-add.
-      // The star sits above as a sibling with its own keyboard handler so
-      // Tab reaches it and Space/Enter toggles without placing the element.
+      // Removed `role="button"` — the wrapper isn't a single button: it
+      // hosts an inner click-to-add `<button>` AND a star/× toggle as
+      // distinct interactive children. Announcing the wrapper as a button
+      // confused screen readers (nested-button anti-pattern). The drag
+      // affordance is mouse-only enhancement; the inner button is what
+      // a11y users reach to add the element.
+      data-testid="library-tile"
+      title={`Drag onto the canvas, or click to add ${item.label} at viewport centre`}
       //
       // Chrome treatment: rounded-md card with a paired light/dark shell.
       // Hover lifts to a blue accent border + faint shadow — `motion-reduce`
@@ -501,7 +503,13 @@ function LibraryTile({
       // and apply a tiny rotation so the user can still see the drag image
       // is the tile they grabbed (Konva canvas swallows the native drag
       // ghost on most browsers, so the source-side affordance matters).
-      className={`group relative flex items-center gap-1.5 px-2 py-1.5 text-xs rounded-md border transition-colors hover:shadow-sm motion-reduce:hover:shadow-none ${
+      //
+      // `min-w-0` is critical: the wrapper is a grid cell child whose
+      // intrinsic min-width is otherwise the un-truncatable label width.
+      // Without it, long labels ("Conference Room", uploaded SVGs like
+      // "Reception_Desk_v2") push the tile wider than its grid column and
+      // visibly overflow into the neighbouring tile.
+      className={`group relative flex items-center gap-1.5 px-2 py-1.5 text-xs rounded-md border transition-colors hover:shadow-sm motion-reduce:hover:shadow-none min-w-0 ${
         isDragging
           ? 'opacity-50 cursor-grabbing rotate-[1deg]'
           : 'cursor-grab active:cursor-grabbing'
@@ -514,10 +522,20 @@ function LibraryTile({
       <button
         type="button"
         onClick={() => onClick(item)}
-        className="flex items-center gap-1.5 flex-1 text-left rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+        aria-label={`Add ${item.label} element to canvas`}
+        // `min-w-0` chained to the wrapper above keeps `truncate` on the
+        // label working. `pr-5` reserves a 20px gutter for the absolute
+        // star/× corner action (12px icon + p-1 = ~20px box at right-0.5)
+        // so a long label's ellipsis tail never sits underneath the icon.
+        className="flex items-center gap-1.5 flex-1 min-w-0 pr-5 text-left rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
       >
-        <LibraryPreview item={item} />
-        <span className="truncate">{item.label}</span>
+        {/* Wrap the preview so the row's flex shrink targets the LABEL,
+            not the icon — without this, the SVG compresses on tight rows
+            and both icon and label end up squished. */}
+        <span className="flex-shrink-0">
+          <LibraryPreview item={item} />
+        </span>
+        <span className="truncate min-w-0">{item.label}</span>
       </button>
       {onDelete ? (
         <button
@@ -527,7 +545,12 @@ function LibraryTile({
           onKeyDown={(e) => {
             if (e.key === ' ' || e.key === 'Enter') handleDeleteClick(e)
           }}
-          className="absolute top-0.5 right-0.5 p-0.5 rounded opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus:ring-1 focus:ring-red-400 hover:bg-red-50 dark:hover:bg-red-950/40"
+          // `p-1` brings the hit target to ~20×20 — still under the
+          // WCAG 2.5.5 24×24 minimum, but the constraint is the 24×18
+          // tile preview making a larger tap area visually intrusive.
+          // Bumping past p-0.5 closes most of the gap and lines the
+          // visual size up with focus rings on adjacent buttons.
+          className="absolute top-0.5 right-0.5 p-1 rounded opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus:ring-1 focus:ring-red-400 hover:bg-red-50 dark:hover:bg-red-950/40"
         >
           <X size={12} aria-hidden="true" className="text-gray-400 dark:text-gray-500 hover:text-red-500" />
         </button>
@@ -541,7 +564,7 @@ function LibraryTile({
           onKeyDown={(e) => {
             if (e.key === ' ' || e.key === 'Enter') handleStarClick(e)
           }}
-          className={`absolute top-0.5 right-0.5 p-0.5 rounded transition-opacity focus:opacity-100 focus:outline-none focus:ring-1 focus:ring-blue-400 ${
+          className={`absolute top-0.5 right-0.5 p-1 rounded transition-opacity focus:opacity-100 focus:outline-none focus:ring-1 focus:ring-blue-400 ${
             isFavorite ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
           }`}
         >
@@ -624,21 +647,27 @@ function LibrarySection({
 
   return (
     <div className={`mb-3 ${showDivider ? 'pt-3 border-t border-gray-100 dark:border-gray-800/60' : ''}`}>
-      <div className="flex items-center gap-1 mb-1">
+      {/* `min-w-0` on the row + truncate-aware children below let a long
+          category title ("My Shapes · 47", or a localised label) degrade
+          with an ellipsis instead of pushing the trailing action (e.g.
+          "Clear?" expand-on-hover) off the right edge of the sidebar. */}
+      <div className="flex items-center gap-1 mb-1 min-w-0">
         {collapsible ? (
           <button
             type="button"
             onClick={() => toggle(id)}
-            className={`flex items-center gap-1 hover:text-gray-600 dark:hover:text-gray-300 ${HEADER_CLASS}`}
+            className={`flex items-center gap-1 min-w-0 hover:text-gray-600 dark:hover:text-gray-300 ${HEADER_CLASS}`}
             aria-expanded={!isCollapsed}
           >
-            {isCollapsed ? <ChevronRight size={12} aria-hidden="true" /> : <ChevronDown size={12} aria-hidden="true" />}
-            <span>{titleText}</span>
+            <span className="flex-shrink-0">
+              {isCollapsed ? <ChevronRight size={12} aria-hidden="true" /> : <ChevronDown size={12} aria-hidden="true" />}
+            </span>
+            <span className="truncate min-w-0">{titleText}</span>
           </button>
         ) : (
-          <div className={`px-1 ${HEADER_CLASS}`}>{titleText}</div>
+          <div className={`px-1 truncate min-w-0 ${HEADER_CLASS}`}>{titleText}</div>
         )}
-        {headerAction ? <div className="ml-auto flex items-center">{headerAction}</div> : null}
+        {headerAction ? <div className="ml-auto flex items-center flex-shrink-0">{headerAction}</div> : null}
       </div>
       {!isCollapsed && (
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-1">
@@ -818,8 +847,14 @@ export function ElementLibrary() {
         setUploadError(msg)
         return
       }
-      // Strip extension for the label.
-      const name = file.name.replace(/\.svg$/i, '').slice(0, 32) || 'Custom Shape'
+      // Strip extension for the label. Cap at 18 chars (down from 32):
+      // a 2-col library tile gives the label ~80px of horizontal space at
+      // 12px font, which fits ~14-16 chars before truncate kicks in.
+      // 32 chars produced labels that were never visible past the
+      // ellipsis; 18 keeps a couple of letters of margin so users still
+      // see a usable suffix when names share a prefix
+      // ("Engineering_Pod_v1", "Engineering_Pod_v2").
+      const name = file.name.replace(/\.svg$/i, '').slice(0, 18) || 'Custom Shape'
       const shape = addCustomShape(name, result.svg)
       if (!shape) {
         setUploadError('Library full — delete a custom shape first.')
@@ -967,8 +1002,8 @@ export function ElementLibrary() {
                 : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:border-gray-300'
             }`}
           >
-            <MessageSquarePlus size={14} aria-hidden="true" />
-            <span className="flex-1 text-left">Annotation pin</span>
+            <MessageSquarePlus size={14} aria-hidden="true" className="flex-shrink-0" />
+            <span className="flex-1 min-w-0 truncate text-left">Annotation pin</span>
           </button>
         )}
         <div className="font-medium text-gray-600 dark:text-gray-300">View-only</div>
@@ -1032,7 +1067,11 @@ export function ElementLibrary() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleSearchKeyDown}
-          className="pl-7"
+          // Suppress the WebKit-native "clear search" X. It collides with
+          // the focus ring and breaks the design system's input chrome,
+          // and we already provide a keyboard-driven clear (Esc) plus a
+          // visible "Clear" button on the empty-search placard.
+          className="pl-7 [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-cancel-button]:hidden"
         />
       </div>
       {canAnnotate && (
@@ -1051,10 +1090,10 @@ export function ElementLibrary() {
               : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:border-gray-300'
           }`}
         >
-          <MessageSquarePlus size={14} aria-hidden="true" />
-          <span className="flex-1 text-left">Annotation pin</span>
+          <MessageSquarePlus size={14} aria-hidden="true" className="flex-shrink-0" />
+          <span className="flex-1 min-w-0 truncate text-left">Annotation pin</span>
           {activeTool === 'pin' && (
-            <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400">ESC</span>
+            <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 flex-shrink-0">ESC</span>
           )}
         </button>
       )}
@@ -1152,7 +1191,11 @@ export function ElementLibrary() {
           >
             <SearchX size={20} aria-hidden="true" className="text-gray-400" />
             <div>No elements match</div>
-            <div className="text-gray-400 dark:text-gray-500 truncate max-w-full px-3 text-center">
+            {/* `w-full` (not just max-w-full) binds the truncating div to
+                the parent's content width so a long pasted query
+                ("really_long_search_token_pasted_in") truncates instead of
+                stretching the placard wider than the sidebar can hold. */}
+            <div className="text-gray-400 dark:text-gray-500 truncate w-full px-3 text-center">
               "{query}"
             </div>
             <button

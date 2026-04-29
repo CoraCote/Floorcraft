@@ -142,8 +142,11 @@ describe('ElementLibrary — Wave 12B polish', () => {
       vi.useFakeTimers()
       render(<ElementLibrary />)
       const sofa = screen.getByText('Sofa')
-      // The draggable wrapper is the tile container two levels up.
-      const tile = sofa.closest('[role="button"]') as HTMLElement
+      // The draggable wrapper carries `data-testid="library-tile"` —
+      // chosen over `role="button"` because the wrapper is no longer
+      // announced as a button (it hosts an inner click-to-add button
+      // plus a star/× toggle as distinct interactive children).
+      const tile = sofa.closest('[data-testid="library-tile"]') as HTMLElement
       expect(tile).not.toBeNull()
       fireEvent.mouseEnter(tile)
       // No tooltip yet.
@@ -171,7 +174,7 @@ describe('ElementLibrary — Wave 12B polish', () => {
       render(<ElementLibrary />)
       // First "Desk" tile — its wrapper carries the active highlight class.
       const desk = screen.getAllByText('Desk')[0]
-      const tile = desk.closest('[role="button"]') as HTMLElement
+      const tile = desk.closest('[data-testid="library-tile"]') as HTMLElement
       expect(tile.className).toContain('bg-blue-50')
     })
   })
@@ -189,14 +192,13 @@ describe('ElementLibrary — Wave 12B polish', () => {
       const sofaSection = screen
         .getByRole('button', { name: /Furniture/i })
         .closest('div.mb-3') as HTMLElement
-      const tile = within(sofaSection).getByRole('button', {
+      // The inner click-to-add <button> now carries the descriptive
+      // aria-label directly (was on the wrapper before the a11y refactor
+      // that removed role="button" from the outer div). It IS the
+      // tab-stop the browser activates with Enter/Space.
+      const innerButton = within(sofaSection).getByRole('button', {
         name: /Add Sofa element to canvas/i,
-      })
-      // The inner <button type="button"> is the first <button> child of
-      // the wrapper — that's the tab-stop the browser activates with
-      // Enter/Space.
-      const innerButton = tile.querySelector('button') as HTMLButtonElement
-      expect(innerButton).not.toBeNull()
+      }) as HTMLButtonElement
       innerButton.focus()
       expect(document.activeElement).toBe(innerButton)
       // Fire a synthetic click — same handler the browser invokes for
