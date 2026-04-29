@@ -677,7 +677,7 @@ export function TopBar() {
           <NavLink
             to={`/t/${teamSlug}/o/${officeSlug}/map`}
             className={({ isActive }) =>
-              `px-3 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
+              `px-2.5 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
                 isActive
                   ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100'
                   : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
@@ -689,7 +689,7 @@ export function TopBar() {
           <NavLink
             to={`/t/${teamSlug}/o/${officeSlug}/roster`}
             className={({ isActive }) =>
-              `px-3 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
+              `px-2.5 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
                 isActive
                   ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100'
                   : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
@@ -702,7 +702,7 @@ export function TopBar() {
             <NavLink
               to={`/t/${teamSlug}/o/${officeSlug}/audit`}
               className={({ isActive }) =>
-                `px-3 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
+                `px-2.5 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
                   isActive
                     ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100'
                     : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
@@ -716,7 +716,7 @@ export function TopBar() {
             <NavLink
               to={`/t/${teamSlug}/o/${officeSlug}/reports`}
               className={({ isActive }) =>
-                `px-3 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
+                `px-2.5 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
                   isActive
                     ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100'
                     : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
@@ -734,7 +734,7 @@ export function TopBar() {
             <NavLink
               to={`/t/${teamSlug}/o/${officeSlug}/network`}
               className={({ isActive }) =>
-                `px-3 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
+                `px-2.5 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
                   isActive
                     ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100'
                     : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
@@ -748,7 +748,7 @@ export function TopBar() {
             <NavLink
               to={`/t/${teamSlug}/o/${officeSlug}/org-chart`}
               className={({ isActive }) =>
-                `px-3 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
+                `px-2.5 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
                   isActive
                     ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100'
                     : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
@@ -771,7 +771,7 @@ export function TopBar() {
           own session state. The component self-gates on role so non-owners
           don't see it at all. Hidden below `md` — admin tooling that
           assumes a desktop. */}
-      <div className="hidden md:flex items-center">
+      <div className="hidden md:flex items-center flex-shrink-0">
         <ViewAsMenu />
         <PlanHealthPill />
       </div>
@@ -780,8 +780,13 @@ export function TopBar() {
           parking it inside its own bordered cluster. The left hairline
           + ml-1 wrapper turn UserMenu from "one more icon in the row"
           into "the rightmost cluster", which the user described as
-          "barely visible" before this pass. */}
-      <div className="ml-1 pl-3 border-l border-gray-200 dark:border-gray-800 flex items-center">
+          "barely visible" before this pass.
+          `flex-shrink-0` is critical: with `overflow-x-clip` on the
+          topbar root, content past the right edge gets clipped silently.
+          The avatar is the rightmost item, so any horizontal pressure
+          (long save-state strings, selection chip, full project nav)
+          ate into it and chopped the user's own avatar in half. */}
+      <div className="ml-1 pl-3 border-l border-gray-200 dark:border-gray-800 flex items-center flex-shrink-0">
         <UserMenu />
       </div>
     </div>

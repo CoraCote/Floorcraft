@@ -98,7 +98,13 @@ export function RightSidebar() {
         <div
           role="tablist"
           aria-label="Right sidebar"
-          className="flex flex-1"
+          // `min-w-0` so the tablist itself can shrink within the
+          // sidebar shell — without it, the tablist's intrinsic
+          // min-width is its content's min-width and the row
+          // visibly escapes the 320px sidebar by ~130px, hiding
+          // the Devices and Insights tabs entirely. Browser audit
+          // confirmed: tablist was 416px in a 319px parent.
+          className="flex flex-1 min-w-0"
           onKeyDown={onKeyDown}
         >
         {tabs.map((t) => {
