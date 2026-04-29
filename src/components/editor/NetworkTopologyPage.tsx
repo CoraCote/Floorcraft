@@ -328,7 +328,11 @@ export function NetworkTopologyPage() {
               typed connections, ready for vendor handoff.
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          {/* `flex-wrap` so the 7 toolbar items (save indicator + 6
+              buttons) flow onto a second line at narrower viewports
+              instead of squeezing each button down to ~90px and
+              breaking labels across lines. */}
+          <div className="flex flex-wrap items-center gap-3">
             <SaveIndicator saveState={saveState} lastSavedAt={lastSavedAt} />
             <AddNodeDropdown onSelect={handleAddNode} variant="primary" />
             <Button
