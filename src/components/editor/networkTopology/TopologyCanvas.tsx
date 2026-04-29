@@ -15,7 +15,7 @@ import {
   type NodeTypes,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useNetworkTopologyStore } from '../../../stores/networkTopologyStore'
 import {
   captureTopologyImage,
@@ -146,28 +146,40 @@ function CanvasInner({
     }))
   }, [topology])
 
-  const onNodesChange: OnNodesChange = (changes) => {
-    applyNodeChanges(changes)
-    // Surface select changes to the parent so the Properties panel
-    // can open. We deliberately read selection *changes* (not the
-    // node's selection state in our store) because react-flow owns
-    // the selection UI.
-    for (const c of changes) {
-      if (c.type === 'select') {
-        onSelectNode(c.selected ? c.id : null)
+  // Memoized so react-flow doesn't re-bind handlers on every parent render.
+  // The deps are all store-stable (zustand actions) or parent-callback refs
+  // — they only change if the page itself re-mounts the canvas.
+  const onNodesChange = useCallback<OnNodesChange>(
+    (changes) => {
+      applyNodeChanges(changes)
+      // Surface select changes to the parent so the Properties panel
+      // can open. We deliberately read selection *changes* (not the
+      // node's selection state in our store) because react-flow owns
+      // the selection UI.
+      for (const c of changes) {
+        if (c.type === 'select') {
+          onSelectNode(c.selected ? c.id : null)
+        }
       }
-    }
-  }
+    },
+    [applyNodeChanges, onSelectNode],
+  )
 
-  const onEdgesChange: OnEdgesChange = (changes) => {
-    applyEdgeChanges(changes)
-  }
+  const onEdgesChange = useCallback<OnEdgesChange>(
+    (changes) => {
+      applyEdgeChanges(changes)
+    },
+    [applyEdgeChanges],
+  )
 
-  const onConnect: OnConnect = (conn: Connection) => {
-    if (!conn.source || !conn.target) return
-    if (conn.source === conn.target) return
-    onRequestConnection(conn.source, conn.target)
-  }
+  const onConnect = useCallback<OnConnect>(
+    (conn: Connection) => {
+      if (!conn.source || !conn.target) return
+      if (conn.source === conn.target) return
+      onRequestConnection(conn.source, conn.target)
+    },
+    [onRequestConnection],
+  )
 
   // Register the capture function with the parent. Re-runs when
   // `reactFlow` is replaced (cheap and rare); we rebuild the closure

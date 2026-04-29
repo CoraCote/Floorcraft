@@ -1,5 +1,5 @@
 import type { ComponentType, ReactNode } from 'react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   AlertCircle,
@@ -718,14 +718,16 @@ export function RosterPage() {
     }
   }
 
-  const toggleRow = (id: string) => {
+  // Stable identity so memoized PersonCard children don't see a new
+  // callback prop on every parent render and re-render needlessly.
+  const toggleRow = useCallback((id: string) => {
     setSelected((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
       else next.add(id)
       return next
     })
-  }
+  }, [])
 
   // "All visible are selected" — the select-all checkbox now reflects the
   // filtered subset rather than the global store, so filtering down to a
@@ -1571,9 +1573,9 @@ export function RosterPage() {
                     emp.email ? describeDuplicate(emp.email, emp.id) : null
                   }
                   nameDuplicateLabel={describeNameDuplicate(emp)}
-                  onToggleSelect={() => toggleRow(emp.id)}
-                  onOpen={() => setDrawerId(emp.id)}
-                  onJumpToSeat={() => jumpToSeat(emp)}
+                  onToggleSelect={toggleRow}
+                  onOpen={setDrawerId}
+                  onJumpToSeat={jumpToSeat}
                   canEdit={canEdit}
                 />
               ))}
@@ -2667,7 +2669,17 @@ function DepartingSoonBadge({ departureDate }: { departureDate: string | null })
  * "who's in the office" board. Clicking the body opens the detail drawer;
  * the seat chip and checkbox are separate clickable targets.
  */
-function PersonCard({
+/**
+ * Card props take id-aware callbacks (`(id) => void`, `(employee) => void`)
+ * rather than nullary closures so the call site can pass stable refs
+ * (`toggleRow`, `setDrawerId`, `jumpToSeat`) directly. With nullary inline
+ * arrows like `onOpen={() => setDrawerId(emp.id)}`, every parent render
+ * minted new function identities, defeating the `React.memo` wrapper —
+ * filter toggles or sort changes would re-render every visible card. The
+ * id-aware shape moves the per-employee binding INSIDE the card, so memo's
+ * shallow equality holds for primitives + the stable employee object.
+ */
+function PersonCardImpl({
   employee,
   floorName,
   seatLabel,
@@ -2689,9 +2701,9 @@ function PersonCard({
   todayLabel: string
   duplicateLabel: string | null
   nameDuplicateLabel: string | null
-  onToggleSelect: () => void
-  onOpen: () => void
-  onJumpToSeat: () => void
+  onToggleSelect: (id: string) => void
+  onOpen: (id: string) => void
+  onJumpToSeat: (employee: Employee) => void
   canEdit: boolean
 }) {
   const statusTone =
@@ -2707,7 +2719,7 @@ function PersonCard({
           t.tagName === 'BUTTON' ||
           t.tagName === 'A'
         ) return
-        onOpen()
+        onOpen(employee.id)
       }}
       className={`group relative rounded-lg border bg-white dark:bg-gray-900 shadow-sm hover:shadow transition-shadow p-3 ${
         isSelected ? 'border-blue-400 ring-2 ring-blue-200' : 'border-gray-200 dark:border-gray-800'
@@ -2731,7 +2743,7 @@ function PersonCard({
           <input
             type="checkbox"
             checked={isSelected}
-            onChange={onToggleSelect}
+            onChange={() => onToggleSelect(employee.id)}
             aria-label={`Select ${employee.name}`}
           />
         </label>
@@ -2742,7 +2754,7 @@ function PersonCard({
           <div className="flex items-center gap-1.5 min-w-0">
             <button
               type="button"
-              onClick={onOpen}
+              onClick={() => onOpen(employee.id)}
               className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate hover:underline text-left"
               title="Open details"
             >
@@ -2788,7 +2800,7 @@ function PersonCard({
       <div className="flex items-center justify-between mt-2 text-[11px]">
         {employee.seatId ? (
           <button
-            onClick={onJumpToSeat}
+            onClick={() => onJumpToSeat(employee)}
             className="text-blue-600 dark:text-blue-400 hover:underline truncate"
             title="Show seat on map"
           >
@@ -2803,6 +2815,12 @@ function PersonCard({
     </div>
   )
 }
+
+// Default shallow equality is enough: every prop is either a primitive,
+// `null`, or the stable employee object straight out of zustand. Inline
+// `describeDuplicate(...)` strings ARE shallow-equal across renders
+// because `Object.is` compares string values, not references.
+const PersonCard = memo(PersonCardImpl)
 
 function RowActionMenu({
   employee,

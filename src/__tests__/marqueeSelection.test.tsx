@@ -88,4 +88,28 @@ describe('elementsIntersectingRect (marquee hit-test)', () => {
       elementsIntersectingRect(elements, { x: -100, y: -100, w: 1000, h: 1000 }),
     ).toEqual([])
   })
+
+  it('picks rotated elements whose corners poke outside the unrotated box', () => {
+    // 60x40 desk at (0,0) rotated 45°. Unrotated AABB is 60x40 (-30..30, -20..20),
+    // but the rotated AABB extends to ±√(30² + 20²)/√2-ish — corners reach
+    // about ±36 on each axis. A marquee at (32, 32, 5x5) misses the unrotated
+    // box but covers a rotated corner.
+    const a: DeskElement = { ...desk('a', 0, 0), rotation: 45 }
+    const elements: Record<string, CanvasElement> = { a }
+    expect(
+      elementsIntersectingRect(elements, { x: 32, y: 32, w: 5, h: 5 }),
+    ).toEqual(['a'])
+  })
+
+  it('picks bulged walls outside the chord rectangle', () => {
+    // Horizontal wall (0,0)→(100,0) with a +30 bulge lifts the arc to y=-30.
+    // Old chord-only marquee would miss a rect at y=-25, but the new bounds
+    // path picks it up.
+    const w = wall('w1', [0, 0, 100, 0])
+    w.bulges = [30]
+    const elements: Record<string, CanvasElement> = { w }
+    expect(
+      elementsIntersectingRect(elements, { x: 40, y: -28, w: 5, h: 5 }),
+    ).toEqual(['w1'])
+  })
 })

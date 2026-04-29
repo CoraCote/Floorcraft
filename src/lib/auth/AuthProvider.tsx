@@ -10,14 +10,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true
 
-    supabase.auth.getSession().then(({ data }) => {
-      if (!mounted) return
-      setState(
-        data.session
-          ? { status: 'authenticated', user: { id: data.session.user.id, email: data.session.user.email ?? '' } }
-          : { status: 'unauthenticated' },
-      )
-    })
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (!mounted) return
+        setState(
+          data.session
+            ? { status: 'authenticated', user: { id: data.session.user.id, email: data.session.user.email ?? '' } }
+            : { status: 'unauthenticated' },
+        )
+      })
+      .catch(() => {
+        // A transient network error on cold load must not leave the app
+        // wedged in `'loading'`. Fall through to unauthenticated so the
+        // sign-in screen renders; `onAuthStateChange` below will still
+        // upgrade us to authenticated if a cached session resolves later.
+        if (!mounted) return
+        setState({ status: 'unauthenticated' })
+      })
 
     const {
       data: { subscription },

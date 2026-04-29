@@ -58,6 +58,35 @@ describe('elementBounds', () => {
   it('returns null for a wall with fewer than 2 points', () => {
     expect(elementBounds(wall([]))).toBeNull()
   })
+
+  it('expands the AABB to cover rotated corners (90°)', () => {
+    // 90° rotation swaps width/height. A 40x20 desk at (100,100)
+    // rotated 90° becomes a 20-wide, 40-tall box at (90, 80).
+    const b = elementBounds(desk({ x: 100, y: 100, width: 40, height: 20, rotation: 90 }))
+    expect(b!.x).toBeCloseTo(90, 6)
+    expect(b!.y).toBeCloseTo(80, 6)
+    expect(b!.width).toBeCloseTo(20, 6)
+    expect(b!.height).toBeCloseTo(40, 6)
+  })
+
+  it('expands the AABB to cover rotated corners (45°)', () => {
+    // 40x40 square at (0,0) rotated 45°. Diagonal = 40·√2 ≈ 56.57,
+    // so the rotated AABB is 56.57 on each side, centered on origin.
+    const b = elementBounds(desk({ x: 0, y: 0, width: 40, height: 40, rotation: 45 }))
+    const expected = 40 * Math.SQRT2
+    expect(b!.width).toBeCloseTo(expected, 5)
+    expect(b!.height).toBeCloseTo(expected, 5)
+    expect(b!.x).toBeCloseTo(-expected / 2, 5)
+    expect(b!.y).toBeCloseTo(-expected / 2, 5)
+  })
+
+  it('treats rotation === 0 as the unrotated AABB', () => {
+    // Defensive: the fast path for the common case must match the
+    // pre-rotation behaviour exactly so callers that compare bounds
+    // for equality (e.g. snap-guides) keep working.
+    const b = elementBounds(desk({ x: 50, y: 50, width: 40, height: 20, rotation: 0 }))
+    expect(b).toEqual({ x: 30, y: 40, width: 40, height: 20 })
+  })
 })
 
 describe('unionBounds', () => {

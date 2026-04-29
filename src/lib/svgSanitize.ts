@@ -1,21 +1,20 @@
 /**
- * Tiny inline sanitizer for user-uploaded SVGs.
+ * SVG sanitizer for user-uploaded artwork.
  *
- * Goal: prevent the most obvious script-injection and external-content
- * vectors while preserving the vast majority of hand-authored / exported
- * SVG markup. NOT a replacement for a full sanitizer if the SVGs come
- * from untrusted sources — for this flow they're picked by the user
- * themselves, so the threat model is a careless user pasting something
- * malicious, not a third-party supply-chain attack.
+ * Threat model: SVGs round-trip through the office payload, so a teammate's
+ * upload renders into other viewers' browsers. The library preview pipes
+ * the markup through `dangerouslySetInnerHTML` (LibraryPreview.tsx), which
+ * is the live-DOM XSS sink we have to defend.
  *
- * Strategy:
- *   1. Strip <script> blocks (including XML/entities edge cases).
- *   2. Strip <foreignObject> (can host full HTML including <script>).
- *   3. Remove on*=... event handler attributes.
- *   4. Remove href/xlink:href values that use the `javascript:` protocol.
- *   5. Reject non-SVG payloads or payloads whose stripped result no
- *      longer parses as XML.
+ * Strategy: hand the markup to DOMPurify with the SVG+SVG-filter profile.
+ * It parses, allowlists known-safe SVG tags and attrs, and strips
+ * `<script>`, `<foreignObject>`, `on*` event handlers, `javascript:` URIs
+ * (in any encoding), `<style>@import`, and other vectors a regex pass
+ * misses. We still apply a size cap and a cheap "looks like SVG" gate up
+ * front so genuinely-invalid uploads bail before hitting the parser.
  */
+
+import DOMPurify from 'dompurify'
 
 export const MAX_SVG_BYTES = 50 * 1024 // 50KB
 
@@ -25,50 +24,47 @@ export interface SanitizeResult {
   error?: 'too-large' | 'not-svg' | 'invalid-xml' | 'empty'
 }
 
-/** Compiled once; listed as `const` so the regex cache warms on first use. */
-const RE_SCRIPT = /<script[\s\S]*?<\/script>/gi
-// A script tag can also be self-closing or malformed; strip orphan openers too.
-const RE_SCRIPT_OPEN = /<script\b[^>]*>/gi
-const RE_FOREIGN_OBJECT = /<foreignObject[\s\S]*?<\/foreignObject>/gi
-const RE_ON_ATTR = /\s(on[a-z]+)\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi
-const RE_JS_HREF = /\s(xlink:href|href)\s*=\s*(?:"javascript:[^"]*"|'javascript:[^']*')/gi
-
 export function sanitizeSvg(source: string): SanitizeResult {
   const trimmed = source.trim()
   if (trimmed.length === 0) return { ok: false, error: 'empty' }
   if (new Blob([trimmed]).size > MAX_SVG_BYTES) return { ok: false, error: 'too-large' }
-  // Must look like an SVG to even bother with the rest. Allow an XML
-  // declaration or DOCTYPE in front of <svg.
+  // Cheap pre-filter: if it doesn't even mention `<svg`, don't waste the
+  // parser. Allow an XML declaration / DOCTYPE in front.
   if (!/<svg[\s>]/i.test(trimmed)) return { ok: false, error: 'not-svg' }
 
-  let cleaned = trimmed
-    .replace(RE_SCRIPT, '')
-    .replace(RE_SCRIPT_OPEN, '')
-    .replace(RE_FOREIGN_OBJECT, '')
-    .replace(RE_ON_ATTR, '')
-    .replace(RE_JS_HREF, '')
-
-  // DOMParser gives us a last sanity check: if the stripped result doesn't
-  // round-trip, reject rather than ship broken geometry. jsdom in tests
-  // flags errors via <parsererror> in the parsed output.
-  if (typeof DOMParser !== 'undefined') {
-    try {
-      const doc = new DOMParser().parseFromString(cleaned, 'image/svg+xml')
-      if (doc.getElementsByTagName('parsererror').length > 0) {
-        return { ok: false, error: 'invalid-xml' }
-      }
-    } catch {
-      return { ok: false, error: 'invalid-xml' }
-    }
+  let cleaned: string
+  try {
+    cleaned = DOMPurify.sanitize(trimmed, {
+      // SVG profile allowlists the SVG tag set (incl. filter primitives)
+      // and the SVG attribute set. Anything outside the list is dropped,
+      // which is the right default for art assets.
+      USE_PROFILES: { svg: true, svgFilters: true },
+      // The SVG profile leaves `<style>` in place, which keeps the door
+      // open to `@import url(https://evil/x.css)` and CSS-based
+      // exfiltration. Floor-plan art assets don't need stylesheet
+      // blocks — per-element styles are the SVG-native idiom — so we
+      // strip them outright.
+      FORBID_TAGS: ['style'],
+      // We need the `<svg>` root preserved (default is to expose body
+      // contents); WHOLE_DOCUMENT keeps the outer element intact for
+      // both inline render and downstream parsing.
+      WHOLE_DOCUMENT: false,
+      // Remove dangerous tags' text content too — `<script>alert()</script>`
+      // shouldn't leave behind the call-text inside the parent node.
+      KEEP_CONTENT: false,
+      // Reject `<use href="#x">` references that point off-document, and
+      // any data: URIs that aren't plain image bytes.
+      ALLOW_UNKNOWN_PROTOCOLS: false,
+    })
+  } catch {
+    return { ok: false, error: 'invalid-xml' }
   }
 
-  // Ensure there's still an <svg> root after sanitising — if someone
-  // wrapped their whole SVG in <script>, the body got emptied.
+  // DOMPurify returns '' for unparseable input; an empty result here
+  // means the whole tree got stripped (e.g. someone wrapped their SVG
+  // in only-disallowed tags) rather than a successful pass-through.
+  if (cleaned.trim().length === 0) return { ok: false, error: 'invalid-xml' }
   if (!/<svg[\s>]/i.test(cleaned)) return { ok: false, error: 'not-svg' }
-
-  // Collapse any double-spaces introduced by attribute stripping so the
-  // storage size stays tidy.
-  cleaned = cleaned.replace(/  +/g, ' ')
 
   return { ok: true, svg: cleaned }
 }

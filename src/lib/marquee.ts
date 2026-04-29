@@ -1,5 +1,5 @@
 import type { CanvasElement } from '../types/elements'
-import { isWallElement } from '../types/elements'
+import { elementBounds } from './elementBounds'
 
 /**
  * Compute the IDs of every element whose axis-aligned bounding box
@@ -7,8 +7,12 @@ import { isWallElement } from '../types/elements'
  *
  * Selection rules:
  *   - Hidden elements (`visible === false`) are excluded.
- *   - Walls use their `points` array (center-origin x/y is 0 for walls).
- *   - Everything else is center-origin (x/y = element center, not top-left).
+ *   - Bounds come from `elementBounds`, which is bulge-aware for walls and
+ *     rotation-aware for everything else. Keeping the AABB calculation in
+ *     one place means selection, fit-to-screen, and the union AABB all see
+ *     the same shape — a wall whose bulge sits outside the chord rectangle,
+ *     or a 45° rotated desk whose corners poke beyond its unrotated box,
+ *     gets picked when the marquee visibly covers it.
  *
  * Kept separate from `CanvasStage` so the intersection logic is unit-
  * testable without mounting a Konva stage.
@@ -25,35 +29,14 @@ export function elementsIntersectingRect(
 
   for (const el of Object.values(elements)) {
     if (el.visible === false) continue
-    let minX: number
-    let minY: number
-    let maxX: number
-    let maxY: number
-
-    if (isWallElement(el)) {
-      if (el.points.length < 2) continue
-      minX = Infinity
-      minY = Infinity
-      maxX = -Infinity
-      maxY = -Infinity
-      for (let i = 0; i < el.points.length; i += 2) {
-        const px = el.points[i]
-        const py = el.points[i + 1]
-        if (px < minX) minX = px
-        if (py < minY) minY = py
-        if (px > maxX) maxX = px
-        if (py > maxY) maxY = py
-      }
-    } else {
-      const halfW = el.width / 2
-      const halfH = el.height / 2
-      minX = el.x - halfW
-      minY = el.y - halfH
-      maxX = el.x + halfW
-      maxY = el.y + halfH
-    }
-
-    if (maxX >= rx1 && minX <= rx2 && maxY >= ry1 && minY <= ry2) {
+    const b = elementBounds(el)
+    if (!b) continue
+    if (
+      b.x + b.width >= rx1 &&
+      b.x <= rx2 &&
+      b.y + b.height >= ry1 &&
+      b.y <= ry2
+    ) {
       hits.push(el.id)
     }
   }

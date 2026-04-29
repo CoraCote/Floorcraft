@@ -48,12 +48,43 @@ export function elementBounds(el: CanvasElement): Bounds | null {
   }
   const w = el.width ?? 0
   const h = el.height ?? 0
-  return {
-    x: el.x - w / 2,
-    y: el.y - h / 2,
-    width: w,
-    height: h,
+  const rotation = el.rotation ?? 0
+  if (rotation === 0) {
+    return {
+      x: el.x - w / 2,
+      y: el.y - h / 2,
+      width: w,
+      height: h,
+    }
   }
+  // Rotate the four center-origin corners around (el.x, el.y) and take the
+  // AABB of the rotated quad. Without this a 45° desk reports its
+  // unrotated box, so marquee selection, fit-to-screen, and the union
+  // AABB all clip the corners that visually poke outside.
+  const halfW = w / 2
+  const halfH = h / 2
+  const rad = (rotation * Math.PI) / 180
+  const cos = Math.cos(rad)
+  const sin = Math.sin(rad)
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  // Iterate the four center-origin corners (TL, TR, BR, BL) and rotate
+  // each around (el.x, el.y). Bias the index→signs mapping with bitwise
+  // selectors so the loop body stays branch-free in the hot path —
+  // marquee selection calls this on every element on every mousemove.
+  for (let i = 0; i < 4; i++) {
+    const cx = i === 1 || i === 2 ? halfW : -halfW
+    const cy = i < 2 ? -halfH : halfH
+    const rx = cx * cos - cy * sin + el.x
+    const ry = cx * sin + cy * cos + el.y
+    if (rx < minX) minX = rx
+    if (ry < minY) minY = ry
+    if (rx > maxX) maxX = rx
+    if (ry > maxY) maxY = ry
+  }
+  return { x: minX, y: minY, width: maxX - minX, height: maxY - minY }
 }
 
 /**

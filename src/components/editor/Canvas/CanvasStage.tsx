@@ -774,7 +774,14 @@ export function CanvasStage() {
         const dx = e.evt.clientX - lastPointer.current.x
         const dy = e.evt.clientY - lastPointer.current.y
         lastPointer.current = { x: e.evt.clientX, y: e.evt.clientY }
-        setStagePosition(stageX + dx, stageY + dy)
+        // Read the current stage position from the store rather than the
+        // closed-over `stageX/stageY` props. Multiple mousemoves can fire
+        // between React renders — they'd all see the same pre-pan base
+        // and the visible stage would jitter or stall on fast drags. The
+        // wheel handler at line 247 uses the same `getState()` pattern
+        // for the same reason.
+        const cs = useCanvasStore.getState()
+        useCanvasStore.setState({ stageX: cs.stageX + dx, stageY: cs.stageY + dy })
         // Track whether the press has travelled past the click threshold
         // so mouseup can distinguish "click → deselect" from "drag → pan"
         // when we entered pan from the select tool.

@@ -16,9 +16,15 @@ vi.mock('../lib/offices/officeRepository', () => ({
 // pattern that vi.mock's factory return type infers.
 type Selector<S> = ((s: S) => unknown) | undefined
 function makeStoreHook<S>(state: S) {
-  return ((sel: Selector<S>) => (sel ? sel(state) : state)) as unknown as (
-    sel?: Selector<S>,
-  ) => unknown
+  const hook = ((sel: Selector<S>) => (sel ? sel(state) : state)) as unknown as {
+    (sel?: Selector<S>): unknown
+    getState: () => S
+  }
+  // `useOfficeSync` reads stores via both selector subscriptions and
+  // `.getState()` (e.g. inside `buildCurrentPayload`); the mock has to
+  // expose both shapes.
+  hook.getState = () => state
+  return hook
 }
 
 vi.mock('../stores/elementsStore', () => ({

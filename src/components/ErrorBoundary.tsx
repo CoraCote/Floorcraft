@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { AlertOctagon } from 'lucide-react'
+import { captureException } from '../lib/telemetry'
 
 interface Props {
   children: ReactNode
@@ -47,9 +48,13 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
-    // Console is fine as a baseline transport; a future Sentry (or
-    // PostHog, or Datadog) hook plugs in here without changing the UI.
-    console.error('Unhandled React error:', error, info.componentStack)
+    // `captureException` always logs to the console (dev visibility) and
+    // forwards to whatever sink `registerTelemetrySink` has installed —
+    // Sentry/PostHog/Datadog plug in there without touching this file.
+    captureException(error, {
+      scope: 'react-error-boundary',
+      extra: { componentStack: info.componentStack },
+    })
   }
 
   private handleReload = (): void => {
