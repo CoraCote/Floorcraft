@@ -9,6 +9,7 @@ import { ThemeProvider } from './lib/theme'
 import { RequireAuth } from './components/auth/RequireAuth'
 import { RequireTeam } from './components/auth/RequireTeam'
 import { RouteLoadingFallback } from './components/ui/RouteLoadingFallback'
+import { NewVersionBanner } from './components/NewVersionBanner'
 import type { Team } from './types/team'
 
 // Editor chunks pull in react-konva and the whole Canvas tree. Auth and
@@ -152,6 +153,10 @@ function App() {
     <ThemeProvider>
       <BrowserRouter>
         <AuthProvider>
+        {/* Global "a new deploy went live" banner. Polls /version.json
+            and shows a non-blocking strip above the page; gated by the
+            project autosave state so a Refresh click can't run mid-save. */}
+        <NewVersionBanner />
         <Suspense fallback={<RouteLoadingFallback />}>
           <Routes>
             {/* Public */}

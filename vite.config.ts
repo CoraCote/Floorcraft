@@ -1,7 +1,62 @@
 /// <reference types="vitest/config" />
-import { defineConfig } from 'vite'
+import { execSync } from 'node:child_process'
+import { writeFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+
+/**
+ * Compute build identity at config-load time so the same values flow
+ * to (a) `define`-injected constants in the bundle and (b) the
+ * `dist/version.json` we write after the build. The runtime poll
+ * compares the bundle's `__BUILD_ID__` against the freshly fetched
+ * file — when they diverge, a new deploy went live.
+ *
+ * `git rev-parse --short HEAD` is best-effort: in CI without git
+ * (rare on Netlify but possible elsewhere), fall back to a string so
+ * the runtime poll still has stable values to compare.
+ */
+function readGitSha(): string {
+  try {
+    return execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] })
+      .toString()
+      .trim()
+  } catch {
+    return 'unknown'
+  }
+}
+
+const GIT_SHA = readGitSha()
+const BUILT_AT = new Date().toISOString()
+// `Date.now()` ensures two consecutive builds of the same SHA still
+// get distinct ids — useful for "I redeployed without changing code"
+// hot-fix scenarios where the client should still pick up a fresh
+// bundle (e.g. an edge config change).
+const BUILD_ID = `${GIT_SHA}-${Date.now()}`
+
+/**
+ * Vite plugin that writes `dist/version.json` after the bundle is
+ * emitted. Runs only for the production build (skipped in `vite dev`
+ * and `vite preview` so the file doesn't pollute local servers with a
+ * stale value).
+ */
+function writeVersionJsonPlugin(): Plugin {
+  return {
+    name: 'write-version-json',
+    apply: 'build',
+    writeBundle({ dir }) {
+      const outDir = dir ?? resolve(process.cwd(), 'dist')
+      const target = resolve(outDir, 'version.json')
+      const payload = {
+        buildId: BUILD_ID,
+        gitSha: GIT_SHA,
+        builtAt: BUILT_AT,
+      }
+      writeFileSync(target, JSON.stringify(payload, null, 2) + '\n')
+    },
+  }
+}
 
 /**
  * Manual vendor splits. Rolldown's default is to lump everything
@@ -45,7 +100,15 @@ const VENDOR_CHUNKS: Array<{ name: string; test: (id: string) => boolean }> = [
 ]
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), writeVersionJsonPlugin()],
+  define: {
+    // Compile-time constants injected into the bundle so the runtime
+    // poll has a stable reference to compare against `/version.json`.
+    // `JSON.stringify` is required — Vite does a literal text replacement.
+    __BUILD_ID__: JSON.stringify(BUILD_ID),
+    __GIT_SHA__: JSON.stringify(GIT_SHA),
+    __BUILT_AT__: JSON.stringify(BUILT_AT),
+  },
   build: {
     rolldownOptions: {
       output: {
