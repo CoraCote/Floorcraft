@@ -267,9 +267,11 @@ export function InsightsPanel() {
                 {dismissed.map((insight) => (
                   <div
                     key={insight.id}
-                    className="flex items-center justify-between px-3 py-2 bg-gray-50 dark:bg-gray-800/50 rounded text-xs text-gray-500 dark:text-gray-400"
+                    // `min-w-0` so a long insight title truncates rather
+                    // than pushing the Restore button off the right edge.
+                    className="flex items-center justify-between px-3 py-2 min-w-0 bg-gray-50 dark:bg-gray-800/50 rounded text-xs text-gray-500 dark:text-gray-400"
                   >
-                    <span className="truncate">{insight.title}</span>
+                    <span className="truncate min-w-0">{insight.title}</span>
                     <button
                       onClick={() => restoreInsight(insight.id)}
                       className="ml-2 text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex-shrink-0"

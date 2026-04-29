@@ -368,12 +368,15 @@ function ElementHeader({
         <Icon size={16} aria-hidden="true" />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5">
-          <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{typeLabel}</div>
+        {/* `min-w-0` on the inner row so a long typeLabel ("Conference
+            table", localised strings) ellipsizes inside the header
+            instead of pushing the Locked badge off the right edge. */}
+        <div className="flex items-center gap-1.5 min-w-0">
+          <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate min-w-0">{typeLabel}</div>
           {locked && (
             <span
               data-testid="properties-locked-badge"
-              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-[10px] font-medium text-amber-700 dark:text-amber-300"
+              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-[10px] font-medium text-amber-700 dark:text-amber-300 flex-shrink-0"
               title="This element is locked. Click the lock icon to unlock."
             >
               <Lock size={9} aria-hidden="true" /> Locked
@@ -882,12 +885,14 @@ function EmployeeDetailCard({
   }
 
   const infoRow = (label: string, value: string, title: string) => (
-    <div className="flex justify-between items-center gap-3 text-xs">
+    // `min-w-0` so the value's `truncate` engages when the value is long
+    // (department names, manager names, free-text custom fields).
+    <div className="flex justify-between items-center gap-3 min-w-0 text-xs">
       <span className="text-[10px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 flex-shrink-0">
         {label}
       </span>
       <span
-        className="text-gray-800 dark:text-gray-100 truncate text-right"
+        className="text-gray-800 dark:text-gray-100 truncate min-w-0 text-right"
         title={title}
       >
         {value}
@@ -1428,10 +1433,12 @@ export function PropertiesPanel() {
           <label className={LABEL_CLASS}>Type</label>
           <div
             data-testid="properties-type-row"
-            className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 bg-gray-50/60 dark:bg-gray-900/40"
+            // `min-w-0` so the truncate on `typeLabel` actually engages
+            // when the panel is narrow.
+            className="flex items-center gap-2 min-w-0 text-sm text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 bg-gray-50/60 dark:bg-gray-900/40"
           >
             <identity.Icon size={14} aria-hidden="true" className="text-gray-500 dark:text-gray-400 flex-shrink-0" />
-            <span className="truncate">{identity.typeLabel}</span>
+            <span className="truncate min-w-0">{identity.typeLabel}</span>
           </div>
         </div>
         <div>

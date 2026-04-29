@@ -116,14 +116,18 @@ export function RightSidebar() {
               aria-controls={panelId(t.id)}
               tabIndex={selected ? 0 : -1}
               onClick={() => setTab(t.id)}
-              className={`flex-1 px-2 py-2.5 text-xs font-medium transition-colors relative flex items-center justify-center gap-1.5 ${
+              // `min-w-0` so the label can ellipsize when 5 tabs ("Properties",
+              // "People", "Reports", "Devices", "Insights") share a narrow
+              // sidebar — without it the longest label ("Properties") forces
+              // the row wider than its container at smaller viewports.
+              className={`flex-1 min-w-0 px-2 py-2.5 text-xs font-medium transition-colors relative flex items-center justify-center gap-1.5 ${
                 selected
                   ? 'text-blue-700 dark:text-blue-300 border-b-2 border-blue-700'
                   : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
               }`}
             >
-              {t.icon}
-              <span>{t.label}</span>
+              <span className="flex-shrink-0">{t.icon}</span>
+              <span className="truncate min-w-0">{t.label}</span>
               {t.id === 'insights' && badgeCount > 0 && (
                 // The bare numeric badge reads as just a number to a
                 // screen reader. Wrapping it with an `aria-label` and
