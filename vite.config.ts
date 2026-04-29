@@ -125,5 +125,21 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/__tests__/setup.ts'],
+    // Vitest's default `exclude` already covers node_modules + dist,
+    // but the agent infrastructure occasionally drops scratch git
+    // worktrees under `.claude/worktrees/<id>/` while parallel
+    // sub-tasks run. Each one carries its own `src/__tests__/` tree,
+    // so a plain `vitest run` would re-discover and re-run every
+    // test 30+ times — slow, noisy, and confusing when one stale
+    // worktree fails. Excluding the path keeps us anchored to the
+    // real working tree.
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/.claude/worktrees/**',
+      '**/.idea/**',
+      '**/.git/**',
+      '**/.cache/**',
+    ],
   },
 })
