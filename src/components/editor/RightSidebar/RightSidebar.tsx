@@ -7,6 +7,7 @@ import { CollapsibleSection } from '../LeftSidebar/CollapsibleSection'
 import { DevicesPanel } from './DevicesPanel'
 import { InsightsPanel } from './InsightsPanel'
 import { OfficeCommentsPanel } from './OfficeCommentsPanel'
+import { RecentActivityPanel } from './RecentActivityPanel'
 import { PeoplePanel } from './PeoplePanel'
 import { PropertiesPanel } from './PropertiesPanel'
 import { ReportsPanel } from './ReportsPanel'
@@ -211,6 +212,15 @@ export function RightSidebar() {
             >
               <div className="p-3">
                 <OfficeCommentsPanel />
+              </div>
+            </CollapsibleSection>
+            <CollapsibleSection
+              title="Recent activity"
+              defaultOpen={false}
+              storageKey="right-insights-activity"
+            >
+              <div className="p-3">
+                <RecentActivityPanel />
               </div>
             </CollapsibleSection>
           </>
