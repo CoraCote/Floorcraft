@@ -6,6 +6,7 @@ import { useCan } from '../../../hooks/useCan'
 import { CollapsibleSection } from '../LeftSidebar/CollapsibleSection'
 import { DevicesPanel } from './DevicesPanel'
 import { InsightsPanel } from './InsightsPanel'
+import { OfficeCommentsPanel } from './OfficeCommentsPanel'
 import { PeoplePanel } from './PeoplePanel'
 import { PropertiesPanel } from './PropertiesPanel'
 import { ReportsPanel } from './ReportsPanel'
@@ -201,6 +202,15 @@ export function RightSidebar() {
             >
               <div className="p-3">
                 <ReportsPanel />
+              </div>
+            </CollapsibleSection>
+            <CollapsibleSection
+              title="Comments"
+              defaultOpen={false}
+              storageKey="right-insights-comments"
+            >
+              <div className="p-3">
+                <OfficeCommentsPanel />
               </div>
             </CollapsibleSection>
           </>
