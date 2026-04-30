@@ -176,6 +176,13 @@ export function MapView() {
         <CanvasStage />
         <KeyboardShortcutsOverlay />
         <PresentationOverlay />
+        {/* Tool rail also rendered in presentation mode so a presenter
+            who needs to make a quick edit doesn't have to exit the
+            view first. Floating left, narrow column, same widget the
+            standard editor uses. */}
+        <div className="absolute left-0 top-0 bottom-0 z-50 w-14 bg-[color:var(--color-paper-raised)]/95 dark:bg-gray-900/95 border-r border-[color:var(--color-paper-line)] dark:border-gray-800 backdrop-blur-sm flex flex-col overflow-y-auto">
+          <ToolSelector />
+        </div>
         {/* Always-visible exit affordance — Escape/P alone is undiscoverable */}
         <button
           onClick={() => useUIStore.getState().setPresentationMode(false)}

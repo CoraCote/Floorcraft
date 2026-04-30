@@ -1296,10 +1296,13 @@ export function CanvasStage() {
       const elementsStore = useElementsStore.getState()
       const z = elementsStore.getMaxZIndex() + 1
       let element: CanvasElement | null = null
+      // Line + arrow consume the in-flight `lineDrawStyle` preset so the
+      // tool-rail's solid/dashed/dotted picker sticks across drags.
+      const lineDashStyle = useCanvasStore.getState().lineDrawStyle
       if (activeTool === 'rect-shape')  element = buildRectShape(drag, z) as unknown as CanvasElement
       if (activeTool === 'ellipse')     element = buildEllipse(drag, z) as unknown as CanvasElement
-      if (activeTool === 'line-shape')  element = buildLineShape(drag, z) as unknown as CanvasElement
-      if (activeTool === 'arrow')       element = buildArrow(drag, z) as unknown as CanvasElement
+      if (activeTool === 'line-shape')  element = buildLineShape(drag, z, undefined, lineDashStyle) as unknown as CanvasElement
+      if (activeTool === 'arrow')       element = buildArrow(drag, z, undefined, lineDashStyle) as unknown as CanvasElement
       if (!element) return
       elementsStore.addElement(element)
       useUIStore.getState().setSelectedIds([element.id])

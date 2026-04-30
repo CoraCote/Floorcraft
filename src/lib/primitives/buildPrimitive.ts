@@ -97,6 +97,7 @@ export function buildLineShape(
   d: DragCoords,
   zIndex: number,
   style: ElementStyle = DEFAULT_STYLE,
+  dashStyle: 'solid' | 'dashed' | 'dotted' = 'solid',
 ): LineShapeElement {
   const { x, y, width, height } = rectFromDrag(d)
   return {
@@ -109,6 +110,7 @@ export function buildLineShape(
     label: 'Line',
     points: [d.startX, d.startY, d.endX, d.endY],
     style: { ...style, fill: 'transparent' },
+    dashStyle,
   }
 }
 
@@ -116,6 +118,7 @@ export function buildArrow(
   d: DragCoords,
   zIndex: number,
   style: ElementStyle = DEFAULT_STYLE,
+  dashStyle: 'solid' | 'dashed' | 'dotted' = 'solid',
 ): ArrowElement {
   const { x, y, width, height } = rectFromDrag(d)
   return {
@@ -127,6 +130,7 @@ export function buildArrow(
     height,
     label: 'Arrow',
     points: [d.startX, d.startY, d.endX, d.endY],
+    dashStyle,
     style: { ...style, fill: style.stroke },
   }
 }

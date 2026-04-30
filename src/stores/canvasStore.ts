@@ -50,6 +50,14 @@ export type ToolType =
   | 'book'
 
 export type WallDrawStyle = 'solid' | 'dashed' | 'dotted'
+/**
+ * Stroke style for newly-drawn lines + arrows. Same three options as
+ * walls; persisted on the canvas store so the choice survives a tool
+ * switch (operator picks `dashed`, draws a wall, switches to line —
+ * the line still draws dashed). Existing elements keep their stored
+ * `dashStyle` regardless.
+ */
+export type LineDrawStyle = 'solid' | 'dashed' | 'dotted'
 
 interface CanvasState {
   // Viewport
@@ -77,6 +85,11 @@ interface CanvasState {
   // silently forget the preset.
   wallDrawStyle: WallDrawStyle
 
+  // Annotation-line + arrow stroke-style preset. Same UX as wallDrawStyle,
+  // applied to new line-shape and arrow elements committed from those
+  // tools.
+  lineDrawStyle: LineDrawStyle
+
   // Actions
   setStagePosition: (x: number, y: number) => void
   setStageScale: (scale: number) => void
@@ -94,6 +107,7 @@ interface CanvasState {
   resetZoom: () => void
   setActiveTool: (tool: ToolType) => void
   setWallDrawStyle: (style: WallDrawStyle) => void
+  setLineDrawStyle: (style: LineDrawStyle) => void
   setSettings: (settings: Partial<CanvasSettings>) => void
   toggleGrid: () => void
   toggleDimensions: () => void
@@ -139,6 +153,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   settings: { ...DEFAULT_CANVAS_SETTINGS },
   activeTool: 'select',
   wallDrawStyle: 'solid',
+  lineDrawStyle: 'solid',
 
   setStagePosition: (x, y) => set({ stageX: x, stageY: y }),
 
@@ -239,6 +254,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   setActiveTool: (tool) => set({ activeTool: tool }),
 
   setWallDrawStyle: (style) => set({ wallDrawStyle: style }),
+  setLineDrawStyle: (style) => set({ lineDrawStyle: style }),
 
   setSettings: (partial) =>
     set((state) => ({ settings: { ...state.settings, ...partial } })),
