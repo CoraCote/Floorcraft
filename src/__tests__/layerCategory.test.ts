@@ -49,7 +49,7 @@ const EXPECTED: Record<ElementType, LayerCategory> = {
   planter: 'furniture',
   'custom-shape': 'furniture',
   'text-label': 'annotations',
-  'background-image': 'furniture',
+  'background-image': 'underlay',
   decor: 'furniture',
   'rect-shape': 'annotations',
   ellipse: 'annotations',

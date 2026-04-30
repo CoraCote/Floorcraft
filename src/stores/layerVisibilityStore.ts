@@ -29,18 +29,13 @@ export type LayerCategory =
   | 'rooms' // meeting rooms + phone booths + kitchens
   | 'furniture' // decor + tables + everything else
   | 'annotations' // text + arrows + shapes + measure
-  // IT/AV/Network/Power infrastructure (M2). The category-level toggle
-  // here is the broad "hide all six device types in one click"
-  // affordance. It composes with the per-sub-layer toggles in
-  // `useITLayerStore` (network/av/security/power) — turning either off
-  // hides the matching elements, mirroring the AND-of-OFF idiom the rest
-  // of the visibility plumbing already uses.
+  // IT/AV/Network/Power infrastructure (M2).
   | 'it-device'
-  // Neighborhood occupancy overlay chips. Unlike the others, this toggle
-  // doesn't gate any `CanvasElement` — it controls the dedicated
-  // `NeighborhoodOverlay` layer that paints a small {assigned/capacity}
-  // chip on top of each named zone. Still lives on this store so the
-  // LayerVisibilityPanel has one unified surface for view toggles.
+  // Tracing underlay (Brief 3 — image / PDF imports). Distinct from
+  // 'furniture' so the operator can hide just the trace target for a
+  // clean export without also hiding their tables, decor, etc.
+  | 'underlay'
+  // Neighborhood occupancy overlay chips.
   | 'neighborhoods'
 
 export const LAYER_CATEGORIES: readonly LayerCategory[] = [
@@ -50,6 +45,7 @@ export const LAYER_CATEGORIES: readonly LayerCategory[] = [
   'furniture',
   'annotations',
   'it-device',
+  'underlay',
   'neighborhoods',
 ] as const
 
@@ -73,6 +69,7 @@ const ALL_VISIBLE: Record<LayerCategory, boolean> = {
   furniture: true,
   annotations: true,
   'it-device': true,
+  underlay: true,
   neighborhoods: true,
 }
 

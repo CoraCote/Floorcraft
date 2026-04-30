@@ -57,6 +57,12 @@ export function categoryForElement(el: CanvasElement): LayerCategory {
 
     // Everything else is "furniture" — tables, decor, custom SVG uploads,
     // background images, plus legacy/unknown types via the default branch.
+    // Tracing underlay imports (Brief 3 — PDF/image plans). Has its
+    // own category so the operator can hide just the trace target
+    // for a clean export without dragging tables/decor with it.
+    case 'background-image':
+      return 'underlay'
+
     case 'table-rect':
     case 'table-conference':
     case 'table-round':
@@ -64,7 +70,6 @@ export function categoryForElement(el: CanvasElement): LayerCategory {
     case 'decor':
     case 'custom-svg':
     case 'custom-shape':
-    case 'background-image':
     case 'chair':
     case 'counter':
     case 'divider':

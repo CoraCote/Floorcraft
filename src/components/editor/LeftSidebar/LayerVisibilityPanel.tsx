@@ -19,6 +19,7 @@ const CATEGORY_LABELS: Record<LayerCategory, string> = {
   // every IT device in one click; finer-grained per-sub-layer toggles
   // (network/av/security/power) live on the View menu.
   'it-device': 'Infrastructure',
+  underlay: 'Underlay',
   neighborhoods: 'Neighborhoods',
 }
 
@@ -58,6 +59,7 @@ export function LayerVisibilityPanel() {
       furniture: 0,
       annotations: 0,
       'it-device': 0,
+      underlay: 0,
       neighborhoods: 0,
     }
     for (const el of Object.values(elements)) {
