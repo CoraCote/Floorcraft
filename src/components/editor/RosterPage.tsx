@@ -36,6 +36,8 @@ import { DepartmentChip } from './roster/DepartmentChip'
 import { StatusPill } from './roster/StatusPill'
 import { SeatCell } from './roster/SeatCell'
 import { SeatPickerDialog } from './roster/SeatPickerDialog'
+import { bulkRelabelSeats } from '../../lib/seats/bulkRelabelSeats'
+import { Button, Modal, ModalBody, ModalFooter } from '../ui'
 import { RosterDetailDrawer } from './RosterDetailDrawer'
 import { SeatSwapRequestDialog } from './SeatSwapRequestDialog'
 import { RosterBulkEditPopover } from './RosterBulkEditPopover'
@@ -360,6 +362,12 @@ export function RosterPage() {
     | { mode: 'bulk'; bulkIds: string[] }
     | null
   >(null)
+
+  // Bulk-relabel dialog. The bulk bar's "Relabel seats…" button opens
+  // this with the current selection count; on submit we walk the
+  // selection in the user's current sort order and apply
+  // `${prefix} ${i}` to each seated employee's element label.
+  const [relabelDialogOpen, setRelabelDialogOpen] = useState(false)
 
   // Track C: roving-tabindex focus for keyboard navigation across rows.
   // Only the row matching this id is focusable; arrow keys move it to
@@ -875,6 +883,26 @@ export function RosterPage() {
 
   const handleBulkUnassign = () => {
     for (const id of selected) unassignEmployee(id)
+  }
+
+  // Apply a numeric-suffixed seat label to every selected employee
+  // who currently has an assigned seat. We walk in the user's current
+  // sort order so "N1 1, N1 2, …" mirrors the visible top-to-bottom
+  // sequence, which matches the operator's mental model when they
+  // hand-pick a contiguous range.
+  const handleBulkRelabelSeats = (prefix: string) => {
+    const orderedIds = sorted.filter((e) => selected.has(e.id)).map((e) => e.id)
+    const result = bulkRelabelSeats(orderedIds, prefix)
+    useToastStore.getState().push({
+      tone: 'info',
+      title:
+        result.relabeled === 0
+          ? "No seats to relabel — your selection isn't seated."
+          : `Relabeled ${result.relabeled} seat${result.relabeled === 1 ? '' : 's'}${
+              result.skipped > 0 ? ` (${result.skipped} unseated, skipped)` : ''
+            }`,
+    })
+    setRelabelDialogOpen(false)
   }
 
   // Apply a single-field change to every selected employee. Used by the
@@ -1552,6 +1580,15 @@ export function RosterPage() {
 
           <button
             type="button"
+            onClick={() => setRelabelDialogOpen(true)}
+            className="px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-raised)] dark:hover:bg-gray-900 rounded border border-[color:var(--color-blueprint)]/40"
+            title="Apply a numbered seat label (e.g. N1 1, N1 2…) to selected rows"
+          >
+            Relabel seats…
+          </button>
+
+          <button
+            type="button"
             onClick={() => {
               const employeesNow = useEmployeeStore.getState().employees
               const ordered = Array.from(selected)
@@ -2014,6 +2051,14 @@ export function RosterPage() {
         <SeatSwapRequestDialog
           requesterId={swapRequestEmployeeId}
           onClose={() => setSwapRequestEmployeeId(null)}
+        />
+      )}
+
+      {relabelDialogOpen && (
+        <BulkRelabelDialog
+          count={selected.size}
+          onClose={() => setRelabelDialogOpen(false)}
+          onSubmit={handleBulkRelabelSeats}
         />
       )}
 
@@ -3110,6 +3155,69 @@ function RowActionMenu({
  * clicks + Escape wires through the window handler below) so no focus
  * trap is required — this is read-only content.
  */
+/**
+ * Bulk-relabel popover. The bulk-bar's "Relabel seats…" action opens
+ * this with the current selection count; on submit we apply
+ * `${prefix} 1`, `${prefix} 2`, … to the selected employees' seat
+ * elements (in the user's current sort order). Empty prefix clears
+ * the labels so the seats fall back to their auto-derived deskId.
+ *
+ * Mounting model matches `CreateOfficeModal`: the parent renders this
+ * conditionally, so each open is a fresh mount and useState reads the
+ * default empty string.
+ */
+function BulkRelabelDialog({
+  count,
+  onClose,
+  onSubmit,
+}: {
+  count: number
+  onClose: () => void
+  onSubmit: (prefix: string) => void
+}) {
+  const [prefix, setPrefix] = useState('')
+  return (
+    <Modal open onClose={onClose} title={`Relabel ${count} seat${count === 1 ? '' : 's'}`} size="sm">
+      <ModalBody>
+        <p className="mb-3 text-sm text-gray-600 dark:text-gray-300">
+          Each seat in the current selection gets a numbered label using your prefix.
+          Leave empty to clear labels and fall back to the auto-derived seat ID.
+        </p>
+        <label htmlFor="bulk-relabel-prefix" className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">
+          Prefix
+        </label>
+        <input
+          id="bulk-relabel-prefix"
+          type="text"
+          autoFocus
+          value={prefix}
+          onChange={(e) => setPrefix(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              onSubmit(prefix)
+            }
+          }}
+          maxLength={40}
+          placeholder="N1"
+          className="block w-full rounded border border-[color:var(--color-paper-line)] dark:border-gray-700 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 px-2.5 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
+        />
+        <p className="mt-2 text-[11px] text-gray-500 dark:text-gray-400">
+          Preview: {prefix.trim() ? `"${prefix.trim()} 1", "${prefix.trim()} 2", …` : '(labels cleared, falls back to seat ID)'}
+        </p>
+      </ModalBody>
+      <ModalFooter>
+        <Button variant="ghost" type="button" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button variant="primary" type="button" onClick={() => onSubmit(prefix)}>
+          Apply
+        </Button>
+      </ModalFooter>
+    </Modal>
+  )
+}
+
 function ShortcutsCheatSheet({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
