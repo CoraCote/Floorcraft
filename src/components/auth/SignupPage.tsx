@@ -194,11 +194,23 @@ export function SignupPage() {
 
         <p className="text-center text-xs leading-relaxed text-gray-500 dark:text-gray-400">
           By creating an account you agree to our{' '}
-          <Link to="/help" className="underline hover:text-gray-700 dark:hover:text-gray-300">
+          {/* Open in a new tab so the user doesn't lose form state
+              mid-signup if they click through to read the policy. */}
+          <Link
+            to="/terms"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-gray-700 dark:hover:text-gray-300"
+          >
             Terms
           </Link>{' '}
           and{' '}
-          <Link to="/help" className="underline hover:text-gray-700 dark:hover:text-gray-300">
+          <Link
+            to="/privacy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-gray-700 dark:hover:text-gray-300"
+          >
             Privacy Policy
           </Link>
           .

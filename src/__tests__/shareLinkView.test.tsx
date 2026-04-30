@@ -37,16 +37,27 @@ describe('SharedProjectView', () => {
   })
 
   it('renders read-only shell for a live token', async () => {
-    vi.mocked(shareTokens.resolveShareToken).mockResolvedValue({ officeId: 'office-1' })
-    vi.mocked(loadOffice.loadOfficeById).mockResolvedValue({
-      id: 'office-1',
-      payload: {
-        employees: {
-          e1: { id: 'e1', name: 'Ada Lovelace', department: 'Eng', title: 'Engineer', seatId: 's1' },
+    // Wave 21B (#179): `resolveShareToken` now returns the bundled
+    // office record from the SECURITY DEFINER `resolve_share_token`
+    // RPC, not a bare `{officeId}`. The mock matches the new shape.
+    vi.mocked(shareTokens.resolveShareToken).mockResolvedValue({
+      officeId: 'office-1',
+      office: {
+        id: 'office-1',
+        team_id: 'team-1',
+        slug: 'office-1-slug',
+        name: 'Test office',
+        is_private: false,
+        created_by: 'user-1',
+        payload: {
+          employees: {
+            e1: { id: 'e1', name: 'Ada Lovelace', department: 'Eng', title: 'Engineer', seatId: 's1' },
+          },
+          floors: [{ id: 'f1' }],
         },
-        floors: [{ id: 'f1' }],
+        updated_at: '2026-04-30T00:00:00Z',
       },
-    } as never)
+    })
     mount()
     await waitFor(() =>
       expect(
@@ -58,7 +69,19 @@ describe('SharedProjectView', () => {
   })
 
   it('invalidates when token resolves to a different office id', async () => {
-    vi.mocked(shareTokens.resolveShareToken).mockResolvedValue({ officeId: 'other' })
+    vi.mocked(shareTokens.resolveShareToken).mockResolvedValue({
+      officeId: 'other',
+      office: {
+        id: 'other',
+        team_id: 'team-1',
+        slug: 'other',
+        name: 'Other',
+        is_private: false,
+        created_by: 'user-1',
+        payload: {},
+        updated_at: '2026-04-30T00:00:00Z',
+      },
+    })
     mount()
     await waitFor(() =>
       expect(screen.getByText(/share link isn't valid/i)).toBeInTheDocument(),

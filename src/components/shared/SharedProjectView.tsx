@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { resolveShareToken } from '../../lib/shareTokens'
-import { loadOfficeById } from '../../lib/offices/loadOfficeById'
 import type { Employee } from '../../types/employee'
 
 /**
  * Anonymous read-only surface for share-token URLs. The route is
  * `/shared/:projectId/:token` and is NOT behind the RequireAuth
- * wrapper — the RLS policies on `share_tokens` +
- * `offices_public_via_share_token` do all the gating on the server.
+ * wrapper — the SECURITY DEFINER `resolve_share_token` RPC
+ * (migration 0012) does the gating on the server: it takes the
+ * token as input and only ever returns the office row whose token
+ * matches and is not revoked. Anon callers cannot enumerate.
  *
  * Pilot scope: roster-only table view. The spec asks for "read-only
  * map + roster", but the Konva map renderer has more session plumbing
@@ -29,13 +30,12 @@ export function SharedProjectView() {
     if (!projectId || !token) return
     let cancelled = false
     ;(async () => {
+      // Single round-trip: the RPC bundles the office payload so we
+      // don't need a follow-up `loadOfficeById` (which previously
+      // relied on the broad `offices_public_via_share_token` policy
+      // that 0012 dropped).
       const resolved = await resolveShareToken(token)
       if (!resolved || resolved.officeId !== projectId) {
-        if (!cancelled) setStatus('invalid')
-        return
-      }
-      const office = await loadOfficeById(projectId)
-      if (!office) {
         if (!cancelled) setStatus('invalid')
         return
       }
@@ -45,7 +45,7 @@ export function SharedProjectView() {
       // this surface has no editing capability and keeping it
       // isolated means an anon visitor can't poison the local store
       // state for an authenticated session in the same browser tab.
-      const p = office.payload as {
+      const p = resolved.office.payload as {
         employees?: Record<string, Employee>
         floors?: unknown[]
       }
