@@ -222,11 +222,52 @@ export function TopBar() {
     URL.revokeObjectURL(url)
   }
 
+  // Hidden <input type="file"> that the File menu's "Insert underlay…"
+  // item triggers via .click(). Centralised here so the File menu item
+  // stays a plain handler and the actual upload UX matches OS norms
+  // (file dialog, MIME filtering, multi-select). Output is routed to
+  // the existing `insertImageUnderlay` / `insertPdfUnderlay` helpers
+  // which the canvas drop handler already uses — this is a second
+  // entry point for users who don't think to drag.
+  const underlayInputRef = useRef<HTMLInputElement>(null)
+  function triggerUnderlayPicker() {
+    underlayInputRef.current?.click()
+  }
+  async function onUnderlayFileChosen(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    // Reset the input so picking the same file twice in a row still
+    // fires a change event the second time.
+    e.target.value = ''
+    if (!file) return
+    if (file.type === 'application/pdf') {
+      const { insertPdfUnderlay } = await import('../../lib/underlay/insertPdfUnderlay')
+      void insertPdfUnderlay(file, 0, 0)
+    } else if (file.type.startsWith('image/')) {
+      const { insertImageUnderlay } = await import('../../lib/underlay/insertImageUnderlay')
+      void insertImageUnderlay(file, 0, 0)
+    }
+  }
+
   // Build the File-menu groups from the same handlers and permission gates
   // the standalone Share/Export dropdowns used to consult. Items are
   // filtered by permission so a viewer never sees an affordance they
   // cannot act on; the menu component itself stays presentational.
   const fileMenuGroups: FileMenuGroup[] = [
+    ...(canShareMap
+      ? [
+          {
+            heading: 'Import',
+            items: [
+              {
+                id: 'import-underlay',
+                label: 'Insert underlay (PDF or image)…',
+                icon: ImageIcon,
+                onSelect: triggerUnderlayPicker,
+              },
+            ],
+          } as FileMenuGroup,
+        ]
+      : []),
     // Rename moved to the OfficeSwitcher dropdown in the FloorSwitcher
     // row (Wave 15D) — the file menu now reads as
     // "things you do TO the file" (export, share) rather than a
@@ -322,6 +363,17 @@ export function TopBar() {
       <div className="hidden md:block">
         <FileMenu groups={fileMenuGroups} />
       </div>
+      {/* Hidden file input behind the File menu's "Insert underlay…"
+          item. Lives in the TopBar (not the dialog) so a single
+          ref + handler is reused. accept="" attribute lists both
+          PDFs and images so the OS dialog filters appropriately. */}
+      <input
+        ref={underlayInputRef}
+        type="file"
+        accept="application/pdf,image/png,image/jpeg,image/webp"
+        className="hidden"
+        onChange={onUnderlayFileChosen}
+      />
 
       {/* Hairline divider between the identity cluster and the
           save/undo cluster — JSON-Crack idiom that helps the eye
