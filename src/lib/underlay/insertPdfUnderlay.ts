@@ -1,4 +1,5 @@
 import { useToastStore } from '../../stores/toastStore'
+import { usePdfPagePickerStore } from '../../stores/pdfPagePickerStore'
 import {
   insertUnderlayFromDataUrl,
   UNDERLAY_MAX_BYTES,
@@ -18,22 +19,20 @@ import {
 const PDF_RENDER_SCALE = 1.5
 
 /**
- * Read a PDF file's first page, rasterize it to a PNG data URL via
- * pdf.js, and insert the result as a background-image underlay
- * exactly like an imported PNG. Same locked-by-default, negative-zIndex,
- * 0.5-opacity contract — the user can't tell the underlay came from a
- * PDF rather than an image after import, which is the point.
+ * Read a PDF file, rasterize the chosen page (page 1 for single-page
+ * PDFs; user-selected via the page-picker dialog for multi-page), and
+ * insert the result as a background-image underlay. After insert, a
+ * PDF underlay is indistinguishable from an image underlay — same
+ * locked-by-default, negative-zIndex, 0.5-opacity contract.
+ *
+ * Multi-page coordination: when a multi-page PDF is dropped we open
+ * the `usePdfPagePickerStore` and await the user's pick. The dialog
+ * is mounted in `MapView` and reads from that store. A `null` pick
+ * means the user cancelled — we bail without inserting and clean up
+ * worker-side resources.
  *
  * pdf.js + its worker are dynamic-imported so the main bundle pays
- * nothing for users who never trace. The worker is bundled via Vite's
- * `?url` mechanism (the standard recipe for pdfjs-dist + Vite) and is
- * served from the same origin in prod and dev.
- *
- * Multi-page PDFs render only the first page in v1. Tracing typically
- * needs one floor at a time, and a multi-page picker would expand the
- * surface for what's already a niche flow. If users ask for it, the
- * picker is additive (page selector → call this same function with a
- * page index).
+ * nothing for users who never trace.
  */
 export async function insertPdfUnderlay(
   file: File,
@@ -60,8 +59,6 @@ export async function insertPdfUnderlay(
 
   let pdfjs: typeof import('pdfjs-dist')
   try {
-    // Dynamic-import keeps pdfjs out of the main bundle for users who
-    // never trace. The worker URL is bundled by Vite via `?url`.
     pdfjs = await import('pdfjs-dist')
     const workerSrc = (await import('pdfjs-dist/build/pdf.worker.min.mjs?url')).default
     pdfjs.GlobalWorkerOptions.workerSrc = workerSrc
@@ -76,7 +73,7 @@ export async function insertPdfUnderlay(
 
   let raster: { dataUrl: string; width: number; height: number } | null
   try {
-    raster = await rasterizePdfFirstPage(pdfjs, file)
+    raster = await rasterizePdfPage(pdfjs, file)
   } catch (err) {
     console.error('[underlay] PDF rasterization failed', err)
     useToastStore.getState().push({
@@ -104,14 +101,24 @@ export async function insertPdfUnderlay(
   })
 }
 
-async function rasterizePdfFirstPage(
+async function rasterizePdfPage(
   pdfjs: typeof import('pdfjs-dist'),
   file: File,
 ): Promise<{ dataUrl: string; width: number; height: number } | null> {
   const arrayBuffer = await file.arrayBuffer()
   const doc = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) }).promise
   try {
-    const page = await doc.getPage(1)
+    // Multi-page PDFs prompt the user to pick which page to import;
+    // single-page PDFs go straight to page 1. The picker store
+    // resolves to a 1-indexed page number, or `null` if the user
+    // cancelled — in which case we bail before rasterizing anything.
+    let pageIndex = 1
+    if (doc.numPages > 1) {
+      const picked = await usePdfPagePickerStore.getState().open(doc.numPages)
+      if (picked === null) return null
+      pageIndex = picked
+    }
+    const page = await doc.getPage(pageIndex)
     const viewport = page.getViewport({ scale: PDF_RENDER_SCALE })
     const canvas = document.createElement('canvas')
     canvas.width = Math.ceil(viewport.width)
