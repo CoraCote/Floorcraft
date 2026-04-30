@@ -16,6 +16,7 @@ interface UIState {
   setFlashingElementId: (id: string | null) => void
 
   // Panels
+  leftSidebarOpen: boolean
   rightSidebarOpen: boolean
   rightSidebarTab: 'plan' | 'roster' | 'insights'
 
@@ -113,6 +114,7 @@ interface UIState {
   toggleSelection: (id: string) => void
   clearSelection: () => void
   setHoveredId: (id: string | null) => void
+  setLeftSidebarOpen: (open: boolean) => void
   setRightSidebarOpen: (open: boolean) => void
   setRightSidebarTab: (tab: UIState['rightSidebarTab']) => void
   setShareModalOpen: (open: boolean) => void
@@ -154,6 +156,21 @@ function createUIStore() {
   hoveredId: null,
   flashingElementId: null,
   setFlashingElementId: (id) => set({ flashingElementId: id }),
+  // Default OPEN both sides — operator's default editor lands with all
+  // chrome visible. Toggling either persists to localStorage so a user
+  // who collapses gets a quieter canvas next session too. The lazy
+  // localStorage read is wrapped in try/catch so private-mode browsers
+  // fall back to the defaults silently.
+  leftSidebarOpen: (() => {
+    try {
+      const v = localStorage.getItem('floocraft.leftSidebarOpen')
+      if (v === '0') return false
+      if (v === '1') return true
+    } catch {
+      /* sandboxed iframes throw — fall through */
+    }
+    return true
+  })(),
   rightSidebarOpen: true,
   rightSidebarTab: 'plan',
   shareModalOpen: false,
@@ -204,6 +221,14 @@ function createUIStore() {
     ),
   clearSelection: () => set({ selectedIds: [], activeVertex: null }),
   setHoveredId: (id) => set({ hoveredId: id }),
+  setLeftSidebarOpen: (open) => {
+    set({ leftSidebarOpen: open })
+    try {
+      localStorage.setItem('floocraft.leftSidebarOpen', open ? '1' : '0')
+    } catch {
+      /* private-mode browsers — preference resets next session */
+    }
+  },
   setRightSidebarOpen: (open) => set({ rightSidebarOpen: open }),
   setRightSidebarTab: (tab) => set({ rightSidebarTab: tab, rightSidebarOpen: true }),
   setShareModalOpen: (open) => set({ shareModalOpen: open }),

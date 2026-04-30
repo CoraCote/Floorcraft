@@ -10,19 +10,17 @@ import {
 import { useCan } from '../../hooks/useCan'
 
 /**
- * Wave 21A — Drafting Studio primary navigation rail.
+ * Compact horizontal view-nav rendered inside the `FloorSwitcher` row,
+ * right-cluster. Replaces the previous 48-px `PrimaryNavRail` that sat
+ * to the left of the tool rail and ate canvas real estate while
+ * carrying only six toggles. Project-view navigation is conceptually
+ * sibling to the office name and floor tabs — they all answer "what am
+ * I looking at" — so they share a row.
  *
- * The previous design crammed six view-tabs (Map, Roster, Audit,
- * Reports, Network, Org-chart) into the TopBar action cluster. The
- * rail extracts them into a 48-px icon column on the far-left edge of
- * the editor, mirroring the Linear / Notion idiom: app-level
- * navigation lives on the left, document-level identity + actions live
- * up top. Hover reveals the label via native title; the active route
- * pulls the cyan accent.
- *
- * Permission-gated: Audit / Reports / Network / OrgChart only render
- * for viewers who hold the corresponding action. The page-level guards
- * still enforce server-side, this just hides the affordance.
+ * Icon-only by default; the title attribute gives keyboard / screen-
+ * reader users the long form. Permission-gated: Audit / Reports /
+ * Network / OrgChart only render for viewers who hold the corresponding
+ * action.
  */
 type RailLink = {
   to: string
@@ -31,7 +29,7 @@ type RailLink = {
   visible: boolean
 }
 
-export function PrimaryNavRail() {
+export function EditorViewNav() {
   const { teamSlug, officeSlug } = useParams<{
     teamSlug: string
     officeSlug: string
@@ -76,15 +74,11 @@ export function PrimaryNavRail() {
   return (
     <nav
       aria-label="Editor views"
-      className="hidden md:flex w-12 flex-shrink-0 flex-col items-center gap-1 py-3 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border-r border-[color:var(--color-paper-line)] dark:border-gray-800"
+      className="hidden md:flex items-center gap-0.5 rounded-md border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-sunken)]/60 dark:bg-gray-900 p-0.5"
     >
       {items
         .filter((item) => item.visible)
         .map(({ to, label, Icon }) => {
-          // NavLink isActive does prefix matching, but React Router doesn't
-          // expose the resolved active path inside the className callback —
-          // we derive it from `location.pathname` so a sub-route like
-          // `/reports/scenarios` keeps the Reports icon highlighted.
           const isActive =
             location.pathname === to || location.pathname.startsWith(`${to}/`)
           return (
@@ -93,13 +87,13 @@ export function PrimaryNavRail() {
               to={to}
               title={label}
               aria-label={label}
-              className={`flex h-9 w-9 items-center justify-center rounded transition-colors ${
+              className={`flex h-7 w-7 items-center justify-center rounded transition-colors ${
                 isActive
-                  ? 'bg-[color:var(--color-blueprint-soft)] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]'
-                  : 'text-gray-500 dark:text-gray-400 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-gray-200'
+                  ? 'bg-[color:var(--color-paper-raised)] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-[color:var(--color-paper-raised)]/60 hover:text-gray-800 dark:hover:text-gray-200'
               }`}
             >
-              <Icon size={18} aria-hidden="true" />
+              <Icon size={14} aria-hidden="true" />
             </NavLink>
           )
         })}

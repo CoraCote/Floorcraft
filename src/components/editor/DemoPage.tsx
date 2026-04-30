@@ -17,6 +17,7 @@ import { CollapsibleSection } from './LeftSidebar/CollapsibleSection'
 import { RightSidebar } from './RightSidebar/RightSidebar'
 import { SidebarToggle } from './RightSidebar/SidebarToggle'
 import { useUIStore } from '../../stores/uiStore'
+import { ChevronsLeft, ChevronsRight } from 'lucide-react'
 import { buildDemoOfficePayload } from '../../lib/demo/createDemoOffice'
 import { useProjectStore } from '../../stores/projectStore'
 import { useElementsStore } from '../../stores/elementsStore'
@@ -59,6 +60,8 @@ export function DemoPage() {
   // reactively. Demo opens with the sidebar visible so visitors see the
   // Plan / Roster / Insights structure on first paint.
   const rightSidebarOpen = useUIStore((s) => s.rightSidebarOpen)
+  const leftSidebarOpen = useUIStore((s) => s.leftSidebarOpen)
+  const setLeftSidebarOpen = useUIStore((s) => s.setLeftSidebarOpen)
 
   // Hydration runs in `useEffect`, not in the render body — calling
   // Zustand setState during render mutates external state that
@@ -143,19 +146,39 @@ export function DemoPage() {
       <DemoBanner />
       <FloorSwitcher />
       <div className="flex flex-1 overflow-hidden">
-        {/* 56-px tool rail (Select / Pan / Measure for shareViewer). */}
-        <div className="w-14 flex-shrink-0 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border-r border-[color:var(--color-paper-line)] dark:border-gray-800 overflow-y-auto">
-          <ToolSelector />
+        {/* 56-px tool rail (Select / Pan / Measure for shareViewer)
+            with the secondary-sidebar collapse toggle pinned to its
+            bottom. */}
+        <div className="w-14 flex-shrink-0 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border-r border-[color:var(--color-paper-line)] dark:border-gray-800 flex flex-col overflow-y-auto">
+          <div className="flex-1">
+            <ToolSelector />
+          </div>
+          <button
+            type="button"
+            onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
+            aria-label={leftSidebarOpen ? 'Collapse layers' : 'Expand layers'}
+            aria-expanded={leftSidebarOpen}
+            title={leftSidebarOpen ? 'Collapse panel' : 'Expand panel'}
+            className="mx-auto mb-2 mt-1 flex h-8 w-8 items-center justify-center rounded text-gray-500 hover:bg-[color:var(--color-paper-sunken)] hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200 transition-colors"
+          >
+            {leftSidebarOpen ? (
+              <ChevronsLeft size={16} aria-hidden="true" />
+            ) : (
+              <ChevronsRight size={16} aria-hidden="true" />
+            )}
+          </button>
         </div>
         {/* Secondary 240-px sidebar — Layers only in read-only mode.
             The Library tile palette is gated on editMap so it would
             render half-disabled and just confuse a visitor; we skip it
             entirely here. */}
-        <div className="w-[240px] flex-shrink-0 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border-r border-[color:var(--color-paper-line)] dark:border-gray-800 flex flex-col overflow-y-auto">
-          <CollapsibleSection title="Layers" defaultOpen storageKey="demo-layers">
-            <LayerVisibilityPanel />
-          </CollapsibleSection>
-        </div>
+        {leftSidebarOpen && (
+          <div className="w-[240px] flex-shrink-0 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border-r border-[color:var(--color-paper-line)] dark:border-gray-800 flex flex-col overflow-y-auto">
+            <CollapsibleSection title="Layers" defaultOpen storageKey="demo-layers">
+              <LayerVisibilityPanel />
+            </CollapsibleSection>
+          </div>
+        )}
         <div className="flex-1 relative overflow-hidden bg-[color:var(--color-paper)]">
           <CanvasStage />
           <StatusBar />

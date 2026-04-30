@@ -10,6 +10,7 @@ import {
   type CanvasElement,
 } from '../../types/elements'
 import { ConfirmDialog } from './ConfirmDialog'
+import { EditorViewNav } from './EditorViewNav'
 import { Plus } from 'lucide-react'
 import { useState, useRef, useEffect, type KeyboardEvent } from 'react'
 import { useShallow } from 'zustand/react/shallow'
@@ -432,11 +433,14 @@ export function FloorSwitcher() {
       </div>
       </div>
 
-      {/* ───── Right: editing actions ─────
-          Add-Floor sits in a flex-shrink-0 cluster so it always
-          renders at the row's right edge, balancing the left-side
-          office switcher. */}
-      <div className="flex-shrink-0 flex items-center gap-1">
+      {/* ───── Right: editing actions + view nav ─────
+          Add-Floor on the left of the cluster, then the compact
+          project-view nav (Map / Roster / Reports / Audit / Network /
+          Org chart). The view nav previously sat in a 48-px column to
+          the left of the tool rail and ate canvas real estate; moving
+          it here puts it next to the floor tabs (also navigation) and
+          gives the canvas back its left edge. */}
+      <div className="flex-shrink-0 flex items-center gap-2">
         {canEdit && (
           <button
             type="button"
@@ -448,6 +452,7 @@ export function FloorSwitcher() {
             <span>Add floor</span>
           </button>
         )}
+        <EditorViewNav />
       </div>
 
       {contextMenuFloorId && canEdit && (

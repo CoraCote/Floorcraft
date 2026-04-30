@@ -21,6 +21,7 @@ import { AlignDistributeToolbar } from './Canvas/AlignDistributeToolbar'
 import { ElementHoverCard } from './Canvas/ElementHoverCard'
 import { FirstRunCoach } from './FirstRunCoach'
 import { useUIStore } from '../../stores/uiStore'
+import { ChevronsLeft, ChevronsRight } from 'lucide-react'
 import { useCanvasStore } from '../../stores/canvasStore'
 import { useFloorStore } from '../../stores/floorStore'
 import { useNeighborhoodStore } from '../../stores/neighborhoodStore'
@@ -46,6 +47,8 @@ import { focusOnElement } from '../../lib/canvasFocus'
  */
 export function MapView() {
   const rightSidebarOpen = useUIStore((s) => s.rightSidebarOpen)
+  const leftSidebarOpen = useUIStore((s) => s.leftSidebarOpen)
+  const setLeftSidebarOpen = useUIStore((s) => s.setLeftSidebarOpen)
   const presentationMode = useUIStore((s) => s.presentationMode)
   // The north-arrow compass renders by default but the user can hide
   // it via View → "Toggle compass" or the `N` hotkey when the floor
@@ -194,17 +197,40 @@ export function MapView() {
           collapse/scroll) and frees the secondary sidebar to be
           collapsible later without losing tool access.
         */}
-        <div className="w-14 flex-shrink-0 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border-r border-[color:var(--color-paper-line)] dark:border-gray-800 overflow-y-auto">
-          <ToolSelector />
+        <div className="w-14 flex-shrink-0 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border-r border-[color:var(--color-paper-line)] dark:border-gray-800 flex flex-col overflow-y-auto">
+          <div className="flex-1">
+            <ToolSelector />
+          </div>
+          {/* Sidebar toggle at the bottom of the tool rail. Chevron points
+              the direction the sidebar will move when clicked: closed →
+              opens (chevron-right), open → closes (chevron-left). The
+              choice persists to localStorage so an operator who collapses
+              for a quieter canvas keeps that on next session. */}
+          <button
+            type="button"
+            onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
+            aria-label={leftSidebarOpen ? 'Collapse layers and library' : 'Expand layers and library'}
+            aria-expanded={leftSidebarOpen}
+            title={leftSidebarOpen ? 'Collapse panel' : 'Expand panel'}
+            className="mx-auto mb-2 mt-1 flex h-8 w-8 items-center justify-center rounded text-gray-500 hover:bg-[color:var(--color-paper-sunken)] hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200 transition-colors"
+          >
+            {leftSidebarOpen ? (
+              <ChevronsLeft size={16} aria-hidden="true" />
+            ) : (
+              <ChevronsRight size={16} aria-hidden="true" />
+            )}
+          </button>
         </div>
-        <div className="w-[240px] flex-shrink-0 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border-r border-[color:var(--color-paper-line)] dark:border-gray-800 flex flex-col overflow-y-auto">
-          <CollapsibleSection title="Layers" defaultOpen storageKey="layers">
-            <LayerVisibilityPanel />
-          </CollapsibleSection>
-          <CollapsibleSection title="Library" defaultOpen storageKey="library">
-            <ElementLibrary />
-          </CollapsibleSection>
-        </div>
+        {leftSidebarOpen && (
+          <div className="w-[240px] flex-shrink-0 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border-r border-[color:var(--color-paper-line)] dark:border-gray-800 flex flex-col overflow-y-auto">
+            <CollapsibleSection title="Layers" defaultOpen storageKey="layers">
+              <LayerVisibilityPanel />
+            </CollapsibleSection>
+            <CollapsibleSection title="Library" defaultOpen storageKey="library">
+              <ElementLibrary />
+            </CollapsibleSection>
+          </div>
+        )}
         <div className="flex-1 relative bg-[color:var(--color-paper)] overflow-hidden">
           <CanvasStage />
           <StatusBar />

@@ -1,7 +1,6 @@
 import { Outlet, useLocation, useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { TopBar } from './TopBar'
-import { PrimaryNavRail } from './PrimaryNavRail'
 import { ImpersonationBanner } from './ImpersonationBanner'
 import { ContextMenu } from './ContextMenu'
 import { KeyboardShortcutsOverlay } from './KeyboardShortcutsOverlay'
@@ -373,11 +372,8 @@ export function ProjectShell() {
           impersonating" strip is still prominent across every view. */}
       <ImpersonationBanner />
       <TopBar />
-      <main id="main-content" tabIndex={-1} className="flex flex-1 overflow-hidden">
-        <PrimaryNavRail />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Outlet />
-        </div>
+      <main id="main-content" tabIndex={-1} className="contents">
+        <Outlet />
       </main>
       <ContextMenu />
       <KeyboardShortcutsOverlay />
