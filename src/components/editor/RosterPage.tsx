@@ -776,7 +776,7 @@ export function RosterPage() {
   // A opens the seat picker for that row, U unassigns. Modifier-key
   // chords (cmd/ctrl) fall through so OS shortcuts still work.
   const onRowKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLTableRowElement>, emp: Employee, rows: Employee[]) => {
+    (e: React.KeyboardEvent<HTMLElement>, emp: Employee, rows: Employee[]) => {
       const t = e.target as HTMLElement
       if (
         t.tagName === 'INPUT' ||
@@ -1748,34 +1748,46 @@ export function RosterPage() {
             </div>
           ) : (
             <div className="grid gap-3 grid-cols-[repeat(auto-fill,minmax(220px,1fr))]">
-              {sorted.map((emp) => (
-                <PersonCard
-                  key={emp.id}
-                  employee={emp}
-                  floorName={emp.floorId ? floorMap[emp.floorId] ?? null : null}
-                  seatLabel={emp.seatId ? seatLabelMap[emp.seatId] ?? null : null}
-                  deptColor={
-                    emp.department
-                      ? departmentColors[emp.department] ?? getDepartmentColor(emp.department)
-                      : null
-                  }
-                  isSelected={selected.has(emp.id)}
-                  todayLabel={todayLabel}
-                  duplicateLabel={
-                    emp.email ? describeDuplicate(emp.email, emp.id) : null
-                  }
-                  nameDuplicateLabel={describeNameDuplicate(emp)}
-                  onToggleSelect={toggleRow}
-                  onOpen={setDrawerId}
-                  onJumpToSeat={jumpToSeat}
-                  onAssignSeat={
-                    canEdit
-                      ? (id) => setSeatPicker({ mode: 'single', employeeId: id })
-                      : null
-                  }
-                  canEdit={canEdit}
-                />
-              ))}
+              {(() => {
+                // Track C parity: same effective-focused-id logic as
+                // the table view. Falls back to the first card so
+                // Tab-into-cards lands somewhere predictable.
+                const effectiveFocusedCardId =
+                  (focusedRowId && sorted.some((r) => r.id === focusedRowId)
+                    ? focusedRowId
+                    : sorted[0]?.id) ?? null
+                return sorted.map((emp) => (
+                  <PersonCard
+                    key={emp.id}
+                    employee={emp}
+                    floorName={emp.floorId ? floorMap[emp.floorId] ?? null : null}
+                    seatLabel={emp.seatId ? seatLabelMap[emp.seatId] ?? null : null}
+                    deptColor={
+                      emp.department
+                        ? departmentColors[emp.department] ?? getDepartmentColor(emp.department)
+                        : null
+                    }
+                    isSelected={selected.has(emp.id)}
+                    todayLabel={todayLabel}
+                    duplicateLabel={
+                      emp.email ? describeDuplicate(emp.email, emp.id) : null
+                    }
+                    nameDuplicateLabel={describeNameDuplicate(emp)}
+                    onToggleSelect={toggleRow}
+                    onOpen={setDrawerId}
+                    onJumpToSeat={jumpToSeat}
+                    onAssignSeat={
+                      canEdit
+                        ? (id) => setSeatPicker({ mode: 'single', employeeId: id })
+                        : null
+                    }
+                    canEdit={canEdit}
+                    isFocused={effectiveFocusedCardId === emp.id}
+                    onKeyDown={(e) => onRowKeyDown(e, emp, sorted)}
+                    onFocus={() => setFocusedRowId(emp.id)}
+                  />
+                ))
+              })()}
             </div>
           )}
         </div>
@@ -2950,6 +2962,9 @@ function PersonCardImpl({
   onJumpToSeat,
   onAssignSeat,
   canEdit,
+  isFocused,
+  onKeyDown,
+  onFocus,
 }: {
   employee: Employee
   floorName: string | null
@@ -2965,11 +2980,20 @@ function PersonCardImpl({
   /** Editable mode: open the seat-picker for this card. Mirrors SeatCell. */
   onAssignSeat: ((id: string) => void) | null
   canEdit: boolean
+  /** Track C parity: roving-tabindex marker. Only the focused card is in the tab order. */
+  isFocused: boolean
+  /** Track C parity: shared keyboard handler from the parent (↑↓/Space/Enter/A/U/Shift+arrow). */
+  onKeyDown: (e: React.KeyboardEvent<HTMLElement>) => void
+  onFocus: () => void
 }) {
   const statusTone =
     EMPLOYEE_STATUS_PILL_CLASSES[employee.status] ?? 'bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 text-gray-500 dark:text-gray-400'
   return (
     <div
+      data-roster-row-id={employee.id}
+      tabIndex={isFocused ? 0 : -1}
+      onKeyDown={onKeyDown}
+      onFocus={onFocus}
       onDoubleClick={(e) => {
         const t = e.target as HTMLElement
         // Same guard as the table row — ignore double-clicks on interactive
@@ -2981,7 +3005,7 @@ function PersonCardImpl({
         ) return
         onOpen(employee.id)
       }}
-      className={`group relative rounded-lg border bg-[color:var(--color-paper-raised)] dark:bg-gray-900 shadow-sm hover:shadow transition-shadow p-3 ${
+      className={`group relative rounded-lg border bg-[color:var(--color-paper-raised)] dark:bg-gray-900 shadow-sm hover:shadow transition-shadow p-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)] ${
         isSelected ? 'border-[color:var(--color-blueprint)] ring-2 ring-[color:var(--color-blueprint)]/40' : 'border-[color:var(--color-paper-line)] dark:border-gray-800'
       }`}
     >
