@@ -20,6 +20,7 @@ import { NorthArrow } from './Canvas/NorthArrow'
 import { AlignDistributeToolbar } from './Canvas/AlignDistributeToolbar'
 import { ElementHoverCard } from './Canvas/ElementHoverCard'
 import { FirstRunCoach } from './FirstRunCoach'
+import { SampleOfficeCallout } from './SampleOfficeCallout'
 import { useUIStore } from '../../stores/uiStore'
 import { ChevronsLeft, ChevronsRight } from 'lucide-react'
 import { useCanvasStore } from '../../stores/canvasStore'
@@ -250,6 +251,7 @@ export function MapView() {
           <CanvasScaleBar />
           {showNorthArrow && <NorthArrow />}
           <FirstRunCoach />
+          <SampleOfficeCallout />
           {/* Closed-state pull-tab to expand the right sidebar.
               Replaces the toggle that used to live in the TopBar so
               the control belongs to the panel it controls. Only

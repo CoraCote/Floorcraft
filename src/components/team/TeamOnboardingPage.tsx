@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import { useSession } from '../../lib/auth/session'
 import { createTeam } from '../../lib/teams/teamRepository'
+import { seedSampleOffice } from '../../lib/demo/sampleOffice'
 import { humanizeError } from '../../lib/errorMessages'
 import { Button, Input } from '../ui'
 import {
@@ -50,6 +51,12 @@ export function TeamOnboardingPage() {
     setError(null)
     try {
       const team = await createTeam(name)
+      // Seed a populated sample office so the new team-home page isn't
+      // an "empty grid" wall on first paint. Best-effort: failures are
+      // logged inside `seedSampleOffice` and don't block navigation —
+      // the worst case is the pre-seed empty state, which already
+      // worked.
+      await seedSampleOffice(team.id)
       navigate(`/t/${team.slug}`, { replace: true })
     } catch (err) {
       setError(humanizeError(err))
