@@ -35,6 +35,7 @@ import { EMPLOYEE_STATUSES, EMPLOYEE_STATUS_PILL_CLASSES } from '../../types/emp
 import { DepartmentChip } from './roster/DepartmentChip'
 import { StatusPill } from './roster/StatusPill'
 import { SeatCell } from './roster/SeatCell'
+import { SeatPickerDialog } from './roster/SeatPickerDialog'
 import { RosterDetailDrawer } from './RosterDetailDrawer'
 import { SeatSwapRequestDialog } from './SeatSwapRequestDialog'
 import { RosterBulkEditPopover } from './RosterBulkEditPopover'
@@ -349,6 +350,16 @@ export function RosterPage() {
   // nothing is open. Kept at the page level rather than on the menu so the
   // modal persists past the menu's close-on-outside-click.
   const [swapRequestEmployeeId, setSwapRequestEmployeeId] = useState<string | null>(null)
+
+  // Track A: in-roster seat picker. The single-employee form (`{employeeId}`)
+  // opens from clicking the Seat cell; the bulk form (`{bulkIds}`) opens
+  // from a future "Assign in roster" bulk action — shipped later in the
+  // track. Either form is mutually exclusive.
+  const [seatPicker, setSeatPicker] = useState<
+    | { mode: 'single'; employeeId: string }
+    | { mode: 'bulk'; bulkIds: string[] }
+    | null
+  >(null)
 
   const searchInputRef = useRef<HTMLInputElement>(null)
 
@@ -1782,6 +1793,11 @@ export function RosterPage() {
                       emp.seatId ? seatLabelMap[emp.seatId] ?? emp.seatId.slice(0, 4) : null
                     }
                     onJump={emp.seatId && emp.floorId ? () => jumpToSeat(emp) : null}
+                    onAssign={
+                      canEdit
+                        ? () => setSeatPicker({ mode: 'single', employeeId: emp.id })
+                        : null
+                    }
                   />
                 </td>
                 <td className="px-4 py-3 align-middle">
@@ -1903,6 +1919,25 @@ export function RosterPage() {
         <SeatSwapRequestDialog
           requesterId={swapRequestEmployeeId}
           onClose={() => setSwapRequestEmployeeId(null)}
+        />
+      )}
+
+      {seatPicker && (
+        <SeatPickerDialog
+          // Fresh mount per open so transient state (query, active idx,
+          // bulk-remaining queue) reinitializes from props without the
+          // dialog needing to reconcile state during render — keeps it
+          // clean of both set-state-in-effect and ref-during-render
+          // lint rules.
+          key={
+            seatPicker.mode === 'single'
+              ? seatPicker.employeeId
+              : `bulk:${seatPicker.bulkIds.join(',')}`
+          }
+          open
+          employeeId={seatPicker.mode === 'single' ? seatPicker.employeeId : null}
+          bulkEmployeeIds={seatPicker.mode === 'bulk' ? seatPicker.bulkIds : undefined}
+          onClose={() => setSeatPicker(null)}
         />
       )}
 
