@@ -6,6 +6,14 @@ export interface ShareComment {
   body: string
   author_name: string
   created_at: string
+  /**
+   * Bearer token the comment was authored under. Anonymous comments
+   * left via `add_share_comment` carry the token; owner-side replies
+   * left via `add_office_comment` (migration 0015) have `null` here.
+   * The UI uses the null discriminant to render an "Owner reply"
+   * badge and a different visual treatment.
+   */
+  share_token: string | null
 }
 
 /**
@@ -52,6 +60,70 @@ export async function addShareComment(args: {
         kind: 'error',
         reason: 'invalid_token',
         message: 'This share link is no longer active.',
+      }
+    }
+    if (msg.includes('comment_body_empty')) {
+      return { kind: 'error', reason: 'empty', message: 'Type something first.' }
+    }
+    if (msg.includes('comment_body_too_long')) {
+      return {
+        kind: 'error',
+        reason: 'too_long',
+        message: 'Comments are limited to 4000 characters.',
+      }
+    }
+    return { kind: 'error', reason: 'unknown', message: msg || 'Something went wrong.' }
+  }
+  return { kind: 'ok', comment: data as ShareComment }
+}
+
+/**
+ * Owner / editor / team-admin reply on share comments. Calls the
+ * `add_office_comment` SECURITY DEFINER RPC (migration 0015) which
+ * gates on `auth.uid()` + permission membership. The resulting row
+ * has `share_token = null`, which the UI uses to render an "Owner
+ * reply" badge.
+ */
+export async function addOfficeComment(args: {
+  officeId: string
+  body: string
+  authorName: string
+}): Promise<
+  | { kind: 'ok'; comment: ShareComment }
+  | {
+      kind: 'error'
+      reason: 'empty' | 'too_long' | 'forbidden' | 'not_authenticated' | 'unknown'
+      message: string
+    }
+> {
+  const trimmed = args.body.trim()
+  if (!trimmed) return { kind: 'error', reason: 'empty', message: 'Type something first.' }
+  if (trimmed.length > 4000) {
+    return {
+      kind: 'error',
+      reason: 'too_long',
+      message: 'Comments are limited to 4000 characters.',
+    }
+  }
+  const { data, error } = await supabase.rpc('add_office_comment', {
+    p_office_id: args.officeId,
+    p_body: trimmed,
+    p_author_name: args.authorName,
+  })
+  if (error) {
+    const msg = error.message ?? ''
+    if (msg.includes('not_authenticated')) {
+      return {
+        kind: 'error',
+        reason: 'not_authenticated',
+        message: 'Sign in to leave a reply.',
+      }
+    }
+    if (msg.includes('forbidden')) {
+      return {
+        kind: 'error',
+        reason: 'forbidden',
+        message: "You don't have permission to comment on this office.",
       }
     }
     if (msg.includes('comment_body_empty')) {
