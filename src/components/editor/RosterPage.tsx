@@ -374,6 +374,11 @@ export function RosterPage() {
   // the next/previous visible row. `null` falls back to the first row
   // in the sorted view so the user can always Tab in.
   const [focusedRowId, setFocusedRowId] = useState<string | null>(null)
+  // Anchor for Shift+arrow range selection. Set on Space (single-row
+  // selection start) and reset on plain arrow nav so the next range
+  // re-anchors. `null` = "no anchor yet" — a Shift+arrow then anchors
+  // on whatever row the user was focused on.
+  const [selectionAnchorId, setSelectionAnchorId] = useState<string | null>(null)
 
   const searchInputRef = useRef<HTMLInputElement>(null)
 
@@ -785,6 +790,32 @@ export function RosterPage() {
           e.key === 'ArrowDown' ? Math.min(idx + 1, rows.length - 1) : Math.max(idx - 1, 0)
         const nextId = rows[nextIdx]?.id
         if (!nextId || nextId === emp.id) return
+
+        // Shift+arrow extends a range from the anchor to the new
+        // focus. The anchor defaults to the *currently focused* row
+        // when no Space-initiated anchor exists yet, so a fresh
+        // Shift+ArrowDown adds {focused, next} to the selection
+        // without requiring the user to first hit Space.
+        if (e.shiftKey) {
+          const anchorId = selectionAnchorId ?? emp.id
+          if (selectionAnchorId == null) setSelectionAnchorId(emp.id)
+          const anchorIdx = rows.findIndex((r) => r.id === anchorId)
+          if (anchorIdx >= 0) {
+            const lo = Math.min(anchorIdx, nextIdx)
+            const hi = Math.max(anchorIdx, nextIdx)
+            const ids = rows.slice(lo, hi + 1).map((r) => r.id)
+            setSelected((prev) => {
+              const next = new Set(prev)
+              for (const id of ids) next.add(id)
+              return next
+            })
+          }
+        } else {
+          // Plain arrow nav resets the anchor so the next Shift+arrow
+          // re-anchors on the freshly focused row.
+          setSelectionAnchorId(null)
+        }
+
         setFocusedRowId(nextId)
         // Imperatively move DOM focus to the next row so the visible
         // focus ring follows the keyboard. requestAnimationFrame so the
@@ -799,6 +830,10 @@ export function RosterPage() {
       if (e.key === ' ') {
         e.preventDefault()
         toggleRow(emp.id)
+        // Space sets / resets the anchor to the row you just toggled.
+        // Means the user can press Space to mark a starting point,
+        // then Shift+ArrowDown to fan a range out from there.
+        setSelectionAnchorId(emp.id)
         return
       }
 
@@ -820,7 +855,7 @@ export function RosterPage() {
         return
       }
     },
-    [canEdit, toggleRow],
+    [canEdit, toggleRow, selectionAnchorId],
   )
 
   // "All visible are selected" — the select-all checkbox now reflects the
@@ -3234,7 +3269,8 @@ function ShortcutsCheatSheet({ onClose }: { onClose: () => void }) {
     ['Double-click a row', 'Open the detail drawer'],
     ['Shift-click a stats chip', 'Narrow to that axis'],
     ['↑ / ↓', 'Move row focus'],
-    ['Space', 'Toggle selection on the focused row'],
+    ['Shift+↑ / ↓', 'Extend selection from the anchor'],
+    ['Space', 'Toggle selection on the focused row (sets the anchor)'],
     ['Enter', 'Open the focused row in the drawer'],
     ['A', 'Assign a seat to the focused row'],
     ['U', 'Unassign the focused row'],
