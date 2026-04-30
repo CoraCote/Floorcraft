@@ -62,6 +62,7 @@ import { alignElements, distributeElements } from '../../../lib/alignment'
 import { validateDeskId } from '../../../lib/deskIdValidation'
 import { useCan } from '../../../hooks/useCan'
 import { useCanvasStore } from '../../../stores/canvasStore'
+import { useCalibrateScaleStore } from '../../../stores/calibrateScaleStore'
 import { LENGTH_UNIT_SUFFIX, type LengthUnit } from '../../../lib/units'
 import { SeatHistoryDrawer } from '../SeatHistoryDrawer'
 import {
@@ -1721,10 +1722,30 @@ export function PropertiesPanel() {
               aria-label="Underlay opacity"
             />
           </div>
+          {/* Drafting Studio scale-calibration entry point. The
+              project-wide `calibrate-scale` tool already exists; this
+              button just arms it from the underlay's properties so a
+              user who imported a plan doesn't have to hunt for the
+              tool in the status bar. The two-click flow then runs as
+              normal — pick any two points whose real-world distance
+              you know, type that distance, project scale lands. */}
+          <button
+            type="button"
+            onClick={() => {
+              useCalibrateScaleStore.getState().begin()
+              useCanvasStore.getState().setActiveTool('calibrate-scale')
+            }}
+            disabled={lockedDisabled}
+            className="w-full mt-2 text-xs font-medium px-2 py-1.5 rounded border border-[color:var(--color-blueprint)]/40 text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:bg-[color:var(--color-blueprint-soft)] dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Calibrate scale from this underlay…
+          </button>
           <p className="text-[11px] text-gray-500 dark:text-gray-400">
-            Drop an image on the canvas to add another underlay. Underlays
-            are locked by default — uncheck Visible above (or unlock to
-            move) once you&rsquo;re done tracing.
+            Click two points on the underlay whose real-world distance you
+            know — that becomes the project&rsquo;s scale. Drop another image
+            on the canvas to add a second underlay. Underlays are locked by
+            default — uncheck Visible above (or unlock to move) once
+            you&rsquo;re done tracing.
           </p>
         </Section>
       )}
