@@ -202,52 +202,46 @@ export function MapView() {
       <FloorSwitcher />
       <div className="flex flex-1 overflow-hidden">
         {/*
-          Drafting Studio left chrome (Wave 21A). The previous single
-          260-px sidebar bundled tools, layers, and library into one
-          scrolling column. The redesign splits them:
+          Restored single-sidebar layout: tools sit ABOVE Layers + Library
+          in one 260-px column. The pre-Wave 21A pattern. The icon-only
+          tool rail experiment was reverted because experienced operators
+          couldn't quickly distinguish glyphs without labels.
 
-            • A 56-px tool rail (icon-only, grouped clusters) takes the
-              far-left edge — the operator's primary creation surface.
-            • A 240-px secondary sidebar holds Layers + Library, the
-              data-heavy surfaces that need width for tiles and toggles.
-
-          Splitting the rail off keeps it always-visible (no
-          collapse/scroll) and frees the secondary sidebar to be
-          collapsible later without losing tool access.
+          When collapsed, a slim toggle pull-tab on the canvas's left
+          edge re-opens it; keyboard shortcuts (V, W, R, etc.) keep all
+          tools reachable while the sidebar is closed.
         */}
-        <div className="w-14 flex-shrink-0 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border-r border-[color:var(--color-paper-line)] dark:border-gray-800 flex flex-col overflow-y-auto">
-          <div className="flex-1">
-            <ToolSelector />
-          </div>
-          {/* Sidebar toggle at the bottom of the tool rail. Chevron points
-              the direction the sidebar will move when clicked: closed →
-              opens (chevron-right), open → closes (chevron-left). The
-              choice persists to localStorage so an operator who collapses
-              for a quieter canvas keeps that on next session. */}
-          <button
-            type="button"
-            onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
-            aria-label={leftSidebarOpen ? 'Collapse layers and library' : 'Expand layers and library'}
-            aria-expanded={leftSidebarOpen}
-            title={leftSidebarOpen ? 'Collapse panel' : 'Expand panel'}
-            className="mx-auto mb-2 mt-1 flex h-8 w-8 items-center justify-center rounded text-gray-500 hover:bg-[color:var(--color-paper-sunken)] hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200 transition-colors"
-          >
-            {leftSidebarOpen ? (
-              <ChevronsLeft size={16} aria-hidden="true" />
-            ) : (
-              <ChevronsRight size={16} aria-hidden="true" />
-            )}
-          </button>
-        </div>
-        {leftSidebarOpen && (
-          <div className="w-[240px] flex-shrink-0 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border-r border-[color:var(--color-paper-line)] dark:border-gray-800 flex flex-col overflow-y-auto">
+        {leftSidebarOpen ? (
+          <div className="w-[260px] flex-shrink-0 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border-r border-[color:var(--color-paper-line)] dark:border-gray-800 flex flex-col overflow-y-auto">
+            <CollapsibleSection title="Tools" defaultOpen storageKey="tools">
+              <ToolSelector />
+            </CollapsibleSection>
             <CollapsibleSection title="Layers" defaultOpen storageKey="layers">
               <LayerVisibilityPanel />
             </CollapsibleSection>
             <CollapsibleSection title="Library" defaultOpen storageKey="library">
               <ElementLibrary />
             </CollapsibleSection>
+            <button
+              type="button"
+              onClick={() => setLeftSidebarOpen(false)}
+              aria-label="Collapse left sidebar"
+              title="Collapse panel"
+              className="mt-auto mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded text-gray-500 hover:bg-[color:var(--color-paper-sunken)] hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200 transition-colors"
+            >
+              <ChevronsLeft size={16} aria-hidden="true" />
+            </button>
           </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setLeftSidebarOpen(true)}
+            aria-label="Expand left sidebar"
+            title="Expand panel"
+            className="self-start mt-3 ml-1 flex h-8 w-8 items-center justify-center rounded bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-[color:var(--color-paper-line)] dark:border-gray-800 text-gray-500 hover:bg-[color:var(--color-paper-sunken)] hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200 transition-colors shadow-sm z-10"
+          >
+            <ChevronsRight size={16} aria-hidden="true" />
+          </button>
         )}
         <div className="flex-1 relative bg-[color:var(--color-paper)] overflow-hidden">
           <CanvasStage />

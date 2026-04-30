@@ -31,23 +31,22 @@ interface ToolDef {
 }
 
 /**
- * Drafting Studio tool rail.
+ * Tool list for the left sidebar.
  *
- * Hover model: a rich tooltip card (name + description + shortcut)
- * appears next to the icon on EVERY hover, not just the first. The
- * previous "first-use only" gate left experienced operators with a
- * tiny native title tooltip that didn't explain what each tool did
- * — confusing for power users coming back to a feature they used
- * once. The native `title` attribute is also set as a belt-and-
- * braces fallback for screen readers / keyboard-only nav.
+ * Layout: full-width rows with icon + label + right-aligned shortcut
+ * pill. The previous icon-only 56-px rail (Wave 21A) made experienced
+ * tools harder to find — the operator scanned a column of glyphs
+ * instead of names. This restores the original list shape while
+ * keeping the more recent quality-of-life additions:
  *
- * Wall + Line + Arrow each carry an inline three-pill style picker
- * (solid / dashed / dotted) that appears below the active tool's
- * icon. Stays in the canvas store so the choice survives a tool
- * switch.
+ *   - Rich hover tooltip card on EVERY hover (not just first use),
+ *     showing name + 1-line description + shortcut.
+ *   - Stroke-style picker (solid / dashed / dotted) for wall, line,
+ *     and arrow when active — not just wall.
+ *   - Native `title` attribute as a screen-reader-friendly fallback.
  *
- * Keyboard shortcuts in `useKeyboardShortcuts` are unchanged — the
- * rail is a pointer affordance, not the authoritative tool surface.
+ * Group dividers separate Navigation / Architecture / Shapes /
+ * Measure so the eye still parses the rail by intent.
  */
 
 type ToolGroup = ReadonlyArray<ToolDef>
@@ -56,14 +55,14 @@ const NAV_GROUP: ToolGroup = [
   {
     id: 'select',
     label: 'Select',
-    icon: <MousePointer2 size={18} aria-hidden="true" />,
+    icon: <MousePointer2 size={16} aria-hidden="true" />,
     shortcut: 'V',
     description: 'Click an element to select, drag empty canvas to pan, Shift+drag to lasso.',
   },
   {
     id: 'pan',
     label: 'Pan',
-    icon: <Hand size={18} aria-hidden="true" />,
+    icon: <Hand size={16} aria-hidden="true" />,
     shortcut: 'Space',
     description: 'Dedicated pan mode. Hold Space anywhere for a temporary pan instead.',
   },
@@ -73,28 +72,28 @@ const ARCHITECTURE_GROUP: ToolGroup = [
   {
     id: 'wall',
     label: 'Wall',
-    icon: <Minus size={18} aria-hidden="true" />,
+    icon: <Minus size={16} aria-hidden="true" />,
     shortcut: 'W',
     description: 'Click and drag to draw a straight wall. Click to chain segments.',
   },
   {
     id: 'door',
     label: 'Door',
-    icon: <DoorOpen size={18} aria-hidden="true" />,
+    icon: <DoorOpen size={16} aria-hidden="true" />,
     shortcut: '⇧D',
     description: 'Click a wall to drop in a door at that position.',
   },
   {
     id: 'window',
     label: 'Window',
-    icon: <SquareIcon size={18} aria-hidden="true" />,
+    icon: <SquareIcon size={16} aria-hidden="true" />,
     shortcut: '⇧N',
     description: 'Click a wall to place a window along its length.',
   },
   {
     id: 'room',
     label: 'Room',
-    icon: <Square size={18} aria-hidden="true" />,
+    icon: <Square size={16} aria-hidden="true" />,
     shortcut: '⇧O',
     description: 'Click and drag to draw a 4-wall rectangular room. Hold Shift for a square.',
   },
@@ -104,35 +103,35 @@ const SHAPE_GROUP: ToolGroup = [
   {
     id: 'rect-shape',
     label: 'Rectangle',
-    icon: <Square size={18} aria-hidden="true" />,
+    icon: <Square size={16} aria-hidden="true" />,
     shortcut: '⇧R',
     description: 'Click and drag to draw a rectangle. Useful for rough space blocks.',
   },
   {
     id: 'ellipse',
     label: 'Ellipse',
-    icon: <Circle size={18} aria-hidden="true" />,
+    icon: <Circle size={16} aria-hidden="true" />,
     shortcut: 'E',
     description: 'Click and drag to draw an ellipse. Hold Shift for a perfect circle.',
   },
   {
     id: 'line-shape',
     label: 'Line',
-    icon: <Slash size={18} aria-hidden="true" />,
+    icon: <Slash size={16} aria-hidden="true" />,
     shortcut: 'L',
-    description: 'Click and drag to draw a straight line. Pick solid, dashed, or dotted from the style flyout.',
+    description: 'Click and drag to draw a straight line. Pick solid, dashed, or dotted below.',
   },
   {
     id: 'arrow',
     label: 'Arrow',
-    icon: <ArrowRight size={18} aria-hidden="true" />,
+    icon: <ArrowRight size={16} aria-hidden="true" />,
     shortcut: 'A',
-    description: 'Click and drag to draw an arrow. Solid, dashed, or dotted via the style flyout.',
+    description: 'Click and drag to draw an arrow. Solid, dashed, or dotted below.',
   },
   {
     id: 'free-text',
     label: 'Text',
-    icon: <Type size={18} aria-hidden="true" />,
+    icon: <Type size={16} aria-hidden="true" />,
     shortcut: 'T',
     description: 'Click anywhere to drop a text label on the canvas.',
   },
@@ -142,14 +141,14 @@ const MEASURE_GROUP: ToolGroup = [
   {
     id: 'measure',
     label: 'Measure',
-    icon: <Ruler size={18} aria-hidden="true" />,
+    icon: <Ruler size={16} aria-hidden="true" />,
     shortcut: '⇧M',
     description: 'Click points to measure distance. Double-click or Enter to finish.',
   },
   {
     id: 'neighborhood',
     label: 'Neighborhood',
-    icon: <MapPin size={18} aria-hidden="true" />,
+    icon: <MapPin size={16} aria-hidden="true" />,
     shortcut: '⇧G',
     description: 'Drag on empty canvas to paint a labeled zone for a team or group.',
   },
@@ -160,11 +159,10 @@ const GROUPS = [NAV_GROUP, ARCHITECTURE_GROUP, SHAPE_GROUP, MEASURE_GROUP] as co
 const STROKE_STYLES: Array<{
   id: WallDrawStyle | LineDrawStyle
   label: string
-  title: string
 }> = [
-  { id: 'solid', label: 'S', title: 'Solid' },
-  { id: 'dashed', label: '⋯', title: 'Dashed' },
-  { id: 'dotted', label: '·', title: 'Dotted' },
+  { id: 'solid', label: 'Solid' },
+  { id: 'dashed', label: 'Dashed' },
+  { id: 'dotted', label: 'Dotted' },
 ]
 
 export function ToolSelector() {
@@ -177,24 +175,18 @@ export function ToolSelector() {
   const canEdit = useCan('editMap')
   const [hoveredToolId, setHoveredToolId] = useState<ToolType | null>(null)
 
-  // Viewers see only navigation (select, pan) and the read-only measure
-  // tool — the rest would be silent no-ops against `canEdit` guards.
   const visibleGroups: ReadonlyArray<ToolGroup> = canEdit
     ? GROUPS
-    : [
-        NAV_GROUP,
-        // Pull measure out of MEASURE_GROUP since neighborhood is edit-only.
-        [MEASURE_GROUP[0]] as ToolGroup,
-      ]
+    : [NAV_GROUP, [MEASURE_GROUP[0]] as ToolGroup]
 
   return (
-    <div className="py-2 flex flex-col items-center gap-1">
+    <div className="p-2 flex flex-col">
       {visibleGroups.map((group, gi) => (
-        <div key={gi} className="flex flex-col items-center gap-1 w-full">
+        <div key={gi} className="flex flex-col gap-0.5">
           {gi > 0 && (
             <div
               aria-hidden="true"
-              className="my-1 h-px w-7 bg-[color:var(--color-paper-line)] dark:bg-gray-700"
+              className="my-1.5 h-px w-full bg-[color:var(--color-paper-line)] dark:bg-gray-700"
             />
           )}
           {group.map((tool) => {
@@ -202,11 +194,10 @@ export function ToolSelector() {
             const tooltipId = `tool-tooltip-${tool.id}`
             const isActive = activeTool === tool.id
             const showStylePicker =
-              isActive && (tool.id === 'wall' || tool.id === 'line-shape' || tool.id === 'arrow')
-            const styleValue =
-              tool.id === 'wall' ? wallDrawStyle : lineDrawStyle
-            const setStyle =
-              tool.id === 'wall' ? setWallDrawStyle : setLineDrawStyle
+              isActive &&
+              (tool.id === 'wall' || tool.id === 'line-shape' || tool.id === 'arrow')
+            const styleValue = tool.id === 'wall' ? wallDrawStyle : lineDrawStyle
+            const setStyle = tool.id === 'wall' ? setWallDrawStyle : setLineDrawStyle
             return (
               <div key={tool.id} className={`relative ${isHovered ? 'z-10' : ''}`}>
                 <button
@@ -217,20 +208,22 @@ export function ToolSelector() {
                   }
                   onFocus={() => setHoveredToolId(tool.id)}
                   onBlur={() => setHoveredToolId((p) => (p === tool.id ? null : p))}
-                  className={`flex h-9 w-9 items-center justify-center rounded transition-colors ${
+                  className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded text-sm transition-colors min-w-0 ${
                     isActive
-                      ? 'bg-[color:var(--color-blueprint-soft)] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]'
-                      : 'text-gray-600 dark:text-gray-300 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800'
+                      ? 'bg-[color:var(--color-blueprint-soft)] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] font-medium'
+                      : 'text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800'
                   }`}
-                  // Native title tooltip as a belt-and-braces fallback for
-                  // screen readers / keyboard-only nav. The rich card is
-                  // the primary affordance for sighted operators.
                   title={tool.shortcut ? `${tool.label} (${tool.shortcut}) — ${tool.description}` : `${tool.label} — ${tool.description}`}
-                  aria-label={tool.label}
                   aria-pressed={isActive}
                   aria-describedby={isHovered ? tooltipId : undefined}
                 >
-                  {tool.icon}
+                  <span className="flex-shrink-0">{tool.icon}</span>
+                  <span className="truncate min-w-0 text-left flex-1">{tool.label}</span>
+                  {tool.shortcut && (
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500 font-mono flex-shrink-0">
+                      {tool.shortcut}
+                    </span>
+                  )}
                 </button>
                 {isHovered && (
                   <FirstUseTooltip
@@ -245,7 +238,7 @@ export function ToolSelector() {
                   <div
                     role="radiogroup"
                     aria-label={`${tool.label} stroke style`}
-                    className="mt-1 mb-1 flex items-center justify-center gap-0.5 px-0.5"
+                    className="flex gap-1 px-2.5 pb-1 pt-0.5"
                   >
                     {STROKE_STYLES.map((s) => (
                       <button
@@ -253,12 +246,11 @@ export function ToolSelector() {
                         role="radio"
                         aria-checked={styleValue === s.id}
                         onClick={() => setStyle(s.id)}
-                        className={`h-5 w-6 rounded text-[10px] font-mono transition-colors ${
+                        className={`flex-1 px-2 py-0.5 text-[11px] rounded-full border transition-colors ${
                           styleValue === s.id
-                            ? 'bg-[color:var(--color-blueprint)] text-white'
-                            : 'bg-[color:var(--color-paper-sunken)] text-gray-500 dark:bg-gray-800 dark:text-gray-400 hover:bg-[color:var(--color-paper-line)] dark:hover:bg-gray-700'
+                            ? 'bg-[color:var(--color-blueprint-strong)] text-white border-[color:var(--color-blueprint-strong)]'
+                            : 'bg-[color:var(--color-paper-raised)] dark:bg-gray-900 text-gray-600 dark:text-gray-300 border-[color:var(--color-paper-line)] dark:border-gray-700 hover:border-gray-400'
                         }`}
-                        title={`${s.title} stroke`}
                       >
                         {s.label}
                       </button>
