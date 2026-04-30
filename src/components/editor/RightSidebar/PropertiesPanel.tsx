@@ -61,6 +61,8 @@ import { unassignEmployee, deleteElements } from '../../../lib/seatAssignment'
 import { alignElements, distributeElements } from '../../../lib/alignment'
 import { validateDeskId } from '../../../lib/deskIdValidation'
 import { useCan } from '../../../hooks/useCan'
+import { useCanvasStore } from '../../../stores/canvasStore'
+import { LENGTH_UNIT_SUFFIX, type LengthUnit } from '../../../lib/units'
 import { SeatHistoryDrawer } from '../SeatHistoryDrawer'
 import {
   EMPLOYEE_STATUS_PILL_CLASSES,
@@ -414,6 +416,64 @@ function ElementHeader({
  * visible with a red error message so the user knows why the field didn't
  * save, and a `blur` without correction reverts to the stored value.
  */
+
+/**
+ * Number input that displays + edits a length in the project's
+ * real-world unit while the store still holds canvas pixels.
+ *
+ * The conversion lives only at the input boundary: the displayed
+ * value is `canvasValue * scale` (with `px` as a pass-through) and a
+ * commit divides the user's number by `scale` to land back in canvas
+ * coordinates. Step + decimal precision are unit-aware (meters get
+ * 0.01; feet/inches/cm/pixels get 0.1) so an architect can type
+ * "12.5" without the UI snapping it to an integer.
+ *
+ * Used by the Layout section (X / Y / Width / Height) so an operator
+ * who's calibrated their canvas (1 ft = 12 px, etc.) can type
+ * architectural dimensions directly instead of doing the pixel math
+ * in their head.
+ */
+function RealLengthInput({
+  canvasValue,
+  scale,
+  unit,
+  disabled,
+  minCanvas,
+  onCommit,
+}: {
+  canvasValue: number
+  scale: number
+  unit: LengthUnit
+  disabled?: boolean
+  /** Reject commits that would land below this canvas-pixel value. */
+  minCanvas?: number
+  onCommit: (canvasPx: number) => void
+}) {
+  const realValue = unit === 'px' ? canvasValue : canvasValue * scale
+  const decimals = unit === 'm' ? 2 : 1
+  const step = unit === 'm' ? 0.01 : 0.1
+  // Displayed value is rounded to the unit's precision; using `Number(...)`
+  // strips the trailing zero ("12.0" → 12) so the input doesn't read
+  // like a typo.
+  const display = Number(realValue.toFixed(decimals))
+  return (
+    <input
+      type="number"
+      step={step}
+      className={`${INPUT_CLASS} tabular-nums`}
+      value={display}
+      disabled={disabled}
+      onChange={(e) => {
+        const parsed = Number(e.target.value)
+        if (!Number.isFinite(parsed)) return
+        const canvasPx = unit === 'px' ? parsed : parsed / scale
+        if (typeof minCanvas === 'number' && canvasPx < minCanvas) return
+        onCommit(canvasPx)
+      }}
+    />
+  )
+}
+
 function DeskIdInput({
   elementId,
   value,
@@ -1064,6 +1124,13 @@ export function PropertiesPanel() {
   const canViewPII = useCan('viewPII')
   const canEditRoster = useCan('editRoster')
   const inputDisabled = !canEdit
+  // Brief 2: Layout numerics render in the project's real-world unit
+  // (`12 ft` instead of raw canvas pixels). One-source-of-truth read so
+  // every section that displays a dimension is in lockstep with the
+  // calibrated scale — same constants the wall-dimension pill and the
+  // measure overlay already consume.
+  const canvasScale = useCanvasStore((s) => s.settings.scale)
+  const canvasUnit = useCanvasStore((s) => s.settings.scaleUnit)
   // Locally owned drawer target — the panel unmounts on selection change
   // (key'd by element id higher up), which cleans this up automatically.
   const [historyTargetId, setHistoryTargetId] = useState<string | null>(null)
@@ -1474,29 +1541,39 @@ export function PropertiesPanel() {
       </Section>
 
       <Section title="Layout">
+        {/* Brief 2: numerics render in the project's real-world unit
+            (e.g. "12 ft" not "144 px") so an operator who set their
+            scale to 1 ft = 12 px can type architectural dimensions
+            directly. The conversion lives at the edges only — the
+            store still holds canvas pixels, and on commit we divide
+            the typed value by `canvasScale` to land back in canvas
+            space. `px` is a pass-through. Decimal precision is
+            unit-aware: meters get 2 decimals (subdividing to the cm),
+            everything else gets 1.
+        */}
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className={`${LABEL_CLASS} inline-flex items-center gap-1`}>
-              <Move size={10} aria-hidden="true" /> X
+              <Move size={10} aria-hidden="true" /> X ({LENGTH_UNIT_SUFFIX[canvasUnit]})
             </label>
-            <input
-              type="number"
-              className={`${INPUT_CLASS} tabular-nums`}
-              value={Math.round(el.x)}
+            <RealLengthInput
+              canvasValue={el.x}
+              scale={canvasScale}
+              unit={canvasUnit}
               disabled={lockedDisabled}
-              onChange={(e) => update({ x: Number(e.target.value) })}
+              onCommit={(canvasPx) => update({ x: canvasPx })}
             />
           </div>
           <div>
             <label className={`${LABEL_CLASS} inline-flex items-center gap-1`}>
-              <Move size={10} aria-hidden="true" /> Y
+              <Move size={10} aria-hidden="true" /> Y ({LENGTH_UNIT_SUFFIX[canvasUnit]})
             </label>
-            <input
-              type="number"
-              className={`${INPUT_CLASS} tabular-nums`}
-              value={Math.round(el.y)}
+            <RealLengthInput
+              canvasValue={el.y}
+              scale={canvasScale}
+              unit={canvasUnit}
               disabled={lockedDisabled}
-              onChange={(e) => update({ y: Number(e.target.value) })}
+              onCommit={(canvasPx) => update({ y: canvasPx })}
             />
           </div>
         </div>
@@ -1504,26 +1581,28 @@ export function PropertiesPanel() {
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className={`${LABEL_CLASS} inline-flex items-center gap-1`}>
-              <Maximize2 size={10} aria-hidden="true" /> Width
+              <Maximize2 size={10} aria-hidden="true" /> Width ({LENGTH_UNIT_SUFFIX[canvasUnit]})
             </label>
-            <input
-              type="number"
-              className={`${INPUT_CLASS} tabular-nums`}
-              value={Math.round(el.width)}
+            <RealLengthInput
+              canvasValue={el.width}
+              scale={canvasScale}
+              unit={canvasUnit}
               disabled={lockedDisabled}
-              onChange={(e) => update({ width: Number(e.target.value) })}
+              minCanvas={1}
+              onCommit={(canvasPx) => update({ width: canvasPx })}
             />
           </div>
           <div>
             <label className={`${LABEL_CLASS} inline-flex items-center gap-1`}>
-              <Maximize2 size={10} aria-hidden="true" /> Height
+              <Maximize2 size={10} aria-hidden="true" /> Height ({LENGTH_UNIT_SUFFIX[canvasUnit]})
             </label>
-            <input
-              type="number"
-              className={`${INPUT_CLASS} tabular-nums`}
-              value={Math.round(el.height)}
+            <RealLengthInput
+              canvasValue={el.height}
+              scale={canvasScale}
+              unit={canvasUnit}
               disabled={lockedDisabled}
-              onChange={(e) => update({ height: Number(e.target.value) })}
+              minCanvas={1}
+              onCommit={(canvasPx) => update({ height: canvasPx })}
             />
           </div>
         </div>
