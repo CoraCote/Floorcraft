@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { MessageSquare, Send, Trash2 } from 'lucide-react'
+import { MessageSquare, RefreshCw, Send, Trash2 } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
 import { useProjectStore } from '../../../stores/projectStore'
 import { useSession } from '../../../lib/auth/AuthProvider'
@@ -36,6 +36,13 @@ export function OfficeCommentsPanel() {
   const [reply, setReply] = useState('')
   const [posting, setPosting] = useState(false)
   const [postError, setPostError] = useState<string | null>(null)
+  // Manual-refresh nonce. The user clicks the refresh button → we
+  // bump this; the load effect's dep list includes it, so the
+  // effect re-fires. Avoids extracting `load` to a callable while
+  // staying in the named-async-function pattern that keeps the
+  // React 19 set-state-in-effect rule happy.
+  const [refreshNonce, setRefreshNonce] = useState(0)
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -50,6 +57,7 @@ export function OfficeCommentsPanel() {
         .eq('office_id', officeId)
         .order('created_at', { ascending: false })
       if (cancelled) return
+      setRefreshing(false)
       if (err) {
         setError(err.message)
         setComments([])
@@ -62,7 +70,12 @@ export function OfficeCommentsPanel() {
     return () => {
       cancelled = true
     }
-  }, [officeId])
+  }, [officeId, refreshNonce])
+
+  function onRefresh() {
+    setRefreshing(true)
+    setRefreshNonce((n) => n + 1)
+  }
 
   async function onSubmitReply(e: React.FormEvent) {
     e.preventDefault()
@@ -135,6 +148,27 @@ export function OfficeCommentsPanel() {
   }
   return (
     <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] text-gray-500 dark:text-gray-400">
+          {comments.length === 0
+            ? 'No comments'
+            : `${comments.length} comment${comments.length === 1 ? '' : 's'}`}
+        </span>
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={refreshing}
+          className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-0.5 rounded disabled:opacity-50"
+          title="Refresh comments"
+          aria-label="Refresh comments"
+        >
+          <RefreshCw
+            size={11}
+            aria-hidden="true"
+            className={refreshing ? 'animate-spin motion-reduce:animate-none' : ''}
+          />
+        </button>
+      </div>
       {comments.length === 0 ? (
         <div className="text-xs text-gray-500 dark:text-gray-400 flex items-start gap-2">
           <MessageSquare size={12} aria-hidden="true" className="mt-0.5 flex-shrink-0" />

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { History } from 'lucide-react'
+import { History, RefreshCw } from 'lucide-react'
 import { listEvents, type AuditEventRow } from '../../../lib/auditRepository'
 import { useProjectStore } from '../../../stores/projectStore'
 
@@ -23,6 +23,8 @@ export function RecentActivityPanel() {
   const [events, setEvents] = useState<AuditEventRow[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [now, setNow] = useState<number>(() => Date.now())
+  const [refreshNonce, setRefreshNonce] = useState(0)
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -34,10 +36,12 @@ export function RecentActivityPanel() {
       try {
         const rows = await listEvents(teamId, { limit: 20 })
         if (cancelled) return
+        setRefreshing(false)
         setEvents(rows)
         setNow(Date.now())
       } catch (err) {
         if (cancelled) return
+        setRefreshing(false)
         const msg = err instanceof Error ? err.message : 'Unknown error'
         setError(msg)
         setEvents([])
@@ -47,7 +51,12 @@ export function RecentActivityPanel() {
     return () => {
       cancelled = true
     }
-  }, [teamId])
+  }, [teamId, refreshNonce])
+
+  function onRefresh() {
+    setRefreshing(true)
+    setRefreshNonce((n) => n + 1)
+  }
 
   if (events === null) {
     return <p className="text-xs text-gray-500 dark:text-gray-400">Loading activity…</p>
@@ -71,7 +80,27 @@ export function RecentActivityPanel() {
     )
   }
   return (
-    <ul className="space-y-1.5">
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] text-gray-500 dark:text-gray-400">
+          {events.length} event{events.length === 1 ? '' : 's'}
+        </span>
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={refreshing}
+          className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-0.5 rounded disabled:opacity-50"
+          title="Refresh activity"
+          aria-label="Refresh activity"
+        >
+          <RefreshCw
+            size={11}
+            aria-hidden="true"
+            className={refreshing ? 'animate-spin motion-reduce:animate-none' : ''}
+          />
+        </button>
+      </div>
+      <ul className="space-y-1.5">
       {events.map((e) => (
         <li
           key={e.id ?? `${e.action}-${e.created_at}`}
@@ -95,7 +124,8 @@ export function RecentActivityPanel() {
           </div>
         </li>
       ))}
-    </ul>
+      </ul>
+    </div>
   )
 }
 
