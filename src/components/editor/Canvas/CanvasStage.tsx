@@ -307,6 +307,12 @@ export function CanvasStage() {
   // hot path (mousemove); this state changes once at press and once at
   // release so it doesn't thrash renders.
   const [panActive, setPanActive] = useState(false)
+  // Brief 3 follow-up: visual feedback when a user drags an OS file
+  // (PDF / image) over the canvas. The handleDragOver branch flips
+  // this on; handleDragLeave / onDrop turn it off. The overlay is a
+  // tinted full-canvas rectangle with a "Drop to add an underlay"
+  // pill — discoverable hint that the canvas accepts the file.
+  const [fileDragActive, setFileDragActive] = useState(false)
 
   // Cursor position in canvas-space coords, tracked for the door/window
   // ghost preview. Null when the cursor has left the canvas so the ghost
@@ -1396,12 +1402,15 @@ export function CanvasStage() {
     }
     // Brief 3: an OS file drag (image dragged in from the user's
     // desktop) reports `Files` in `types`. Accept it here so the cursor
-    // shows "+" rather than "no-drop" before the drop completes.
+    // shows "+" rather than "no-drop" before the drop completes, and
+    // flip the in-flight visual hint state so the canvas paints a
+    // "Drop to add an underlay" overlay.
     if (e.dataTransfer.types.includes('Files')) {
       e.preventDefault()
       e.dataTransfer.dropEffect = 'copy'
+      if (!fileDragActive) setFileDragActive(true)
     }
-  }, [canEdit, stageX, stageY, stageScale])
+  }, [canEdit, stageX, stageY, stageScale, fileDragActive])
 
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     if (!canEdit) return
@@ -1571,9 +1580,13 @@ export function CanvasStage() {
         const related = e.relatedTarget as Node | null
         if (!related || !e.currentTarget.contains(related)) {
           useSeatDragStore.getState().setHoveredSeat(null)
+          setFileDragActive(false)
         }
       }}
-      onDrop={handleDrop}
+      onDrop={(e) => {
+        setFileDragActive(false)
+        handleDrop(e)
+      }}
       onMouseLeave={handleMouseLeave}
     >
       <Stage
@@ -1641,6 +1654,22 @@ export function CanvasStage() {
       <FreeTextEditorOverlay containerRef={containerRef} />
       <AnnotationPopover containerRef={containerRef} />
       <EmptyCanvasHint />
+      {/* File-drop overlay (Brief 3 follow-up). pointer-events-none so
+          the underlying canvas still receives the drop event; the
+          visual is purely advisory. Renders only when the user is
+          actively dragging an OS file over the canvas AND they have
+          edit permission (handleDragOver bails for viewers). */}
+      {fileDragActive && (
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 z-30 pointer-events-none flex items-center justify-center"
+        >
+          <div className="absolute inset-2 rounded-lg border-2 border-dashed border-[color:var(--color-blueprint)] bg-[color:var(--color-blueprint-soft)]/30" />
+          <div className="relative px-4 py-2 rounded-lg bg-[color:var(--color-blueprint-strong)] text-white text-sm font-medium shadow-lg">
+            Drop to add an underlay (PDF or image)
+          </div>
+        </div>
+      )}
     </div>
   )
 }
