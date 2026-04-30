@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { resolveShareToken } from '../../lib/shareTokens'
+import {
+  addShareComment,
+  listShareComments,
+  type ShareComment,
+} from '../../lib/shareComments'
 import type { Employee } from '../../types/employee'
 
 /**
@@ -11,12 +16,10 @@ import type { Employee } from '../../types/employee'
  * token as input and only ever returns the office row whose token
  * matches and is not revoked. Anon callers cannot enumerate.
  *
- * Pilot scope: roster-only table view. The spec asks for "read-only
- * map + roster", but the Konva map renderer has more session plumbing
- * dependencies (floor store, canvas settings, insights store) than we
- * want to wire up for an anon page during pilot. A roster table is
- * the most frequently-requested artifact for exec reviews anyway.
- * Map sharing can land in a follow-up.
+ * Pilot scope: roster-only table view + Brief 3 follow-up: anonymous
+ * comments. The reviewer can leave a name + body without
+ * authenticating; the SECURITY DEFINER `add_share_comment` /
+ * `list_share_comments` RPCs (migration 0014) do the gating.
  */
 export function SharedProjectView() {
   const { projectId, token } = useParams<{ projectId: string; token: string }>()
@@ -25,6 +28,10 @@ export function SharedProjectView() {
   )
   const [employees, setEmployees] = useState<Employee[]>([])
   const [floorCount, setFloorCount] = useState(0)
+  const [comments, setComments] = useState<ShareComment[]>([])
+  const [commentsStatus, setCommentsStatus] = useState<
+    'idle' | 'loading' | 'error'
+  >('idle')
 
   useEffect(() => {
     if (!projectId || !token) return
@@ -53,6 +60,19 @@ export function SharedProjectView() {
       setEmployees(roster)
       setFloorCount(Array.isArray(p.floors) ? p.floors.length : 0)
       setStatus('ready')
+
+      // Load existing comments in parallel with rendering. A failure
+      // here doesn't block the rest of the read-only view — comments
+      // are an additive surface.
+      setCommentsStatus('loading')
+      const list = await listShareComments({ token, officeId: projectId })
+      if (cancelled) return
+      if (list === null) {
+        setCommentsStatus('error')
+      } else {
+        setComments(list)
+        setCommentsStatus('idle')
+      }
     })()
     return () => {
       cancelled = true
@@ -90,6 +110,142 @@ export function SharedProjectView() {
           ))}
         </tbody>
       </table>
+
+      {projectId && token && (
+        <ShareCommentsPanel
+          projectId={projectId}
+          token={token}
+          comments={comments}
+          status={commentsStatus}
+          onPosted={(c) => setComments((prev) => [c, ...prev])}
+        />
+      )}
     </div>
+  )
+}
+
+function ShareCommentsPanel({
+  projectId,
+  token,
+  comments,
+  status,
+  onPosted,
+}: {
+  projectId: string
+  token: string
+  comments: ShareComment[]
+  status: 'idle' | 'loading' | 'error'
+  onPosted: (c: ShareComment) => void
+}) {
+  const [body, setBody] = useState('')
+  const [authorName, setAuthorName] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (busy) return
+    setBusy(true)
+    setError(null)
+    const result = await addShareComment({
+      token,
+      officeId: projectId,
+      body,
+      authorName,
+    })
+    setBusy(false)
+    if (result.kind === 'error') {
+      setError(result.message)
+      return
+    }
+    onPosted(result.comment)
+    setBody('')
+    // Keep the author name across submits — most reviewers leave
+    // multiple comments and re-typing their name each time is friction.
+  }
+
+  return (
+    <section
+      aria-labelledby="share-comments-heading"
+      className="border-t border-[color:var(--color-paper-line)] dark:border-gray-800 pt-6 space-y-4"
+    >
+      <h2 id="share-comments-heading" className="text-lg font-semibold">
+        Comments
+      </h2>
+
+      <form onSubmit={onSubmit} className="space-y-2">
+        <input
+          type="text"
+          value={authorName}
+          onChange={(e) => setAuthorName(e.target.value)}
+          maxLength={80}
+          placeholder="Your name (optional)"
+          aria-label="Your name"
+          disabled={busy}
+          className="block w-full rounded border border-[color:var(--color-paper-line)] dark:border-gray-700 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 px-2.5 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
+        />
+        <textarea
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          maxLength={4000}
+          placeholder="Leave a comment about this plan…"
+          aria-label="Comment"
+          disabled={busy}
+          rows={3}
+          className="block w-full rounded border border-[color:var(--color-paper-line)] dark:border-gray-700 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 px-2.5 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
+        />
+        {error && (
+          <p role="alert" className="text-xs text-red-600 dark:text-red-400">
+            {error}
+          </p>
+        )}
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={busy || !body.trim()}
+            className="px-3 py-1.5 text-sm font-medium rounded bg-[color:var(--color-blueprint-strong)] text-white hover:bg-[color:var(--color-blueprint)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {busy ? 'Posting…' : 'Post comment'}
+          </button>
+        </div>
+      </form>
+
+      <ul className="space-y-3">
+        {status === 'loading' && comments.length === 0 && (
+          <li className="text-xs text-gray-500 dark:text-gray-400">Loading comments…</li>
+        )}
+        {status === 'error' && (
+          <li className="text-xs text-red-600 dark:text-red-400">
+            Couldn&rsquo;t load comments. Try reloading the page.
+          </li>
+        )}
+        {status === 'idle' && comments.length === 0 && (
+          <li className="text-xs text-gray-500 dark:text-gray-400">
+            No comments yet. Be the first.
+          </li>
+        )}
+        {comments.map((c) => (
+          <li
+            key={c.id}
+            className="rounded border border-[color:var(--color-paper-line)] dark:border-gray-800 p-3 bg-[color:var(--color-paper-raised)] dark:bg-gray-900"
+          >
+            <div className="flex items-baseline justify-between gap-2 mb-1">
+              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                {c.author_name?.trim() || 'Anonymous'}
+              </span>
+              <time
+                dateTime={c.created_at}
+                className="text-[11px] text-gray-500 dark:text-gray-400"
+              >
+                {new Date(c.created_at).toLocaleString()}
+              </time>
+            </div>
+            <p className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap">
+              {c.body}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }
