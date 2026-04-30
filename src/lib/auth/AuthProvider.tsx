@@ -9,11 +9,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true
+    // Subscribe BEFORE getSession() so we never miss the cold-start
+    // event Supabase emits as the cached session is rehydrated. If
+    // that event lands first, `subscriptionFired` short-circuits the
+    // later getSession() resolution so a slow/cached round-trip can't
+    // overwrite a fresher state with stale data.
+    let subscriptionFired = false
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return
+      subscriptionFired = true
+      setState(
+        session
+          ? { status: 'authenticated', user: { id: session.user.id, email: session.user.email ?? '' } }
+          : { status: 'unauthenticated' },
+      )
+    })
 
     supabase.auth
       .getSession()
       .then(({ data }) => {
-        if (!mounted) return
+        if (!mounted || subscriptionFired) return
         setState(
           data.session
             ? { status: 'authenticated', user: { id: data.session.user.id, email: data.session.user.email ?? '' } }
@@ -23,21 +41,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .catch(() => {
         // A transient network error on cold load must not leave the app
         // wedged in `'loading'`. Fall through to unauthenticated so the
-        // sign-in screen renders; `onAuthStateChange` below will still
+        // sign-in screen renders; the subscription above will still
         // upgrade us to authenticated if a cached session resolves later.
-        if (!mounted) return
+        if (!mounted || subscriptionFired) return
         setState({ status: 'unauthenticated' })
       })
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setState(
-        session
-          ? { status: 'authenticated', user: { id: session.user.id, email: session.user.email ?? '' } }
-          : { status: 'unauthenticated' },
-      )
-    })
 
     return () => {
       mounted = false

@@ -3,13 +3,9 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { SharedProjectView } from '../components/shared/SharedProjectView'
 import * as shareTokens from '../lib/shareTokens'
-import * as loadOffice from '../lib/offices/loadOfficeById'
 
 vi.mock('../lib/shareTokens', () => ({
   resolveShareToken: vi.fn(),
-}))
-vi.mock('../lib/offices/loadOfficeById', () => ({
-  loadOfficeById: vi.fn(),
 }))
 
 function mount() {
@@ -24,7 +20,6 @@ function mount() {
 
 beforeEach(() => {
   vi.mocked(shareTokens.resolveShareToken).mockReset()
-  vi.mocked(loadOffice.loadOfficeById).mockReset()
 })
 
 describe('SharedProjectView', () => {
