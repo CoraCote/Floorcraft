@@ -53,6 +53,50 @@ import { useViewportNarrow, BREAKPOINT } from '../../hooks/useViewportNarrow'
 
 type SortColumn = 'name' | 'department' | 'title' | 'seat' | 'status'
 type SortDir = 'asc' | 'desc'
+/**
+ * Columns the user can hide from the table. `name` is intentionally
+ * excluded — it's the row's identity, hiding it would leave the row
+ * unreadable. Persisted as a Set in localStorage; default = nothing
+ * hidden.
+ */
+type ToggleableColumn = 'department' | 'title' | 'days' | 'seat' | 'status'
+const TOGGLEABLE_COLUMNS: Array<{ key: ToggleableColumn; label: string }> = [
+  { key: 'department', label: 'Department' },
+  { key: 'title', label: 'Title' },
+  { key: 'days', label: 'Days' },
+  { key: 'seat', label: 'Seat' },
+  { key: 'status', label: 'Status' },
+]
+const HIDDEN_COLUMNS_STORAGE_KEY = 'floorcraft.roster.hiddenColumns'
+function readHiddenColumnsFromStorage(): Set<ToggleableColumn> {
+  try {
+    const raw = localStorage.getItem(HIDDEN_COLUMNS_STORAGE_KEY)
+    if (!raw) return new Set()
+    const arr = JSON.parse(raw) as unknown
+    if (!Array.isArray(arr)) return new Set()
+    const allowed = new Set(TOGGLEABLE_COLUMNS.map((c) => c.key))
+    const out = new Set<ToggleableColumn>()
+    for (const k of arr) {
+      if (typeof k === 'string' && allowed.has(k as ToggleableColumn)) {
+        out.add(k as ToggleableColumn)
+      }
+    }
+    return out
+  } catch {
+    return new Set()
+  }
+}
+function writeHiddenColumnsToStorage(hidden: Set<ToggleableColumn>): void {
+  try {
+    localStorage.setItem(
+      HIDDEN_COLUMNS_STORAGE_KEY,
+      JSON.stringify([...hidden]),
+    )
+  } catch {
+    // Private mode / disabled storage — the in-memory state still
+    // applies for this session.
+  }
+}
 // Two display modes for the roster. The default table is great for dense
 // spreadsheet-style editing; cards are more scannable on wide screens and
 // feel closer to "Who's in the office?" posters on a wall.
@@ -399,6 +443,45 @@ export function RosterPage() {
   // the viewport coordinates we compute on open.
   const [moreFiltersOpen, setMoreFiltersOpen] = useState(false)
   const moreFiltersRef = useRef<HTMLDivElement>(null)
+
+  // Custom-columns popover. The set of *hidden* column keys persists
+  // per-browser in localStorage so a user with a narrow screen who
+  // hides Title + Days keeps that preference across sessions. Hidden
+  // never includes 'name' — the name column is the row identity.
+  const [hiddenColumns, setHiddenColumns] = useState<Set<ToggleableColumn>>(
+    () => readHiddenColumnsFromStorage(),
+  )
+  function toggleColumn(key: ToggleableColumn) {
+    setHiddenColumns((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      writeHiddenColumnsToStorage(next)
+      return next
+    })
+  }
+  const [columnsMenuOpen, setColumnsMenuOpen] = useState(false)
+  const columnsMenuRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!columnsMenuOpen) return
+    function onPointer(e: MouseEvent) {
+      if (
+        columnsMenuRef.current &&
+        !columnsMenuRef.current.contains(e.target as Node)
+      ) {
+        setColumnsMenuOpen(false)
+      }
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setColumnsMenuOpen(false)
+    }
+    document.addEventListener('mousedown', onPointer)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onPointer)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [columnsMenuOpen])
   useEffect(() => {
     if (!moreFiltersOpen) return
     function onPointer(e: MouseEvent) {
@@ -1310,6 +1393,59 @@ export function RosterPage() {
           filters are live, so a narrowed list never feels mysterious when
           the popover is closed.
         */}
+        {/* Columns popover. Lets the operator hide non-essential columns
+            on a narrow screen (or for an export-friendly view).
+            Selection persists per-browser in localStorage; the Name
+            column is the row's identity and is intentionally non-
+            hideable. */}
+        <div className="relative" ref={columnsMenuRef}>
+          <button
+            type="button"
+            onClick={() => setColumnsMenuOpen((o) => !o)}
+            className={`flex items-center gap-1.5 px-2 py-1.5 text-sm border rounded ${
+              hiddenColumns.size > 0
+                ? 'border-[color:var(--color-blueprint)] bg-[color:var(--color-blueprint-soft)] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:opacity-90'
+                : 'border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50'
+            }`}
+            aria-haspopup="menu"
+            aria-expanded={columnsMenuOpen}
+            title="Columns"
+          >
+            Columns
+            {hiddenColumns.size > 0 ? ` (-${hiddenColumns.size})` : ''}
+          </button>
+          {columnsMenuOpen && (
+            <div
+              role="menu"
+              aria-label="Columns"
+              className="absolute right-0 mt-1 w-[200px] bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded shadow-lg z-30 p-2"
+            >
+              <p className="px-2 py-1 text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                Show columns
+              </p>
+              {TOGGLEABLE_COLUMNS.map((col) => {
+                const checked = !hiddenColumns.has(col.key)
+                return (
+                  <label
+                    key={col.key}
+                    className="flex items-center gap-2 px-2 py-1 text-sm text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800 rounded cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleColumn(col.key)}
+                      aria-label={`Show ${col.label} column`}
+                    />
+                    <span className={checked ? '' : 'text-gray-400 dark:text-gray-500'}>
+                      {col.label}
+                    </span>
+                  </label>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
         <div className="relative" ref={moreFiltersRef}>
           <button
             type="button"
@@ -1816,7 +1952,13 @@ export function RosterPage() {
                 { key: 'days' as const, label: 'Days', sortable: false },
                 { key: 'seat' as const, label: 'Seat', sortable: true },
                 { key: 'status' as const, label: 'Status', sortable: true },
-              ].map((col) => (
+              ]
+                .filter(
+                  (col) =>
+                    col.key === 'name' ||
+                    !hiddenColumns.has(col.key as ToggleableColumn),
+                )
+                .map((col) => (
                 <th
                   key={col.key}
                   onClick={() => col.sortable && handleSort(col.key as SortColumn)}
@@ -1957,94 +2099,104 @@ export function RosterPage() {
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-3 align-middle text-gray-600 dark:text-gray-300">
-                  <InlineEditCell>
-                    {canEdit ? (
-                      <InlineText
-                        value={emp.department ?? ''}
-                        onCommit={(v) => updateEmployee(emp.id, { department: v || null })}
-                        placeholder="—"
-                        listId="roster-dept-list"
-                        canEdit={canEdit}
-                        renderDisplay={(value) => (
-                          <DepartmentChip
-                            department={value || null}
-                            color={
-                              value
-                                ? departmentColors[value] ?? getDepartmentColor(value)
-                                : null
-                            }
-                          />
-                        )}
-                      />
-                    ) : (
-                      <DepartmentChip
-                        department={emp.department}
-                        color={
-                          emp.department
-                            ? departmentColors[emp.department] ??
-                              getDepartmentColor(emp.department)
-                            : null
-                        }
-                      />
-                    )}
-                  </InlineEditCell>
-                </td>
-                <td className="px-4 py-3 align-middle text-gray-600 dark:text-gray-300">
-                  <InlineEditCell>
-                    <InlineText
-                      value={emp.title ?? ''}
-                      onCommit={(v) => updateEmployee(emp.id, { title: v || null })}
-                      placeholder="—"
-                      canEdit={canEdit}
-                    />
-                  </InlineEditCell>
-                </td>
-                <td className="px-4 py-3 align-middle">
-                  <OfficeDays days={emp.officeDays} todayLabel={todayLabel} />
-                </td>
-                <td className="px-4 py-3 align-middle text-gray-600 dark:text-gray-300">
-                  <SeatCell
-                    floorName={emp.floorId ? floorMap[emp.floorId] ?? null : null}
-                    seatLabel={
-                      emp.seatId ? seatLabelMap[emp.seatId] ?? emp.seatId.slice(0, 4) : null
-                    }
-                    onJump={emp.seatId && emp.floorId ? () => jumpToSeat(emp) : null}
-                    onAssign={
-                      canEdit
-                        ? () => setSeatPicker({ mode: 'single', employeeId: emp.id })
-                        : null
-                    }
-                  />
-                </td>
-                <td className="px-4 py-3 align-middle">
-                  <div className="flex items-center gap-1.5">
-                    {canEdit ? (
-                      // The select keeps its inline-edit behaviour; the
-                      // colored StatusPill is the read-mode sibling that
-                      // renders behind it at viewer role.
-                      <InlineEditCell hidePencil>
-                        <select
-                          value={emp.status}
-                          onChange={(e) =>
-                            handleRowSetStatus(emp.id, e.target.value as EmployeeStatus)
+                {!hiddenColumns.has('department') && (
+                  <td className="px-4 py-3 align-middle text-gray-600 dark:text-gray-300">
+                    <InlineEditCell>
+                      {canEdit ? (
+                        <InlineText
+                          value={emp.department ?? ''}
+                          onCommit={(v) => updateEmployee(emp.id, { department: v || null })}
+                          placeholder="—"
+                          listId="roster-dept-list"
+                          canEdit={canEdit}
+                          renderDisplay={(value) => (
+                            <DepartmentChip
+                              department={value || null}
+                              color={
+                                value
+                                  ? departmentColors[value] ?? getDepartmentColor(value)
+                                  : null
+                              }
+                            />
+                          )}
+                        />
+                      ) : (
+                        <DepartmentChip
+                          department={emp.department}
+                          color={
+                            emp.department
+                              ? departmentColors[emp.department] ??
+                                getDepartmentColor(emp.department)
+                              : null
                           }
-                          className="text-xs px-1.5 py-1 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded bg-[color:var(--color-paper-raised)] dark:bg-gray-900 focus:outline-none focus:ring-1 focus:ring-[color:var(--color-blueprint)]"
-                          aria-label={`Status for ${emp.name}`}
-                        >
-                          {EMPLOYEE_STATUSES.map((s) => (
-                            <option key={s} value={s}>{s}</option>
-                          ))}
-                        </select>
-                      </InlineEditCell>
-                    ) : (
-                      <StatusPill status={emp.status} />
-                    )}
-                    <PendingStatusIndicator employee={emp} />
-                    <EndingSoonBadge endDate={emp.endDate} />
-                    <DepartingSoonBadge departureDate={emp.departureDate} />
-                  </div>
-                </td>
+                        />
+                      )}
+                    </InlineEditCell>
+                  </td>
+                )}
+                {!hiddenColumns.has('title') && (
+                  <td className="px-4 py-3 align-middle text-gray-600 dark:text-gray-300">
+                    <InlineEditCell>
+                      <InlineText
+                        value={emp.title ?? ''}
+                        onCommit={(v) => updateEmployee(emp.id, { title: v || null })}
+                        placeholder="—"
+                        canEdit={canEdit}
+                      />
+                    </InlineEditCell>
+                  </td>
+                )}
+                {!hiddenColumns.has('days') && (
+                  <td className="px-4 py-3 align-middle">
+                    <OfficeDays days={emp.officeDays} todayLabel={todayLabel} />
+                  </td>
+                )}
+                {!hiddenColumns.has('seat') && (
+                  <td className="px-4 py-3 align-middle text-gray-600 dark:text-gray-300">
+                    <SeatCell
+                      floorName={emp.floorId ? floorMap[emp.floorId] ?? null : null}
+                      seatLabel={
+                        emp.seatId ? seatLabelMap[emp.seatId] ?? emp.seatId.slice(0, 4) : null
+                      }
+                      onJump={emp.seatId && emp.floorId ? () => jumpToSeat(emp) : null}
+                      onAssign={
+                        canEdit
+                          ? () => setSeatPicker({ mode: 'single', employeeId: emp.id })
+                          : null
+                      }
+                    />
+                  </td>
+                )}
+                {!hiddenColumns.has('status') && (
+                  <td className="px-4 py-3 align-middle">
+                    <div className="flex items-center gap-1.5">
+                      {canEdit ? (
+                        // The select keeps its inline-edit behaviour; the
+                        // colored StatusPill is the read-mode sibling that
+                        // renders behind it at viewer role.
+                        <InlineEditCell hidePencil>
+                          <select
+                            value={emp.status}
+                            onChange={(e) =>
+                              handleRowSetStatus(emp.id, e.target.value as EmployeeStatus)
+                            }
+                            className="text-xs px-1.5 py-1 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded bg-[color:var(--color-paper-raised)] dark:bg-gray-900 focus:outline-none focus:ring-1 focus:ring-[color:var(--color-blueprint)]"
+                            aria-label={`Status for ${emp.name}`}
+                          >
+                            {EMPLOYEE_STATUSES.map((s) => (
+                              <option key={s} value={s}>{s}</option>
+                            ))}
+                          </select>
+                        </InlineEditCell>
+                      ) : (
+                        <StatusPill status={emp.status} />
+                      )}
+                      <PendingStatusIndicator employee={emp} />
+                      <EndingSoonBadge endDate={emp.endDate} />
+                      <DepartingSoonBadge departureDate={emp.departureDate} />
+                    </div>
+                  </td>
+                )}
                 <td className="px-4 py-3 align-middle relative">
                   {/*
                     For viewers, the row-action menu still has value because
@@ -2094,7 +2246,14 @@ export function RosterPage() {
             })()}
             {sorted.length === 0 && (
               <tr>
-                <td colSpan={canEdit ? 8 : 7} className="px-4 py-12">
+                <td
+                  colSpan={
+                    // Always-rendered columns: name + actions = 2; checkbox if canEdit;
+                    // toggleable columns minus hidden = 5 - hiddenColumns.size.
+                    (canEdit ? 1 : 0) + 2 + (TOGGLEABLE_COLUMNS.length - hiddenColumns.size)
+                  }
+                  className="px-4 py-12"
+                >
                   <RosterEmptyState
                     filtered={hasAnyFilter}
                     hasAnyEmployees={allEmployees.length > 0}
