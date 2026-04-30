@@ -18,6 +18,7 @@ import {
 } from '../../lib/offices/officeRepository'
 import { buildDemoOfficePayload } from '../../lib/demo/createDemoOffice'
 import { ConfirmDialog } from '../editor/ConfirmDialog'
+import { CreateOfficeModal } from './CreateOfficeModal'
 import { OfficeCard } from './OfficeCard'
 import type { ThumbnailElement } from './OfficeThumbnail'
 import type { Team } from '../../types/team'
@@ -407,19 +408,22 @@ export function TeamHomePage() {
     return { floors, desks, assigned, employees, occupancyPct }
   }, [officeStats])
 
-  async function onNew() {
+  // Modal-state for the rebuilt "name this office" flow. The mode tag
+  // tells the submit handler whether to land in the editor (`new`) or
+  // the roster with `?import=csv` queued (`import`). Replaces the
+  // previous `window.prompt()` calls — native prompts swap Cancel / OK
+  // button order across OSes, can't be themed, can't show validation,
+  // and visually shatter the Drafting Studio identity at the most
+  // important conversion moment.
+  const [createModal, setCreateModal] = useState<
+    | { mode: 'new'; defaultName: string }
+    | { mode: 'import'; defaultName: string }
+    | null
+  >(null)
+
+  function onNew() {
     if (!team || session.status !== 'authenticated') return
-    const suggested = nextOfficeName(offices)
-    const input = window.prompt('Name this office:', suggested)
-    if (input === null) return
-    const name = input.trim() || suggested
-    setCreating(true)
-    try {
-      const created = await createOffice(team.id, name)
-      navigate(`/t/${team.slug}/o/${created.slug}/map`)
-    } finally {
-      setCreating(false)
-    }
+    setCreateModal({ mode: 'new', defaultName: nextOfficeName(offices) })
   }
 
   /**
@@ -437,19 +441,22 @@ export function TeamHomePage() {
    * (backup format) — for now a "blank office + people CSV" is the
    * common case and ships the button as a real working action.
    */
-  async function onImport() {
+  function onImport() {
     if (!team || session.status !== 'authenticated') return
-    const suggested = nextOfficeName(offices)
-    const input = window.prompt(
-      "Name this office. We'll open the CSV import dialog after it's created so you can paste or drop your employee list.",
-      suggested,
-    )
-    if (input === null) return
-    const name = input.trim() || suggested
+    setCreateModal({ mode: 'import', defaultName: nextOfficeName(offices) })
+  }
+
+  async function handleCreateSubmit(name: string) {
+    if (!team || !createModal) return
     setCreating(true)
     try {
       const created = await createOffice(team.id, name)
-      navigate(`/t/${team.slug}/o/${created.slug}/roster?import=csv`)
+      const path =
+        createModal.mode === 'import'
+          ? `/t/${team.slug}/o/${created.slug}/roster?import=csv`
+          : `/t/${team.slug}/o/${created.slug}/map`
+      setCreateModal(null)
+      navigate(path)
     } finally {
       setCreating(false)
     }
@@ -946,6 +953,33 @@ export function TeamHomePage() {
               if (deleting) return
               setPendingDelete(null)
             }}
+          />
+        )}
+
+        {/* Create-office modal — same primitive serves the "+ New
+            office" and "Import" header actions; the mode tag tells the
+            submit handler where to navigate after the office is
+            created. Replaces two `window.prompt()` calls from the
+            pre-Wave-21 flow.
+            Conditionally rendered (rather than passing `open` to a
+            persistently-mounted modal) so each open is a fresh mount
+            and `useState(defaultName)` always reads the current
+            suggested name. */}
+        {createModal && (
+          <CreateOfficeModal
+            onClose={() => {
+              if (creating) return
+              setCreateModal(null)
+            }}
+            defaultName={createModal.defaultName}
+            title={createModal.mode === 'import' ? 'Import a roster' : 'New office'}
+            description={
+              createModal.mode === 'import'
+                ? "We'll create the office and open the CSV import dialog so you can paste or drop your employee list."
+                : undefined
+            }
+            submitLabel={createModal.mode === 'import' ? 'Create and open import' : 'Create office'}
+            onSubmit={handleCreateSubmit}
           />
         )}
       </div>

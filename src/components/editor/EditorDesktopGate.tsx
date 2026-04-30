@@ -26,6 +26,9 @@ import { MonitorSmartphone, ArrowLeft, Users } from 'lucide-react'
  */
 export function EditorDesktopGate() {
   const { teamSlug, officeSlug } = useParams<{ teamSlug: string; officeSlug: string }>()
+  // Wave 21 (#180): the threshold dropped from 1024 (lg) to 768 (md)
+  // so iPad portrait + Surface portrait + most tablets render the
+  // editor. The gate now only fires on actual phones.
 
   return (
     <div className="flex-1 flex items-center justify-center bg-[color:var(--color-paper)] dark:bg-gray-950 px-4 py-10 overflow-y-auto">
@@ -38,12 +41,13 @@ export function EditorDesktopGate() {
           <MonitorSmartphone size={22} aria-hidden="true" />
         </div>
         <h1 className="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-100 text-center">
-          Open this on a larger screen
+          Open this on a tablet or desktop
         </h1>
         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 text-center">
-          The Floorcraft editor is built for displays at least 1024 pixels
-          wide. Sidebars and the canvas need the room to breathe — open
-          this office on a desktop or wider tablet for the full experience.
+          The Floorcraft editor needs at least a 768-pixel-wide screen so
+          the canvas and side panels have room to breathe. Phones don't
+          have the real estate for the floor-plan tools — open this on
+          an iPad, Surface, or laptop for the full experience.
         </p>
 
         <div className="mt-5 grid gap-2">

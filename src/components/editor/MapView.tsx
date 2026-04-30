@@ -62,7 +62,16 @@ export function MapView() {
   // multi-paragraph rationale. We keep presentation mode (hosted
   // at the same route) untouched: presenters might cast from a phone
   // and shouldn't lose their slides.
-  const isNarrow = useViewportNarrow(BREAKPOINT.lg)
+  // Wave 21 hard-gate threshold relaxed: 1024 (lg) → 768 (md). The
+  // previous lg-cutoff blocked iPad portrait (768/810 px), Surface
+  // portrait, and most Android tablets — devices where read-only
+  // viewing of a finished plan (walk-throughs, all-hands,
+  // on-floor wayfinding) is genuinely useful. Below 768 the layout
+  // truly breaks (sidebar widths exceed canvas width even with both
+  // collapsed), so the gate stays for phones; tablet operators get
+  // the full editor and can collapse the side panels via the existing
+  // chevrons in PR #177.
+  const isNarrow = useViewportNarrow(BREAKPOINT.md)
 
   useEffect(() => {
     const floorId = searchParams.get('floor')

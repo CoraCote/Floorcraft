@@ -482,10 +482,22 @@ export function CSVImportDialog() {
       if (selected.has(idx + 1)) chosenRows.push(r)
     })
 
-    const { valid, skipped, warnings } = validateImportRows(chosenRows, existingReduced)
+    // Wave 21 (#180) — re-snapshot the live employees map at commit
+    // time. The `existingReduced` memo above is keyed on `step`, so a
+    // teammate adding a row (or the user editing the roster in another
+    // tab) while the preview is open would not invalidate the snapshot
+    // — duplicate-email rows could slip through and a re-import could
+    // silently create double rows. Re-validating against the live map
+    // catches anything that landed during the preview session.
+    const liveExisting = useEmployeeStore.getState().employees
+    const liveReduced: typeof existingReduced = {}
+    for (const [id, e] of Object.entries(liveExisting)) {
+      liveReduced[id] = { id, name: e.name, email: e.email || null }
+    }
+    const { valid, skipped, warnings } = validateImportRows(chosenRows, liveReduced)
     const { imported } = importEmployees({
       valid,
-      existing: existingReduced,
+      existing: liveReduced,
       addEmployee: addEmployee as never,
       updateEmployee,
     })

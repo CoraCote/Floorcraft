@@ -71,9 +71,6 @@ describe('TeamHomePage', () => {
       { id: 'o1', slug: 'hq', name: 'HQ', updated_at: '2026-04-20T00:00:00Z', is_private: false },
     ])
     createOffice.mockResolvedValue({ id: 'o2', slug: 'hq-2', name: 'New office 1' })
-    // onNew prompts for a name; stub `window.prompt` to auto-accept the
-    // suggested default so the test doesn't need to interact with a modal.
-    vi.spyOn(window, 'prompt').mockImplementation((_msg, def) => def ?? '')
     render(
       <MemoryRouter initialEntries={['/t/acme']}>
         <Routes>
@@ -83,7 +80,11 @@ describe('TeamHomePage', () => {
       </MemoryRouter>,
     )
     await screen.findByText('HQ')
-    fireEvent.click(screen.getByRole('button', { name: /new office/i }))
+    // Wave 21 (#180): the legacy `window.prompt()` flow was replaced
+    // with `CreateOfficeModal`. Clicking "+ New office" now opens the
+    // modal; submitting the modal form is what fires `createOffice`.
+    fireEvent.click(screen.getByRole('button', { name: /^new office$/i }))
+    fireEvent.click(await screen.findByRole('button', { name: /^create office$/i }))
     await waitFor(() => expect(createOffice).toHaveBeenCalled())
     expect(await screen.findByText('map-view')).toBeInTheDocument()
   })
