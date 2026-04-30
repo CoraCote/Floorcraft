@@ -21,7 +21,13 @@ export interface SeatOption {
   floorId: string
   /** Floor display name, used in the option's secondary line. */
   floorName: string
-  /** User-facing seat label (`element.deskId`, e.g. "D-101"). */
+  /**
+   * User-facing seat label. Prefers a non-empty `element.label` (the
+   * nickname users set in the Properties panel — e.g. "Sara's old
+   * corner desk") over the auto-derived `element.deskId` ("D-101").
+   * Falls back to deskId when no label override exists. Field name
+   * stays `deskId` for caller stability.
+   */
   deskId: string
   /** Element subtype — drives the icon/badge in the picker UI. */
   type: 'desk' | 'hot-desk' | 'workstation' | 'private-office'
@@ -81,6 +87,7 @@ function toSeatOption(
   neighborhoods: Neighborhood[],
 ): SeatOption | null {
   const neighborhoodName = findEnclosingNeighborhood(el, neighborhoods)
+  const labelOverride = el.label?.trim() || null
 
   if (isDeskElement(el)) {
     const occName = el.assignedEmployeeId ? nameOf(employees, el.assignedEmployeeId) : null
@@ -88,7 +95,7 @@ function toSeatOption(
       elementId: el.id,
       floorId,
       floorName,
-      deskId: el.deskId || '(unnamed seat)',
+      deskId: labelOverride || el.deskId || '(unnamed seat)',
       type: el.type,
       capacity: 1,
       occupied: el.assignedEmployeeId ? 1 : 0,
@@ -102,7 +109,7 @@ function toSeatOption(
       elementId: el.id,
       floorId,
       floorName,
-      deskId: el.deskId || '(unnamed bench)',
+      deskId: labelOverride || el.deskId || '(unnamed bench)',
       type: 'workstation',
       capacity: el.positions,
       occupied: filled.length,
@@ -115,7 +122,7 @@ function toSeatOption(
       elementId: el.id,
       floorId,
       floorName,
-      deskId: el.deskId || '(unnamed office)',
+      deskId: labelOverride || el.deskId || '(unnamed office)',
       type: 'private-office',
       capacity: el.capacity,
       occupied: el.assignedEmployeeIds.length,

@@ -1448,7 +1448,18 @@ export function PropertiesPanel() {
             value={el.label}
             disabled={lockedDisabled}
             onChange={(e) => update({ label: e.target.value })}
+            placeholder={isSeatHolder ? 'e.g. "Sara\'s old corner desk"' : undefined}
           />
+          {isSeatHolder && (
+            // Assignable elements use this Label as the human nickname
+            // that shows in the roster's Seat column. Empty label =
+            // roster falls back to the auto-derived deskId ("D-101").
+            // The hint nudges first-time users toward the rename
+            // surface they often go hunting for.
+            <p className="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400">
+              Shown in the roster instead of the seat ID when set.
+            </p>
+          )}
         </div>
         <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
           <input

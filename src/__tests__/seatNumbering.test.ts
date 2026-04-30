@@ -12,7 +12,7 @@ import type {
 function desk(deskId: string, id = nanoid()): DeskElement {
   return {
     id, type: 'desk', x: 0, y: 0, width: 60, height: 40, rotation: 0,
-    locked: false, groupId: null, zIndex: 0, label: 'Desk', visible: true,
+    locked: false, groupId: null, zIndex: 0, label: '', visible: true,
     style: { fill: '#fff', stroke: '#000', strokeWidth: 2, opacity: 1 },
     deskId, assignedEmployeeId: null, capacity: 1,
   }
@@ -21,7 +21,7 @@ function desk(deskId: string, id = nanoid()): DeskElement {
 function workstation(deskId: string, id = nanoid()): WorkstationElement {
   return {
     id, type: 'workstation', x: 0, y: 0, width: 120, height: 40, rotation: 0,
-    locked: false, groupId: null, zIndex: 0, label: 'Workstation', visible: true,
+    locked: false, groupId: null, zIndex: 0, label: '', visible: true,
     style: { fill: '#fff', stroke: '#000', strokeWidth: 2, opacity: 1 },
     deskId, positions: 4, assignedEmployeeIds: [null, null, null, null],
   }
@@ -30,7 +30,7 @@ function workstation(deskId: string, id = nanoid()): WorkstationElement {
 function privateOffice(deskId: string, id = nanoid()): PrivateOfficeElement {
   return {
     id, type: 'private-office', x: 0, y: 0, width: 120, height: 120, rotation: 0,
-    locked: false, groupId: null, zIndex: 0, label: 'Private Office', visible: true,
+    locked: false, groupId: null, zIndex: 0, label: '', visible: true,
     style: { fill: '#fff', stroke: '#000', strokeWidth: 2, opacity: 1 },
     deskId, capacity: 1, assignedEmployeeIds: [],
   }

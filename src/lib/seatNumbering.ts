@@ -39,19 +39,26 @@ export function nextSeatNumber(existing: Record<string, CanvasElement>): string 
 /**
  * Return the human-readable label for an employee's assigned seat.
  *
- * `Employee.seatId` stores the canvas element id (a nanoid), which is
- * meaningless to users. The element's `deskId` is the human label —
- * this helper looks it up. If the seat element has disappeared (stale
- * references from an older save, mid-delete race), we fall back to a
- * short truncation of the id so the UI still says *something*.
+ * Resolution order:
+ *   1. `el.label` if non-empty — the free-form nickname operators set in
+ *      the Properties → Identity panel ("Sara's old corner desk").
+ *   2. `el.deskId` — the auto-derived stable identifier ("D-101", "12").
+ *   3. A truncated raw id — fallback when the element is missing
+ *      (stale reference, mid-delete race).
+ *
+ * `label` overrides `deskId` because that's the rename surface. The
+ * deskId stays the canonical stable identifier for CSV columns, audit
+ * logs, and URL params; the rename is purely a display concern.
  */
 export function getSeatLabel(
   seatId: string,
   elements: Record<string, CanvasElement>,
 ): string {
   const el = elements[seatId]
-  if (el && isAssignableElement(el) && el.deskId.trim().length > 0) {
-    return el.deskId
+  if (el && isAssignableElement(el)) {
+    const label = el.label?.trim()
+    if (label) return label
+    if (el.deskId.trim().length > 0) return el.deskId
   }
   // Unknown/stale seat — show a truncated id rather than the full nanoid
   // so it's still copy-pasteable but doesn't eat the whole column.

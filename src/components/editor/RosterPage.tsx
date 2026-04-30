@@ -428,11 +428,14 @@ export function RosterPage() {
     const m: Record<string, string> = {}
     for (const f of floors) {
       for (const el of Object.values(f.elements)) {
-        // Keep the check loose — any assignable element type carries
-        // `deskId`. The `getSeatLabel` helper centralises the type
-        // guarding; here we just copy the string when present.
+        // Prefer the user-set `label` nickname over the auto-derived
+        // `deskId` so a renamed seat shows in the roster + picker
+        // immediately. Mirrors `getSeatLabel` in `lib/seatNumbering`.
+        const label = (el as { label?: string }).label?.trim()
         const deskId = (el as { deskId?: string }).deskId
-        if (typeof deskId === 'string' && deskId.trim().length > 0) {
+        if (label) {
+          m[el.id] = label
+        } else if (typeof deskId === 'string' && deskId.trim().length > 0) {
           m[el.id] = deskId
         }
       }

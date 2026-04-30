@@ -144,6 +144,23 @@ describe('listAvailableSeats', () => {
     expect(out.find((o) => o.elementId === 'outside')!.neighborhoodName).toBeNull()
   })
 
+  it('prefers a non-empty element.label over the deskId for the display label', () => {
+    const floors: Floor[] = [
+      {
+        id: 'f1',
+        name: 'Ground',
+        order: 0,
+        elements: {
+          d1: { ...desk('d1', 0, 0), label: "Sara's corner" } as unknown as CanvasElement,
+          d2: desk('d2', 50, 0),
+        },
+      },
+    ]
+    const out = listAvailableSeats(floors, {})
+    expect(out.find((o) => o.elementId === 'd1')!.deskId).toBe("Sara's corner")
+    expect(out.find((o) => o.elementId === 'd2')!.deskId).toBe('D-d2')
+  })
+
   it('skips non-assignable elements (walls, conference rooms, etc.)', () => {
     const wall: CanvasElement = {
       id: 'w1',
