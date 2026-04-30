@@ -1522,22 +1522,35 @@ export function CanvasStage() {
     }
     useSeatDragStore.getState().reset()
 
-    // Brief 3: OS file drop — accept image files as background-image
-    // (tracing underlay) elements. We delegate to `insertImageUnderlay`
-    // (in lib/underlay/insertImageUnderlay) so the toolbar action can
-    // share the same FileReader → element-create path. Multi-file
-    // drops only consume the first image; we silently ignore the rest
-    // so a drop of "plan.jpg + notes.txt" doesn't error.
+    // Brief 3: OS file drop — accept image files (v1) and PDF files
+    // (v2) as background-image (tracing underlay) elements. PDFs are
+    // rasterized via pdf.js to a PNG data URL, so the renderer never
+    // sees a PDF — it always gets an image. PDF.js + its worker are
+    // dynamic-imported so non-tracing users pay zero bundle cost.
+    // Multi-file drops only consume the first matching file; the
+    // rest are silently ignored so "plan.pdf + notes.txt" doesn't
+    // error.
     const files = e.dataTransfer.files
     if (files && files.length > 0) {
-      const image = Array.from(files).find((f) => f.type.startsWith('image/'))
-      if (image) {
+      const arr = Array.from(files)
+      const pdf = arr.find((f) => f.type === 'application/pdf')
+      if (pdf) {
         e.preventDefault()
-        void import('../../../lib/underlay/insertImageUnderlay').then(
-          ({ insertImageUnderlay }) => {
-            void insertImageUnderlay(image, pos.x, pos.y)
+        void import('../../../lib/underlay/insertPdfUnderlay').then(
+          ({ insertPdfUnderlay }) => {
+            void insertPdfUnderlay(pdf, pos.x, pos.y)
           },
         )
+      } else {
+        const image = arr.find((f) => f.type.startsWith('image/'))
+        if (image) {
+          e.preventDefault()
+          void import('../../../lib/underlay/insertImageUnderlay').then(
+            ({ insertImageUnderlay }) => {
+              void insertImageUnderlay(image, pos.x, pos.y)
+            },
+          )
+        }
       }
     }
   }, [stageX, stageY, stageScale, canEdit])

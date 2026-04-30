@@ -4,30 +4,81 @@ import { useUIStore } from '../../stores/uiStore'
 import { useToastStore } from '../../stores/toastStore'
 import type { BackgroundImageElement } from '../../types/elements'
 
+// 8 MB raw → ~10.7 MB after base64. The Postgres JSONB column has no
+// hard size limit, but Supabase's wire protocol practically caps a
+// single column write around 20 MB; surfacing an early "too big"
+// message beats a 502 mid-save.
+export const UNDERLAY_MAX_BYTES = 8 * 1024 * 1024
+
 /**
- * Insert an image file as a `background-image` underlay element on the
- * active floor, centered on (`x`, `y`) in canvas coordinates. The image
- * is read as a `data:` URL and stored inline in the element's
- * `storageUrl` — there is no Storage tier yet, so the rasterized
- * underlay travels with the office payload. Tradeoff documented in
- * the type's JSDoc.
+ * Insert a rasterized image (data URL or hosted URL) as a
+ * `background-image` underlay element on the active floor, centered
+ * on (`x`, `y`). Shared inner helper used by both the image-file path
+ * and the PDF-rasterization path; neither caller validates again
+ * because all the cross-cutting concerns (size cap, locked-by-default,
+ * negative zIndex, default 0.5 opacity, toast on insert) live here.
  *
- * The element is locked-by-default and assigned a *negative* zIndex so
- * it always renders behind any drawn-on elements. The user has to
- * unlock it explicitly to resize/reposition; for the trace-over-an-
- * architectural-plan flow that's the right default — accidentally
- * dragging the underlay would re-misalign every wall the user just drew.
- *
- * Width/height come from the image's natural pixel dimensions so the
- * imported image renders at 1:1. The user can resize via the corner
- * handles after unlocking, or via the Properties → Layout numerics.
- *
- * Bails (with a toast) on:
+ * The rasterized image travels inline in the office payload — there's
+ * no Storage tier yet. When that lands, the writer can upload + put a
+ * real URL in `storageUrl` without touching either caller.
+ */
+export function insertUnderlayFromDataUrl(args: {
+  dataUrl: string
+  width: number
+  height: number
+  label: string
+  /** Approximate byte size of the encoded payload, used for the size cap. */
+  byteSize: number
+  /** Canvas-space center coordinates. */
+  x: number
+  y: number
+}): boolean {
+  if (args.byteSize > UNDERLAY_MAX_BYTES) {
+    useToastStore.getState().push({
+      tone: 'error',
+      title: 'Underlay too large (max 8 MB). Compress and try again.',
+    })
+    return false
+  }
+  const element: BackgroundImageElement = {
+    id: nanoid(),
+    type: 'background-image',
+    x: args.x,
+    y: args.y,
+    width: args.width,
+    height: args.height,
+    rotation: 0,
+    locked: true,
+    groupId: null,
+    // zIndex below 0 puts the underlay below every newly-drawn
+    // element. Existing elements never have negative zIndex (they
+    // start at 1 via getMaxZIndex+1), so this guarantees the underlay
+    // is the bottom-most layer without iterating to find a "lowest".
+    zIndex: -1,
+    label: args.label,
+    visible: true,
+    style: { fill: '#fff', stroke: '#000', strokeWidth: 0, opacity: 1 },
+    storageUrl: args.dataUrl,
+    originalWidth: args.width,
+    originalHeight: args.height,
+    opacity: 0.5,
+  }
+  useElementsStore.getState().addElement(element)
+  useUIStore.getState().setSelectedIds([element.id])
+  useToastStore.getState().push({
+    tone: 'info',
+    title: 'Underlay added — locked by default. Unlock in Properties to move or resize.',
+  })
+  return true
+}
+
+/**
+ * File-side wrapper for the image path. Validates MIME, reads as a
+ * data URL, derives natural dimensions, then defers to
+ * `insertUnderlayFromDataUrl`. Bails (with a toast) on:
  *   - non-image MIME types
- *   - images > 8 MB raw — base64-encoding inflates by ~33% and the
- *     office payload column has a practical ~20 MB ceiling. Surfacing a
- *     clear "too large" message beats silently writing an unsavable row.
- *   - FileReader errors
+ *   - images > 8 MB raw — see `UNDERLAY_MAX_BYTES`
+ *   - FileReader / decode errors
  */
 export async function insertImageUnderlay(
   file: File,
@@ -41,11 +92,7 @@ export async function insertImageUnderlay(
     })
     return
   }
-  // 8 MB raw → ~10.7 MB after base64. The PostgreSQL JSONB row has no
-  // hard size limit but Supabase's wire protocol practically caps a
-  // single column write around 20 MB; surfacing an early "too big"
-  // message beats a 502 mid-save.
-  if (file.size > 8 * 1024 * 1024) {
+  if (file.size > UNDERLAY_MAX_BYTES) {
     useToastStore.getState().push({
       tone: 'error',
       title: 'Underlay too large (max 8 MB). Compress and try again.',
@@ -65,35 +112,14 @@ export async function insertImageUnderlay(
     return
   }
 
-  // zIndex below 0 puts the underlay below every newly-drawn element.
-  // Existing elements never have negative zIndex (they start at 1 via
-  // getMaxZIndex+1), so this guarantees the underlay is the bottom-most
-  // layer without iterating over the current set to find a "lowest".
-  const element: BackgroundImageElement = {
-    id: nanoid(),
-    type: 'background-image',
-    x,
-    y,
+  insertUnderlayFromDataUrl({
+    dataUrl,
     width: dims.width,
     height: dims.height,
-    rotation: 0,
-    locked: true,
-    groupId: null,
-    zIndex: -1,
     label: file.name.replace(/\.[^/.]+$/, ''),
-    visible: true,
-    style: { fill: '#fff', stroke: '#000', strokeWidth: 0, opacity: 1 },
-    storageUrl: dataUrl,
-    originalWidth: dims.width,
-    originalHeight: dims.height,
-    opacity: 0.5,
-  }
-
-  useElementsStore.getState().addElement(element)
-  useUIStore.getState().setSelectedIds([element.id])
-  useToastStore.getState().push({
-    tone: 'info',
-    title: 'Underlay added — locked by default. Unlock in Properties to move or resize.',
+    byteSize: file.size,
+    x,
+    y,
   })
 }
 
