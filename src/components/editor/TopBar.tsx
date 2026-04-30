@@ -31,6 +31,7 @@ import { TeamSwitcher } from '../team/TeamSwitcher'
 import { UserMenu } from '../team/UserMenu'
 import { ScaleSettingsPopover } from './ScaleSettingsPopover'
 import { ViewAsMenu } from './ViewAsMenu'
+import { EditorViewNav } from './EditorViewNav'
 import { ShareLinkDialog } from './ShareLinkDialog'
 import { PlanHealthPill } from './PlanHealthPill'
 
@@ -679,6 +680,14 @@ export function TopBar() {
           the User-guide row already inside UserMenu. The standalone
           ThemeToggle was also removed for the same reason; theme now
           has a single home inside UserMenu's Account section. */}
+
+      {/* Project-view nav — Map / Roster / Reports / Audit / Network /
+          Org chart. Lives in the persistent TopBar so navigating
+          between views doesn't move or hide the control. (It used to
+          ride on the FloorSwitcher row but FloorSwitcher only mounts
+          on /map; switching to Roster or Reports made the nav vanish
+          and reappear elsewhere.) */}
+      <EditorViewNav />
 
       {/* Owner-only "View as…" menu. Rendered to the left of the account
           avatar so it reads as an admin tool rather than part of the user's
