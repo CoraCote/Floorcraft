@@ -142,6 +142,51 @@ export async function addOfficeComment(args: {
 }
 
 /**
+ * Owner-side delete on a share comment. Calls the
+ * `delete_share_comment` SECURITY DEFINER RPC (migration 0016) which
+ * gates on `auth.uid()` + permission membership. Returns a
+ * discriminated union the caller can render — distinguishes
+ * "already gone" from "not allowed" so the UI can keep the row in
+ * place vs prompt re-auth.
+ */
+export async function deleteShareComment(
+  commentId: string,
+): Promise<
+  | { kind: 'ok' }
+  | {
+      kind: 'error'
+      reason: 'not_found' | 'forbidden' | 'not_authenticated' | 'unknown'
+      message: string
+    }
+> {
+  const { error } = await supabase.rpc('delete_share_comment', {
+    p_comment_id: commentId,
+  })
+  if (error) {
+    const msg = error.message ?? ''
+    if (msg.includes('not_found')) {
+      return { kind: 'error', reason: 'not_found', message: 'Already deleted.' }
+    }
+    if (msg.includes('forbidden')) {
+      return {
+        kind: 'error',
+        reason: 'forbidden',
+        message: "You don't have permission to delete this comment.",
+      }
+    }
+    if (msg.includes('not_authenticated')) {
+      return {
+        kind: 'error',
+        reason: 'not_authenticated',
+        message: 'Sign in to delete comments.',
+      }
+    }
+    return { kind: 'error', reason: 'unknown', message: msg || 'Something went wrong.' }
+  }
+  return { kind: 'ok' }
+}
+
+/**
  * List comments for a shared office via the bearer share token. Sorted
  * newest-first by the RPC; the caller can re-sort if it cares. Returns
  * `null` on an RPC error (typically a stale / revoked link) so the

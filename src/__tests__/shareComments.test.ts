@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
   addShareComment,
   addOfficeComment,
+  deleteShareComment,
   listShareComments,
 } from '../lib/shareComments'
 
@@ -165,5 +166,28 @@ describe('addOfficeComment', () => {
     const out = await addOfficeComment({ officeId: 'o', body: 'hi', authorName: '' })
     expect(out.kind).toBe('error')
     if (out.kind === 'error') expect(out.reason).toBe('not_authenticated')
+  })
+})
+
+describe('deleteShareComment', () => {
+  beforeEach(() => rpcMock.mockReset())
+
+  it('returns ok on success', async () => {
+    rpcMock.mockResolvedValue({ data: null, error: null })
+    const out = await deleteShareComment('c1')
+    expect(out.kind).toBe('ok')
+  })
+
+  it('maps not_found / forbidden / not_authenticated to typed reasons', async () => {
+    for (const [errMsg, reason] of [
+      ['not_found', 'not_found'],
+      ['forbidden', 'forbidden'],
+      ['not_authenticated', 'not_authenticated'],
+    ] as const) {
+      rpcMock.mockResolvedValue({ data: null, error: { message: errMsg } })
+      const out = await deleteShareComment('c1')
+      expect(out.kind).toBe('error')
+      if (out.kind === 'error') expect(out.reason).toBe(reason)
+    }
   })
 })

@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
-import { MessageSquare, Send } from 'lucide-react'
+import { MessageSquare, Send, Trash2 } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
 import { useProjectStore } from '../../../stores/projectStore'
 import { useSession } from '../../../lib/auth/AuthProvider'
+import { useToastStore } from '../../../stores/toastStore'
 import {
   addOfficeComment,
+  deleteShareComment,
   type ShareComment,
 } from '../../../lib/shareComments'
 
@@ -83,6 +85,44 @@ export function OfficeCommentsPanel() {
     setReply('')
   }
 
+  async function onDelete(commentId: string) {
+    // Optimistic remove. If the RPC fails (forbidden / network), we
+    // re-insert the row at its original index so the UI accurately
+    // reflects server state.
+    let removed: ShareComment | null = null
+    let removedIdx = -1
+    setComments((prev) => {
+      if (!prev) return prev
+      const idx = prev.findIndex((c) => c.id === commentId)
+      if (idx < 0) return prev
+      removed = prev[idx]
+      removedIdx = idx
+      const next = [...prev]
+      next.splice(idx, 1)
+      return next
+    })
+    const result = await deleteShareComment(commentId)
+    if (result.kind === 'error' && result.reason !== 'not_found') {
+      // Restore the row on real failure. `not_found` means the
+      // server already considers it gone, so the optimistic remove
+      // is correct.
+      if (removed && removedIdx >= 0) {
+        const r: ShareComment = removed
+        const idx = removedIdx
+        setComments((prev) => {
+          if (!prev) return [r]
+          const next = [...prev]
+          next.splice(idx, 0, r)
+          return next
+        })
+      }
+      useToastStore.getState().push({
+        tone: 'error',
+        title: result.message,
+      })
+    }
+  }
+
   if (comments === null) {
     return <p className="text-xs text-gray-500 dark:text-gray-400">Loading comments…</p>
   }
@@ -110,7 +150,7 @@ export function OfficeCommentsPanel() {
             return (
               <li
                 key={c.id}
-                className={`rounded border p-2 ${
+                className={`group relative rounded border p-2 ${
                   isOwnerReply
                     ? 'border-[color:var(--color-blueprint)]/40 bg-[color:var(--color-blueprint-soft)]/30'
                     : 'border-[color:var(--color-paper-line)] dark:border-gray-800'
@@ -127,17 +167,33 @@ export function OfficeCommentsPanel() {
                       </span>
                     )}
                   </span>
-                  <time
-                    dateTime={c.created_at}
-                    className="text-[10px] text-gray-500 dark:text-gray-400 flex-shrink-0"
-                  >
-                    {new Date(c.created_at).toLocaleString(undefined, {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: 'numeric',
-                      minute: '2-digit',
-                    })}
-                  </time>
+                  <span className="flex items-center gap-1 flex-shrink-0">
+                    <time
+                      dateTime={c.created_at}
+                      className="text-[10px] text-gray-500 dark:text-gray-400"
+                    >
+                      {new Date(c.created_at).toLocaleString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                      })}
+                    </time>
+                    {/* Delete affordance — hover/focus-revealed so the
+                        comment list stays calm when not being moderated.
+                        Server gates on permission so a viewer who somehow
+                        sees this won't actually delete; the UI just
+                        avoids advertising the option. */}
+                    <button
+                      type="button"
+                      onClick={() => onDelete(c.id)}
+                      className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 p-0.5 rounded"
+                      title="Delete comment"
+                      aria-label={`Delete comment by ${c.author_name?.trim() || 'Anonymous'}`}
+                    >
+                      <Trash2 size={11} aria-hidden="true" />
+                    </button>
+                  </span>
                 </div>
                 <p className="text-xs text-gray-700 dark:text-gray-200 whitespace-pre-wrap">
                   {c.body}
