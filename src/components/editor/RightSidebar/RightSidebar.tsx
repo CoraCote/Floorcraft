@@ -2,7 +2,9 @@ import { useId, useMemo, useRef, type KeyboardEvent, type ReactNode } from 'reac
 import { AlertTriangle, Compass, Users } from 'lucide-react'
 import { useInsightsStore } from '../../../stores/insightsStore'
 import { useUIStore } from '../../../stores/uiStore'
+import { useProjectStore } from '../../../stores/projectStore'
 import { useCan } from '../../../hooks/useCan'
+import { useShareCommentCount } from '../../../hooks/useShareCommentCount'
 import { CollapsibleSection } from '../LeftSidebar/CollapsibleSection'
 import { DevicesPanel } from './DevicesPanel'
 import { InsightsPanel } from './InsightsPanel'
@@ -43,6 +45,12 @@ type TabId = 'plan' | 'roster' | 'insights'
 export function RightSidebar() {
   const tab = useUIStore((s) => s.rightSidebarTab)
   const setTab = useUIStore((s) => s.setRightSidebarTab)
+  // Count badge for the Insights → Comments section header. Lifted
+  // here (rather than computed inside the panel) so the badge is
+  // visible even when the panel is collapsed — that's the whole
+  // point of an at-a-glance count.
+  const officeId = useProjectStore((s) => s.officeId)
+  const commentCount = useShareCommentCount(officeId)
 
   const insights = useInsightsStore((s) => s.insights)
   const badgeCount = useMemo(() => {
@@ -209,6 +217,16 @@ export function RightSidebar() {
               title="Comments"
               defaultOpen={false}
               storageKey="right-insights-comments"
+              trailing={
+                commentCount && commentCount > 0 ? (
+                  <span
+                    className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 text-[9px] font-bold text-white bg-[color:var(--color-blueprint-strong)] rounded-full"
+                    aria-label={`${commentCount} ${commentCount === 1 ? 'comment' : 'comments'}`}
+                  >
+                    <span aria-hidden="true">{commentCount}</span>
+                  </span>
+                ) : null
+              }
             >
               <div className="p-3">
                 <OfficeCommentsPanel />
