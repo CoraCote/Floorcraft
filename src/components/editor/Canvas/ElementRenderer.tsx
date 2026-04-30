@@ -35,6 +35,7 @@ import {
   isVideoBarElement,
   isBadgeReaderElement,
   isOutletElement,
+  isBackgroundImageElement,
   isITDevice,
   itLayerOf,
   type ConferenceRoomElement,
@@ -65,6 +66,7 @@ import { DisplayRenderer } from './DisplayRenderer'
 import { VideoBarRenderer } from './VideoBarRenderer'
 import { BadgeReaderRenderer } from './BadgeReaderRenderer'
 import { OutletRenderer } from './OutletRenderer'
+import { BackgroundImageRenderer } from './BackgroundImageRenderer'
 import { useCallback, useState, type ReactNode } from 'react'
 import type Konva from 'konva'
 import { snapToGrid, getSnappedPosition } from '../../../lib/geometry'
@@ -389,6 +391,13 @@ export function ElementRenderer() {
             return <PrinterRenderer element={el} />
           if (isWhiteboardElement(el))
             return <WhiteboardRenderer element={el} />
+          // Brief 3: image underlay used for tracing over an
+          // architectural plan. Locked-by-default at insert time so a
+          // stray drag doesn't displace the trace target. Renders
+          // beneath everything else by virtue of being assigned the
+          // floor's lowest zIndex on insert.
+          if (isBackgroundImageElement(el))
+            return <BackgroundImageRenderer element={el} />
           // IT/AV/Network/Power layer (M1) — non-assignable infrastructure
           // props. Each routes to its own renderer; like the furniture
           // catalog they each have a distinct silhouette so they can't

@@ -1391,6 +1391,13 @@ export function CanvasStage() {
       // the user a "+" cursor showing the drop is valid.
       e.dataTransfer.dropEffect = 'copy'
     }
+    // Brief 3: an OS file drag (image dragged in from the user's
+    // desktop) reports `Files` in `types`. Accept it here so the cursor
+    // shows "+" rather than "no-drop" before the drop completes.
+    if (e.dataTransfer.types.includes('Files')) {
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'copy'
+    }
   }, [canEdit, stageX, stageY, stageScale])
 
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
@@ -1514,6 +1521,25 @@ export function CanvasStage() {
       assignEmployee(empId, hitId, useFloorStore.getState().activeFloorId, slotIndex)
     }
     useSeatDragStore.getState().reset()
+
+    // Brief 3: OS file drop — accept image files as background-image
+    // (tracing underlay) elements. We delegate to `insertImageUnderlay`
+    // (in lib/underlay/insertImageUnderlay) so the toolbar action can
+    // share the same FileReader → element-create path. Multi-file
+    // drops only consume the first image; we silently ignore the rest
+    // so a drop of "plan.jpg + notes.txt" doesn't error.
+    const files = e.dataTransfer.files
+    if (files && files.length > 0) {
+      const image = Array.from(files).find((f) => f.type.startsWith('image/'))
+      if (image) {
+        e.preventDefault()
+        void import('../../../lib/underlay/insertImageUnderlay').then(
+          ({ insertImageUnderlay }) => {
+            void insertImageUnderlay(image, pos.x, pos.y)
+          },
+        )
+      }
+    }
   }, [stageX, stageY, stageScale, canEdit])
 
   return (

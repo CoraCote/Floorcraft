@@ -158,9 +158,24 @@ export interface TableElement extends BaseElement {
 
 export interface BackgroundImageElement extends BaseElement {
   type: 'background-image'
+  /**
+   * The actual image source. Originally meant for a Supabase Storage
+   * URL; for the v1 underlay-tracing flow (Brief 3) we store an inline
+   * `data:` URL since we have no storage tier yet. Field name kept for
+   * back-compat with any persisted payloads. Future: when Storage
+   * lands, switch the writer to upload + put a real URL here.
+   */
   storageUrl: string
   originalWidth: number
   originalHeight: number
+  /**
+   * Underlay opacity in [0, 1]. Defaults to 0.5 when undefined so an
+   * underlay imported on a pre-Wave payload still renders as a faded
+   * trace target rather than at full opacity (which would obscure the
+   * canvas drawing on top). The Properties panel exposes this as a
+   * 0–100% slider.
+   */
+  opacity?: number
 }
 
 // Assignable elements (have seats for employees)

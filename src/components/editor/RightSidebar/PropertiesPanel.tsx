@@ -92,6 +92,7 @@ import {
   isVideoBarElement,
   isBadgeReaderElement,
   isOutletElement,
+  isBackgroundImageElement,
   WALL_TYPES,
 } from '../../../types/elements'
 import { computeSeatPositions } from '../../../lib/seatLayout'
@@ -1698,6 +1699,35 @@ export function PropertiesPanel() {
           </div>
         </div>
       </Section>
+
+      {/* Brief 3: underlay-only controls. Opacity defaults to 0.5 in
+          insert and undefined-on-load via the renderer fallback, so
+          this slider always has a sensible starting position. */}
+      {isBackgroundImageElement(el) && (
+        <Section title="Underlay">
+          <div>
+            <label className={LABEL_CLASS}>
+              Opacity: {Math.round((el.opacity ?? 0.5) * 100)}%
+            </label>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={1}
+              value={Math.round((el.opacity ?? 0.5) * 100)}
+              disabled={lockedDisabled}
+              onChange={(e) => update({ opacity: Number(e.target.value) / 100 })}
+              className="w-full"
+              aria-label="Underlay opacity"
+            />
+          </div>
+          <p className="text-[11px] text-gray-500 dark:text-gray-400">
+            Drop an image on the canvas to add another underlay. Underlays
+            are locked by default — uncheck Visible above (or unlock to
+            move) once you&rsquo;re done tracing.
+          </p>
+        </Section>
+      )}
 
       {/* Wall-specific controls: thickness + dash pattern + semantic type. */}
       {isWallElement(el) && (
