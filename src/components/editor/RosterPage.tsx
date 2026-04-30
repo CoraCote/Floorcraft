@@ -14,6 +14,7 @@ import {
   LayoutGrid,
   List,
   Mail,
+  MapPin,
   MoreHorizontal,
   Pencil,
   Plus,
@@ -1734,6 +1735,11 @@ export function RosterPage() {
                   onToggleSelect={toggleRow}
                   onOpen={setDrawerId}
                   onJumpToSeat={jumpToSeat}
+                  onAssignSeat={
+                    canEdit
+                      ? (id) => setSeatPicker({ mode: 'single', employeeId: id })
+                      : null
+                  }
                   canEdit={canEdit}
                 />
               ))}
@@ -2901,6 +2907,7 @@ function PersonCardImpl({
   onToggleSelect,
   onOpen,
   onJumpToSeat,
+  onAssignSeat,
   canEdit,
 }: {
   employee: Employee
@@ -2914,6 +2921,8 @@ function PersonCardImpl({
   onToggleSelect: (id: string) => void
   onOpen: (id: string) => void
   onJumpToSeat: (employee: Employee) => void
+  /** Editable mode: open the seat-picker for this card. Mirrors SeatCell. */
+  onAssignSeat: ((id: string) => void) | null
   canEdit: boolean
 }) {
   const statusTone =
@@ -3009,12 +3018,44 @@ function PersonCardImpl({
       </div>
       <div className="flex items-center justify-between mt-2 text-[11px]">
         {employee.seatId ? (
+          // Editable + onAssignSeat: clicking the seat label opens the
+          // picker (matches SeatCell). The pin icon still jumps to the
+          // map so the legacy affordance stays one click away.
+          onAssignSeat ? (
+            <span className="inline-flex items-center gap-1 min-w-0">
+              <button
+                onClick={() => onAssignSeat(employee.id)}
+                className="text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline truncate"
+                title="Reassign seat"
+              >
+                {floorName ?? '?'} / {seatLabel ?? employee.seatId.slice(0, 4)}
+              </button>
+              <button
+                onClick={() => onJumpToSeat(employee)}
+                className="text-gray-400 dark:text-gray-500 hover:text-[color:var(--color-blueprint-strong)] dark:hover:text-[color:var(--color-blueprint)] flex-shrink-0"
+                title="Show seat on map"
+                aria-label="Show seat on map"
+              >
+                <MapPin size={11} aria-hidden="true" />
+              </button>
+            </span>
+          ) : (
+            <button
+              onClick={() => onJumpToSeat(employee)}
+              className="text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline truncate"
+              title="Show seat on map"
+            >
+              {floorName ?? '?'} / {seatLabel ?? employee.seatId.slice(0, 4)}
+            </button>
+          )
+        ) : onAssignSeat ? (
           <button
-            onClick={() => onJumpToSeat(employee)}
-            className="text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline truncate"
-            title="Show seat on map"
+            onClick={() => onAssignSeat(employee.id)}
+            className="inline-flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-[color:var(--color-blueprint-strong)] dark:hover:text-[color:var(--color-blueprint)]"
+            title="Assign a seat"
           >
-            {floorName ?? '?'} / {seatLabel ?? employee.seatId.slice(0, 4)}
+            <Plus size={10} aria-hidden="true" />
+            Assign
           </button>
         ) : (
           <span className="text-gray-400 dark:text-gray-500">Unassigned</span>
