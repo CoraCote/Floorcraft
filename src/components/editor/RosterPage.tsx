@@ -28,6 +28,7 @@ import { useEmployeeStore } from '../../stores/employeeStore'
 import { useFloorStore } from '../../stores/floorStore'
 import { useUIStore } from '../../stores/uiStore'
 import { useToastStore } from '../../stores/toastStore'
+import { useNeighborhoodStore } from '../../stores/neighborhoodStore'
 import { useCan } from '../../hooks/useCan'
 import { useVisibleEmployees } from '../../hooks/useVisibleEmployees'
 import { deleteEmployee, unassignEmployee } from '../../lib/seatAssignment'
@@ -38,6 +39,7 @@ import { StatusPill } from './roster/StatusPill'
 import { SeatCell } from './roster/SeatCell'
 import { SeatPickerDialog } from './roster/SeatPickerDialog'
 import { bulkRelabelSeats } from '../../lib/seats/bulkRelabelSeats'
+import { bulkAutoAssignToNeighborhood } from '../../lib/seats/bulkAutoAssignToNeighborhood'
 import { Button, Modal, ModalBody, ModalFooter } from '../ui'
 import { RosterDetailDrawer } from './RosterDetailDrawer'
 import { SeatSwapRequestDialog } from './SeatSwapRequestDialog'
@@ -369,6 +371,10 @@ export function RosterPage() {
   // selection in the user's current sort order and apply
   // `${prefix} ${i}` to each seated employee's element label.
   const [relabelDialogOpen, setRelabelDialogOpen] = useState(false)
+  // Place-in-neighborhood dialog. Opens with the current selection size;
+  // on submit, `bulkAutoAssignToNeighborhood` walks empty seats inside
+  // the chosen neighborhood and seats people in deskId order.
+  const [autoAssignDialogOpen, setAutoAssignDialogOpen] = useState(false)
 
   // Track C: roving-tabindex focus for keyboard navigation across rows.
   // Only the row matching this id is focusable; arrow keys move it to
@@ -926,6 +932,24 @@ export function RosterPage() {
   // sort order so "N1 1, N1 2, …" mirrors the visible top-to-bottom
   // sequence, which matches the operator's mental model when they
   // hand-pick a contiguous range.
+  // Auto-assign the current selection to empty seats inside a chosen
+  // neighborhood. Walks the user's current sort order so a relabeled
+  // "N1 1, N1 2…" selection lands in the same order the labels imply.
+  const handleBulkAutoAssign = (neighborhoodId: string) => {
+    const orderedIds = sorted.filter((e) => selected.has(e.id)).map((e) => e.id)
+    const result = bulkAutoAssignToNeighborhood(orderedIds, neighborhoodId)
+    useToastStore.getState().push({
+      tone: result.unplaced > 0 ? 'info' : 'info',
+      title:
+        result.placed === 0
+          ? 'No empty seats in that neighborhood — nothing placed.'
+          : result.unplaced === 0
+            ? `Placed ${result.placed} ${result.placed === 1 ? 'person' : 'people'}.`
+            : `Placed ${result.placed}; ${result.unplaced} couldn't fit (${result.unplacedNames.slice(0, 3).join(', ')}${result.unplacedNames.length > 3 ? `, +${result.unplacedNames.length - 3}` : ''}).`,
+    })
+    setAutoAssignDialogOpen(false)
+  }
+
   const handleBulkRelabelSeats = (prefix: string) => {
     const orderedIds = sorted.filter((e) => selected.has(e.id)).map((e) => e.id)
     const result = bulkRelabelSeats(orderedIds, prefix)
@@ -1625,6 +1649,15 @@ export function RosterPage() {
 
           <button
             type="button"
+            onClick={() => setAutoAssignDialogOpen(true)}
+            className="px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-raised)] dark:hover:bg-gray-900 rounded border border-[color:var(--color-blueprint)]/40"
+            title="Auto-fill empty seats inside a neighborhood with the selected rows"
+          >
+            Place in neighborhood…
+          </button>
+
+          <button
+            type="button"
             onClick={() => {
               const employeesNow = useEmployeeStore.getState().employees
               const ordered = Array.from(selected)
@@ -2100,6 +2133,14 @@ export function RosterPage() {
           count={selected.size}
           onClose={() => setRelabelDialogOpen(false)}
           onSubmit={handleBulkRelabelSeats}
+        />
+      )}
+
+      {autoAssignDialogOpen && (
+        <BulkAutoAssignDialog
+          count={selected.size}
+          onClose={() => setAutoAssignDialogOpen(false)}
+          onSubmit={handleBulkAutoAssign}
         />
       )}
 
@@ -3288,6 +3329,97 @@ function BulkRelabelDialog({
         </Button>
         <Button variant="primary" type="button" onClick={() => onSubmit(prefix)}>
           Apply
+        </Button>
+      </ModalFooter>
+    </Modal>
+  )
+}
+
+/**
+ * Bulk auto-assign-to-neighborhood dialog. Reads the neighborhood
+ * store and renders a select grouped by floor name. The handler in
+ * the parent walks empty seats inside the chosen neighborhood and
+ * places the current selection in deskId order.
+ */
+function BulkAutoAssignDialog({
+  count,
+  onClose,
+  onSubmit,
+}: {
+  count: number
+  onClose: () => void
+  onSubmit: (neighborhoodId: string) => void
+}) {
+  const neighborhoods = useNeighborhoodStore((s) => s.neighborhoods)
+  const floors = useFloorStore((s) => s.floors)
+  const grouped = useMemo(() => {
+    const list = Object.values(neighborhoods)
+    const byFloor = new Map<string, Array<{ id: string; name: string }>>()
+    for (const n of list) {
+      const arr = byFloor.get(n.floorId) ?? []
+      arr.push({ id: n.id, name: n.name })
+      byFloor.set(n.floorId, arr)
+    }
+    for (const arr of byFloor.values()) arr.sort((a, b) => a.name.localeCompare(b.name))
+    return floors.map((f) => ({ floor: f, items: byFloor.get(f.id) ?? [] }))
+  }, [neighborhoods, floors])
+
+  const firstId = grouped.flatMap((g) => g.items)[0]?.id ?? ''
+  const [neighborhoodId, setNeighborhoodId] = useState(firstId)
+
+  return (
+    <Modal open onClose={onClose} title={`Place ${count} ${count === 1 ? 'person' : 'people'} in a neighborhood`} size="sm">
+      <ModalBody>
+        {!firstId ? (
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            No neighborhoods defined yet. Draw a neighborhood on the map first
+            (right-click → New neighborhood) and try again.
+          </p>
+        ) : (
+          <>
+            <p className="mb-3 text-sm text-gray-600 dark:text-gray-300">
+              We&rsquo;ll fill empty seats inside the neighborhood in seat-label order.
+              People who don&rsquo;t fit stay unassigned.
+            </p>
+            <label
+              htmlFor="bulk-auto-assign-neighborhood"
+              className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1"
+            >
+              Neighborhood
+            </label>
+            <select
+              id="bulk-auto-assign-neighborhood"
+              value={neighborhoodId}
+              onChange={(e) => setNeighborhoodId(e.target.value)}
+              autoFocus
+              className="block w-full rounded border border-[color:var(--color-paper-line)] dark:border-gray-700 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 text-gray-900 dark:text-gray-100 px-2.5 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
+            >
+              {grouped.map((g) =>
+                g.items.length > 0 ? (
+                  <optgroup key={g.floor.id} label={g.floor.name}>
+                    {g.items.map((n) => (
+                      <option key={n.id} value={n.id}>
+                        {n.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                ) : null,
+              )}
+            </select>
+          </>
+        )}
+      </ModalBody>
+      <ModalFooter>
+        <Button variant="ghost" type="button" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button
+          variant="primary"
+          type="button"
+          onClick={() => onSubmit(neighborhoodId)}
+          disabled={!neighborhoodId}
+        >
+          Place
         </Button>
       </ModalFooter>
     </Modal>
