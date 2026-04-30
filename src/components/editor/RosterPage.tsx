@@ -361,6 +361,12 @@ export function RosterPage() {
     | null
   >(null)
 
+  // Track C: roving-tabindex focus for keyboard navigation across rows.
+  // Only the row matching this id is focusable; arrow keys move it to
+  // the next/previous visible row. `null` falls back to the first row
+  // in the sorted view so the user can always Tab in.
+  const [focusedRowId, setFocusedRowId] = useState<string | null>(null)
+
   const searchInputRef = useRef<HTMLInputElement>(null)
 
   // "More filters" popover — collapses the secondary axes (floor, seat,
@@ -742,6 +748,72 @@ export function RosterPage() {
       return next
     })
   }, [])
+
+  // Track C: keyboard handler for table rows. Skips when focus is
+  // inside an editable cell (input/select/button/textarea/a) so inline
+  // edits keep their native keys (typing letters, arrows within inputs).
+  // ↑/↓ rove focus, Space toggles selection, Enter opens the drawer,
+  // A opens the seat picker for that row, U unassigns. Modifier-key
+  // chords (cmd/ctrl) fall through so OS shortcuts still work.
+  const onRowKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTableRowElement>, emp: Employee, rows: Employee[]) => {
+      const t = e.target as HTMLElement
+      if (
+        t.tagName === 'INPUT' ||
+        t.tagName === 'SELECT' ||
+        t.tagName === 'TEXTAREA' ||
+        t.tagName === 'BUTTON' ||
+        t.tagName === 'A'
+      ) {
+        return
+      }
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault()
+        const idx = rows.findIndex((r) => r.id === emp.id)
+        if (idx < 0) return
+        const nextIdx =
+          e.key === 'ArrowDown' ? Math.min(idx + 1, rows.length - 1) : Math.max(idx - 1, 0)
+        const nextId = rows[nextIdx]?.id
+        if (!nextId || nextId === emp.id) return
+        setFocusedRowId(nextId)
+        // Imperatively move DOM focus to the next row so the visible
+        // focus ring follows the keyboard. requestAnimationFrame so the
+        // tabIndex flip from this render lands before we focus.
+        requestAnimationFrame(() => {
+          const el = document.querySelector<HTMLElement>(`[data-roster-row-id="${nextId}"]`)
+          el?.focus()
+        })
+        return
+      }
+
+      if (e.key === ' ') {
+        e.preventDefault()
+        toggleRow(emp.id)
+        return
+      }
+
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        setDrawerId(emp.id)
+        return
+      }
+
+      if (e.key === 'a' || e.key === 'A') {
+        e.preventDefault()
+        if (canEdit) setSeatPicker({ mode: 'single', employeeId: emp.id })
+        return
+      }
+
+      if (e.key === 'u' || e.key === 'U') {
+        e.preventDefault()
+        if (canEdit && emp.seatId) unassignEmployee(emp.id)
+        return
+      }
+    },
+    [canEdit, toggleRow],
+  )
 
   // "All visible are selected" — the select-all checkbox now reflects the
   // filtered subset rather than the global store, so filtering down to a
@@ -1641,7 +1713,17 @@ export function RosterPage() {
             </tr>
           </thead>
           <tbody>
-            {sorted.map((emp) => {
+            {(() => {
+              // Track C: the row that's tab-focusable when the user
+              // first Tab-keys in. Falls back to the first row when
+              // the user hasn't focused anything yet, OR when their
+              // previously-focused row was filtered out. Computed once
+              // per render so the per-row check stays O(1).
+              const effectiveFocusedId =
+                (focusedRowId && sorted.some((r) => r.id === focusedRowId)
+                  ? focusedRowId
+                  : sorted[0]?.id) ?? null
+              return sorted.map((emp) => {
               const isSelected = selected.has(emp.id)
               const rowBg = isSelected
                 ? 'bg-[color:var(--color-blueprint-soft)] hover:bg-[color:var(--color-blueprint-soft)]/80 dark:hover:bg-[color:var(--color-blueprint-soft)]'
@@ -1672,7 +1754,16 @@ export function RosterPage() {
                   ) return
                   setDrawerId(emp.id)
                 }}
-                className={`group transition-colors border-b border-[color:var(--color-paper-line)] dark:border-gray-800 ${rowBg}`}
+                // Track C: roving-tabindex keyboard navigation — only the
+                // focused row is in the tab order. ↑/↓ move focus, Space
+                // toggles selection, Shift+↑/↓ extends the selection
+                // range, Enter opens the drawer, A opens the seat picker,
+                // U unassigns. Wired in `onRowKeyDown` below.
+                data-roster-row-id={emp.id}
+                tabIndex={effectiveFocusedId === emp.id ? 0 : -1}
+                onKeyDown={(e) => onRowKeyDown(e, emp, sorted)}
+                onFocus={() => setFocusedRowId(emp.id)}
+                className={`group transition-colors border-b border-[color:var(--color-paper-line)] dark:border-gray-800 ${rowBg} focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-blueprint)]`}
               >
                 {canEdit && (
                   <td className={`px-4 py-3 align-middle ${leftStripe}`}>
@@ -1876,7 +1967,8 @@ export function RosterPage() {
                 </td>
               </tr>
               )
-            })}
+            })
+            })()}
             {sorted.length === 0 && (
               <tr>
                 <td colSpan={canEdit ? 8 : 7} className="px-4 py-12">
@@ -3033,6 +3125,11 @@ function ShortcutsCheatSheet({ onClose }: { onClose: () => void }) {
     ['Esc', 'Clear search or close dialog'],
     ['Double-click a row', 'Open the detail drawer'],
     ['Shift-click a stats chip', 'Narrow to that axis'],
+    ['↑ / ↓', 'Move row focus'],
+    ['Space', 'Toggle selection on the focused row'],
+    ['Enter', 'Open the focused row in the drawer'],
+    ['A', 'Assign a seat to the focused row'],
+    ['U', 'Unassign the focused row'],
   ]
   return (
     <div
