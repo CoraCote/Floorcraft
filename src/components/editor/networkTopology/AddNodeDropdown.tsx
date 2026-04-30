@@ -66,7 +66,7 @@ export function AddNodeDropdown({
       {open && (
         <div
           role="menu"
-          className="absolute right-0 mt-1 w-56 bg-white border border-gray-200 rounded-md shadow-lg dark:bg-gray-900 dark:border-gray-700 dark:shadow-black/40 z-30 py-1"
+          className="absolute right-0 mt-1 w-56 bg-[color:var(--color-paper-raised)] border border-[color:var(--color-paper-line)] rounded-md shadow-lg dark:bg-gray-900 dark:border-gray-700 dark:shadow-black/40 z-30 py-1"
         >
           {TOPOLOGY_NODE_TYPES.map((type) => {
             const { Icon, typeName, tile } = NODE_META[type]
@@ -79,7 +79,7 @@ export function AddNodeDropdown({
                   setOpen(false)
                   onSelect(type)
                 }}
-                className="flex items-center gap-2.5 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800/50"
+                className="flex items-center gap-2.5 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-[color:var(--color-paper-sunken)] dark:text-gray-200 dark:hover:bg-gray-800/50"
                 data-testid={`add-node-option-${type}`}
               >
                 <span

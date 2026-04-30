@@ -72,7 +72,7 @@ export function SharedProjectView() {
       </header>
       <table className="w-full text-sm">
         <thead>
-          <tr className="text-left border-b border-gray-200 dark:border-gray-800">
+          <tr className="text-left border-b border-[color:var(--color-paper-line)] dark:border-gray-800">
             <th className="py-2">Name</th>
             <th>Department</th>
             <th>Title</th>
@@ -81,7 +81,7 @@ export function SharedProjectView() {
         </thead>
         <tbody>
           {employees.map((e) => (
-            <tr key={e.id} className="border-b border-gray-100 dark:border-gray-800">
+            <tr key={e.id} className="border-b border-[color:var(--color-paper-line)] dark:border-gray-800">
               <td className="py-1">{e.name}</td>
               <td className="py-1">{e.department ?? ''}</td>
               <td className="py-1">{e.title ?? ''}</td>

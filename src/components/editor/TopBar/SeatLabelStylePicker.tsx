@@ -82,7 +82,7 @@ export function SeatLabelStylePicker({ value, onChange }: SeatLabelStylePickerPr
             aria-checked={isChecked}
             onClick={() => onChange(opt.id)}
             title={opt.description}
-            className={`flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-800/50 ${
+            className={`flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50 ${
               isChecked
                 ? 'text-gray-900 dark:text-gray-50'
                 : 'text-gray-700 dark:text-gray-200'
@@ -92,7 +92,7 @@ export function SeatLabelStylePicker({ value, onChange }: SeatLabelStylePickerPr
           >
             <span
               aria-hidden="true"
-              className="inline-block w-[14px] text-center text-blue-600 dark:text-blue-400"
+              className="inline-block w-[14px] text-center text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]"
             >
               {isChecked ? '\u2022' : ''}
             </span>
@@ -138,9 +138,9 @@ function StyleSwatch({ style }: { style: SeatLabelStyle }) {
       return (
         <span
           aria-hidden="true"
-          className="relative inline-block w-6 h-4 rounded-sm bg-white border border-indigo-500"
+          className="relative inline-block w-6 h-4 rounded-sm bg-[color:var(--color-paper-raised)] border border-[color:var(--color-blueprint)]"
         >
-          <span className="absolute inset-x-0 top-0 h-[2px] bg-indigo-500" />
+          <span className="absolute inset-x-0 top-0 h-[2px] bg-[color:var(--color-blueprint)]" />
           <span className="absolute left-1/2 top-[55%] -translate-x-1/2 -translate-y-1/2 w-3.5 h-[2px] bg-gray-700 rounded-sm" />
         </span>
       )
@@ -164,7 +164,7 @@ function StyleSwatch({ style }: { style: SeatLabelStyle }) {
           aria-hidden="true"
           className="relative inline-block w-6 h-4 rounded-sm border border-gray-300 dark:border-gray-600 bg-amber-50 dark:bg-amber-950/30"
         >
-          <span className="absolute inset-y-0 left-0 w-1 bg-indigo-500" />
+          <span className="absolute inset-y-0 left-0 w-1 bg-[color:var(--color-blueprint)]" />
           <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-[2px] bg-gray-700 rounded-sm" />
         </span>
       )

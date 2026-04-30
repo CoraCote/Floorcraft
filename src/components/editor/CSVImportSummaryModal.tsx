@@ -46,9 +46,9 @@ export function CSVImportSummaryModal() {
         </div>
 
         {allIssues.length > 0 && (
-          <div className="max-h-60 overflow-y-auto border border-gray-200 dark:border-gray-800 rounded">
+          <div className="max-h-60 overflow-y-auto border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded">
             <table className="w-full text-xs">
-              <thead className="bg-gray-50 dark:bg-gray-800/50">
+              <thead className="bg-[color:var(--color-paper-sunken)] dark:bg-gray-800/50">
                 <tr>
                   <th className="px-2 py-1 text-left">Row</th>
                   <th className="px-2 py-1 text-left">Reason</th>
@@ -57,7 +57,7 @@ export function CSVImportSummaryModal() {
               </thead>
               <tbody>
                 {allIssues.map((i, idx) => (
-                  <tr key={idx} className="border-t border-gray-100 dark:border-gray-800">
+                  <tr key={idx} className="border-t border-[color:var(--color-paper-line)] dark:border-gray-800">
                     <td className="px-2 py-1 whitespace-nowrap">
                       Row {i.rowIndex}
                     </td>

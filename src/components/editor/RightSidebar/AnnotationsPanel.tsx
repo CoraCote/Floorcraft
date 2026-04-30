@@ -156,7 +156,7 @@ function AnnotationRow({ a, canEdit, onResolve, resolved }: RowProps) {
 
   return (
     <div
-      className={`group flex flex-col gap-1 p-2 rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer ${
+      className={`group flex flex-col gap-1 p-2 rounded-md border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50 cursor-pointer ${
         resolved ? 'text-gray-500 dark:text-gray-400' : 'text-gray-800 dark:text-gray-100'
       }`}
       role="button"
@@ -200,7 +200,7 @@ function AnnotationRow({ a, canEdit, onResolve, resolved }: RowProps) {
             }}
             title={resolved ? 'Reopen annotation' : 'Resolve annotation'}
             aria-label={resolved ? 'Reopen annotation' : 'Resolve annotation'}
-            className="flex items-center gap-1 text-[10px] text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-800 hover:border-gray-300 flex-shrink-0 opacity-60 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
+            className="flex items-center gap-1 text-[10px] text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 px-1.5 py-0.5 rounded border border-[color:var(--color-paper-line)] dark:border-gray-800 hover:border-gray-300 flex-shrink-0 opacity-60 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
           >
             {resolved ? <RotateCcw size={10} /> : <Check size={10} />}
             {resolved ? 'Reopen' : 'Resolve'}

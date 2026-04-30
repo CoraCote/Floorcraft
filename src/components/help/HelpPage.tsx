@@ -33,7 +33,7 @@ function SectionLink({ to, children }: { to: string; children: React.ReactNode }
   return (
     <a
       href={`#${to}`}
-      className="text-blue-600 dark:text-blue-400 hover:underline"
+      className="text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline"
     >
       {children}
     </a>
@@ -399,7 +399,7 @@ const sections: Section[] = [
           on <code>canvasSettings.northRotation</code>). If your floor plan
           has no real-world cardinal alignment, hide the compass entirely
           via <strong>View → Toggle compass</strong> or the{' '}
-          <kbd className="px-1 py-0.5 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded text-[10px] font-mono">N</kbd>{' '}
+          <kbd className="px-1 py-0.5 bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded text-[10px] font-mono">N</kbd>{' '}
           hotkey — the setting is per-office and persists.
         </p>
 
@@ -1321,7 +1321,7 @@ const sections: Section[] = [
 
 function FaqItem({ q, children }: { q: string; children: React.ReactNode }) {
   return (
-    <details className="group border-l-2 border-gray-200 dark:border-gray-800 pl-4 py-1 hover:border-blue-400">
+    <details className="group border-l-2 border-[color:var(--color-paper-line)] dark:border-gray-800 pl-4 py-1 hover:border-[color:var(--color-blueprint)] transition-colors">
       <summary className="cursor-pointer font-medium text-gray-900 dark:text-gray-100 list-none flex items-center gap-2">
         <span className="text-gray-400 dark:text-gray-500 group-open:rotate-90 transition-transform">▸</span>
         {q}
@@ -1370,7 +1370,7 @@ function SectionHeading({
         type="button"
         onClick={() => onCopy(id)}
         aria-label={`Copy link to ${label}`}
-        className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 text-base font-normal transition-opacity"
+        className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-gray-400 dark:text-gray-500 hover:text-[color:var(--color-blueprint-strong)] dark:hover:text-[color:var(--color-blueprint)] text-base font-normal transition-opacity"
       >
         #
       </button>
@@ -1489,19 +1489,29 @@ export function HelpPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50">
-      <header className="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+    <div className="min-h-screen bg-[color:var(--color-paper)] dark:bg-gray-950">
+      <header className="border-b border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-raised)] dark:bg-gray-900">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link to="/" className="text-lg font-semibold text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400">
+          <Link
+            to="/"
+            className="flex items-center gap-2.5 text-lg font-semibold text-gray-900 dark:text-gray-100 hover:text-[color:var(--color-blueprint-strong)] dark:hover:text-[color:var(--color-blueprint)] transition-colors"
+          >
+            {/* Compass-rose monogram — same idiom as LandingNav, AuthShell,
+                and the demo banner. Carries the visual identity through
+                every public surface. */}
+            <span aria-hidden="true" className="relative inline-flex h-6 w-6 items-center justify-center">
+              <span className="absolute inset-0 rounded-md border border-[color:var(--color-blueprint)]" />
+              <span className="absolute inset-[5px] rotate-45 border border-[color:var(--color-blueprint)]" />
+            </span>
             Floorcraft
           </Link>
           <nav className="flex items-center gap-3 text-sm">
-            <Link to="/dashboard" className="text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400">
+            <Link to="/dashboard" className="text-gray-700 dark:text-gray-200 hover:text-[color:var(--color-blueprint-strong)] dark:hover:text-[color:var(--color-blueprint)] transition-colors">
               Dashboard
             </Link>
             <Link
               to="/account"
-              className="px-3 py-1.5 border rounded hover:bg-gray-50 dark:hover:bg-gray-800/50 text-gray-700 dark:text-gray-200"
+              className="px-3 py-1.5 border border-[color:var(--color-paper-line)] dark:border-gray-700 rounded hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50 text-gray-700 dark:text-gray-200 transition-colors"
             >
               Account
             </Link>
@@ -1515,7 +1525,7 @@ export function HelpPage() {
           the top of the page so the reader doesn't have to scroll past
           a stack of nav links to reach content.
         */}
-        <details className="md:hidden -mb-2 rounded border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 text-sm">
+        <details className="md:hidden -mb-2 rounded border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-sunken)] dark:bg-gray-800/50 text-sm">
           <summary className="cursor-pointer select-none px-3 py-2 text-gray-700 dark:text-gray-200 font-medium flex items-center justify-between">
             <span>On this page</span>
             <span className="text-xs text-gray-500 dark:text-gray-400 font-normal">
@@ -1529,7 +1539,7 @@ export function HelpPage() {
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search help…"
               aria-label="Search help"
-              className="w-full mb-2 px-2 py-1.5 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+              className="w-full mb-2 px-2 py-1.5 text-sm rounded border border-[color:var(--color-paper-line)] dark:border-gray-700 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[color:var(--color-blueprint)]/30 focus:border-[color:var(--color-blueprint)]"
             />
             <nav
               role="navigation"
@@ -1542,8 +1552,8 @@ export function HelpPage() {
                   href={`#${s.id}`}
                   className={`flex items-center gap-2 px-2 py-1.5 rounded transition-colors ${
                     activeId === s.id
-                      ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-medium'
-                      : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
+                      ? 'bg-[color:var(--color-blueprint-soft)] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] font-medium'
+                      : 'text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800'
                   }`}
                 >
                   <span aria-hidden>{s.icon}</span>
@@ -1556,7 +1566,7 @@ export function HelpPage() {
                   <button
                     type="button"
                     onClick={() => setQuery('')}
-                    className="text-blue-600 dark:text-blue-400 hover:underline"
+                    className="text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline"
                   >
                     Clear
                   </button>
@@ -1574,7 +1584,7 @@ export function HelpPage() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search help…"
             aria-label="Search help"
-            className="w-full mb-3 px-2.5 py-1.5 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400"
+            className="w-full mb-3 px-2.5 py-1.5 text-sm rounded border border-[color:var(--color-paper-line)] dark:border-gray-700 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[color:var(--color-blueprint)]/30 focus:border-[color:var(--color-blueprint)]"
           />
           <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2 flex items-center justify-between">
             <span>On this page</span>
@@ -1592,7 +1602,7 @@ export function HelpPage() {
           </div>
           <div className="text-xs text-gray-400 dark:text-gray-500 mb-3">
             Press{' '}
-            <kbd className="px-1 py-0.5 rounded border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300">
+            <kbd className="px-1 py-0.5 rounded border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 text-gray-600 dark:text-gray-300 font-mono">
               ⌘K
             </kbd>{' '}
             to search
@@ -1608,8 +1618,8 @@ export function HelpPage() {
                 href={`#${s.id}`}
                 className={`flex items-center gap-2 px-2 py-1.5 rounded transition-colors ${
                   activeId === s.id
-                    ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-medium'
-                    : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    ? 'bg-[color:var(--color-blueprint-soft)] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] font-medium'
+                    : 'text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800'
                 }`}
               >
                 <span aria-hidden>{s.icon}</span>
@@ -1622,7 +1632,7 @@ export function HelpPage() {
                 <button
                   type="button"
                   onClick={() => setQuery('')}
-                  className="text-blue-600 dark:text-blue-400 hover:underline"
+                  className="text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline"
                 >
                   Clear
                 </button>
@@ -1654,7 +1664,7 @@ export function HelpPage() {
               <button
                 type="button"
                 onClick={() => setQuery('')}
-                className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
+                className="text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline text-sm"
               >
                 Clear search
               </button>
@@ -1683,12 +1693,12 @@ export function HelpPage() {
             ))
           )}
 
-          <footer className="mt-20 pt-6 border-t border-gray-200 dark:border-gray-800 text-sm text-gray-500 dark:text-gray-400">
+          <footer className="mt-20 pt-6 border-t border-[color:var(--color-paper-line)] dark:border-gray-800 text-sm text-gray-500 dark:text-gray-400">
             <p>
               Guide out of date?{' '}
               <a
                 href="https://github.com/rcasto123/Floorcraft/issues/new"
-                className="text-blue-600 dark:text-blue-400 hover:underline"
+                className="text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline"
                 target="_blank"
                 rel="noreferrer"
               >

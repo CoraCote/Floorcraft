@@ -54,7 +54,7 @@ export function NeighborhoodUtilizationList() {
 
   return (
     <div
-      className="rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-2"
+      className="rounded-md border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 p-2"
       aria-label="Neighborhood utilization"
     >
       <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
@@ -72,7 +72,7 @@ export function NeighborhoodUtilizationList() {
                 onClick={() => focusElements(m.elementIds)}
                 disabled={m.elementIds.length === 0}
                 aria-label={`Focus ${m.name}`}
-                className="w-full flex items-center gap-2 text-xs text-left rounded px-1 py-1 hover:bg-gray-50 dark:hover:bg-gray-800/50 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full flex items-center gap-2 text-xs text-left rounded px-1 py-1 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <span
                   aria-hidden
@@ -91,7 +91,7 @@ export function NeighborhoodUtilizationList() {
                 />
               </button>
               <div
-                className="h-1 rounded bg-gray-100 dark:bg-gray-800 overflow-hidden mx-1 mb-0.5"
+                className="h-1 rounded bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 overflow-hidden mx-1 mb-0.5"
                 aria-hidden
               >
                 <div

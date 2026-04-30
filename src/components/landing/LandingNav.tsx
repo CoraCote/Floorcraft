@@ -29,18 +29,22 @@ export function LandingNav() {
   const isAuthed = session.status === 'authenticated'
 
   return (
-    <header className="sticky top-0 z-20 border-b border-gray-200/60 bg-white/70 backdrop-blur-md dark:border-gray-800/60 dark:bg-gray-950/70">
+    <header className="sticky top-0 z-20 border-b border-[color:var(--color-paper-line)] bg-[color:var(--color-paper)]/85 backdrop-blur-md dark:border-gray-800/60 dark:bg-[color:var(--color-paper)]/85">
       <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between gap-4">
         <Link
           to="/"
-          className="flex items-center gap-2 font-semibold tracking-tight text-gray-900 dark:text-gray-100"
+          className="flex items-center gap-2.5 font-semibold tracking-tight text-gray-900 dark:text-gray-100"
         >
-          {/* Tiny diamond mark — matches the floor-plan geometric idiom
-              without committing to a full SVG logotype. */}
+          {/* Architect's compass-rose monogram — built in CSS so it
+              doesn't depend on an asset, and reads as drafting iconography
+              rather than the previous gradient diamond. */}
           <span
             aria-hidden="true"
-            className="inline-block h-5 w-5 rotate-45 rounded-sm bg-gradient-to-br from-blue-500 to-indigo-600"
-          />
+            className="relative inline-flex h-6 w-6 items-center justify-center"
+          >
+            <span className="absolute inset-0 rounded-md border border-[color:var(--color-blueprint)] dark:border-[color:var(--color-blueprint)]" />
+            <span className="absolute inset-[5px] rotate-45 border border-[color:var(--color-blueprint)] dark:border-[color:var(--color-blueprint)]" />
+          </span>
           <span>Floorcraft</span>
         </Link>
 
@@ -51,6 +55,12 @@ export function LandingNav() {
           >
             Pricing
           </a>
+          <Link
+            to="/demo"
+            className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors"
+          >
+            Demo
+          </Link>
           <Link
             to="/help"
             className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors"
@@ -75,6 +85,27 @@ export function LandingNav() {
         </nav>
 
         <div className="flex items-center gap-3">
+          {/* Compact nav for mobile (`<sm`): the full link row above
+              hides on small viewports because four labels would crowd
+              the strip. Keep the most important destination (Sign in
+              for guests, Dashboard for authenticated users) visible
+              and reachable so a phone visitor can act, not just
+              scroll. */}
+          {isAuthed ? (
+            <Link
+              to="/dashboard"
+              className="sm:hidden text-sm text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] font-medium"
+            >
+              Dashboard
+            </Link>
+          ) : (
+            <Link
+              to="/login"
+              className="sm:hidden text-sm text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] font-medium"
+            >
+              Sign in
+            </Link>
+          )}
           <ThemeToggle />
         </div>
       </div>

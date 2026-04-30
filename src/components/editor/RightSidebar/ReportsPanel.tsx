@@ -203,8 +203,8 @@ export function ReportsPanel() {
                       onClick={() => setSeatMapColorMode(mode)}
                       className={`px-3 py-1.5 text-xs rounded border transition-colors ${
                         seatMapColorMode === mode
-                          ? 'bg-blue-100 dark:bg-blue-900/40 border-blue-300 text-blue-700 dark:text-blue-300'
-                          : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                          ? 'bg-[color:var(--color-blueprint-soft)] border-[color:var(--color-blueprint)] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]'
+                          : 'bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border-[color:var(--color-paper-line)] dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50'
                       }`}
                     >
                       {mode === 'employment-type'
@@ -223,7 +223,7 @@ export function ReportsPanel() {
                 <br />
                 <button
                   onClick={() => setEmployeeDirectoryOpen(true)}
-                  className="mt-2 text-blue-600 dark:text-blue-400 hover:underline"
+                  className="mt-2 text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline"
                 >
                   Reopen directory
                 </button>
@@ -238,7 +238,7 @@ export function ReportsPanel() {
   const openFullAction = fullReportsHref ? (
     <Link
       to={fullReportsHref}
-      className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 hover:underline"
+      className="inline-flex items-center gap-1 text-[11px] font-medium text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:text-[color:var(--color-blueprint-strong)] hover:underline"
       title="Open the full Reports page"
     >
       Open full reports
@@ -318,27 +318,27 @@ function ReportButton({
       aria-pressed={active}
       className={`flex items-center gap-3 w-full p-3 border rounded-lg text-left transition-colors ${
         active
-          ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900/70 hover:bg-blue-100 dark:hover:bg-blue-900/40'
-          : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:border-gray-300 dark:hover:border-gray-700'
+          ? 'bg-[color:var(--color-blueprint-soft)] border-[color:var(--color-blueprint)]/40 dark:border-[color:var(--color-blueprint)]/40 hover:bg-[color:var(--color-blueprint-soft)] dark:hover:bg-[color:var(--color-blueprint-soft)]'
+          : 'border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50 hover:border-gray-300 dark:hover:border-gray-700'
       }`}
     >
       <div
         className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
-          active ? 'bg-blue-100 dark:bg-blue-900/40' : 'bg-gray-100 dark:bg-gray-800'
+          active ? 'bg-[color:var(--color-blueprint-soft)]' : 'bg-[color:var(--color-paper-sunken)] dark:bg-gray-800'
         }`}
       >
         {IconComponent && (
           <IconComponent
             size={16}
             aria-hidden="true"
-            className={active ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-300'}
+            className={active ? 'text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]' : 'text-gray-600 dark:text-gray-300'}
           />
         )}
       </div>
       <div className="min-w-0 flex-1">
         <div className="text-sm font-medium text-gray-800 dark:text-gray-100 flex items-center gap-1.5">
           {report.title}
-          {active && <CheckCircle size={12} className="text-blue-500 dark:text-blue-400" aria-hidden="true" />}
+          {active && <CheckCircle size={12} className="text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]" aria-hidden="true" />}
         </div>
         <div className="text-[11px] text-gray-500 dark:text-gray-400 truncate">{report.desc}</div>
       </div>

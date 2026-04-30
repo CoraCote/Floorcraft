@@ -28,13 +28,13 @@ export function EditorDesktopGate() {
   const { teamSlug, officeSlug } = useParams<{ teamSlug: string; officeSlug: string }>()
 
   return (
-    <div className="flex-1 flex items-center justify-center bg-gradient-to-b from-slate-50 to-white dark:from-gray-950 dark:to-gray-900 px-4 py-10 overflow-y-auto">
+    <div className="flex-1 flex items-center justify-center bg-[color:var(--color-paper)] dark:bg-gray-950 px-4 py-10 overflow-y-auto">
       <div
-        className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-6 sm:p-8 shadow-sm dark:border-gray-800 dark:bg-gray-900/80"
+        className="w-full max-w-md rounded-xl border border-[color:var(--color-paper-line)] bg-[color:var(--color-paper-raised)] p-6 sm:p-8 shadow-sm dark:border-gray-800 dark:bg-gray-900/80"
         role="status"
         aria-live="polite"
       >
-        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 mx-auto mb-4">
+        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-[color:var(--color-blueprint-soft)] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] mx-auto mb-4">
           <MonitorSmartphone size={22} aria-hidden="true" />
         </div>
         <h1 className="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-100 text-center">
@@ -50,7 +50,7 @@ export function EditorDesktopGate() {
           {teamSlug && officeSlug && (
             <Link
               to={`/t/${teamSlug}/o/${officeSlug}/roster`}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-[color:var(--color-blueprint)] hover:bg-[color:var(--color-blueprint-strong)] text-white rounded-md text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)] focus-visible:ring-offset-1 transition-colors"
             >
               <Users size={14} aria-hidden="true" />
               Open the roster instead
@@ -59,7 +59,7 @@ export function EditorDesktopGate() {
           {teamSlug && (
             <Link
               to={`/t/${teamSlug}`}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-md text-sm text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
             >
               <ArrowLeft size={14} aria-hidden="true" />
               Back to team home

@@ -167,10 +167,10 @@ function NodeForm({ node, onClose }: { node: TopologyNode; onClose: () => void }
     <aside
       role="region"
       aria-label="Node properties"
-      className="absolute top-3 right-3 bottom-3 w-80 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg flex flex-col overflow-hidden"
+      className="absolute top-3 right-3 bottom-3 w-80 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-[color:var(--color-paper-line)] dark:border-gray-700 rounded-lg shadow-lg flex flex-col overflow-hidden"
     >
       {/* Header — type icon, editable label, close button. */}
-      <div className="flex items-center gap-2 px-3 py-2.5 border-b border-gray-200 dark:border-gray-800">
+      <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[color:var(--color-paper-line)] dark:border-gray-800">
         <span
           className={[
             'flex-shrink-0 inline-flex items-center justify-center w-7 h-7 rounded',
@@ -193,7 +193,7 @@ function NodeForm({ node, onClose }: { node: TopologyNode; onClose: () => void }
           type="button"
           onClick={onClose}
           aria-label="Close properties panel"
-          className="p-1 rounded text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+          className="p-1 rounded text-gray-500 hover:bg-[color:var(--color-paper-sunken)] dark:text-gray-400 dark:hover:bg-gray-800"
         >
           <X size={14} aria-hidden="true" />
         </button>
@@ -258,7 +258,7 @@ function NodeForm({ node, onClose }: { node: TopologyNode; onClose: () => void }
                     : (v as TopologyNodeStatus),
               })
             }}
-            className="block w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="block w-full rounded border border-gray-300 dark:border-gray-700 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 text-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
           >
             <option value="">— Unset —</option>
             {STATUS_OPTIONS.map((opt) => (
@@ -278,7 +278,7 @@ function NodeForm({ node, onClose }: { node: TopologyNode; onClose: () => void }
             onChange={(e) => setNotes(e.target.value)}
             onBlur={(e) => commit('notes', e.target.value)}
             rows={3}
-            className="block w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="block w-full rounded border border-gray-300 dark:border-gray-700 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 text-gray-900 dark:text-gray-100 px-2 py-1.5 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
             placeholder="Anything contextual — VLANs, ports, runbook links…"
           />
         </Section>
@@ -365,7 +365,7 @@ function NodeForm({ node, onClose }: { node: TopologyNode; onClose: () => void }
 
       {/* Destructive footer — single delete button. Removing the node
           cascades to its incident edges (see store cascade comment). */}
-      <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between">
+      <div className="px-3 py-2 border-t border-[color:var(--color-paper-line)] dark:border-gray-800 flex items-center justify-between">
         <Button
           variant="danger"
           size="sm"

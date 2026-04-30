@@ -167,7 +167,7 @@ function SwapRow({
   const isPending = request.status === 'pending'
   return (
     <div
-      className="flex flex-col gap-1 p-2 rounded border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900"
+      className="flex flex-col gap-1 p-2 rounded border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-raised)] dark:bg-gray-900"
       data-swap-request-id={request.id}
     >
       <div className="flex items-center gap-1 text-xs text-gray-800 dark:text-gray-100">
@@ -212,7 +212,7 @@ function SwapRow({
             <button
               type="button"
               onClick={onCancel}
-              className="flex items-center gap-1 text-[11px] text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 px-2 py-0.5 rounded border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+              className="flex items-center gap-1 text-[11px] text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 px-2 py-0.5 rounded border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50"
             >
               Cancel request
             </button>

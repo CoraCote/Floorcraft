@@ -61,13 +61,13 @@ export function ShareLinkSection() {
   }
 
   return (
-    <section className="border-t border-gray-100 dark:border-gray-800 pt-4 mt-4 space-y-2">
+    <section className="border-t border-[color:var(--color-paper-line)] dark:border-gray-800 pt-4 mt-4 space-y-2">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold">Read-only share link</h3>
         <button
           onClick={onGenerate}
           disabled={busy || !officeId}
-          className="text-xs px-2 py-1 border border-gray-200 dark:border-gray-800 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50"
+          className="text-xs px-2 py-1 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50"
         >
           {busy ? 'Generating…' : 'Generate new link'}
         </button>
@@ -78,10 +78,10 @@ export function ShareLinkSection() {
           const url = `${window.location.origin}/shared/${t.office_id}/${t.token}`
           return (
             <li key={t.id} className="flex items-center gap-2">
-              <code className="flex-1 truncate bg-gray-50 dark:bg-gray-800/50 px-2 py-1 rounded">{url}</code>
+              <code className="flex-1 truncate bg-[color:var(--color-paper-sunken)] dark:bg-gray-800/50 px-2 py-1 rounded">{url}</code>
               <button
                 onClick={() => navigator.clipboard?.writeText(url)}
-                className="px-2 py-1 border border-gray-200 dark:border-gray-800 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                className="px-2 py-1 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50"
               >
                 Copy
               </button>

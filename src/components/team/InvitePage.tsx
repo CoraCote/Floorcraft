@@ -67,7 +67,7 @@ export function InvitePage() {
   if (session.status === 'loading') {
     return (
       <InviteShell>
-        <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+        <div className="rounded-xl border border-[color:var(--color-paper-line)] bg-[color:var(--color-paper-raised)] p-8 shadow-sm dark:border-gray-800 dark:bg-gray-900">
           <p className="text-sm text-gray-500 dark:text-gray-400">Loading…</p>
         </div>
       </InviteShell>
@@ -128,12 +128,12 @@ export function InvitePage() {
 
   return (
     <InviteShell>
-      <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+      <div className="rounded-xl border border-[color:var(--color-paper-line)] bg-[color:var(--color-paper-raised)] p-8 shadow-sm dark:border-gray-800 dark:bg-gray-900">
         {preview ? (
           <>
             <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
               You've been invited to join{' '}
-              <span className="text-blue-600 dark:text-blue-400">
+              <span className="text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]">
                 {preview.teamName}
               </span>
             </h1>
@@ -198,15 +198,15 @@ export function InvitePage() {
  */
 function InviteShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-gray-950 dark:to-gray-900 flex flex-col items-center justify-center px-6 py-10">
+    <div className="min-h-screen bg-[color:var(--color-paper)] dark:bg-gray-950 flex flex-col items-center justify-center px-6 py-10">
       <Link
         to="/"
-        className="mb-6 flex items-center gap-2 font-semibold tracking-tight text-gray-900 dark:text-gray-100"
+        className="mb-6 flex items-center gap-2.5 font-semibold tracking-tight text-gray-900 dark:text-gray-100"
       >
-        <span
-          aria-hidden="true"
-          className="inline-block h-5 w-5 rotate-45 rounded-sm bg-gradient-to-br from-blue-500 to-indigo-600"
-        />
+        <span aria-hidden="true" className="relative inline-flex h-6 w-6 items-center justify-center">
+          <span className="absolute inset-0 rounded-md border border-[color:var(--color-blueprint)]" />
+          <span className="absolute inset-[5px] rotate-45 border border-[color:var(--color-blueprint)]" />
+        </span>
         <span>Floorcraft</span>
       </Link>
       <div className="w-full max-w-md">{children}</div>
@@ -216,7 +216,7 @@ function InviteShell({ children }: { children: React.ReactNode }) {
 
 function InviteErrorCard({ title, body }: { title: string; body: string }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm dark:border-gray-800 dark:bg-gray-900 text-center">
+    <div className="rounded-xl border border-[color:var(--color-paper-line)] bg-[color:var(--color-paper-raised)] p-8 shadow-sm dark:border-gray-800 dark:bg-gray-900 text-center">
       <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
         {title}
       </h1>
@@ -224,7 +224,7 @@ function InviteErrorCard({ title, body }: { title: string; body: string }) {
       <div className="mt-5">
         <Link
           to="/"
-          className="inline-flex items-center text-sm text-blue-600 hover:underline dark:text-blue-400"
+          className="inline-flex items-center text-sm text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline"
         >
           Go to Floorcraft home
         </Link>

@@ -48,7 +48,7 @@ export function CanvasScaleBar() {
         />
         <div className="h-2 w-px bg-gray-700 dark:bg-gray-300" />
       </div>
-      <div className="mt-1 px-1.5 py-0.5 rounded bg-white/80 dark:bg-gray-900/80 backdrop-blur border border-gray-200 dark:border-gray-800 text-[10px] font-semibold tabular-nums text-gray-700 dark:text-gray-200">
+      <div className="mt-1 px-1.5 py-0.5 rounded bg-[color:var(--color-paper-raised)]/80 dark:bg-gray-900/80 backdrop-blur border border-[color:var(--color-paper-line)] dark:border-gray-800 text-[10px] font-semibold tabular-nums text-gray-700 dark:text-gray-200">
         {bar.label}
       </div>
     </div>

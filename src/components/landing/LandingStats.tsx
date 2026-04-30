@@ -25,22 +25,20 @@ export function LandingStats() {
   return (
     <ul
       aria-label="Floorcraft usage"
-      className="mt-10 flex flex-wrap items-center justify-center gap-x-10 gap-y-4 text-center"
+      className="mt-10 flex flex-wrap items-baseline justify-center lg:justify-start gap-x-8 gap-y-4"
     >
       {STATS.map((stat, i) => (
         <li
           key={stat.label}
           className={
-            // Thin vertical dividers between items on sm+ — a tiny
-            // typographic touch that reads like a press sheet.
-            'flex flex-col items-center' +
-            (i > 0 ? ' sm:border-l sm:border-gray-200 sm:dark:border-gray-800 sm:pl-10' : '')
+            'flex items-baseline gap-2' +
+            (i > 0 ? ' sm:border-l sm:border-[color:var(--color-paper-line)] sm:dark:border-gray-800 sm:pl-8' : '')
           }
         >
-          <span className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100 tabular-nums">
+          <span className="font-mono text-xl font-medium tracking-tight text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] tabular-nums">
             {stat.value}
           </span>
-          <span className="mt-1 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+          <span className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
             {stat.label}
           </span>
         </li>

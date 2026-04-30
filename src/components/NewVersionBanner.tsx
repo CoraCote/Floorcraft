@@ -47,7 +47,7 @@ export function NewVersionBanner() {
       role="status"
       aria-live="polite"
       data-testid="new-version-banner"
-      className="fixed top-0 inset-x-0 z-[60] flex items-center gap-2 px-3 py-2 sm:px-4 bg-blue-600 text-white text-sm shadow-md"
+      className="fixed top-0 inset-x-0 z-[60] flex items-center gap-2 px-3 py-2 sm:px-4 bg-[color:var(--color-blueprint-strong)] text-white text-sm shadow-md"
     >
       <RefreshCw size={14} aria-hidden="true" className="shrink-0" />
       <p className="flex-1 truncate">

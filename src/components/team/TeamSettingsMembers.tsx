@@ -104,7 +104,7 @@ function RoleBadge({ role }: { role: TeamMember['role'] }) {
     <span
       className={
         isAdmin
-          ? 'inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300'
+          ? 'inline-flex items-center gap-1 rounded-full bg-[color:var(--color-blueprint-soft)] px-2 py-0.5 text-[11px] font-medium text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]'
           : 'inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-300'
       }
     >
@@ -172,7 +172,7 @@ function MemberRow({
 
   return (
     <li
-      className="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/40"
+      className="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/40"
     >
       <Avatar seed={member.user_id} label={label} />
       <div className="min-w-0 flex-1">
@@ -205,14 +205,14 @@ function MemberRow({
               aria-haspopup="menu"
               aria-expanded={menuOpen}
               onClick={() => setMenuOpen((v) => !v)}
-              className="p-1 rounded text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              className="p-1 rounded text-gray-500 hover:bg-[color:var(--color-paper-sunken)] hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
             >
               <MoreHorizontal size={16} aria-hidden="true" />
             </button>
             {menuOpen && (
               <div
                 role="menu"
-                className="absolute right-0 top-full mt-1 z-10 w-44 rounded-md border border-gray-200 bg-white shadow-lg dark:border-gray-800 dark:bg-gray-900 py-1"
+                className="absolute right-0 top-full mt-1 z-10 w-44 rounded-md border border-[color:var(--color-paper-line)] bg-[color:var(--color-paper-raised)] shadow-lg dark:border-gray-800 dark:bg-gray-900 py-1"
               >
                 <button
                   role="menuitem"
@@ -221,7 +221,7 @@ function MemberRow({
                     setMenuOpen(false)
                     onChangeRole(member.role === 'admin' ? 'member' : 'admin')
                   }}
-                  className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800"
+                  className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-[color:var(--color-paper-sunken)] dark:text-gray-200 dark:hover:bg-gray-800"
                 >
                   <Shield size={14} aria-hidden="true" />
                   {member.role === 'admin' ? 'Make member' : 'Make admin'}
@@ -291,7 +291,7 @@ function InviteRow({
       className={
         expired
           ? 'flex items-center gap-3 rounded-md px-3 py-2 opacity-60'
-          : 'flex items-center gap-3 rounded-md px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/40'
+          : 'flex items-center gap-3 rounded-md px-3 py-2 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/40'
       }
     >
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
@@ -504,11 +504,11 @@ export function TeamSettingsMembers({
       <section aria-labelledby="members-heading" className="space-y-2">
         <h2
           id="members-heading"
-          className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400"
+          className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400"
         >
           Members ({memberCount})
         </h2>
-        <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900/60">
+        <div className="rounded-xl border border-[color:var(--color-paper-line)] bg-[color:var(--color-paper-raised)] dark:border-gray-800 dark:bg-gray-900/60">
           {hasMembers ? (
             <ul className="divide-y divide-gray-100 dark:divide-gray-800/60 p-1">
               {members.map((m) => (
@@ -527,7 +527,7 @@ export function TeamSettingsMembers({
             </ul>
           ) : (
             <div className="p-8 text-center">
-              <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
+              <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full bg-[color:var(--color-blueprint-soft)] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]">
                 <UserPlus size={18} aria-hidden="true" />
               </div>
               <p className="mt-2 font-medium text-gray-900 dark:text-gray-100">
@@ -557,11 +557,11 @@ export function TeamSettingsMembers({
         <section aria-labelledby="invites-heading" className="space-y-2">
           <h2
             id="invites-heading"
-            className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400"
+            className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400"
           >
             Pending invites ({invites.length})
           </h2>
-          <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900/60">
+          <div className="rounded-xl border border-[color:var(--color-paper-line)] bg-[color:var(--color-paper-raised)] dark:border-gray-800 dark:bg-gray-900/60">
             <ul className="divide-y divide-gray-100 dark:divide-gray-800/60 p-1">
               {invites.map((inv) => (
                 <InviteRow

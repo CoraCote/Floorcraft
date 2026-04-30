@@ -143,7 +143,7 @@ export function ReservationsPage() {
           <select
             id="res-emp-picker"
             data-testid="reservations-employee-picker"
-            className="px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-800 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="px-2 py-1.5 text-sm border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-md bg-[color:var(--color-paper-raised)] dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
             value={selectedEmployeeId}
             onChange={(e) => setSelectedEmployeeId(e.target.value)}
           >
@@ -168,7 +168,7 @@ export function ReservationsPage() {
         <EmptyState />
       ) : (
         <section
-          className="mt-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden"
+          className="mt-6 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-lg overflow-hidden"
           aria-label="Reservation grid"
         >
           {/* The matrix. Sticky-left desk column + horizontal scroll
@@ -176,11 +176,11 @@ export function ReservationsPage() {
               through the date range on a narrow window. */}
           <div className="overflow-auto">
             <table className="text-xs w-full">
-              <thead className="bg-gray-50 dark:bg-gray-800/50">
+              <thead className="bg-[color:var(--color-paper-sunken)] dark:bg-gray-800/50">
                 <tr>
                   <th
                     scope="col"
-                    className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 sticky left-0 bg-gray-50 dark:bg-gray-800/50"
+                    className="px-3 py-2 text-left font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400 sticky left-0 bg-[color:var(--color-paper-sunken)] dark:bg-gray-800/50"
                   >
                     Desk
                   </th>
@@ -188,7 +188,7 @@ export function ReservationsPage() {
                     <th
                       key={d}
                       scope="col"
-                      className="px-2 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 whitespace-nowrap tabular-nums"
+                      className="px-2 py-2 text-left font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400 whitespace-nowrap tabular-nums"
                     >
                       {d.slice(5)}
                     </th>
@@ -199,9 +199,9 @@ export function ReservationsPage() {
                 {reservableDesks.map((desk) => (
                   <tr
                     key={desk.id}
-                    className="border-t border-gray-100 dark:border-gray-800"
+                    className="border-t border-[color:var(--color-paper-line)] dark:border-gray-800"
                   >
-                    <td className="px-3 py-1.5 sticky left-0 bg-white dark:bg-gray-900 whitespace-nowrap text-sm text-gray-700 dark:text-gray-200">
+                    <td className="px-3 py-1.5 sticky left-0 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 whitespace-nowrap text-sm text-gray-700 dark:text-gray-200">
                       {desk.label || desk.deskId}
                     </td>
                     {dates.map((d) => {
@@ -214,10 +214,10 @@ export function ReservationsPage() {
                             onClick={() => onCellClick(desk.id, d)}
                             disabled={!canEdit}
                             data-testid={`reservations-cell-${desk.id}-${d}`}
-                            className={`w-full min-w-[60px] rounded px-1.5 py-1 text-[11px] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                            className={`w-full min-w-[60px] rounded px-1.5 py-1 text-[11px] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)] ${
                               res
-                                ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-900/40'
-                                : 'text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                                ? 'bg-[color:var(--color-blueprint-soft)] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:bg-[color:var(--color-blueprint-soft)] dark:hover:bg-[color:var(--color-blueprint-soft)]'
+                                : 'text-gray-400 dark:text-gray-500 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50'
                             } ${canEdit ? '' : 'cursor-not-allowed opacity-60'}`}
                           >
                             {res ? (vis?.name ?? 'R') : '·'}
@@ -243,7 +243,7 @@ export function ReservationsPage() {
 function PageShell({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-gray-950 dark:to-gray-900"
+      className="min-h-screen bg-[color:var(--color-paper)] dark:bg-gray-950"
       data-testid="reservations-page"
     >
       <div className="max-w-7xl mx-auto px-6 py-10">{children}</div>
@@ -258,7 +258,7 @@ function PageHeader({ mapHref }: { mapHref: string | null }) {
         <div>
           <Link
             to={mapHref}
-            className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+            className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)] rounded"
           >
             <ArrowLeft size={12} aria-hidden="true" />
             Back to map
@@ -279,10 +279,10 @@ function PageHeader({ mapHref }: { mapHref: string | null }) {
 
 function EmptyState() {
   return (
-    <div className="mt-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-10 text-center">
+    <div className="mt-6 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-lg p-10 text-center">
       <div
         aria-hidden="true"
-        className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 mb-4"
+        className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 text-gray-500 dark:text-gray-400 mb-4"
       >
         <Calendar size={22} />
       </div>
@@ -305,10 +305,10 @@ function EmptyState() {
 // get tree-shaken away accidentally.
 export function ReservationsUnauthorizedState() {
   return (
-    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-10 text-center">
+    <div className="bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-lg p-10 text-center">
       <div
         aria-hidden="true"
-        className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 mb-4"
+        className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 text-gray-500 dark:text-gray-400 mb-4"
       >
         <Lock size={22} />
       </div>

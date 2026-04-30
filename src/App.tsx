@@ -41,6 +41,33 @@ const InvitePage = lazy(() =>
 const ProjectShell = lazy(() =>
   import('./components/editor/ProjectShell').then((m) => ({ default: m.ProjectShell })),
 )
+const DemoPage = lazy(() =>
+  import('./components/editor/DemoPage').then((m) => ({ default: m.DemoPage })),
+)
+const PricingPage = lazy(() =>
+  import('./components/marketing/PricingPage').then((m) => ({ default: m.PricingPage })),
+)
+const ChangelogPage = lazy(() =>
+  import('./components/marketing/ChangelogPage').then((m) => ({ default: m.ChangelogPage })),
+)
+const AboutPage = lazy(() =>
+  import('./components/marketing/AboutPage').then((m) => ({ default: m.AboutPage })),
+)
+const ContactPage = lazy(() =>
+  import('./components/marketing/ContactPage').then((m) => ({ default: m.ContactPage })),
+)
+const PrivacyPage = lazy(() =>
+  import('./components/marketing/PrivacyPage').then((m) => ({ default: m.PrivacyPage })),
+)
+const TermsPage = lazy(() =>
+  import('./components/marketing/TermsPage').then((m) => ({ default: m.TermsPage })),
+)
+const StatusPage = lazy(() =>
+  import('./components/marketing/StatusPage').then((m) => ({ default: m.StatusPage })),
+)
+const CsvTemplatesPage = lazy(() =>
+  import('./components/marketing/CsvTemplatesPage').then((m) => ({ default: m.CsvTemplatesPage })),
+)
 const MapView = lazy(() =>
   import('./components/editor/MapView').then((m) => ({ default: m.MapView })),
 )
@@ -175,6 +202,22 @@ function App() {
                 the route is intentionally public so anonymous visitors
                 don't bounce through auth. */}
             <Route path="/share/:officeSlug" element={<ShareView />} />
+            {/* Public demo office. Hydrates the bundled demo seed into
+                the live stores and pins the viewer to the synthetic
+                `shareViewer` role so the canvas is structurally
+                read-only. Linked from the landing-page CTAs. */}
+            <Route path="/demo" element={<DemoPage />} />
+            {/* Marketing pages — all use PublicPageShell + the Drafting
+                Studio identity. Linked from the landing footer
+                (Product / Resources / Company columns). */}
+            <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/changelog" element={<ChangelogPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/status" element={<StatusPage />} />
+            <Route path="/csv-templates" element={<CsvTemplatesPage />} />
             {/* Help is intentionally public — an unauth'd user can read
                 the guide before signing up, and an auth'd one doesn't
                 have to bounce through a team to get to it. */}

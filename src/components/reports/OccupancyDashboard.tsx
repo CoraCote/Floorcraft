@@ -107,7 +107,7 @@ export function OccupancyDashboard() {
 
       {/* Per-floor breakdown */}
       <div>
-        <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+        <div className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400 mb-2">
           By floor
         </div>
         <div className="flex flex-col gap-2">
@@ -121,7 +121,7 @@ export function OccupancyDashboard() {
                     {f.pct}% ({f.assigned}/{f.seats})
                   </span>
                 </div>
-                <div className="w-full h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                <div className="w-full h-2 bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all ${tone.fill}`}
                     style={{ width: `${Math.min(f.pct, 100)}%` }}
@@ -135,7 +135,7 @@ export function OccupancyDashboard() {
 
       {/* Per-department breakdown */}
       <div>
-        <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+        <div className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400 mb-2">
           By department
         </div>
         <div className="flex flex-col gap-1.5">

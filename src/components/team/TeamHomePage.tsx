@@ -236,16 +236,16 @@ function StatCard({
 }) {
   return (
     <div
-      className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-3"
+      className="bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-lg p-3"
       // Stat cards are read-only summary chrome — keep them out of the
       // tab order entirely so keyboard users don't have to click through
       // six non-actions to reach the search input.
       aria-hidden={false}
     >
-      <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+      <div className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
         {label}
       </div>
-      <div className="mt-1 text-2xl font-semibold tabular-nums text-gray-900 dark:text-gray-100">
+      <div className="mt-1 font-mono text-2xl font-medium tabular-nums text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]">
         {value}
       </div>
     </div>
@@ -256,15 +256,15 @@ function StatCard({
 function OfficeCardSkeleton() {
   return (
     <div
-      className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden animate-pulse"
+      className="bg-[color:var(--color-paper-raised)] dark:bg-gray-900 rounded-xl border border-[color:var(--color-paper-line)] dark:border-gray-800 overflow-hidden animate-pulse"
       aria-hidden="true"
     >
-      <div className="w-full h-40 bg-gray-100 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-800" />
+      <div className="w-full h-40 bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 border-b border-[color:var(--color-paper-line)] dark:border-gray-800" />
       <div className="p-4 space-y-3">
         <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
-        <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded w-3/4" />
-        <div className="pt-3 border-t border-gray-100 dark:border-gray-800">
-          <div className="h-5 bg-gray-100 dark:bg-gray-800 rounded-full w-20" />
+        <div className="h-3 bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 rounded w-3/4" />
+        <div className="pt-3 border-t border-[color:var(--color-paper-line)] dark:border-gray-800">
+          <div className="h-5 bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 rounded-full w-20" />
         </div>
       </div>
     </div>
@@ -575,7 +575,7 @@ export function TeamHomePage() {
     // first frame. Polite `aria-live` announces the load state for
     // screen readers without re-firing once the team resolves.
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-gray-950 dark:to-gray-900">
+      <div className="min-h-screen bg-[color:var(--color-paper)] dark:bg-gray-950">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 py-6 sm:py-8">
           <span className="sr-only" role="status" aria-live="polite">
             Loading team…
@@ -587,7 +587,7 @@ export function TeamHomePage() {
             <div className="w-10 h-10 rounded-lg bg-gray-200 dark:bg-gray-800 shrink-0" />
             <div className="flex-1 space-y-2">
               <div className="h-6 bg-gray-200 dark:bg-gray-800 rounded w-48" />
-              <div className="h-3 bg-gray-100 dark:bg-gray-800/60 rounded w-72" />
+              <div className="h-3 bg-[color:var(--color-paper-sunken)] dark:bg-gray-800/60 rounded w-72" />
             </div>
           </div>
           <ul
@@ -614,7 +614,7 @@ export function TeamHomePage() {
   const subtitleText = `${offices.length} ${offices.length === 1 ? 'office' : 'offices'} · ${totals.employees} ${totals.employees === 1 ? 'employee' : 'employees'} · ${totals.floors} ${totals.floors === 1 ? 'floor' : 'floors'}`
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-gray-950 dark:to-gray-900">
+    <div className="min-h-screen bg-[color:var(--color-paper)] dark:bg-gray-950">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 py-6 sm:py-8">
         {/* Team identity header. Logo + name on the left, CTAs on
             the right. The "+ New office" button is only rendered for
@@ -630,12 +630,12 @@ export function TeamHomePage() {
                 src={team.logo_url}
                 alt=""
                 aria-hidden="true"
-                className="w-10 h-10 rounded-lg object-cover border border-gray-200 dark:border-gray-800 shrink-0"
+                className="w-10 h-10 rounded-lg object-cover border border-[color:var(--color-paper-line)] dark:border-gray-800 shrink-0"
               />
             ) : (
               <div
                 aria-hidden="true"
-                className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400 shrink-0"
+                className="w-10 h-10 rounded-lg bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400 shrink-0"
               >
                 <Building2 size={20} />
               </div>
@@ -666,7 +666,7 @@ export function TeamHomePage() {
                   onClick={onImport}
                   disabled={creating}
                   title="Create a new office and open the CSV import dialog"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-md text-sm text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
                 >
                   <Upload size={14} aria-hidden="true" />
                   Import
@@ -674,7 +674,7 @@ export function TeamHomePage() {
                 <button
                   onClick={onNew}
                   disabled={creating}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[color:var(--color-blueprint)] hover:bg-[color:var(--color-blueprint-strong)] text-white rounded-md text-sm font-medium disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)] focus-visible:ring-offset-1 transition-colors"
                 >
                   <Plus size={14} aria-hidden="true" />
                   New office
@@ -683,13 +683,13 @@ export function TeamHomePage() {
             )}
             <Link
               to={`/t/${team.slug}/settings`}
-              className="px-3 py-1.5 border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+              className="px-3 py-1.5 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-md text-sm text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50"
             >
               Settings
             </Link>
             <Link
               to="/help"
-              className="px-3 py-1.5 border border-gray-200 dark:border-gray-800 rounded-md text-sm hover:bg-gray-50 dark:hover:bg-gray-800/50 text-gray-700 dark:text-gray-200"
+              className="px-3 py-1.5 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-md text-sm hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50 text-gray-700 dark:text-gray-200"
               title="User guide and FAQ"
             >
               Help
@@ -760,14 +760,14 @@ export function TeamHomePage() {
                   aria-label="Search offices"
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
-                  className="w-full pl-8 pr-8 py-1.5 text-sm border border-gray-200 dark:border-gray-800 rounded-md bg-white dark:bg-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  className="w-full pl-8 pr-8 py-1.5 text-sm border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-md bg-[color:var(--color-paper-raised)] dark:bg-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
                 />
                 {q && (
                   <button
                     type="button"
                     onClick={() => setQ('')}
                     aria-label="Clear search"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
                   >
                     <X size={14} />
                   </button>
@@ -779,7 +779,7 @@ export function TeamHomePage() {
                   aria-label="Sort offices"
                   value={sortMode}
                   onChange={(e) => setSortMode(e.target.value as SortMode)}
-                  className="px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-800 rounded-md bg-white dark:bg-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  className="px-2 py-1.5 text-sm border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-md bg-[color:var(--color-paper-raised)] dark:bg-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
                 >
                   {SORT_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>
@@ -794,7 +794,7 @@ export function TeamHomePage() {
                   aria-label="Filter offices"
                   value={filterMode}
                   onChange={(e) => setFilterMode(e.target.value as FilterMode)}
-                  className="px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-800 rounded-md bg-white dark:bg-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  className="px-2 py-1.5 text-sm border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-md bg-[color:var(--color-paper-raised)] dark:bg-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
                 >
                   {FILTER_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>
@@ -812,7 +812,7 @@ export function TeamHomePage() {
               <section className="mb-6" aria-labelledby="recent-heading">
                 <h2
                   id="recent-heading"
-                  className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2"
+                  className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400 mb-2"
                 >
                   Recent
                 </h2>
@@ -861,7 +861,7 @@ export function TeamHomePage() {
                 {recentOffices.length > 0 && q.trim() === '' && filterMode === 'all' && (
                   <h2
                     id="all-offices-heading"
-                    className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2"
+                    className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400 mb-2"
                   >
                     All offices
                   </h2>
@@ -910,7 +910,7 @@ export function TeamHomePage() {
                   <button
                     onClick={onNewDemo}
                     disabled={creating}
-                    className="text-blue-600 dark:text-blue-400 hover:underline disabled:text-gray-400 disabled:no-underline"
+                    className="text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline disabled:text-gray-400 disabled:no-underline"
                     title="Pre-populated with ~18 demo employees to exercise the roster features"
                   >
                     Sample office · ~18 employees
@@ -971,24 +971,37 @@ function EmptyTeamState({
   onNewDemo: () => void
 }) {
   return (
-    <div className="mt-10 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-10 text-center max-w-xl mx-auto">
-      <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 mb-4">
+    <div className="relative mt-10 overflow-hidden bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-xl p-10 text-center max-w-xl mx-auto">
+      {/* Faint blueprint grid behind the empty-state card so a brand-
+          new team's first surface still feels architectural rather
+          than generic SaaS. Aria-hidden because it's purely decorative
+          — the headline + body carry the meaning. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 opacity-50"
+        style={{
+          backgroundImage:
+            'linear-gradient(to right, var(--color-paper-line) 1px, transparent 1px), linear-gradient(to bottom, var(--color-paper-line) 1px, transparent 1px)',
+          backgroundSize: '24px 24px',
+        }}
+      />
+      <div className="relative inline-flex items-center justify-center w-14 h-14 rounded-full bg-[color:var(--color-blueprint-soft)] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] mb-4">
         <Building2 size={28} aria-hidden="true" />
       </div>
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+      <h2 className="relative text-lg font-semibold text-gray-900 dark:text-gray-100">
         Welcome to Floorcraft
       </h2>
-      <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+      <p className="relative mt-2 text-sm text-gray-500 dark:text-gray-400">
         Create your first office to start planning.
       </p>
       {canCreate && (
-        <div className="mt-5 flex items-center justify-center gap-2 flex-wrap">
+        <div className="relative mt-5 flex items-center justify-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={onNew}
             disabled={creating}
             aria-label="Create office"
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-[color:var(--color-blueprint)] hover:bg-[color:var(--color-blueprint-strong)] text-white rounded-md text-sm font-medium disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)] focus-visible:ring-offset-1 transition-colors"
           >
             <Plus size={14} aria-hidden="true" />
             Create office
@@ -997,7 +1010,7 @@ function EmptyTeamState({
             type="button"
             onClick={onNewDemo}
             disabled={creating}
-            className="px-4 py-2 border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="px-4 py-2 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-md text-sm text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
             title="Pre-populated with ~18 demo employees"
           >
             Try the sample office
@@ -1019,7 +1032,7 @@ function NoMatchesState({
 }) {
   return (
     <div
-      className="mt-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-10 text-center max-w-md mx-auto"
+      className="mt-6 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-xl p-10 text-center max-w-md mx-auto"
       role="status"
       aria-live="polite"
     >
@@ -1035,7 +1048,7 @@ function NoMatchesState({
       <button
         type="button"
         onClick={onReset}
-        className="mt-4 px-3 py-1.5 border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+        className="mt-4 px-3 py-1.5 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-md text-sm text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
       >
         Clear search & filters
       </button>

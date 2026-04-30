@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!--
+    Compass-rose monogram favicon. Matches the brand mark used in the
+    landing nav, auth pages, demo banner, help page header, and 404 /
+    error boundary. Cyan-700 stroke (#0E7490) so the mark holds up
+    against either a light browser-tab background or the OS dark mode
+    title bar.
+  -->
+  <rect x="3" y="3" width="26" height="26" rx="4" stroke="#0E7490" stroke-width="2.4" />
+  <rect x="9" y="9" width="14" height="14" transform="rotate(45 16 16)" stroke="#0E7490" stroke-width="2.4" />
+</svg>

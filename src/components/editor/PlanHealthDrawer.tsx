@@ -97,12 +97,12 @@ export function PlanHealthDrawer({ health, onClose }: Props) {
       />
       <aside
         ref={drawerRef}
-        className="relative ml-auto w-[400px] max-w-full h-full bg-white dark:bg-gray-900 shadow-2xl overflow-y-auto flex flex-col"
+        className="relative ml-auto w-[400px] max-w-full h-full bg-[color:var(--color-paper-raised)] dark:bg-gray-900 shadow-2xl overflow-y-auto flex flex-col"
         role="dialog"
         aria-modal="true"
         aria-label="Plan health"
       >
-        <header className="flex items-start justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+        <header className="flex items-start justify-between px-5 py-4 border-b border-[color:var(--color-paper-line)] dark:border-gray-800 flex-shrink-0">
           <div>
             <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
               Plan health
@@ -115,7 +115,7 @@ export function PlanHealthDrawer({ health, onClose }: Props) {
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
+            className="p-1.5 rounded hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
             aria-label="Close drawer"
           >
             <X size={18} />
@@ -192,7 +192,7 @@ function IssueRow({
       </div>
       <button
         onClick={onJump}
-        className="text-xs px-2 py-1 rounded border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 flex-shrink-0"
+        className="text-xs px-2 py-1 rounded border border-[color:var(--color-paper-line)] dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800 flex-shrink-0"
         data-testid="plan-health-jump"
       >
         Jump
@@ -223,7 +223,7 @@ function SeverityIcon({ severity }: { severity: IssueSeverity }) {
   return (
     <Info
       size={16}
-      className="text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5"
+      className="text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] flex-shrink-0 mt-0.5"
       aria-hidden="true"
     />
   )

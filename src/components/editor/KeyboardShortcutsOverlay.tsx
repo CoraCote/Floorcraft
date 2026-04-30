@@ -180,7 +180,7 @@ function KeyCombo({ combo, mac }: { combo: string; mac: boolean }) {
         t.kind === 'key' ? (
           <kbd
             key={`${i}-${t.text}`}
-            className="inline-flex items-center justify-center min-w-[1.5rem] h-6 px-1.5 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-[11px] font-medium font-mono text-gray-700 dark:text-gray-200 shadow-[0_1px_0_0_rgba(0,0,0,0.05),inset_0_-1px_0_0_rgba(0,0,0,0.06)] dark:shadow-[0_1px_0_0_rgba(0,0,0,0.4),inset_0_-1px_0_0_rgba(255,255,255,0.04)]"
+            className="inline-flex items-center justify-center min-w-[1.5rem] h-6 px-1.5 rounded-md border border-[color:var(--color-paper-line)] dark:border-gray-700 bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 text-[11px] font-medium font-mono text-gray-700 dark:text-gray-200 shadow-[0_1px_0_0_rgba(0,0,0,0.05),inset_0_-1px_0_0_rgba(0,0,0,0.06)] dark:shadow-[0_1px_0_0_rgba(0,0,0,0.4),inset_0_-1px_0_0_rgba(255,255,255,0.04)]"
           >
             {t.text}
           </kbd>
@@ -268,7 +268,7 @@ function OverlayContent({ setOpen }: { setOpen: (open: boolean) => void }) {
       aria-labelledby="shortcuts-heading"
     >
       <div
-        className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 max-w-3xl w-full mx-4 max-h-[85vh] overflow-y-auto"
+        className="bg-[color:var(--color-paper-raised)] dark:bg-gray-900 rounded-xl shadow-2xl p-6 max-w-3xl w-full mx-4 max-h-[85vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-3">
@@ -298,7 +298,7 @@ function OverlayContent({ setOpen }: { setOpen: (open: boolean) => void }) {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search shortcuts (e.g. undo, cmd, zoom)"
             aria-label="Search keyboard shortcuts"
-            className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            className="w-full px-3 py-2 text-sm bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 border border-[color:var(--color-paper-line)] dark:border-gray-700 rounded-md text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[color:var(--color-blueprint)] focus:border-transparent"
           />
         </form>
 

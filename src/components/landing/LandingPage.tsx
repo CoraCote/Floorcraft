@@ -6,11 +6,11 @@ import {
   Layers,
   MousePointer2,
   Presentation,
+  ArrowRight,
 } from 'lucide-react'
 import { useSession } from '../../lib/auth/session'
 import { useMyTeams } from '../../lib/teams/useMyTeams'
 import { FloorPlanHero } from './FloorPlanHero'
-import { BrowserFrame } from './BrowserFrame'
 import { FeatureCard } from './FeatureCard'
 import { LandingNav } from './LandingNav'
 import { LandingStats } from './LandingStats'
@@ -20,119 +20,129 @@ import { LandingFooter } from './LandingFooter'
 /**
  * Public landing page at `/`.
  *
- * Auth-gated CTA logic (preserved from earlier phases):
- *   - Signed out → Sign up / Log in.
- *   - Signed in, has teams → jump straight to the first team home.
- *   - Signed in, no teams yet → /dashboard, which itself redirects to
- *     /onboarding/team (via `DashboardRedirect` + `RequireTeam`).
- *
- * Visual direction: Linear-adjacent, indigo accent, no stock
- * photography — the product's own stylized floor plan is the hero
- * illustration. Wave 15A added a sticky top nav, micro-stat row under
- * the hero CTA, a three-step "How it works" explainer, a 2x3 feature
- * grid with subtle hover affordances, and a real column footer.
+ * Wave 21A — Drafting Studio direction. Replaces the indigo-gradient
+ * 2021-SaaS look with a warm-paper / blueprint-cyan identity that telegraphs
+ * the product is a *spatial planning tool*, not a generic CRM. The hero
+ * splits into a copy column and a technical-drawing column at lg+, with
+ * mono numerics for measurements and stats and a faint blueprint grid
+ * behind the hero. The "See a demo" CTA now points at `/demo`, a
+ * read-only mount of the seed office that ships with the build.
  */
 export function LandingPage() {
   const session = useSession()
   const teams = useMyTeams()
 
-  // The CTA row stacks on mobile so each button lands above the fold
-  // on 375px viewports. Authenticated users see a single "Open
-  // dashboard" pill instead of the sign-up split.
   const primaryCta =
     session.status === 'authenticated' ? (
-      <div className="flex justify-center">
+      <div className="flex justify-center lg:justify-start">
         <Link
           to={teams && teams.length > 0 ? `/t/${teams[0].slug}` : '/dashboard'}
-          className="px-8 py-3 bg-blue-600 text-white text-lg font-medium rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 dark:shadow-blue-950/40 transition-all inline-block"
+          className="group inline-flex items-center gap-2 px-6 py-3 bg-[color:var(--color-blueprint)] hover:bg-[color:var(--color-blueprint-strong)] text-white text-base font-medium rounded-lg transition-colors"
         >
           Open dashboard
+          <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
         </Link>
       </div>
     ) : (
-      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+      <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
         <Link
           to="/signup"
-          className="px-6 py-3 bg-blue-600 text-white text-lg font-medium rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 dark:shadow-blue-950/40 transition-all text-center"
+          className="group inline-flex items-center justify-center gap-2 px-6 py-3 bg-[color:var(--color-blueprint)] hover:bg-[color:var(--color-blueprint-strong)] text-white text-base font-medium rounded-lg transition-colors"
         >
           Start free
+          <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
         </Link>
         <Link
-          to="/help"
-          className="px-6 py-3 border border-gray-300 rounded-xl font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800/50 text-lg text-center"
+          to="/demo"
+          className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-[color:var(--color-paper-line)] dark:border-gray-700 rounded-lg text-base font-medium text-gray-800 dark:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50 transition-colors"
         >
-          See a demo
+          Open the demo plan
         </Link>
       </div>
     )
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-gray-950 dark:to-gray-900">
+    <div className="min-h-screen bg-[color:var(--color-paper)] text-gray-900 dark:text-gray-100">
       <LandingNav />
 
-      {/* Hero */}
+      {/* ───── Hero ─────
+          Split layout at lg+: copy left, technical drawing right.
+          A subtle blueprint grid washes across the entire hero band so
+          the marketing surface and the editor share one identity.
+          The grid is masked at the top edge to fade into the LandingNav
+          chrome and at the bottom to soften into the next section. */}
       <section
         aria-labelledby="hero-heading"
-        className="max-w-5xl mx-auto px-4 sm:px-6 pt-12 pb-16 sm:pt-24 sm:pb-28 text-center"
+        className="relative overflow-hidden bg-blueprint-grid border-b border-[color:var(--color-paper-line)] dark:border-gray-800"
       >
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500 dark:text-blue-400 mb-5">
-          Workplace planning, reimagined
-        </p>
-        <h1
-          id="hero-heading"
-          className="text-4xl sm:text-6xl font-bold tracking-tight text-gray-900 dark:text-gray-100 mb-4"
-        >
-          Plan your office.
-          <br />
-          <span className="text-gray-500 dark:text-gray-400">Seat your team.</span>
-        </h1>
-        {/* Subheadline revision: the pre-polish version ("The
-            floor-plan editor built for hybrid workplace teams.") read
-            as a tagline without saying what a visitor gets. The new
-            copy names the two endpoints of the workflow — draft in
-            minutes, publish in an afternoon — which is the actual
-            value prop for someone debating whether to click Start
-            free. */}
-        <p className="text-base sm:text-xl text-gray-500 dark:text-gray-400 mb-10 max-w-2xl mx-auto">
-          Draft a floor plan in minutes, seat your whole team by the afternoon, and share a
-          living map with every stakeholder that needs it.
-        </p>
-        {primaryCta}
+        <div className="max-w-6xl mx-auto px-6 pt-16 pb-20 lg:pt-24 lg:pb-28 grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          <div className="text-center lg:text-left">
+            <p className="font-mono text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] mb-5">
+              <span className="opacity-60">A-101</span>
+              <span className="mx-2 opacity-40">·</span>
+              Workplace planning, drafted
+            </p>
+            <h1
+              id="hero-heading"
+              className="text-4xl sm:text-5xl lg:text-[3.5rem] font-bold tracking-tight leading-[1.05] mb-5"
+            >
+              Draft your office.
+              <br />
+              Seat your team.
+            </h1>
+            <p className="text-lg text-gray-600 dark:text-gray-400 mb-8 max-w-xl mx-auto lg:mx-0">
+              An office planner that thinks like an architect and ships like a
+              modern editor. Sketch walls and desks, drop your roster on the
+              plan, share a living map with the people who need it.
+            </p>
+            {primaryCta}
 
-        <LandingStats />
+            <LandingStats />
+          </div>
 
-        {/* Enlarged hero illustration inside a simulated browser
-            chrome. The indigo glow sits behind the frame to lift it
-            off the gradient background. */}
-        <div className="relative mt-16 sm:mt-20 max-w-4xl mx-auto">
-          <div
-            aria-hidden="true"
-            className="absolute inset-x-8 top-10 bottom-0 rounded-3xl bg-blue-400/20 dark:bg-blue-500/10 blur-3xl"
-          />
           <div className="relative">
-            <BrowserFrame>
+            {/* Faint cyan glow lifts the drawing off the gridded background */}
+            <div
+              aria-hidden="true"
+              className="hero-glow-pulse absolute -inset-6 rounded-2xl bg-[color:var(--color-blueprint-soft)] blur-2xl"
+            />
+            <div className="relative rounded-xl border border-[color:var(--color-paper-line)] dark:border-gray-700 bg-[color:var(--color-paper-raised)] shadow-[0_1px_0_0_rgba(0,0,0,0.04),0_24px_48px_-24px_rgba(15,23,42,0.18)] overflow-hidden">
+              {/* Sheet header — mimics a CAD title bar */}
+              <div className="flex items-center justify-between px-4 py-2 border-b border-[color:var(--color-paper-line)] dark:border-gray-700 font-mono text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                <span>Sheet · A-101 · North Wing</span>
+                <span className="flex items-center gap-3">
+                  <span>1 : 100</span>
+                  <span className="opacity-50">·</span>
+                  <span>FT/IN</span>
+                </span>
+              </div>
               <FloorPlanHero />
-            </BrowserFrame>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Feature grid — expanded from 3 to 6 tiles (2x3 on desktop).
-          Three originals kept verbatim so we don't regress the
-          existing copy review; three new tiles cover the multi-floor,
-          presence, and presentation capabilities that landed after
-          the first-wave polish. */}
+      {/* ───── Feature grid ─────
+          Six tiles, 3 across at lg+. Hover reveals a subtle cyan top
+          edge to telegraph that the cards are interactive without
+          needing a button affordance. */}
       <section
+        id="features"
         aria-labelledby="features-heading"
-        className="max-w-5xl mx-auto px-4 sm:px-6 pb-20 sm:pb-24"
+        className="max-w-6xl mx-auto px-6 py-20 lg:py-28 scroll-mt-16"
       >
-        <h2
-          id="features-heading"
-          className="text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 text-center mb-10"
-        >
-          What you can do
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 md:gap-8">
+        <div className="text-center mb-12">
+          <p className="font-mono text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] mb-3">
+            §02 · Capabilities
+          </p>
+          <h2
+            id="features-heading"
+            className="text-3xl sm:text-4xl font-bold tracking-tight"
+          >
+            What's on the drafting table
+          </h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-[color:var(--color-paper-line)] dark:bg-gray-800 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-xl overflow-hidden">
           <FeatureCard
             icon={Pencil}
             title="Draw in minutes"
@@ -156,7 +166,7 @@ export function LandingPage() {
           <FeatureCard
             icon={MousePointer2}
             title="See teammates live"
-            description="Presence cursors show who is viewing the plan right now, so planning meetings stay in the same pixel without a screen share."
+            description="Presence cursors show who's viewing the plan right now, so planning meetings stay in the same pixel without a screen share."
           />
           <FeatureCard
             icon={Presentation}
@@ -168,59 +178,52 @@ export function LandingPage() {
 
       <HowItWorks />
 
-      {/* Social-proof row — kept but tightened. Wider letter-spacing
-          and a little more vertical breathing room makes the names
-          feel like a logo strip rather than a tag dump. */}
-      <section
-        aria-labelledby="trusted-heading"
-        className="max-w-4xl mx-auto px-4 sm:px-6 pb-20"
-      >
-        <h2
-          id="trusted-heading"
-          className="text-center text-xs uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500 mb-6"
-        >
-          Trusted by teams at
-        </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
-          {['Acme', 'Nimbus', 'Orbit', 'Lattice', 'Fielder'].map((name) => (
-            <div
-              key={name}
-              className="grayscale h-10 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 font-semibold text-sm tracking-[0.15em] uppercase transition-colors"
-            >
-              {name}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Secondary CTA band doubles as a pricing teaser — the
-          #pricing anchor from the top nav lands here. A full pricing
-          table would be overkill while the product is still
-          "free for small teams". */}
+      {/* ───── Closing CTA band ─────
+          Replaces the previous indigo gradient. The dark blueprint
+          band reads as the night-shift version of the hero — same
+          identity, inverted. */}
       <section
         id="pricing"
         aria-labelledby="cta-heading"
-        className="bg-gradient-to-r from-blue-600 to-indigo-700 scroll-mt-16"
+        className="relative overflow-hidden bg-[color:var(--color-blueprint-strong)] dark:bg-[color:var(--color-paper-sunken)] scroll-mt-16"
       >
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-16 sm:py-20 text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-200 mb-4">
-            Free for teams up to 25
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 opacity-[0.18]"
+          style={{
+            backgroundImage:
+              'linear-gradient(to right, rgba(255,255,255,0.4) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.4) 1px, transparent 1px)',
+            backgroundSize: '48px 48px, 48px 48px',
+          }}
+        />
+        <div className="relative max-w-4xl mx-auto px-6 py-16 sm:py-20 text-center">
+          <p className="font-mono text-xs font-medium uppercase tracking-[0.18em] text-cyan-200 mb-4">
+            §03 · Free for teams up to 25
           </p>
           <h2
             id="cta-heading"
             className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-3"
           >
-            Start planning today.
+            Open a fresh sheet.
           </h2>
-          <p className="text-lg text-blue-100 mb-8">
+          <p className="text-lg text-cyan-100 mb-8 max-w-xl mx-auto">
             No credit card. Upgrade when your team outgrows the free tier.
           </p>
-          <Link
-            to="/signup"
-            className="inline-block px-8 py-3 bg-white dark:bg-gray-900 text-blue-700 dark:text-blue-300 text-lg font-medium rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/40 shadow-lg transition-all"
-          >
-            Create your first office
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link
+              to="/signup"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-[color:var(--color-blueprint-strong)] text-base font-medium rounded-lg hover:bg-cyan-50 transition-colors"
+            >
+              Create your first office
+              <ArrowRight size={16} />
+            </Link>
+            <Link
+              to="/demo"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-white/30 text-white text-base font-medium rounded-lg hover:bg-white/10 transition-colors"
+            >
+              Open the demo plan
+            </Link>
+          </div>
         </div>
       </section>
 

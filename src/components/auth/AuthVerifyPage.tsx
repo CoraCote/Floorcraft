@@ -73,7 +73,7 @@ export function AuthVerifyPage() {
       <div className="flex flex-col items-center text-center">
         <span
           aria-hidden="true"
-          className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400"
+          className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[color:var(--color-blueprint-soft)] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]"
         >
           <Loader2
             size={24}

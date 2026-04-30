@@ -23,11 +23,32 @@ interface ToolDef {
   label: string
   icon: React.ReactNode
   shortcut: string
-  /** One-line first-use description shown in the rich hover tooltip. */
   description: string
 }
 
-const tools: ToolDef[] = [
+/**
+ * Wave 21A — Drafting Studio tool rail.
+ *
+ * The previous tool selector was a 260-px vertical list of icon + label +
+ * shortcut rows, which spent its width re-stating each tool's name. The
+ * rail collapses that into a 56-px icon-only column (Figma / Excalidraw
+ * idiom): hover yields a rich first-use tooltip on first encounter and
+ * a native title-attribute tooltip thereafter. Tools cluster into four
+ * groups separated by hairlines so the eye groups them by intent
+ * rather than scanning a flat list of thirteen items.
+ *
+ * Hover discovery scales with the operator's familiarity:
+ *   - First time the operator hovers a tool: rich `FirstUseTooltip`
+ *     card with name, description, and shortcut.
+ *   - Subsequent hovers: native title attribute as a quiet reminder.
+ *   - Keyboard shortcuts in the existing `useKeyboardShortcuts` hook
+ *     are unchanged — the rail is a pointer affordance, not the
+ *     authoritative tool surface.
+ */
+
+type ToolGroup = ReadonlyArray<ToolDef>
+
+const NAV_GROUP: ToolGroup = [
   {
     id: 'select',
     label: 'Select',
@@ -42,6 +63,9 @@ const tools: ToolDef[] = [
     shortcut: 'Space',
     description: 'Dedicated pan mode. Hold Space anywhere for a temporary pan instead.',
   },
+]
+
+const ARCHITECTURE_GROUP: ToolGroup = [
   {
     id: 'wall',
     label: 'Wall',
@@ -63,14 +87,6 @@ const tools: ToolDef[] = [
     shortcut: '⇧N',
     description: 'Click a wall to place a window along its length.',
   },
-  // Rectangle / room tool. Click and drag from one corner to the opposite
-  // corner; on release we commit four connected walls in a single undo
-  // step. Distinct from the `rect-shape` drawing primitive — that one
-  // creates a single filled rectangle annotation; this one creates four
-  // real `WallElement`s that doors and windows can attach to. The Square
-  // (lucide) icon mirrors what most floor-plan editors use for "room."
-  // Shortcut Shift+O ("rOom") sits next to Shift+D / Shift+N so the
-  // architectural-creation hotkeys cluster on the keyboard.
   {
     id: 'room',
     label: 'Room',
@@ -78,11 +94,9 @@ const tools: ToolDef[] = [
     shortcut: '⇧O',
     description: 'Click and drag to draw a 4-wall rectangular room. Hold Shift for a square.',
   },
-  // Drawing primitives. Shortcut picks:
-  //   R = rect, E = ellipse (C is already taken visually by "Circle" but we
-  //   avoid the D/G/M/R conflicts in useKeyboardShortcuts), L = line,
-  //   A = arrow, T = text. D is "toggle dimensions" and G is "toggle grid",
-  //   so we avoid those.
+]
+
+const SHAPE_GROUP: ToolGroup = [
   {
     id: 'rect-shape',
     label: 'Rectangle',
@@ -118,9 +132,9 @@ const tools: ToolDef[] = [
     shortcut: 'T',
     description: 'Click anywhere to drop a text label on the canvas.',
   },
-  // Measure is a read-only tool — architects and facilities managers use
-  // it often to check corridor widths and room sizes, so we expose it
-  // alongside the primitives. Shift+M because plain M jumps to Map view.
+]
+
+const MEASURE_GROUP: ToolGroup = [
   {
     id: 'measure',
     label: 'Measure',
@@ -128,8 +142,6 @@ const tools: ToolDef[] = [
     shortcut: '⇧M',
     description: 'Click points to measure distance. Double-click or Enter to finish.',
   },
-  // Neighborhoods: drag-create a labeled zone that tints a seat region.
-  // Plain G is "toggle grid", so the tool is shift-locked to ⇧G.
   {
     id: 'neighborhood',
     label: 'Neighborhood',
@@ -139,10 +151,12 @@ const tools: ToolDef[] = [
   },
 ]
 
+const GROUPS = [NAV_GROUP, ARCHITECTURE_GROUP, SHAPE_GROUP, MEASURE_GROUP] as const
+
 const WALL_STYLES: { id: WallDrawStyle; label: string }[] = [
-  { id: 'solid', label: 'Solid' },
-  { id: 'dashed', label: 'Dashed' },
-  { id: 'dotted', label: 'Dotted' },
+  { id: 'solid', label: 'S' },
+  { id: 'dashed', label: '⋯' },
+  { id: 'dotted', label: '·' },
 ]
 
 export function ToolSelector() {
@@ -152,19 +166,17 @@ export function ToolSelector() {
   const setWallDrawStyle = useCanvasStore((s) => s.setWallDrawStyle)
   const canEdit = useCan('editMap')
   const { showRichTooltip, markToolUsed } = useFirstUseTooltip()
-
-  // Hovered tool id; only one rich tooltip is visible at a time to avoid
-  // a stack of cards when the user sweeps the cursor down the rail.
   const [hoveredToolId, setHoveredToolId] = useState<ToolType | null>(null)
 
-  // Viewers only get the navigation tools (select, pan). The creation tools
-  // would be silently no-ops against CanvasStage's canEdit guard — hiding
-  // them keeps the picker from implying capabilities the role doesn't have.
-  // Viewers keep Select, Pan, and Measure — the first two are navigation,
-  // the third is read-only, so none expand the viewer's capability surface.
-  const visibleTools = canEdit
-    ? tools
-    : tools.filter((t) => t.id === 'select' || t.id === 'pan' || t.id === 'measure')
+  // Viewers see only navigation (select, pan) and the read-only measure
+  // tool — the rest would be silent no-ops against `canEdit` guards.
+  const visibleGroups: ReadonlyArray<ToolGroup> = canEdit
+    ? GROUPS
+    : [
+        NAV_GROUP,
+        // Pull measure out of MEASURE_GROUP since neighborhood is edit-only.
+        [MEASURE_GROUP[0]] as ToolGroup,
+      ]
 
   const handleToolClick = (tool: ToolDef) => {
     setActiveTool(tool.id)
@@ -172,83 +184,81 @@ export function ToolSelector() {
   }
 
   return (
-    <div className="p-3">
-      <div className="flex flex-col gap-0.5">
-        {visibleTools.map((tool) => {
-          const isRich = hoveredToolId === tool.id && showRichTooltip(tool.id)
-          const tooltipId = `first-use-tooltip-${tool.id}`
-          return (
-            // `z-10` while the rich tooltip is showing so it stacks above
-            // sibling tool wrappers further down the rail. Without an
-            // explicit z-index the absolutely-positioned tooltip can
-            // disappear behind the next tool's hover background during
-            // keyboard nav.
-            <div key={tool.id} className={`relative ${isRich ? 'z-10' : ''}`}>
-              <button
-                onClick={() => handleToolClick(tool)}
-                onMouseEnter={() => setHoveredToolId(tool.id)}
-                onMouseLeave={() =>
-                  setHoveredToolId((prev) => (prev === tool.id ? null : prev))
-                }
-                onFocus={() => setHoveredToolId(tool.id)}
-                onBlur={() =>
-                  setHoveredToolId((prev) => (prev === tool.id ? null : prev))
-                }
-                // `min-w-0` so the inner truncating label doesn't push the
-                // shortcut pill off the edge when a future / localised
-                // tool name exceeds the row width.
-                className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded text-sm transition-colors min-w-0 ${
-                  activeTool === tool.id
-                    ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-medium'
-                    : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
-                title={tool.shortcut ? `${tool.label} (${tool.shortcut})` : tool.label}
-                aria-describedby={isRich ? tooltipId : undefined}
-              >
-                <span className="flex-shrink-0">{tool.icon}</span>
-                <span className="truncate min-w-0">{tool.label}</span>
-                {tool.shortcut && (
-                  <span className="ml-auto text-[10px] text-gray-400 dark:text-gray-500 font-mono flex-shrink-0">{tool.shortcut}</span>
-                )}
-              </button>
-              {isRich && (
-                <FirstUseTooltip
-                  id={tooltipId}
-                  name={tool.label}
-                  description={tool.description}
-                  shortcut={tool.shortcut}
-                  icon={tool.icon}
-                />
-              )}
-              {/* Wall-style presets. Only visible with the wall tool active so
-                  the sidebar doesn't get noisy with options for inactive tools. */}
-              {tool.id === 'wall' && activeTool === 'wall' && (
-                <div
-                  role="radiogroup"
-                  aria-label="Wall line style"
-                  className="flex gap-1 px-2.5 pb-1 pt-0.5"
+    <div className="py-2 flex flex-col items-center gap-1">
+      {visibleGroups.map((group, gi) => (
+        <div key={gi} className="flex flex-col items-center gap-1 w-full">
+          {gi > 0 && (
+            <div
+              aria-hidden="true"
+              className="my-1 h-px w-7 bg-[color:var(--color-paper-line)] dark:bg-gray-700"
+            />
+          )}
+          {group.map((tool) => {
+            const isRich = hoveredToolId === tool.id && showRichTooltip(tool.id)
+            const tooltipId = `first-use-tooltip-${tool.id}`
+            const isActive = activeTool === tool.id
+            return (
+              <div key={tool.id} className={`relative ${isRich ? 'z-10' : ''}`}>
+                <button
+                  onClick={() => handleToolClick(tool)}
+                  onMouseEnter={() => setHoveredToolId(tool.id)}
+                  onMouseLeave={() => setHoveredToolId((p) => (p === tool.id ? null : p))}
+                  onFocus={() => setHoveredToolId(tool.id)}
+                  onBlur={() => setHoveredToolId((p) => (p === tool.id ? null : p))}
+                  className={`flex h-9 w-9 items-center justify-center rounded transition-colors ${
+                    isActive
+                      ? 'bg-[color:var(--color-blueprint-soft)] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]'
+                      : 'text-gray-600 dark:text-gray-300 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800'
+                  }`}
+                  title={tool.shortcut ? `${tool.label} (${tool.shortcut})` : tool.label}
+                  aria-label={tool.label}
+                  aria-pressed={isActive}
+                  aria-describedby={isRich ? tooltipId : undefined}
                 >
-                  {WALL_STYLES.map((s) => (
-                    <button
-                      key={s.id}
-                      role="radio"
-                      aria-checked={wallDrawStyle === s.id}
-                      onClick={() => setWallDrawStyle(s.id)}
-                      className={`flex-1 px-2 py-0.5 text-[11px] rounded-full border transition-colors ${
-                        wallDrawStyle === s.id
-                          ? 'bg-blue-600 text-white border-blue-600'
-                          : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-800 hover:border-gray-300'
-                      }`}
-                    >
-                      {s.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
+                  {tool.icon}
+                </button>
+                {isRich && (
+                  <FirstUseTooltip
+                    id={tooltipId}
+                    name={tool.label}
+                    description={tool.description}
+                    shortcut={tool.shortcut}
+                    icon={tool.icon}
+                  />
+                )}
+                {/* Wall-style flyout only renders under the wall icon
+                    when the wall tool is active. Three compact pills
+                    in a row — the rail's vertical column flow tolerates
+                    the brief horizontal break. */}
+                {tool.id === 'wall' && isActive && (
+                  <div
+                    role="radiogroup"
+                    aria-label="Wall line style"
+                    className="mt-1 mb-1 flex items-center justify-center gap-0.5 px-0.5"
+                  >
+                    {WALL_STYLES.map((s) => (
+                      <button
+                        key={s.id}
+                        role="radio"
+                        aria-checked={wallDrawStyle === s.id}
+                        onClick={() => setWallDrawStyle(s.id)}
+                        className={`h-5 w-6 rounded text-[10px] font-mono transition-colors ${
+                          wallDrawStyle === s.id
+                            ? 'bg-[color:var(--color-blueprint)] text-white'
+                            : 'bg-[color:var(--color-paper-sunken)] text-gray-500 dark:bg-gray-800 dark:text-gray-400 hover:bg-[color:var(--color-paper-line)] dark:hover:bg-gray-700'
+                        }`}
+                        title={`${s.id} wall style`}
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      ))}
     </div>
   )
 }

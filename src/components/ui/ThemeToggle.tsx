@@ -26,7 +26,7 @@ export function ThemeToggle({ className, showLabels = false }: ThemeToggleProps)
       role="radiogroup"
       aria-label="Color theme"
       className={cn(
-        'inline-flex items-center gap-0.5 rounded-md border border-gray-200 bg-white p-0.5 dark:border-gray-700 dark:bg-gray-800',
+        'inline-flex items-center gap-0.5 rounded-md border border-[color:var(--color-paper-line)] bg-[color:var(--color-paper-raised)] p-0.5 dark:border-gray-700 dark:bg-gray-800',
         className,
       )}
     >
@@ -42,10 +42,10 @@ export function ThemeToggle({ className, showLabels = false }: ThemeToggleProps)
             title={label}
             onClick={() => setTheme(value)}
             className={cn(
-              'inline-flex items-center gap-1 rounded px-1.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+              'inline-flex items-center gap-1 rounded px-1.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]',
               active
                 ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-gray-100'
-                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700/50 dark:hover:text-gray-200',
+                : 'text-gray-500 hover:bg-[color:var(--color-paper-sunken)] hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700/50 dark:hover:text-gray-200',
             )}
           >
             <Icon size={14} aria-hidden />

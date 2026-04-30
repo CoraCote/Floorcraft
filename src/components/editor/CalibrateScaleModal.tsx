@@ -107,7 +107,7 @@ function CalibrateScaleModalBody() {
               }}
               aria-invalid={!!error}
               aria-describedby={error ? 'calibrate-distance-error' : undefined}
-              className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
+              className="w-full text-sm border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded px-2 py-1 focus:outline-none focus:border-[color:var(--color-blueprint)]"
             />
           </div>
           <div className="w-24">
@@ -118,7 +118,7 @@ function CalibrateScaleModalBody() {
               id="calibrate-unit"
               value={unit}
               onChange={(e) => setUnit(e.target.value as LengthUnit)}
-              className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
+              className="w-full text-sm border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded px-2 py-1 focus:outline-none focus:border-[color:var(--color-blueprint)]"
             >
               {CALIBRATION_UNITS.map((u) => (
                 <option key={u} value={u}>

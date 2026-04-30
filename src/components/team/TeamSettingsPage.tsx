@@ -52,7 +52,7 @@ export function TeamSettingsPage() {
 
   if (!team) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-gray-950 dark:to-gray-900">
+      <div className="min-h-screen bg-[color:var(--color-paper)] dark:bg-gray-950">
         <div className="max-w-5xl mx-auto px-3 sm:px-6 py-6 sm:py-10 text-sm text-gray-500 dark:text-gray-400">
           Loading team…
         </div>
@@ -66,14 +66,14 @@ export function TeamSettingsPage() {
   const pillClass = ({ isActive }: { isActive: boolean }) =>
     [
       'inline-flex items-center px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900',
       isActive
-        ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-800 dark:text-gray-100'
-        : 'text-gray-600 hover:text-gray-900 hover:bg-white/60 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800/60',
+        ? 'bg-[color:var(--color-paper-raised)] text-gray-900 shadow-sm dark:bg-gray-800 dark:text-gray-100'
+        : 'text-gray-600 hover:text-gray-900 hover:bg-[color:var(--color-paper-raised)]/60 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800/60',
     ].join(' ')
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-gray-950 dark:to-gray-900">
+    <div className="min-h-screen bg-[color:var(--color-paper)] dark:bg-gray-950">
       <div className="max-w-5xl mx-auto px-3 sm:px-6 py-6 sm:py-10">
         {/* Breadcrumb back-link — small, understated, positioned above
             the identity header so it reads as "how do I leave this
@@ -81,7 +81,7 @@ export function TeamSettingsPage() {
         <div className="mb-4">
           <Link
             to={`/t/${team.slug}`}
-            className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+            className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)] rounded"
           >
             <ArrowLeft size={12} aria-hidden="true" />
             Back to team
@@ -97,12 +97,12 @@ export function TeamSettingsPage() {
               src={team.logo_url}
               alt=""
               aria-hidden="true"
-              className="w-10 h-10 rounded-lg object-cover border border-gray-200 dark:border-gray-800 shrink-0"
+              className="w-10 h-10 rounded-lg object-cover border border-[color:var(--color-paper-line)] dark:border-gray-800 shrink-0"
             />
           ) : (
             <div
               aria-hidden="true"
-              className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400 shrink-0"
+              className="w-10 h-10 rounded-lg bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400 shrink-0"
             >
               <Building2 size={20} />
             </div>
@@ -123,7 +123,7 @@ export function TeamSettingsPage() {
         <nav
           role="tablist"
           aria-label="Team settings"
-          className="inline-flex items-center gap-1 p-1 mb-6 rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/60"
+          className="inline-flex items-center gap-1 p-1 mb-6 rounded-lg border border-[color:var(--color-paper-line)] bg-[color:var(--color-paper-sunken)] dark:border-gray-800 dark:bg-gray-900/60"
         >
           <NavLink end to="." className={pillClass} role="tab">
             General

@@ -97,7 +97,7 @@ export function RoomBookingsPanel() {
               // The row is keyboard-activatable (Enter / Space below)
               // so it needs a visible focus ring — without one a tab
               // user lands here with no signal they've arrived.
-              className="flex flex-col gap-1 p-2 rounded border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              className="flex flex-col gap-1 p-2 rounded border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
               role="button"
               tabIndex={0}
               onClick={() => focusElements([elementId])}

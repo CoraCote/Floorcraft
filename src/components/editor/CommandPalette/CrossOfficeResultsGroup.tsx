@@ -75,7 +75,7 @@ export function CrossOfficeResultsGroup({ results, highlightedId, onHover, onPic
                     onMouseEnter={() => onHover(rowKey)}
                     onClick={() => onPick(item)}
                     className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 ${
-                      active ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-900' : 'text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                      active ? 'bg-[color:var(--color-blueprint-soft)] text-[color:var(--color-blueprint-strong)]' : 'text-gray-800 dark:text-gray-100 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50'
                     }`}
                   >
                     <span
@@ -91,7 +91,7 @@ export function CrossOfficeResultsGroup({ results, highlightedId, onHover, onPic
                         <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">{item.sublabel}</span>
                       )}
                     </span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 text-gray-600 dark:text-gray-300 whitespace-nowrap">
                       {item.officeName}
                     </span>
                   </button>

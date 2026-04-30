@@ -21,7 +21,7 @@ import { exportFloorAsPng } from '../../lib/pngExport'
 import { buildExportFilename } from '../../lib/exportFilename'
 import { getActiveStage } from '../../lib/stageRegistry'
 import { useState, useRef, useEffect } from 'react'
-import { NavLink, useNavigate, useLocation, useParams } from 'react-router-dom'
+import { useNavigate, useLocation, useParams } from 'react-router-dom'
 import { useTemporalState } from '../../hooks/useTemporalState'
 import { formatRelative } from '../../lib/time'
 import { useCan } from '../../hooks/useCan'
@@ -291,7 +291,7 @@ export function TopBar() {
        off-screen. `overflow-x-clip` keeps narrow-viewport horizontal
        protection while preserving `overflow-y: visible`, so
        dropdowns paint cleanly outside the topbar's box. */
-    <div className="h-14 bg-white border-b border-gray-200 dark:bg-gray-900 dark:border-gray-800 flex items-center px-3 sm:px-4 gap-2 sm:gap-3 flex-shrink-0 overflow-x-clip whitespace-nowrap">
+    <div className="h-14 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border-b border-[color:var(--color-paper-line)] dark:border-gray-800 flex items-center px-3 sm:px-4 gap-2 sm:gap-3 flex-shrink-0 overflow-x-clip whitespace-nowrap">
       {/* Wave 20A: the TopBar packs identity + save state + viewport
           controls + view nav + account into a single row. Below `md`
           the editor canvas itself is gated, so on the OTHER editor
@@ -340,7 +340,7 @@ export function TopBar() {
         <button
           onClick={() => undo()}
           disabled={!canUndo}
-          className={`p-1.5 rounded text-gray-600 dark:text-gray-300 dark:text-gray-400 ${canUndo ? 'hover:bg-gray-100 dark:hover:bg-gray-800' : 'opacity-40 cursor-not-allowed'}`}
+          className={`p-1.5 rounded text-gray-600 dark:text-gray-300 dark:text-gray-400 ${canUndo ? 'hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800' : 'opacity-40 cursor-not-allowed'}`}
           title={canUndo ? 'Undo (Ctrl+Z)' : 'Nothing to undo'}
           aria-label="Undo"
         >
@@ -349,7 +349,7 @@ export function TopBar() {
         <button
           onClick={() => redo()}
           disabled={!canRedo}
-          className={`p-1.5 rounded text-gray-600 dark:text-gray-300 dark:text-gray-400 ${canRedo ? 'hover:bg-gray-100 dark:hover:bg-gray-800' : 'opacity-40 cursor-not-allowed'}`}
+          className={`p-1.5 rounded text-gray-600 dark:text-gray-300 dark:text-gray-400 ${canRedo ? 'hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800' : 'opacity-40 cursor-not-allowed'}`}
           title={canRedo ? 'Redo (Ctrl+Shift+Z)' : 'Nothing to redo'}
           aria-label="Redo"
         >
@@ -370,7 +370,7 @@ export function TopBar() {
       <div className="relative hidden md:block" ref={viewMenuRef}>
         <button
           onClick={() => setViewMenuOpen((o) => !o)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800 rounded"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-[color:var(--color-paper-sunken)] dark:text-gray-200 dark:hover:bg-gray-800 rounded"
           aria-haspopup="menu"
           aria-expanded={viewMenuOpen}
         >
@@ -381,7 +381,7 @@ export function TopBar() {
         {viewMenuOpen && (
           <div
             role="menu"
-            className="absolute left-0 mt-1 w-56 bg-white border border-gray-200 rounded shadow dark:bg-gray-900 dark:border-gray-700 dark:shadow-black/40 z-50 py-1"
+            className="absolute left-0 mt-1 w-56 bg-[color:var(--color-paper-raised)] border border-[color:var(--color-paper-line)] rounded shadow dark:bg-gray-900 dark:border-gray-700 dark:shadow-black/40 z-50 py-1"
           >
             <button
               role="menuitem"
@@ -389,7 +389,7 @@ export function TopBar() {
                 setViewMenuOpen(false)
                 zoomIn()
               }}
-              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800/50"
+              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-[color:var(--color-paper-sunken)] dark:text-gray-200 dark:hover:bg-gray-800/50"
             >
               <ZoomIn size={14} aria-hidden="true" />
               Zoom in
@@ -401,7 +401,7 @@ export function TopBar() {
                 setViewMenuOpen(false)
                 zoomOut()
               }}
-              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800/50"
+              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-[color:var(--color-paper-sunken)] dark:text-gray-200 dark:hover:bg-gray-800/50"
             >
               <ZoomOut size={14} aria-hidden="true" />
               Zoom out
@@ -413,7 +413,7 @@ export function TopBar() {
                 setViewMenuOpen(false)
                 resetZoom()
               }}
-              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800/50"
+              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-[color:var(--color-paper-sunken)] dark:text-gray-200 dark:hover:bg-gray-800/50"
             >
               <span className="inline-block w-[14px] text-center text-xs font-mono">
                 {Math.round(stageScale * 100)}
@@ -421,14 +421,14 @@ export function TopBar() {
               Reset zoom
               <kbd className="ml-auto text-[10px] text-gray-400 dark:text-gray-500 font-mono">0</kbd>
             </button>
-            <div className="my-1 border-t border-gray-100 dark:border-gray-800" />
+            <div className="my-1 border-t border-[color:var(--color-paper-line)] dark:border-gray-800" />
             <button
               role="menuitem"
               onClick={() => {
                 setViewMenuOpen(false)
                 toggleGrid()
               }}
-              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800/50"
+              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-[color:var(--color-paper-sunken)] dark:text-gray-200 dark:hover:bg-gray-800/50"
               aria-pressed={settings.showGrid}
             >
               {settings.showGrid ? (
@@ -446,7 +446,7 @@ export function TopBar() {
                 setViewMenuOpen(false)
                 toggleDimensions()
               }}
-              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800/50"
+              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-[color:var(--color-paper-sunken)] dark:text-gray-200 dark:hover:bg-gray-800/50"
               aria-pressed={settings.showDimensions}
             >
               {settings.showDimensions ? (
@@ -464,7 +464,7 @@ export function TopBar() {
                 setViewMenuOpen(false)
                 toggleNorthArrow()
               }}
-              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800/50"
+              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-[color:var(--color-paper-sunken)] dark:text-gray-200 dark:hover:bg-gray-800/50"
               aria-pressed={settings.showNorthArrow ?? true}
             >
               {(settings.showNorthArrow ?? true) ? (
@@ -487,7 +487,7 @@ export function TopBar() {
                 setViewMenuOpen(false)
                 toggleDeskIds()
               }}
-              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800/50"
+              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-[color:var(--color-paper-sunken)] dark:text-gray-200 dark:hover:bg-gray-800/50"
               aria-pressed={settings.showDeskIds ?? false}
             >
               {(settings.showDeskIds ?? false) ? (
@@ -508,7 +508,7 @@ export function TopBar() {
                 reads consistently. */}
             {canViewITLayer && (
               <>
-                <div className="my-1 border-t border-gray-100 dark:border-gray-800" />
+                <div className="my-1 border-t border-[color:var(--color-paper-line)] dark:border-gray-800" />
                 {IT_LAYERS.map((layer) => {
                   const on = itLayerVisible[layer]
                   // Per-layer label + icon mapping. Kept inline because
@@ -530,7 +530,7 @@ export function TopBar() {
                         setViewMenuOpen(false)
                         toggleITLayer(layer)
                       }}
-                      className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800/50"
+                      className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-[color:var(--color-paper-sunken)] dark:text-gray-200 dark:hover:bg-gray-800/50"
                       aria-pressed={on}
                       data-testid={`it-layer-toggle-${layer}`}
                     >
@@ -552,7 +552,7 @@ export function TopBar() {
                 preference, not a project property. The picker writes
                 through `setSettings` so the choice flows through the
                 existing autosave plumbing. */}
-            <div className="my-1 border-t border-gray-100 dark:border-gray-800" />
+            <div className="my-1 border-t border-[color:var(--color-paper-line)] dark:border-gray-800" />
             <SeatLabelStylePicker
               value={settings.seatLabelStyle ?? 'pill'}
               onChange={(next) => setSettings({ seatLabelStyle: next })}
@@ -572,7 +572,7 @@ export function TopBar() {
         step={2}
         value={settings.gridSize}
         onChange={(e) => setSettings({ gridSize: Number(e.target.value) })}
-        className="hidden md:block w-[60px] text-xs bg-white text-gray-900 border border-gray-200 rounded px-1 py-1 focus:outline-none focus:border-blue-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
+        className="hidden md:block w-[60px] text-xs bg-[color:var(--color-paper-raised)] text-gray-900 border border-[color:var(--color-paper-line)] rounded px-1 py-1 focus:outline-none focus:border-[color:var(--color-blueprint)] dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
         title="Grid size"
         aria-label="Grid size"
       />
@@ -597,7 +597,7 @@ export function TopBar() {
       {selectedIds.length > 0 && (
         <button
           onClick={clearSelection}
-          className="hidden md:flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 dark:text-blue-300 dark:bg-blue-950/40 dark:hover:bg-blue-900/40 rounded"
+          className="hidden md:flex items-center gap-1 px-2 py-1 text-xs font-medium text-[color:var(--color-blueprint-strong)] bg-[color:var(--color-blueprint-soft)] hover:bg-[color:var(--color-blueprint-soft)] dark:text-[color:var(--color-blueprint)] dark:bg-[color:var(--color-blueprint-soft)] dark:hover:bg-[color:var(--color-blueprint-soft)] rounded"
           title="Clear selection"
           aria-label={`Clear selection (${selectedIds.length} selected)`}
         >
@@ -621,7 +621,7 @@ export function TopBar() {
         className={`hidden md:flex p-1.5 rounded items-center gap-1 ${
           presentationMode
             ? 'bg-gray-900 text-white hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200'
-            : 'hover:bg-gray-100 text-gray-600 dark:text-gray-400 dark:hover:bg-gray-800'
+            : 'hover:bg-[color:var(--color-paper-sunken)] text-gray-600 dark:text-gray-400 dark:hover:bg-gray-800'
         }`}
         title={
           presentationMode
@@ -655,14 +655,17 @@ export function TopBar() {
           flips its open state via setShareLinkOpen. */}
       <ShareLinkDialog open={shareLinkOpen} onClose={() => setShareLinkOpen(false)} />
 
-      {/* MAP / ROSTER view toggle. React Router owns the active state so
-          we don't need UI-store bookkeeping. Moved to the action cluster
-          alongside Share/Export because jumping between Map and Roster is
-          a navigation action, not part of identity. Guarded on both
-          params so the hotkeys are inert outside the editor routes.
-          Below `md` we render a compact `<MobileViewNav>` (a styled
-          `<select>`) instead of the pill row — see that component for
-          the rationale. */}
+      {/* Wave 21A: Project view tabs (Map/Roster/Audit/Reports/Network/
+          OrgChart) moved out of the TopBar action cluster and into the
+          new 48-px PrimaryNavRail mounted by ProjectShell. The TopBar
+          now reads as document-level chrome only — identity, save
+          state, viewport controls, presentation, share, account.
+          MobileViewNav stays mounted here as the narrow-screen
+          fallback (the rail hides below `md` since the editor itself
+          is desktop-gated).
+
+          The unreachable JSX block below has been deleted; only the
+          mobile compatibility shim remains. */}
       {teamSlug && officeSlug && (
         <MobileViewNav
           teamSlug={teamSlug}
@@ -672,95 +675,6 @@ export function TopBar() {
           canViewITLayer={canViewITLayer}
         />
       )}
-      {teamSlug && officeSlug && (
-        <nav aria-label="Project views" className="hidden md:flex items-center bg-gray-100 dark:bg-gray-800 rounded-md p-0.5">
-          <NavLink
-            to={`/t/${teamSlug}/o/${officeSlug}/map`}
-            className={({ isActive }) =>
-              `px-2.5 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
-                isActive
-                  ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100'
-                  : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
-              }`
-            }
-          >
-            Map
-          </NavLink>
-          <NavLink
-            to={`/t/${teamSlug}/o/${officeSlug}/roster`}
-            className={({ isActive }) =>
-              `px-2.5 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
-                isActive
-                  ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100'
-                  : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
-              }`
-            }
-          >
-            Roster
-          </NavLink>
-          {canViewAudit && (
-            <NavLink
-              to={`/t/${teamSlug}/o/${officeSlug}/audit`}
-              className={({ isActive }) =>
-                `px-2.5 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
-                  isActive
-                    ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100'
-                    : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
-                }`
-              }
-            >
-              Audit
-            </NavLink>
-          )}
-          {canViewReports && (
-            <NavLink
-              to={`/t/${teamSlug}/o/${officeSlug}/reports`}
-              className={({ isActive }) =>
-                `px-2.5 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
-                  isActive
-                    ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100'
-                    : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
-                }`
-              }
-            >
-              Reports
-            </NavLink>
-          )}
-          {/* M6.1 — Network topology pill. Permission-gated on
-              `viewITLayer` so HR-editors and viewers don't see the
-              affordance; the page itself also self-gates so a typed
-              URL hits the same denial. */}
-          {canViewITLayer && (
-            <NavLink
-              to={`/t/${teamSlug}/o/${officeSlug}/network`}
-              className={({ isActive }) =>
-                `px-2.5 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
-                  isActive
-                    ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100'
-                    : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
-                }`
-              }
-            >
-              Network
-            </NavLink>
-          )}
-          {canViewReports && (
-            <NavLink
-              to={`/t/${teamSlug}/o/${officeSlug}/org-chart`}
-              className={({ isActive }) =>
-                `px-2.5 py-1 text-xs font-semibold uppercase tracking-wide rounded transition-colors ${
-                  isActive
-                    ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100'
-                    : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
-                }`
-              }
-            >
-              Org Chart
-            </NavLink>
-          )}
-        </nav>
-      )}
-
       {/* Wave 15D: the standalone Help link was removed — it duplicated
           the User-guide row already inside UserMenu. The standalone
           ThemeToggle was also removed for the same reason; theme now
@@ -786,7 +700,7 @@ export function TopBar() {
           The avatar is the rightmost item, so any horizontal pressure
           (long save-state strings, selection chip, full project nav)
           ate into it and chopped the user's own avatar in half. */}
-      <div className="ml-1 pl-3 border-l border-gray-200 dark:border-gray-800 flex items-center flex-shrink-0">
+      <div className="ml-1 pl-3 border-l border-[color:var(--color-paper-line)] dark:border-gray-800 flex items-center flex-shrink-0">
         <UserMenu />
       </div>
     </div>
@@ -852,7 +766,7 @@ function MobileViewNav({
         const next = e.target.value
         navigate(`/t/${teamSlug}/o/${officeSlug}/${next}`)
       }}
-      className="md:hidden text-xs font-semibold uppercase tracking-wide bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-md px-2 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+      className="md:hidden text-xs font-semibold uppercase tracking-wide bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 text-gray-800 dark:text-gray-100 border border-[color:var(--color-paper-line)] dark:border-gray-700 rounded-md px-2 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
     >
       <option value="map">Map</option>
       <option value="roster">Roster</option>

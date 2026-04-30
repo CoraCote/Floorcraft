@@ -106,7 +106,7 @@ export function SeatSwapRequestDialog({
               setTargetId(null)
             }}
             placeholder="Type a name or email…"
-            className="mt-1 w-full px-3 py-1.5 border border-gray-300 dark:border-gray-700 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="mt-1 w-full px-3 py-1.5 border border-gray-300 dark:border-gray-700 rounded text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--color-blueprint)]"
             aria-label="Target employee"
           />
           {!selected && query.length > 0 && suggestions.length === 0 && (
@@ -116,7 +116,7 @@ export function SeatSwapRequestDialog({
           )}
           {!selected && suggestions.length > 0 && (
             <ul
-              className="mt-1 border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800 max-h-40 overflow-y-auto"
+              className="mt-1 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded bg-[color:var(--color-paper-raised)] dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800 max-h-40 overflow-y-auto"
               role="listbox"
             >
               {suggestions.map((s) => (
@@ -127,7 +127,7 @@ export function SeatSwapRequestDialog({
                       setTargetId(s.id)
                       setQuery('')
                     }}
-                    className="w-full text-left px-2 py-1 text-xs hover:bg-blue-50 dark:hover:bg-blue-950/40"
+                    className="w-full text-left px-2 py-1 text-xs hover:bg-[color:var(--color-blueprint-soft)]"
                     role="option"
                     aria-selected="false"
                   >
@@ -151,7 +151,7 @@ export function SeatSwapRequestDialog({
             onChange={(e) => setReason(e.target.value)}
             rows={3}
             placeholder="Why do you want to swap?"
-            className="mt-1 w-full px-3 py-1.5 border border-gray-300 dark:border-gray-700 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="mt-1 w-full px-3 py-1.5 border border-gray-300 dark:border-gray-700 rounded text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--color-blueprint)]"
           />
         </label>
       </ModalBody>

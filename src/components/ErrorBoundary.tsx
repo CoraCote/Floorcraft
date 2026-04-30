@@ -66,25 +66,25 @@ export class ErrorBoundary extends Component<Props, State> {
   render(): ReactNode {
     if (this.state.error) {
       return (
-        <div className="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 to-white dark:from-gray-950 dark:to-gray-900">
+        <div className="min-h-screen flex flex-col bg-[color:var(--color-paper)] dark:bg-gray-950">
           <header className="px-6 pt-6 sm:pt-8">
             {/* Plain `<a>` rather than react-router `<Link>` — the
                 router itself may be the thing that threw. */}
             <a
               href="/"
-              className="inline-flex items-center gap-2 font-semibold tracking-tight text-gray-900 dark:text-gray-100"
+              className="inline-flex items-center gap-2.5 font-semibold tracking-tight text-gray-900 dark:text-gray-100"
             >
-              <span
-                aria-hidden="true"
-                className="inline-block h-5 w-5 rotate-45 rounded-sm bg-gradient-to-br from-blue-500 to-indigo-600"
-              />
+              <span aria-hidden="true" className="relative inline-flex h-6 w-6 items-center justify-center">
+                <span className="absolute inset-0 rounded-md border border-[color:var(--color-blueprint)]" />
+                <span className="absolute inset-[5px] rotate-45 border border-[color:var(--color-blueprint)]" />
+              </span>
               <span>Floorcraft</span>
             </a>
           </header>
           <main className="flex-1 flex items-start justify-center px-6 pt-10 pb-12 sm:pt-16">
             <div
               role="alert"
-              className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-8 shadow-sm text-center dark:border-gray-800 dark:bg-gray-900/80"
+              className="w-full max-w-md rounded-xl border border-[color:var(--color-paper-line)] bg-[color:var(--color-paper-raised)] p-8 shadow-sm text-center dark:border-gray-800 dark:bg-gray-900/80"
             >
               <div
                 aria-hidden="true"
@@ -104,13 +104,13 @@ export class ErrorBoundary extends Component<Props, State> {
                 <button
                   type="button"
                   onClick={this.handleReload}
-                  className="inline-flex w-full items-center justify-center gap-1.5 rounded bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
+                  className="inline-flex w-full items-center justify-center gap-1.5 rounded bg-[color:var(--color-blueprint)] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[color:var(--color-blueprint-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
                 >
                   Reload page
                 </button>
                 <a
                   href="/"
-                  className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                  className="text-sm font-medium text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline"
                 >
                   Back to home
                 </a>
@@ -119,7 +119,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 <summary className="cursor-pointer hover:text-gray-700 dark:hover:text-gray-300">
                   Technical details
                 </summary>
-                <pre className="mt-2 overflow-auto max-h-40 rounded bg-gray-50 p-2 text-[11px] text-gray-700 dark:bg-gray-950 dark:text-gray-300">
+                <pre className="mt-2 overflow-auto max-h-40 rounded bg-[color:var(--color-paper-sunken)] p-2 text-[11px] text-gray-700 dark:bg-gray-950 dark:text-gray-300">
                   {this.state.error.message}
                 </pre>
               </details>

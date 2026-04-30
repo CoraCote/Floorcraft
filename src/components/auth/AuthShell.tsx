@@ -17,23 +17,24 @@ import type { ReactNode } from 'react'
  */
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 to-white dark:from-gray-950 dark:to-gray-900">
+    <div className="min-h-screen flex flex-col bg-blueprint-grid">
       <header className="px-6 pt-6 sm:pt-8">
         <Link
           to="/"
-          className="inline-flex items-center gap-2 font-semibold tracking-tight text-gray-900 dark:text-gray-100"
+          className="inline-flex items-center gap-2.5 font-semibold tracking-tight text-gray-900 dark:text-gray-100"
         >
-          {/* Tiny diamond mark — same "F" chip idiom used in LandingNav. */}
-          <span
-            aria-hidden="true"
-            className="inline-block h-5 w-5 rotate-45 rounded-sm bg-gradient-to-br from-blue-500 to-indigo-600"
-          />
+          {/* Compass-rose monogram — matches LandingNav and DemoBanner so
+              the visual identity carries through every public surface. */}
+          <span aria-hidden="true" className="relative inline-flex h-6 w-6 items-center justify-center">
+            <span className="absolute inset-0 rounded-md border border-[color:var(--color-blueprint)]" />
+            <span className="absolute inset-[5px] rotate-45 border border-[color:var(--color-blueprint)]" />
+          </span>
           <span>Floorcraft</span>
         </Link>
       </header>
       <main className="flex-1 flex items-start justify-center px-6 pt-10 pb-12 sm:pt-16">
         <div className="w-full max-w-md">
-          <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm dark:border-gray-800 dark:bg-gray-900/80">
+          <div className="rounded-xl border border-[color:var(--color-paper-line)] bg-[color:var(--color-paper-raised)] p-8 shadow-sm dark:border-gray-800 dark:bg-gray-900/80">
             {children}
           </div>
         </div>

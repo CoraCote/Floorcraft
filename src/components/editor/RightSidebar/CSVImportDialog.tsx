@@ -165,12 +165,12 @@ function DropZone({ fileName, rowCount, onFile, onClear }: DropZoneProps) {
   )
 
   const baseCls =
-    'relative w-full min-h-[120px] flex items-center justify-center text-center px-4 py-6 border-2 border-dashed rounded-lg transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400'
+    'relative w-full min-h-[120px] flex items-center justify-center text-center px-4 py-6 border-2 border-dashed rounded-lg transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-[color:var(--color-blueprint)]'
   const stateCls = dragOver
-    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+    ? 'border-[color:var(--color-blueprint)] bg-[color:var(--color-blueprint-soft)]'
     : fileName
       ? 'border-green-400 dark:border-green-600 bg-green-50/50 dark:bg-green-900/10'
-      : 'border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/40'
+      : 'border-gray-300 dark:border-gray-700 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/40'
 
   const ariaLabel = fileName
     ? `CSV ready: ${fileName}. Click to replace, or drop a new file.`
@@ -208,7 +208,7 @@ function DropZone({ fileName, rowCount, onFile, onClear }: DropZoneProps) {
         }}
       />
       {dragOver ? (
-        <div className="text-sm font-medium text-blue-700 dark:text-blue-200">
+        <div className="text-sm font-medium text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]">
           Release to upload
         </div>
       ) : fileName ? (
@@ -224,7 +224,7 @@ function DropZone({ fileName, rowCount, onFile, onClear }: DropZoneProps) {
           </div>
           <button
             type="button"
-            className="ml-2 text-xs text-blue-600 dark:text-blue-400 underline hover:no-underline"
+            className="ml-2 text-xs text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] underline hover:no-underline"
             onClick={(e) => {
               e.stopPropagation()
               onClear()
@@ -263,8 +263,8 @@ function FilterBar({ value, counts, onChange }: FilterBarProps) {
   const pill = (k: FilterValue, label: string, count: number) => {
     const active = value === k
     const cls = active
-      ? 'bg-blue-600 text-white border-blue-600'
-      : 'bg-transparent text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800'
+      ? 'bg-[color:var(--color-blueprint)] text-white border-[color:var(--color-blueprint)]'
+      : 'bg-transparent text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800'
     return (
       <button
         key={k}
@@ -626,7 +626,7 @@ export function CSVImportDialog() {
                 <button
                   type="button"
                   onClick={handleDownloadTemplate}
-                  className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                  className="inline-flex items-center gap-1 text-xs text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline"
                 >
                   <Download size={12} aria-hidden="true" />
                   Download template
@@ -643,7 +643,7 @@ export function CSVImportDialog() {
                   Or paste CSV directly
                 </summary>
                 <textarea
-                  className="mt-2 w-full h-32 border border-gray-200 dark:border-gray-800 rounded-lg p-3 text-sm font-mono focus:outline-none focus:border-blue-400"
+                  className="mt-2 w-full h-32 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-lg p-3 text-sm font-mono focus:outline-none focus:border-[color:var(--color-blueprint)]"
                   placeholder={`name,email,department,team,title,type,office_days,tags\nJane Smith,jane@co.com,Engineering,Frontend,Senior Engineer,full-time,"Mon,Wed,Fri",standing-desk`}
                   value={csvText}
                   onChange={(e) => {
@@ -706,11 +706,11 @@ export function CSVImportDialog() {
               <div
                 role="status"
                 data-testid="alias-banner"
-                className="mb-3 px-3 py-2 rounded border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 text-xs text-blue-900 dark:text-blue-100 flex items-start justify-between gap-2"
+                className="mb-3 px-3 py-2 rounded border border-[color:var(--color-blueprint)]/40 dark:border-[color:var(--color-blueprint)]/30 bg-[color:var(--color-blueprint-soft)] text-xs text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] flex items-start justify-between gap-2"
               >
                 <div className="flex-1">
                   <div className="font-medium mb-0.5">Headers matched</div>
-                  <div className="text-blue-800 dark:text-blue-200">
+                  <div className="text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]">
                     {Object.keys(preview.headerAliases).length > 0 && (
                       <span>
                         {Object.entries(preview.headerAliases)
@@ -728,7 +728,7 @@ export function CSVImportDialog() {
                 </div>
                 <button
                   type="button"
-                  className="text-blue-700 dark:text-blue-300 hover:underline shrink-0"
+                  className="text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline shrink-0"
                   onClick={() => setAliasBannerDismissed(true)}
                   aria-label="Dismiss headers matched notice"
                 >
@@ -749,7 +749,7 @@ export function CSVImportDialog() {
                 <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
                   <FilterBar value={filter} counts={filterCounts} onChange={setFilter} />
                   <span
-                    className="text-xs font-medium px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200"
+                    className="text-xs font-medium px-2 py-1 rounded-full bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 text-gray-700 dark:text-gray-200"
                     aria-live="polite"
                   >
                     {`${selectedCount} of ${totalRows} selected`}
@@ -772,9 +772,9 @@ export function CSVImportDialog() {
                   </Button>
                 </div>
 
-                <div className="max-h-72 overflow-y-auto border border-gray-200 dark:border-gray-800 rounded">
+                <div className="max-h-72 overflow-y-auto border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded">
                   <table role="table" className="w-full text-xs">
-                    <thead className="bg-gray-50 dark:bg-gray-800/50 sticky top-0">
+                    <thead className="bg-[color:var(--color-paper-sunken)] dark:bg-gray-800/50 sticky top-0">
                       <tr>
                         <th className="px-2 py-1 text-left w-8" aria-label="Include"></th>
                         <th className="px-2 py-1 text-left w-10">#</th>
@@ -810,7 +810,7 @@ export function CSVImportDialog() {
                         return (
                           <tr
                             key={i}
-                            className={`border-t border-gray-100 dark:border-gray-800 ${rowCls}`}
+                            className={`border-t border-[color:var(--color-paper-line)] dark:border-gray-800 ${rowCls}`}
                             title={tooltip}
                           >
                             <td className="px-2 py-1">
@@ -831,7 +831,7 @@ export function CSVImportDialog() {
                                 <input
                                   autoFocus
                                   type="text"
-                                  className="w-full px-1 py-0.5 border border-blue-400 rounded text-xs bg-white dark:bg-gray-900"
+                                  className="w-full px-1 py-0.5 border border-[color:var(--color-blueprint)] rounded text-xs bg-[color:var(--color-paper-raised)] dark:bg-gray-900"
                                   value={editingValue}
                                   onChange={(e) => setEditingValue(e.target.value)}
                                   onBlur={commitEdit}
@@ -855,7 +855,7 @@ export function CSVImportDialog() {
                               ) : (
                                 <button
                                   type="button"
-                                  className="text-left w-full hover:bg-gray-100 dark:hover:bg-gray-800 rounded px-1 py-0.5 -mx-1"
+                                  className="text-left w-full hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800 rounded px-1 py-0.5 -mx-1"
                                   onClick={() => beginEdit(rowIndex, 'name', r.name || '')}
                                   aria-label={`Edit name "${r.name || 'blank'}" for row ${rowIndex}`}
                                 >
@@ -868,7 +868,7 @@ export function CSVImportDialog() {
                                 <input
                                   autoFocus
                                   type="text"
-                                  className="w-full px-1 py-0.5 border border-blue-400 rounded text-xs bg-white dark:bg-gray-900"
+                                  className="w-full px-1 py-0.5 border border-[color:var(--color-blueprint)] rounded text-xs bg-[color:var(--color-paper-raised)] dark:bg-gray-900"
                                   value={editingValue}
                                   onChange={(e) => setEditingValue(e.target.value)}
                                   onBlur={commitEdit}
@@ -892,7 +892,7 @@ export function CSVImportDialog() {
                               ) : (
                                 <button
                                   type="button"
-                                  className="text-left w-full hover:bg-gray-100 dark:hover:bg-gray-800 rounded px-1 py-0.5 -mx-1"
+                                  className="text-left w-full hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800 rounded px-1 py-0.5 -mx-1"
                                   onClick={() => beginEdit(rowIndex, 'email', r.email || '')}
                                   aria-label={`Edit email "${r.email || 'blank'}" for row ${rowIndex}`}
                                 >

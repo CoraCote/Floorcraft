@@ -67,7 +67,7 @@ export function PanelEmptyState({
     >
       <div
         aria-hidden
-        className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3"
+        className="w-12 h-12 rounded-full bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 flex items-center justify-center mb-3"
       >
         <Icon size={20} className="text-gray-400 dark:text-gray-500" />
       </div>

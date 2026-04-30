@@ -98,11 +98,11 @@ export function TeamSettingsGeneral({ team, isAdmin }: { team: Team; isAdmin: bo
       <section aria-labelledby="team-identity-heading" className="space-y-3">
         <h2
           id="team-identity-heading"
-          className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400"
+          className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400"
         >
           Team identity
         </h2>
-        <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900/60 p-5 space-y-4">
+        <div className="rounded-xl border border-[color:var(--color-paper-line)] bg-[color:var(--color-paper-raised)] dark:border-gray-800 dark:bg-gray-900/60 p-5 space-y-4">
           <label className="block">
             <span className="block mb-1 text-gray-700 dark:text-gray-300">
               Team name
@@ -172,7 +172,7 @@ export function TeamSettingsGeneral({ team, isAdmin }: { team: Team; isAdmin: bo
         <section aria-labelledby="danger-zone-heading" className="space-y-3">
           <h2
             id="danger-zone-heading"
-            className="text-[10px] font-semibold uppercase tracking-wider text-red-600 dark:text-red-400"
+            className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-red-600 dark:text-red-400"
           >
             Danger zone
           </h2>
@@ -208,7 +208,7 @@ export function TeamSettingsGeneral({ team, isAdmin }: { team: Team; isAdmin: bo
           onClick={closeConfirm}
         >
           <div
-            className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 max-w-md w-full space-y-4"
+            className="bg-[color:var(--color-paper-raised)] dark:bg-gray-900 rounded-xl shadow-2xl p-6 max-w-md w-full space-y-4"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"

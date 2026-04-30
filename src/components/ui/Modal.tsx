@@ -72,7 +72,7 @@ export function Modal({
   // (CSV import preview, share modal) can't overflow off-screen.
   const panel = (
     <div
-      className="fixed inset-0 z-50 bg-black/40 dark:bg-black/60 flex items-center justify-center p-3 sm:p-4"
+      className="modal-backdrop-enter fixed inset-0 z-50 bg-black/40 dark:bg-black/60 flex items-center justify-center p-3 sm:p-4"
       onMouseDown={onBackdropClick}
       data-testid="modal-backdrop"
     >
@@ -83,7 +83,7 @@ export function Modal({
         aria-labelledby={resolvedLabelledBy}
         tabIndex={-1}
         className={cn(
-          'bg-white dark:bg-gray-900 rounded-lg shadow-lg dark:shadow-xl dark:shadow-black/40 w-full outline-none max-h-[90vh] overflow-y-auto',
+          'modal-panel-enter bg-[color:var(--color-paper-raised)] dark:bg-gray-900 rounded-lg shadow-lg dark:shadow-xl dark:shadow-black/40 w-full outline-none max-h-[90vh] overflow-y-auto',
           SIZE_CLASS[size],
         )}
       >
@@ -111,7 +111,7 @@ export function ModalHeader({ children, onClose, titleId, className }: ModalHead
   return (
     <div
       className={cn(
-        'flex items-center justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-800',
+        'flex items-center justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-b border-[color:var(--color-paper-line)] dark:border-gray-800',
         className,
       )}
     >
@@ -123,7 +123,7 @@ export function ModalHeader({ children, onClose, titleId, className }: ModalHead
           type="button"
           aria-label="Close"
           onClick={onClose}
-          className="inline-flex items-center justify-center rounded p-1 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 focus-visible:ring-blue-500"
+          className="inline-flex items-center justify-center rounded p-1 text-gray-500 dark:text-gray-400 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 focus-visible:ring-[color:var(--color-blueprint)]"
         >
           <X size={16} />
         </button>
@@ -148,7 +148,7 @@ interface ModalFooterProps {
 
 export function ModalFooter({ children, className }: ModalFooterProps) {
   return (
-    <div className={cn('flex flex-wrap justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 dark:border-gray-800', className)}>
+    <div className={cn('flex flex-wrap justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-[color:var(--color-paper-line)] dark:border-gray-800', className)}>
       {children}
     </div>
   )

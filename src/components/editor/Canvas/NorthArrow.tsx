@@ -82,7 +82,7 @@ export function NorthArrow() {
     <div
       ref={ref}
       data-testid="north-arrow"
-      className={`absolute top-4 left-4 z-20 w-12 h-12 rounded-full bg-white/90 dark:bg-gray-900/90 backdrop-blur border border-gray-200 dark:border-gray-800 shadow-sm flex items-center justify-center ${canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
+      className={`absolute top-4 left-4 z-20 w-12 h-12 rounded-full bg-[color:var(--color-paper-raised)]/90 dark:bg-gray-900/90 backdrop-blur border border-[color:var(--color-paper-line)] dark:border-gray-800 shadow-sm flex items-center justify-center ${canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
       onPointerDown={handlePointerDown}
       onKeyDown={handleKeyDown}
       aria-label={`North arrow rotated ${Math.round(northRotation)} degrees.${canEdit ? ' Drag or use arrow keys to rotate.' : ''}`}

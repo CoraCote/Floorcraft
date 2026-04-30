@@ -51,7 +51,7 @@ export function SidebarToggle({ variant }: SidebarToggleProps) {
         onClick={() => setOpen(true)}
         aria-label="Open right sidebar"
         title="Open right sidebar"
-        className="absolute top-3 right-0 z-10 flex items-center gap-1 px-2 py-1.5 text-xs font-medium bg-white dark:bg-gray-900 border border-r-0 border-gray-200 dark:border-gray-800 rounded-l-md shadow-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
+        className="absolute top-3 right-0 z-10 flex items-center gap-1 px-2 py-1.5 text-xs font-medium bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-r-0 border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-l-md shadow-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/60 transition-colors"
         data-testid="sidebar-toggle-floating"
       >
         <PanelRightOpen size={14} aria-hidden="true" />
@@ -69,7 +69,7 @@ export function SidebarToggle({ variant }: SidebarToggleProps) {
       onClick={() => setOpen(false)}
       aria-label="Close right sidebar"
       title="Collapse panel"
-      className="flex items-center justify-center w-8 px-2 py-2.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 border-r border-gray-200 dark:border-gray-800 transition-colors flex-shrink-0"
+      className="flex items-center justify-center w-8 px-2 py-2.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 border-r border-[color:var(--color-paper-line)] dark:border-gray-800 transition-colors flex-shrink-0"
       data-testid="sidebar-toggle-inline"
     >
       <PanelRightClose size={14} aria-hidden="true" />

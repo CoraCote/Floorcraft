@@ -59,7 +59,7 @@ export function ScenarioCompareView({ primary, other, allScenarios }: ScenarioCo
             <p className="text-sm text-gray-500 dark:text-gray-400">Pick a scenario to compare</p>
             <select
               aria-label="Compare against"
-              className="text-sm px-2 py-1 border border-gray-200 dark:border-gray-800 rounded"
+              className="text-sm px-2 py-1 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded"
               value=""
               onChange={(e) => setCompareScenario(e.target.value || null)}
             >
@@ -76,7 +76,7 @@ export function ScenarioCompareView({ primary, other, allScenarios }: ScenarioCo
 
       {/* Quick-delta strip under the columns when both are chosen. */}
       {other && projB && (
-        <section className="mt-6 border border-gray-200 dark:border-gray-800 rounded p-4">
+        <section className="mt-6 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded p-4">
           <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">
             {primary.name} vs. {other.name}
           </h3>
@@ -117,7 +117,7 @@ function ScenarioColumn({
   adjustments: number
 }) {
   return (
-    <div className="border border-gray-200 dark:border-gray-800 rounded p-4">
+    <div className="border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded p-4">
       <header className="mb-3">
         <div className="text-sm font-semibold">{title}</div>
         <div className="text-xs text-gray-500 dark:text-gray-400">

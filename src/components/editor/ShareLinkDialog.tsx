@@ -109,7 +109,7 @@ export function ShareLinkDialog({ open, onClose }: Props) {
   return (
     <Modal open={open} onClose={onClose} title="Share view-only link" size="lg">
       <ModalBody className="max-h-[75vh] overflow-y-auto">
-        <section className="space-y-3 pb-4 border-b border-gray-200 dark:border-gray-800">
+        <section className="space-y-3 pb-4 border-b border-[color:var(--color-paper-line)] dark:border-gray-800">
           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-200">Generate new link</h3>
           <fieldset>
             <legend className="text-xs text-gray-500 dark:text-gray-400 mb-1">Duration</legend>
@@ -179,7 +179,7 @@ export function ShareLinkDialog({ open, onClose }: Props) {
               return (
                 <li
                   key={l.id}
-                  className="border border-gray-200 dark:border-gray-800 rounded p-2"
+                  className="border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded p-2"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
@@ -238,7 +238,7 @@ export function ShareLinkDialog({ open, onClose }: Props) {
                     <div
                       id={`embed-panel-${l.id}`}
                       data-testid={`embed-panel-${l.id}`}
-                      className="mt-3 pt-3 border-t border-dashed border-gray-200 dark:border-gray-800 space-y-2"
+                      className="mt-3 pt-3 border-t border-dashed border-[color:var(--color-paper-line)] dark:border-gray-800 space-y-2"
                     >
                       <div className="text-xs text-gray-500 dark:text-gray-400">
                         Embed in your wiki — paste this iframe snippet
@@ -251,7 +251,7 @@ export function ShareLinkDialog({ open, onClose }: Props) {
                         value={snippet}
                         rows={6}
                         data-testid={`embed-snippet-${l.id}`}
-                        className="w-full font-mono text-[11px] bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded p-2 resize-y"
+                        className="w-full font-mono text-[11px] bg-[color:var(--color-paper-sunken)] dark:bg-gray-900 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded p-2 resize-y"
                         aria-label="Iframe embed snippet"
                         onFocus={(e) => e.currentTarget.select()}
                       />
@@ -280,7 +280,7 @@ export function ShareLinkDialog({ open, onClose }: Props) {
                           }
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-blue-600 dark:text-blue-300 hover:underline"
+                          className="text-xs text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline"
                         >
                           Open in new tab ↗
                         </a>

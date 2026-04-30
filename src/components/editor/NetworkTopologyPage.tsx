@@ -192,7 +192,7 @@ export function NetworkTopologyPage() {
 
   if (!canViewIT) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-gray-950 dark:to-gray-900">
+      <div className="min-h-screen bg-[color:var(--color-paper)] dark:bg-gray-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-10">
           <p className="text-sm text-gray-600 dark:text-gray-300">
             The network topology page is restricted to editors and admins
@@ -314,7 +314,7 @@ export function NetworkTopologyPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-gray-950 dark:to-gray-900">
+    <div className="min-h-screen bg-[color:var(--color-paper)] dark:bg-gray-950">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-10">
         {/* Page header. Title + description on the left, action cluster
             (save indicator, add-node, reset) on the right. */}
@@ -405,7 +405,7 @@ export function NetworkTopologyPage() {
         {/* Canvas card. min-h-[640px] gives react-flow enough room to
             mount and renders comfortably above the fold on a 13" laptop. */}
         <div
-          className="relative rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden"
+          className="relative rounded-xl border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 shadow-sm overflow-hidden"
           style={{ height: 'min(75vh, 800px)', minHeight: 640 }}
         >
           {isEmpty ? (
@@ -507,9 +507,9 @@ function EdgeTypePicker({
       <div
         role="dialog"
         aria-label="Choose connection type"
-        className="relative w-full max-w-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden"
+        className="relative w-full max-w-sm bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-[color:var(--color-paper-line)] dark:border-gray-700 rounded-xl shadow-xl overflow-hidden"
       >
-        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
+        <div className="px-4 py-3 border-b border-[color:var(--color-paper-line)] dark:border-gray-800">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
             Choose connection type
           </h3>
@@ -525,7 +525,7 @@ function EdgeTypePicker({
                 key={type}
                 type="button"
                 onClick={() => onPick(type)}
-                className="flex items-center gap-3 w-full px-3 py-2 rounded text-left text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800/60"
+                className="flex items-center gap-3 w-full px-3 py-2 rounded text-left text-sm text-gray-800 dark:text-gray-100 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/60"
                 data-testid={`edge-type-option-${type}`}
               >
                 <span

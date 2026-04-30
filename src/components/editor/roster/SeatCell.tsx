@@ -28,7 +28,7 @@ export function SeatCell({
     <button
       type="button"
       onClick={onJump}
-      className="inline-flex items-center gap-2 rounded px-1 py-0.5 text-left hover:bg-gray-100 dark:hover:bg-gray-800"
+      className="inline-flex items-center gap-2 rounded px-1 py-0.5 text-left hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800"
       title="Show seat on map"
       aria-label={`Seat ${floorName} ${seatLabel} — show on map`}
     >

@@ -37,7 +37,7 @@ export function FirstUseTooltip({
       <div className="bg-gray-900 text-white rounded-lg shadow-xl p-3 text-xs leading-snug border border-gray-800">
         <div className="flex items-center gap-2 mb-1">
           {icon && (
-            <span className="text-blue-300" aria-hidden="true">
+            <span className="text-[color:var(--color-blueprint)]" aria-hidden="true">
               {icon}
             </span>
           )}

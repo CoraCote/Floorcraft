@@ -125,7 +125,7 @@ beforeEach(() => {
   useCanMock.mockReset()
   useCanMock.mockImplementation(() => true)
   setActiveFloorElements({})
-  useUIStore.setState({ selectedIds: [], rightSidebarTab: 'devices' } as any)
+  useUIStore.setState({ selectedIds: [], rightSidebarTab: 'plan' } as any)
 })
 
 describe('DevicesPanel — empty state', () => {
@@ -283,16 +283,22 @@ describe('DevicesPanel — interactions', () => {
   })
 })
 
-describe('RightSidebar — Devices tab gating', () => {
-  it('hides the Devices tab when permission check returns false', () => {
+describe('RightSidebar — Devices section gating (Wave 21B)', () => {
+  // Wave 21B reorganised the right sidebar from 5 sibling tabs into 3
+  // (Plan / Roster / Insights). Devices became a `CollapsibleSection`
+  // inside the Plan tab rather than its own tab — these assertions
+  // now check the section header, not a tablist entry.
+  it('hides the IT devices section when permission check returns false', () => {
     useCanMock.mockImplementation(() => false)
+    useUIStore.setState({ rightSidebarTab: 'plan' } as any)
     render(<RightSidebar />)
-    expect(screen.queryByRole('tab', { name: /Devices/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /IT devices/i })).toBeNull()
   })
 
-  it('shows the Devices tab when permission check returns true', () => {
+  it('shows the IT devices section when permission check returns true', () => {
     useCanMock.mockImplementation(() => true)
+    useUIStore.setState({ rightSidebarTab: 'plan' } as any)
     render(<RightSidebar />)
-    expect(screen.getByRole('tab', { name: /Devices/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /IT devices/i })).toBeTruthy()
   })
 })

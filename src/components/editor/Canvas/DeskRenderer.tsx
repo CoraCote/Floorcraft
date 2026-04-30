@@ -103,7 +103,7 @@ function AccommodationBadge({
         width={14}
         height={14}
         cornerRadius={7}
-        fill="#4F46E5" /* indigo-600 */
+        fill="#0E7490" /* --color-blueprint */
         opacity={0.95}
         perfectDrawEnabled={false}
       />

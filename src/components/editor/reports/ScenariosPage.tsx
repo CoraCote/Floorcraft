@@ -132,13 +132,13 @@ export function ScenariosPage() {
         // doesn't feel cramped on a typical laptop screen, but capped
         // so it doesn't push the page footer below the viewport on
         // shorter monitors.
-        className="mt-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden"
+        className="mt-6 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-lg overflow-hidden"
       >
         <div className="flex min-h-[600px]">
           {/* Sidebar — list of scenarios. */}
-          <aside className="w-64 border-r border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 p-4 flex flex-col gap-3">
+          <aside className="w-64 border-r border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-sunken)] dark:bg-gray-800/50 p-4 flex flex-col gap-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              <h2 className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
                 Scenarios
               </h2>
               {canEdit && (
@@ -164,10 +164,10 @@ export function ScenariosPage() {
                     <button
                       type="button"
                       onClick={() => setActiveScenario(s.id)}
-                      className={`w-full text-left text-sm px-2 py-1.5 rounded transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                      className={`w-full text-left text-sm px-2 py-1.5 rounded transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)] ${
                         s.id === activeId
-                          ? 'bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 font-medium'
-                          : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                          ? 'bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-[color:var(--color-paper-line)] dark:border-gray-800 font-medium'
+                          : 'hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800'
                       }`}
                     >
                       <div className="truncate">{s.name}</div>
@@ -183,7 +183,7 @@ export function ScenariosPage() {
 
             {/* Snapshot footer — reassures the planner about what "today"
                 means in the projection. */}
-            <div className="mt-auto text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-800 pt-3">
+            <div className="mt-auto text-xs text-gray-500 dark:text-gray-400 border-t border-[color:var(--color-paper-line)] dark:border-gray-800 pt-3">
               <div className="font-semibold text-gray-600 dark:text-gray-300">Today</div>
               <div className="tabular-nums">
                 {currentSnapshot.activeEmployees} active · {currentSnapshot.totalSeats} seats
@@ -204,17 +204,17 @@ export function ScenariosPage() {
                     mental model. */}
                 <Tabs.List
                   aria-label="Scenario sections"
-                  className="flex items-center gap-1 border-b border-gray-200 dark:border-gray-800 px-6 pt-4 bg-white dark:bg-gray-900"
+                  className="flex items-center gap-1 border-b border-[color:var(--color-paper-line)] dark:border-gray-800 px-6 pt-4 bg-[color:var(--color-paper-raised)] dark:bg-gray-900"
                 >
                   <Tabs.Trigger
                     value="edit"
-                    className="px-3 py-2 text-sm font-medium transition-colors text-gray-600 dark:text-gray-300 border-b-2 border-transparent hover:text-gray-800 dark:hover:text-gray-100 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:border-blue-600 -mb-px"
+                    className="px-3 py-2 text-sm font-medium transition-colors text-gray-600 dark:text-gray-300 border-b-2 border-transparent hover:text-gray-800 dark:hover:text-gray-100 data-[state=active]:text-[color:var(--color-blueprint-strong)] dark:data-[state=active]:text-[color:var(--color-blueprint)] data-[state=active]:border-[color:var(--color-blueprint)] -mb-px"
                   >
                     Edit
                   </Tabs.Trigger>
                   <Tabs.Trigger
                     value="compare"
-                    className="px-3 py-2 text-sm font-medium transition-colors text-gray-600 dark:text-gray-300 border-b-2 border-transparent hover:text-gray-800 dark:hover:text-gray-100 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:border-blue-600 -mb-px"
+                    className="px-3 py-2 text-sm font-medium transition-colors text-gray-600 dark:text-gray-300 border-b-2 border-transparent hover:text-gray-800 dark:hover:text-gray-100 data-[state=active]:text-[color:var(--color-blueprint-strong)] dark:data-[state=active]:text-[color:var(--color-blueprint)] data-[state=active]:border-[color:var(--color-blueprint)] -mb-px"
                   >
                     Compare
                   </Tabs.Trigger>
@@ -251,7 +251,7 @@ export function ScenariosPage() {
  */
 function PageShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-gray-950 dark:to-gray-900">
+    <div className="min-h-screen bg-[color:var(--color-paper)] dark:bg-gray-950">
       <div className="max-w-7xl mx-auto px-6 py-10">{children}</div>
     </div>
   )
@@ -264,7 +264,7 @@ function PageHeader({ reportsHref }: { reportsHref: string | null }) {
         <div>
           <Link
             to={reportsHref}
-            className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+            className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)] rounded"
           >
             <ArrowLeft size={12} aria-hidden="true" />
             Back to reports
@@ -301,7 +301,7 @@ function NoActiveScenarioState({
       <div className="text-center max-w-sm">
         <div
           aria-hidden="true"
-          className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 mb-4"
+          className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 text-gray-500 dark:text-gray-400 mb-4"
         >
           <Layers size={22} />
         </div>
@@ -331,10 +331,10 @@ function NoActiveScenarioState({
 
 function UnauthorizedState() {
   return (
-    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-10 text-center">
+    <div className="bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-lg p-10 text-center">
       <div
         aria-hidden="true"
-        className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 mb-4"
+        className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 text-gray-500 dark:text-gray-400 mb-4"
       >
         <Lock size={22} />
       </div>

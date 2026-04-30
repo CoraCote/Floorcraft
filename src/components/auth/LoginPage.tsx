@@ -122,7 +122,7 @@ export function LoginPage() {
           Need an account?{' '}
           <Link
             to="/signup"
-            className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
+            className="font-medium text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline"
           >
             Sign up
           </Link>

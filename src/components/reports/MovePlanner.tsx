@@ -101,12 +101,12 @@ export function MovePlanner() {
       </div>
 
       {/* Add Move form */}
-      <div className="flex flex-col gap-2 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-800">
+      <div className="flex flex-col gap-2 p-3 bg-[color:var(--color-paper-sunken)] dark:bg-gray-800/50 rounded-lg border border-[color:var(--color-paper-line)] dark:border-gray-800">
         <div className="text-xs font-medium text-gray-600 dark:text-gray-300">Add a move</div>
         <select
           value={selectedEmployeeId}
           onChange={(e) => setSelectedEmployeeId(e.target.value)}
-          className="w-full px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="w-full px-2 py-1.5 text-xs border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded bg-[color:var(--color-paper-raised)] dark:bg-gray-900 focus:outline-none focus:ring-1 focus:ring-[color:var(--color-blueprint)]"
         >
           <option value="">Select employee…</option>
           {allEmployees.map((emp) => (
@@ -122,7 +122,7 @@ export function MovePlanner() {
             setSelectedFloorId(e.target.value)
             setSelectedDeskId('')
           }}
-          className="w-full px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="w-full px-2 py-1.5 text-xs border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded bg-[color:var(--color-paper-raised)] dark:bg-gray-900 focus:outline-none focus:ring-1 focus:ring-[color:var(--color-blueprint)]"
         >
           <option value="">Target floor…</option>
           {floors.map((f) => (
@@ -133,7 +133,7 @@ export function MovePlanner() {
         <select
           value={selectedDeskId}
           onChange={(e) => setSelectedDeskId(e.target.value)}
-          className="w-full px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="w-full px-2 py-1.5 text-xs border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded bg-[color:var(--color-paper-raised)] dark:bg-gray-900 focus:outline-none focus:ring-1 focus:ring-[color:var(--color-blueprint)]"
           disabled={!selectedFloorId}
         >
           <option value="">Target desk…</option>
@@ -145,7 +145,7 @@ export function MovePlanner() {
         <button
           onClick={handleAddMove}
           disabled={!selectedEmployeeId || !selectedFloorId || !selectedDeskId}
-          className="flex items-center justify-center gap-1.5 w-full px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex items-center justify-center gap-1.5 w-full px-3 py-1.5 text-xs font-medium text-white bg-[color:var(--color-blueprint)] rounded hover:bg-[color:var(--color-blueprint-strong)] disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Plus size={12} />
           Add move
@@ -172,14 +172,14 @@ export function MovePlanner() {
             return (
               <div
                 key={move.employeeId}
-                className="flex items-center gap-2 px-2.5 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded text-xs"
+                className="flex items-center gap-2 px-2.5 py-1.5 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded text-xs"
               >
                 <span className="font-medium text-gray-800 dark:text-gray-100 truncate flex-1">
                   {emp?.name || move.employeeId}
                 </span>
                 <span className="text-gray-500 dark:text-gray-400 flex-shrink-0">{fromLabel}</span>
                 <ArrowRight size={10} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
-                <span className="text-blue-600 dark:text-blue-400 flex-shrink-0">{toLabel}</span>
+                <span className="text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] flex-shrink-0">{toLabel}</span>
                 <button
                   onClick={() => handleRemoveMove(move.employeeId)}
                   className="p-0.5 text-gray-400 dark:text-gray-500 hover:text-red-500 flex-shrink-0"
@@ -197,14 +197,14 @@ export function MovePlanner() {
         <button
           onClick={handleApplyAll}
           disabled={pendingMoves.length === 0}
-          className="flex items-center justify-center gap-1.5 flex-1 px-3 py-2 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex items-center justify-center gap-1.5 flex-1 px-3 py-2 text-xs font-medium text-white bg-[color:var(--color-blueprint)] rounded-lg hover:bg-[color:var(--color-blueprint-strong)] disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Check size={12} />
           Apply all
         </button>
         <button
           onClick={handleDiscard}
-          className="flex items-center justify-center gap-1.5 flex-1 px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700"
+          className="flex items-center justify-center gap-1.5 flex-1 px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700"
         >
           <Trash2 size={12} />
           Discard

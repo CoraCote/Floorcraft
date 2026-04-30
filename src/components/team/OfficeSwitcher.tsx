@@ -183,7 +183,7 @@ export function OfficeSwitcher({
         type="button"
         onClick={toggle}
         aria-label="Switch office"
-        className="flex items-center gap-1.5 px-2 py-1 text-sm font-semibold text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
+        className="flex items-center gap-1.5 px-2 py-1 text-sm font-semibold text-gray-800 dark:text-gray-100 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800 rounded"
         data-testid="office-switcher-trigger"
       >
         <Building2 size={14} aria-hidden="true" className="text-gray-400 dark:text-gray-500" />
@@ -196,7 +196,7 @@ export function OfficeSwitcher({
           role="menu"
           aria-label="Office switcher"
           className={cn(
-            'absolute left-0 mt-1 w-72 bg-white border border-gray-200 rounded shadow dark:bg-gray-900 dark:border-gray-800 dark:shadow-black/40 z-50 py-1 origin-top-left',
+            'absolute left-0 mt-1 w-72 bg-[color:var(--color-paper-raised)] border border-[color:var(--color-paper-line)] rounded shadow dark:bg-gray-900 dark:border-gray-800 dark:shadow-black/40 z-50 py-1 origin-top-left',
             !reduceMotion && 'dropdown-enter',
           )}
           data-testid="office-switcher-panel"
@@ -205,10 +205,10 @@ export function OfficeSwitcher({
               to TeamHome. Keeps the trigger's current label visible
               inside the panel too; tiny affordance that makes the
               panel feel anchored to the trigger you clicked. */}
-          <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-100 dark:border-gray-800">
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-[color:var(--color-paper-line)] dark:border-gray-800">
             <div
               aria-hidden="true"
-              className="flex-shrink-0 inline-flex h-6 w-6 items-center justify-center rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
+              className="flex-shrink-0 inline-flex h-6 w-6 items-center justify-center rounded bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 text-gray-500 dark:text-gray-400"
             >
               <Building2 size={14} />
             </div>
@@ -226,7 +226,7 @@ export function OfficeSwitcher({
           </div>
 
           {showSearch && (
-            <div className="px-2 pt-2 pb-1 border-b border-gray-100 dark:border-gray-800">
+            <div className="px-2 pt-2 pb-1 border-b border-[color:var(--color-paper-line)] dark:border-gray-800">
               <div className="relative">
                 <Search
                   size={12}
@@ -240,7 +240,7 @@ export function OfficeSwitcher({
                   placeholder="Search offices"
                   aria-label="Search offices"
                   data-testid="office-switcher-search"
-                  className="w-full pl-6 pr-2 py-1 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-gray-700 dark:text-gray-200"
+                  className="w-full pl-6 pr-2 py-1 text-xs bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 border border-[color:var(--color-paper-line)] dark:border-gray-700 rounded focus:outline-none focus:ring-1 focus:ring-[color:var(--color-blueprint)] text-gray-700 dark:text-gray-200"
                 />
               </div>
             </div>
@@ -248,7 +248,7 @@ export function OfficeSwitcher({
 
           {showSwitchGroup && (
             <div>
-              <div className="px-3 pt-1.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+              <div className="px-3 pt-1.5 pb-1 font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500">
                 Switch office
               </div>
               {/* Cap the scroll height so a team with dozens of offices
@@ -267,7 +267,7 @@ export function OfficeSwitcher({
                       aria-current={active ? 'page' : undefined}
                       onClick={() => onSelectOffice(o.slug)}
                       onMouseEnter={() => setFocusedIndex(idx)}
-                      className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800 focus:bg-gray-100 dark:focus:bg-gray-800 outline-none"
+                      className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-[color:var(--color-paper-sunken)] dark:text-gray-200 dark:hover:bg-gray-800 focus:bg-[color:var(--color-paper-sunken)] dark:focus:bg-gray-800 outline-none"
                       data-testid={`office-switcher-office-${o.slug}`}
                     >
                       <span
@@ -275,7 +275,7 @@ export function OfficeSwitcher({
                         className={cn(
                           'inline-flex h-5 w-5 items-center justify-center rounded text-[10px]',
                           active
-                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+                            ? 'bg-[color:var(--color-blueprint-soft)] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]'
                             : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
                         )}
                       >
@@ -284,13 +284,13 @@ export function OfficeSwitcher({
                       {active && (
                         <span
                           aria-hidden="true"
-                          className="h-1.5 w-1.5 rounded-full bg-blue-500"
+                          className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-blueprint)]"
                         />
                       )}
                       <span className={cn('flex-1 truncate', active && 'font-medium')}>
                         {o.name}
                       </span>
-                      {active && <Check size={14} aria-hidden="true" className="text-blue-500" />}
+                      {active && <Check size={14} aria-hidden="true" className="text-[color:var(--color-blueprint-strong)]" />}
                     </button>
                   )
                 })}
@@ -305,8 +305,8 @@ export function OfficeSwitcher({
 
           {loading && !showSwitchGroup && (
             <div className="px-3 py-2 space-y-2" aria-hidden="true">
-              <div className="h-4 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
-              <div className="h-4 bg-gray-100 dark:bg-gray-800 rounded w-3/4 animate-pulse" />
+              <div className="h-4 bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 rounded animate-pulse" />
+              <div className="h-4 bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 rounded w-3/4 animate-pulse" />
             </div>
           )}
 
@@ -315,8 +315,8 @@ export function OfficeSwitcher({
               a single extra click away, regardless of whether the
               user has 1 office or 50. */}
           <div>
-            <div className="my-1 border-t border-gray-100 dark:border-gray-800" />
-            <div className="px-3 pt-1.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+            <div className="my-1 border-t border-[color:var(--color-paper-line)] dark:border-gray-800" />
+            <div className="px-3 pt-1.5 pb-1 font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500">
               Manage
             </div>
             <button
@@ -326,7 +326,7 @@ export function OfficeSwitcher({
               tabIndex={focusedIndex === renameIdx ? 0 : -1}
               onClick={() => activate(onRenameCurrent)}
               onMouseEnter={() => setFocusedIndex(renameIdx)}
-              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800 focus:bg-gray-100 dark:focus:bg-gray-800 outline-none"
+              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-[color:var(--color-paper-sunken)] dark:text-gray-200 dark:hover:bg-gray-800 focus:bg-[color:var(--color-paper-sunken)] dark:focus:bg-gray-800 outline-none"
               data-testid="office-switcher-rename"
             >
               <span className="flex-1">Rename this office</span>
@@ -341,7 +341,7 @@ export function OfficeSwitcher({
                   activate(() => navigate(`/t/${teamSlug}`))
                 }
                 onMouseEnter={() => setFocusedIndex(manageIdx)}
-                className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800 focus:bg-gray-100 dark:focus:bg-gray-800 outline-none"
+                className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-[color:var(--color-paper-sunken)] dark:text-gray-200 dark:hover:bg-gray-800 focus:bg-[color:var(--color-paper-sunken)] dark:focus:bg-gray-800 outline-none"
                 data-testid="office-switcher-manage"
               >
                 <ExternalLink size={14} aria-hidden="true" />
@@ -357,7 +357,7 @@ export function OfficeSwitcher({
               editor, but defensive) we hide the row rather than dead-link. */}
           {teamSlug && (
             <div>
-              <div className="my-1 border-t border-gray-100 dark:border-gray-800" />
+              <div className="my-1 border-t border-[color:var(--color-paper-line)] dark:border-gray-800" />
               <button
                 ref={registerItemRef(createIdx)}
                 role="menuitem"
@@ -367,7 +367,7 @@ export function OfficeSwitcher({
                   activate(() => navigate(`/t/${teamSlug}?create=1`))
                 }
                 onMouseEnter={() => setFocusedIndex(createIdx)}
-                className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-800 focus:bg-gray-100 dark:focus:bg-gray-800 outline-none"
+                className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800 focus:bg-[color:var(--color-paper-sunken)] dark:focus:bg-gray-800 outline-none"
                 data-testid="office-switcher-create"
               >
                 <Plus size={14} aria-hidden="true" />

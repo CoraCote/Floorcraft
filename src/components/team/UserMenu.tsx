@@ -91,7 +91,7 @@ export function UserMenu() {
         {...triggerProps}
         type="button"
         onClick={toggle}
-        className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 flex items-center justify-center text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 transition-colors"
+        className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 flex items-center justify-center text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 transition-colors"
         aria-label={`Account menu (${email})`}
         title={email}
         data-testid="user-menu-trigger"
@@ -104,20 +104,20 @@ export function UserMenu() {
           role="menu"
           aria-label="Account"
           className={cn(
-            'absolute right-0 mt-1 w-64 bg-white border border-gray-200 rounded shadow dark:bg-gray-900 dark:border-gray-800 dark:shadow-black/40 z-50 py-1 origin-top-right',
+            'absolute right-0 mt-1 w-64 bg-[color:var(--color-paper-raised)] border border-[color:var(--color-paper-line)] rounded shadow dark:bg-gray-900 dark:border-gray-800 dark:shadow-black/40 z-50 py-1 origin-top-right',
             !reduceMotion && 'dropdown-enter',
           )}
           data-testid="user-menu-panel"
         >
           <div
-            className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400 truncate border-b border-gray-100 dark:border-gray-800"
+            className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400 truncate border-b border-[color:var(--color-paper-line)] dark:border-gray-800"
             title={email}
           >
             Signed in as <span className="font-medium text-gray-700 dark:text-gray-300">{email}</span>
           </div>
 
           <div>
-            <div className="px-3 pt-1.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+            <div className="px-3 pt-1.5 pb-1 font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500">
               Account
             </div>
             <button
@@ -127,7 +127,7 @@ export function UserMenu() {
               tabIndex={focusedIndex === profileIdx ? 0 : -1}
               onClick={() => activate(() => navigate('/account'))}
               onMouseEnter={() => setFocusedIndex(profileIdx)}
-              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800 focus:bg-gray-100 dark:focus:bg-gray-800 outline-none"
+              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-[color:var(--color-paper-sunken)] dark:text-gray-200 dark:hover:bg-gray-800 focus:bg-[color:var(--color-paper-sunken)] dark:focus:bg-gray-800 outline-none"
               data-testid="user-menu-profile"
             >
               <UserIcon size={14} aria-hidden="true" />
@@ -143,8 +143,8 @@ export function UserMenu() {
           </div>
 
           <div>
-            <div className="my-1 border-t border-gray-100 dark:border-gray-800" />
-            <div className="px-3 pt-1.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+            <div className="my-1 border-t border-[color:var(--color-paper-line)] dark:border-gray-800" />
+            <div className="px-3 pt-1.5 pb-1 font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500">
               Help
             </div>
             <button
@@ -154,7 +154,7 @@ export function UserMenu() {
               tabIndex={focusedIndex === helpIdx ? 0 : -1}
               onClick={() => activate(() => navigate('/help'))}
               onMouseEnter={() => setFocusedIndex(helpIdx)}
-              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800 focus:bg-gray-100 dark:focus:bg-gray-800 outline-none"
+              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-[color:var(--color-paper-sunken)] dark:text-gray-200 dark:hover:bg-gray-800 focus:bg-[color:var(--color-paper-sunken)] dark:focus:bg-gray-800 outline-none"
               data-testid="user-menu-help"
             >
               <HelpCircle size={14} aria-hidden="true" />
@@ -171,7 +171,7 @@ export function UserMenu() {
                 })
               }
               onMouseEnter={() => setFocusedIndex(shortcutsIdx)}
-              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800 focus:bg-gray-100 dark:focus:bg-gray-800 outline-none"
+              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-[color:var(--color-paper-sunken)] dark:text-gray-200 dark:hover:bg-gray-800 focus:bg-[color:var(--color-paper-sunken)] dark:focus:bg-gray-800 outline-none"
               data-testid="user-menu-shortcuts"
             >
               <Keyboard size={14} aria-hidden="true" />
@@ -181,7 +181,7 @@ export function UserMenu() {
           </div>
 
           <div>
-            <div className="my-1 border-t border-gray-100 dark:border-gray-800" />
+            <div className="my-1 border-t border-[color:var(--color-paper-line)] dark:border-gray-800" />
             <button
               ref={registerItemRef(signOutIdx)}
               role="menuitem"

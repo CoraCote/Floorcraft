@@ -45,7 +45,7 @@ export function ResendVerificationButton({ email }: { email: string }) {
       <button
         onClick={onClick}
         disabled={remaining > 0 || sending}
-        className="text-sm text-blue-600 dark:text-blue-400 hover:underline disabled:text-gray-400 disabled:no-underline"
+        className="text-sm text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline disabled:text-gray-400 disabled:no-underline"
       >
         {label}
       </button>

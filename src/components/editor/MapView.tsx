@@ -158,7 +158,7 @@ export function MapView() {
 
   if (presentationMode) {
     return (
-      <div className="fixed inset-0 z-50 w-screen h-screen bg-white dark:bg-gray-900">
+      <div className="fixed inset-0 z-50 w-screen h-screen bg-[color:var(--color-paper-raised)] dark:bg-gray-900">
         <CanvasStage />
         <KeyboardShortcutsOverlay />
         <PresentationOverlay />
@@ -181,18 +181,23 @@ export function MapView() {
       <FloorSwitcher />
       <div className="flex flex-1 overflow-hidden">
         {/*
-          The sidebar scrolls as a single unit. ToolSelector +
-          LayerVisibilityPanel + ElementLibrary stack at their natural
-          heights and the whole column owns the scrollbar — so when the
-          top panels grow (filters open, more layers, etc.) they can't
-          squeeze ElementLibrary's tiles off the bottom. Previously the
-          library owned its own `overflow-y-auto` inside a `min-h-0`
-          column, which clipped tiles when its siblings took more space.
+          Drafting Studio left chrome (Wave 21A). The previous single
+          260-px sidebar bundled tools, layers, and library into one
+          scrolling column. The redesign splits them:
+
+            • A 56-px tool rail (icon-only, grouped clusters) takes the
+              far-left edge — the operator's primary creation surface.
+            • A 240-px secondary sidebar holds Layers + Library, the
+              data-heavy surfaces that need width for tiles and toggles.
+
+          Splitting the rail off keeps it always-visible (no
+          collapse/scroll) and frees the secondary sidebar to be
+          collapsible later without losing tool access.
         */}
-        <div className="w-[260px] flex-shrink-0 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col overflow-y-auto">
-          <CollapsibleSection title="Tools" defaultOpen storageKey="tools">
-            <ToolSelector />
-          </CollapsibleSection>
+        <div className="w-14 flex-shrink-0 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border-r border-[color:var(--color-paper-line)] dark:border-gray-800 overflow-y-auto">
+          <ToolSelector />
+        </div>
+        <div className="w-[240px] flex-shrink-0 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border-r border-[color:var(--color-paper-line)] dark:border-gray-800 flex flex-col overflow-y-auto">
           <CollapsibleSection title="Layers" defaultOpen storageKey="layers">
             <LayerVisibilityPanel />
           </CollapsibleSection>
@@ -200,7 +205,7 @@ export function MapView() {
             <ElementLibrary />
           </CollapsibleSection>
         </div>
-        <div className="flex-1 relative bg-gray-100 dark:bg-gray-800 overflow-hidden">
+        <div className="flex-1 relative bg-[color:var(--color-paper)] overflow-hidden">
           <CanvasStage />
           <StatusBar />
           <Minimap />
@@ -217,7 +222,7 @@ export function MapView() {
           {!rightSidebarOpen && <SidebarToggle variant="floating" />}
         </div>
         {rightSidebarOpen && (
-          <div className="w-[320px] flex-shrink-0 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 overflow-y-auto">
+          <div className="w-[320px] flex-shrink-0 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border-l border-[color:var(--color-paper-line)] dark:border-gray-800 overflow-y-auto">
             <RightSidebar />
           </div>
         )}

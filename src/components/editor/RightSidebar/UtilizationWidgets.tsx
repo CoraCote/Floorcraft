@@ -117,7 +117,7 @@ function Tile({
   const tone = HEALTH_TONES[health]
   return (
     <div
-      className={`relative rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-2 ${className}`}
+      className={`relative rounded-md border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 p-2 ${className}`}
       title={title}
     >
       <div className={`absolute left-0 top-0 bottom-0 w-0.5 rounded-l ${tone.bar}`} />

@@ -10,7 +10,7 @@ const BORDER_COLORS: Record<Severity, string> = {
 const BADGE_COLORS: Record<Severity, string> = {
   critical: 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300',
   warning: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700',
-  info: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300',
+  info: 'bg-[color:var(--color-blueprint-soft)] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]',
 }
 
 interface InsightCardProps {
@@ -23,7 +23,7 @@ interface InsightCardProps {
 export function InsightCard({ insight, onDismiss, onAction, onClick }: InsightCardProps) {
   return (
     <div
-      className={`relative border-l-4 ${BORDER_COLORS[insight.severity]} bg-white dark:bg-gray-900 rounded-r-lg p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer`}
+      className={`relative border-l-4 ${BORDER_COLORS[insight.severity]} bg-[color:var(--color-paper-raised)] dark:bg-gray-900 rounded-r-lg p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer`}
       onClick={() => onClick(insight)}
     >
       {/* Header */}
@@ -62,7 +62,7 @@ export function InsightCard({ insight, onDismiss, onAction, onClick }: InsightCa
                 e.stopPropagation()
                 onAction(insight.id, i)
               }}
-              className="px-2.5 py-1 text-xs font-medium border border-gray-200 dark:border-gray-800 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors text-gray-600 dark:text-gray-300"
+              className="px-2.5 py-1 text-xs font-medium border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50 transition-colors text-gray-600 dark:text-gray-300"
             >
               {action.label}
             </button>

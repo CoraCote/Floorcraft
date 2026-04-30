@@ -45,8 +45,8 @@ const toneVisual: Record<ToastTone, ToneVisual> = {
     icon: AlertCircle,
   },
   info: {
-    accent: 'border-l-blue-500',
-    iconWrap: 'text-blue-600 dark:text-blue-400',
+    accent: 'border-l-[color:var(--color-blueprint)]',
+    iconWrap: 'text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]',
     icon: Info,
   },
 }
@@ -226,7 +226,7 @@ function ToastRow({ item, paused, reduced, onDismiss, onPauseStart, onPauseEnd }
       data-testid="toast"
       data-tone={tone}
       data-reduced-motion={reduced ? 'true' : 'false'}
-      className={`pointer-events-auto select-none rounded-lg border border-l-4 bg-white shadow-lg dark:border-neutral-800 dark:bg-neutral-900 ${visual.accent}`}
+      className={`pointer-events-auto select-none rounded-lg border border-l-4 bg-[color:var(--color-paper-raised)] shadow-lg dark:border-neutral-800 dark:bg-neutral-900 ${visual.accent}`}
       style={style}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}

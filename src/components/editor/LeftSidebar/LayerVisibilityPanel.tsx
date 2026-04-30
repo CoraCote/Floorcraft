@@ -79,7 +79,7 @@ export function LayerVisibilityPanel() {
               // `min-w-0` so the label degrades with an ellipsis (rather
               // than pushing the count pill out) on a long localised
               // category title or a 4-digit count badge.
-              className="flex items-center gap-2 px-2 py-1.5 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer min-w-0"
+              className="flex items-center gap-2 px-2 py-1.5 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800 cursor-pointer min-w-0"
             >
               <input
                 type="checkbox"

@@ -515,8 +515,8 @@ function LibraryTile({
           : 'cursor-grab active:cursor-grabbing'
       } ${
         isActive
-          ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-100 border-blue-300 dark:border-blue-700'
-          : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-800 hover:border-blue-400 dark:hover:border-blue-500'
+          ? 'bg-[color:var(--color-blueprint-soft)] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] border-[color:var(--color-blueprint)] dark:border-[color:var(--color-blueprint)]'
+          : 'bg-[color:var(--color-paper-raised)] dark:bg-gray-900 text-gray-700 dark:text-gray-200 border-[color:var(--color-paper-line)] dark:border-gray-800 hover:border-[color:var(--color-blueprint)] dark:hover:border-[color:var(--color-blueprint)]'
       }`}
     >
       <button
@@ -527,7 +527,7 @@ function LibraryTile({
         // label working. `pr-5` reserves a 20px gutter for the absolute
         // star/× corner action (12px icon + p-1 = ~20px box at right-0.5)
         // so a long label's ellipsis tail never sits underneath the icon.
-        className="flex items-center gap-1.5 flex-1 min-w-0 pr-5 text-left rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+        className="flex items-center gap-1.5 flex-1 min-w-0 pr-5 text-left rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
       >
         {/* Wrap the preview so the row's flex shrink targets the LABEL,
             not the icon — without this, the SVG compresses on tight rows
@@ -564,7 +564,7 @@ function LibraryTile({
           onKeyDown={(e) => {
             if (e.key === ' ' || e.key === 'Enter') handleStarClick(e)
           }}
-          className={`absolute top-0.5 right-0.5 p-1 rounded transition-opacity focus:opacity-100 focus:outline-none focus:ring-1 focus:ring-blue-400 ${
+          className={`absolute top-0.5 right-0.5 p-1 rounded transition-opacity focus:opacity-100 focus:outline-none focus:ring-1 focus:ring-[color:var(--color-blueprint)] ${
             isFavorite ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
           }`}
         >
@@ -643,10 +643,10 @@ function LibrarySection({
   // Centralising the class string here means the next palette tweak is a
   // single-line change rather than spread across three call sites.
   const HEADER_CLASS =
-    'text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500'
+    'font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500'
 
   return (
-    <div className={`mb-3 ${showDivider ? 'pt-3 border-t border-gray-100 dark:border-gray-800/60' : ''}`}>
+    <div className={`mb-3 ${showDivider ? 'pt-3 border-t border-[color:var(--color-paper-line)] dark:border-gray-800/60' : ''}`}>
       {/* `min-w-0` on the row + truncate-aware children below let a long
           category title ("My Shapes · 47", or a localised label) degrade
           with an ellipsis instead of pushing the trailing action (e.g.
@@ -999,7 +999,7 @@ export function ElementLibrary() {
             className={`w-full flex items-center gap-2 px-2.5 py-1.5 text-xs rounded border transition-colors ${
               activeTool === 'pin'
                 ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 border-amber-300'
-                : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:border-gray-300'
+                : 'bg-[color:var(--color-paper-raised)] dark:bg-gray-900 text-gray-700 dark:text-gray-200 border-[color:var(--color-paper-line)] dark:border-gray-800 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50 hover:border-gray-300'
             }`}
           >
             <MessageSquarePlus size={14} aria-hidden="true" className="flex-shrink-0" />
@@ -1087,7 +1087,7 @@ export function ElementLibrary() {
           className={`w-full mb-3 flex items-center gap-2 px-2.5 py-1.5 text-xs rounded border transition-colors ${
             activeTool === 'pin'
               ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 border-amber-300'
-              : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:border-gray-300'
+              : 'bg-[color:var(--color-paper-raised)] dark:bg-gray-900 text-gray-700 dark:text-gray-200 border-[color:var(--color-paper-line)] dark:border-gray-800 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50 hover:border-gray-300'
           }`}
         >
           <MessageSquarePlus size={14} aria-hidden="true" className="flex-shrink-0" />
@@ -1137,7 +1137,7 @@ export function ElementLibrary() {
                   setConfirmingClearRecents(true)
                 }
               }}
-              className={`flex items-center gap-1 px-1 py-0.5 rounded text-[11px] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+              className={`flex items-center gap-1 px-1 py-0.5 rounded text-[11px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)] ${
                 confirmingClearRecents
                   ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-950/60'
                   : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
@@ -1166,9 +1166,9 @@ export function ElementLibrary() {
       {visibleLibraryItems.length === 0 && customShapeItems.length === 0 ? (
         <div
           role="status"
-          className="flex flex-col items-center gap-2 py-8 px-3 text-xs text-gray-500 dark:text-gray-400 rounded-md border border-dashed border-gray-200 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-900/40 text-center"
+          className="flex flex-col items-center gap-2 py-8 px-3 text-xs text-gray-500 dark:text-gray-400 rounded-md border border-dashed border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-sunken)]/80 dark:bg-gray-900/40 text-center"
         >
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 text-gray-500 dark:text-gray-400">
             <Box size={18} aria-hidden="true" />
           </span>
           <div className="font-medium text-gray-600 dark:text-gray-300">
@@ -1187,7 +1187,7 @@ export function ElementLibrary() {
           // which token came back empty — typos are the most common cause.
           <div
             role="status"
-            className="flex flex-col items-center gap-2 py-6 text-xs text-gray-500 dark:text-gray-400 rounded-md border border-dashed border-gray-200 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-900/40"
+            className="flex flex-col items-center gap-2 py-6 text-xs text-gray-500 dark:text-gray-400 rounded-md border border-dashed border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-sunken)]/80 dark:bg-gray-900/40"
           >
             <SearchX size={20} aria-hidden="true" className="text-gray-400" />
             <div>No elements match</div>
@@ -1204,7 +1204,7 @@ export function ElementLibrary() {
                 setQuery('')
                 searchInputRef.current?.focus()
               }}
-              className="text-blue-600 dark:text-blue-400 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded px-1"
+              className="text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)] rounded px-1"
             >
               Clear
             </button>
@@ -1307,7 +1307,7 @@ export function ElementLibrary() {
             <button
               type="button"
               onClick={handleUploadClick}
-              className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded border border-dashed border-gray-300 dark:border-gray-700 hover:border-gray-400 transition-colors"
+              className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800 rounded border border-dashed border-gray-300 dark:border-gray-700 hover:border-gray-400 transition-colors"
             >
               <Upload size={12} aria-hidden="true" />
               <span>Upload SVG</span>

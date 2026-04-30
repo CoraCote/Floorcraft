@@ -64,7 +64,7 @@ export function CanvasActionDock() {
 
   return (
     <div
-      className="absolute bottom-12 right-4 z-20 flex flex-col gap-0.5 p-1 rounded-xl bg-white/95 dark:bg-gray-900/95 backdrop-blur border border-gray-200 dark:border-gray-800 shadow-lg"
+      className="absolute bottom-12 right-4 z-20 flex flex-col gap-0.5 p-1 rounded-xl bg-[color:var(--color-paper-raised)]/95 dark:bg-gray-900/95 backdrop-blur border border-[color:var(--color-paper-line)] dark:border-gray-800 shadow-lg"
       data-testid="canvas-action-dock"
       role="toolbar"
       aria-label="Canvas controls"
@@ -160,11 +160,11 @@ interface DockButtonProps {
 
 function DockButton({ label, title, onClick, pressed, children }: DockButtonProps) {
   const base =
-    'w-9 h-9 inline-flex items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500'
+    'w-9 h-9 inline-flex items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]'
   const idle =
-    'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700'
+    'text-gray-600 dark:text-gray-300 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700'
   const active =
-    'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-950/60'
+    'bg-[color:var(--color-blueprint-soft)] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:bg-[color:var(--color-blueprint-soft)] dark:hover:bg-[color:var(--color-blueprint-soft)]'
   return (
     <button
       type="button"

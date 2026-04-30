@@ -8,12 +8,20 @@
 export function RouteLoadingFallback() {
   return (
     <div
-      className="flex items-center justify-center h-screen w-screen bg-gray-50 dark:bg-gray-800/50"
+      className="flex items-center justify-center h-screen w-screen bg-[color:var(--color-paper)] dark:bg-gray-950"
       role="status"
       aria-live="polite"
       aria-label="Loading page"
     >
-      <div className="h-8 w-8 rounded-full border-2 border-gray-300 dark:border-gray-700 border-t-gray-600 animate-spin" />
+      {/* Compass-rose monogram — matches the brand mark on every public
+          surface. The cyan border-t spinner reads as an architect's
+          drafting compass slowly tracing a circle, which feels of-a-piece
+          with the Drafting Studio identity rather than the generic
+          gray-600 dot the previous fallback rendered. */}
+      <div className="relative h-8 w-8">
+        <span className="absolute inset-0 rounded-full border-2 border-[color:var(--color-paper-line)] dark:border-gray-800" />
+        <span className="absolute inset-0 rounded-full border-2 border-transparent border-t-[color:var(--color-blueprint)] animate-spin" />
+      </div>
     </div>
   )
 }

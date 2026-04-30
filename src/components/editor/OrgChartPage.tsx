@@ -116,7 +116,7 @@ export function OrgChartPage() {
         <EmptyState rosterHref={rosterHref} />
       ) : (
         <section
-          className="mt-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4"
+          className="mt-6 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-lg p-4"
           aria-label="Reporting tree"
         >
           {/* The chart can be wider than the page column on a deep org —
@@ -151,7 +151,7 @@ export function OrgChartPage() {
  */
 function PageShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-gray-950 dark:to-gray-900">
+    <div className="min-h-screen bg-[color:var(--color-paper)] dark:bg-gray-950">
       <div className="max-w-7xl mx-auto px-6 py-10">{children}</div>
     </div>
   )
@@ -172,7 +172,7 @@ function PageHeader({ rosterHref }: { rosterHref: string | null }) {
         {rosterHref && (
           <Link
             to={rosterHref}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-md text-sm text-gray-700 dark:text-gray-200 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
           >
             <ExternalLink size={14} aria-hidden="true" />
             Open in roster
@@ -246,8 +246,8 @@ function StatStrip({ stats }: { stats: OrgStats }) {
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-3">
-      <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+    <div className="bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-lg p-3">
+      <div className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
         {label}
       </div>
       <div className="mt-1 text-2xl font-semibold tabular-nums text-gray-900 dark:text-gray-100">
@@ -341,7 +341,7 @@ function TreeBranch({
       />
       {node.children.length > 0 && (
         <div
-          className="flex items-start gap-6 mt-4 pl-2 border-l border-gray-200 dark:border-gray-800"
+          className="flex items-start gap-6 mt-4 pl-2 border-l border-[color:var(--color-paper-line)] dark:border-gray-800"
           role="group"
           aria-label={`Direct reports of ${node.employee.name}`}
         >
@@ -381,7 +381,7 @@ function NodeCard({
       data-testid={`org-node-${node.id}`}
       role="treeitem"
       aria-label={`${e.name}${e.title ? `, ${e.title}` : ''}`}
-      className="text-left bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-md shadow-sm hover:shadow-md hover:border-blue-300 dark:hover:border-blue-700 hover:bg-gray-50/40 dark:hover:bg-gray-800/40 transition-all px-3 py-2 min-w-[180px] max-w-[220px] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+      className="text-left bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-md shadow-sm hover:shadow-md hover:border-[color:var(--color-blueprint)] hover:bg-[color:var(--color-paper-sunken)]/60 dark:hover:bg-gray-800/40 transition-all px-3 py-2 min-w-[180px] max-w-[220px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
     >
       <div className="flex items-center gap-2">
         <span
@@ -409,10 +409,10 @@ function NodeCard({
  */
 function EmptyState({ rosterHref }: { rosterHref: string | null }) {
   return (
-    <div className="mt-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-10 text-center">
+    <div className="mt-6 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-lg p-10 text-center">
       <div
         aria-hidden="true"
-        className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 mb-4"
+        className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 text-gray-500 dark:text-gray-400 mb-4"
       >
         <Users size={22} />
       </div>
@@ -435,10 +435,10 @@ function EmptyState({ rosterHref }: { rosterHref: string | null }) {
 
 function UnauthorizedState() {
   return (
-    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-10 text-center">
+    <div className="bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-lg p-10 text-center">
       <div
         aria-hidden="true"
-        className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 mb-4"
+        className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 text-gray-500 dark:text-gray-400 mb-4"
       >
         <Lock size={22} />
       </div>

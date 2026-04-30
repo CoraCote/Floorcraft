@@ -203,7 +203,7 @@ const WALL_TYPE_LABELS: Record<WallType, string> = {
  */
 const LABEL_CLASS = 'text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block'
 const INPUT_CLASS =
-  'w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500 bg-white dark:bg-gray-900'
+  'w-full text-sm border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-[color:var(--color-blueprint)] disabled:bg-[color:var(--color-paper-sunken)] disabled:text-gray-500 bg-[color:var(--color-paper-raised)] dark:bg-gray-900'
 
 /**
  * Section helper — thin wrapper around the shared `PanelSection` primitive
@@ -362,9 +362,9 @@ function ElementHeader({
   return (
     <div
       data-testid="properties-panel-header"
-      className="sticky top-0 z-10 -mx-3 px-3 py-2.5 bg-white/95 dark:bg-gray-950/95 backdrop-blur border-b border-gray-100 dark:border-gray-800 mb-1 flex items-center gap-2.5"
+      className="sticky top-0 z-10 -mx-3 px-3 py-2.5 bg-[color:var(--color-paper-raised)]/95 dark:bg-gray-950/95 backdrop-blur border-b border-[color:var(--color-paper-line)] dark:border-gray-800 mb-1 flex items-center gap-2.5"
     >
-      <div className="w-8 h-8 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 flex items-center justify-center flex-shrink-0">
+      <div className="w-8 h-8 rounded-md bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 text-gray-600 dark:text-gray-300 flex items-center justify-center flex-shrink-0">
         <Icon size={16} aria-hidden="true" />
       </div>
       <div className="min-w-0 flex-1">
@@ -396,7 +396,7 @@ function ElementHeader({
         data-testid="properties-lock-toggle"
         onClick={onToggleLock}
         disabled={!canEdit}
-        className="p-1.5 rounded text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+        className="p-1.5 rounded text-gray-500 dark:text-gray-400 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
       >
         {locked ? <Lock size={14} aria-hidden="true" /> : <Unlock size={14} aria-hidden="true" />}
       </button>
@@ -799,7 +799,7 @@ function ElementTopologySection({ elementId }: { elementId: string }) {
             type="button"
             onClick={handleOpenInTopology}
             disabled={!teamSlug || !officeSlug}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900/50 hover:bg-blue-50 dark:hover:bg-blue-950/30 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] border border-[color:var(--color-blueprint)]/40 hover:bg-[color:var(--color-blueprint-soft)] disabled:opacity-50 disabled:cursor-not-allowed"
             data-testid="floor-properties-open-in-topology"
           >
             <ExternalLink size={12} aria-hidden="true" /> Open in topology
@@ -809,7 +809,7 @@ function ElementTopologySection({ elementId }: { elementId: string }) {
         <button
           type="button"
           onClick={handleAddToTopology}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-700 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50"
           data-testid="floor-properties-add-to-topology"
         >
           <Link2 size={12} aria-hidden="true" /> Add to network topology
@@ -903,7 +903,7 @@ function EmployeeDetailCard({
   return (
     <div
       data-testid="employee-detail-card"
-      className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4"
+      className="rounded-lg border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 p-4"
     >
       {/* Header: avatar + name + title */}
       <div className="flex items-center gap-3 min-w-0">
@@ -961,7 +961,7 @@ function EmployeeDetailCard({
       </div>
 
       {/* Info rows — definition list, label/value per row, separator above */}
-      <div className="border-t border-gray-100 dark:border-gray-800 pt-2.5 mt-3 flex flex-col gap-1.5">
+      <div className="border-t border-[color:var(--color-paper-line)] dark:border-gray-800 pt-2.5 mt-3 flex flex-col gap-1.5">
         {infoRow('Team', employee.team || '—', employee.team || '—')}
         {infoRow(
           'Manager',
@@ -976,13 +976,13 @@ function EmployeeDetailCard({
       </div>
 
       {/* Actions — full-width 2-column grid, danger styling on Unassign */}
-      <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+      <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-[color:var(--color-paper-line)] dark:border-gray-800">
         {canEditRoster ? (
           <button
             type="button"
             onClick={handleUnassign}
             data-testid="employee-detail-unassign"
-            className="px-2.5 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 bg-white dark:bg-gray-900 border border-red-200 dark:border-red-900/50 rounded hover:bg-red-50 dark:hover:bg-red-950/40"
+            className="px-2.5 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-red-200 dark:border-red-900/50 rounded hover:bg-red-50 dark:hover:bg-red-950/40"
           >
             Unassign
           </button>
@@ -995,7 +995,7 @@ function EmployeeDetailCard({
           type="button"
           onClick={handleViewProfile}
           data-testid="employee-detail-view-profile"
-          className="px-2.5 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50"
+          className="px-2.5 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50"
         >
           View profile
         </button>
@@ -1023,7 +1023,7 @@ function AssigneeRow({
   const { initials, deptColor } = useEmployeeAvatar(employee)
   const name = employee?.name || fallbackId
   return (
-    <div className="flex items-center justify-between gap-2 text-sm border border-gray-200 dark:border-gray-800 rounded-md px-2.5 py-1.5 bg-white dark:bg-gray-900">
+    <div className="flex items-center justify-between gap-2 text-sm border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-md px-2.5 py-1.5 bg-[color:var(--color-paper-raised)] dark:bg-gray-900">
       <div className="flex items-center gap-2 min-w-0 flex-1">
         <div
           aria-hidden
@@ -1140,7 +1140,7 @@ export function PropertiesPanel() {
         title={label}
         onClick={onClick}
         disabled={inputDisabled}
-        className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-800 disabled:opacity-40 disabled:cursor-not-allowed"
+        className="p-1.5 rounded hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 border border-[color:var(--color-paper-line)] dark:border-gray-800 disabled:opacity-40 disabled:cursor-not-allowed"
       >
         <Icon size={16} />
       </button>
@@ -1150,8 +1150,8 @@ export function PropertiesPanel() {
       <div className="flex flex-col gap-5" data-testid="properties-multi-select">
         {/* Header row mirrors the single-select header so the visual
             rhythm doesn't shift when the user changes selection size. */}
-        <div className="sticky top-0 z-10 -mx-3 px-3 py-2.5 bg-white/95 dark:bg-gray-950/95 backdrop-blur border-b border-gray-100 dark:border-gray-800 flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 flex items-center justify-center flex-shrink-0">
+        <div className="sticky top-0 z-10 -mx-3 px-3 py-2.5 bg-[color:var(--color-paper-raised)]/95 dark:bg-gray-950/95 backdrop-blur border-b border-[color:var(--color-paper-line)] dark:border-gray-800 flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-md bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 text-gray-600 dark:text-gray-300 flex items-center justify-center flex-shrink-0">
             <LayoutGrid size={16} aria-hidden="true" />
           </div>
           <div className="min-w-0 flex-1">
@@ -1260,7 +1260,7 @@ export function PropertiesPanel() {
                 title="Distribute horizontally"
                 onClick={() => distributeElements(selectedIds, 'horizontal')}
                 disabled={selectedIds.length < 3 || inputDisabled}
-                className="p-1.5 rounded text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="p-1.5 rounded text-gray-600 dark:text-gray-300 border border-[color:var(--color-paper-line)] dark:border-gray-800 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <AlignHorizontalSpaceAround size={16} />
               </button>
@@ -1270,7 +1270,7 @@ export function PropertiesPanel() {
                 title="Distribute vertically"
                 onClick={() => distributeElements(selectedIds, 'vertical')}
                 disabled={selectedIds.length < 3 || inputDisabled}
-                className="p-1.5 rounded text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="p-1.5 rounded text-gray-600 dark:text-gray-300 border border-[color:var(--color-paper-line)] dark:border-gray-800 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <AlignVerticalSpaceAround size={16} />
               </button>
@@ -1336,7 +1336,7 @@ export function PropertiesPanel() {
               <label className={LABEL_CLASS}>Stroke</label>
               <input
                 type="color"
-                className="w-full h-8 border border-gray-200 dark:border-gray-800 rounded cursor-pointer disabled:opacity-50"
+                className="w-full h-8 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded cursor-pointer disabled:opacity-50"
                 value={firstWall.style.stroke}
                 disabled={sharedDisabled}
                 onChange={(e) => {
@@ -1358,7 +1358,7 @@ export function PropertiesPanel() {
               onClick={() => {
                 for (const id of selectedIds) updateElement(id, { locked: !allLocked })
               }}
-              className="w-full px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50 inline-flex items-center justify-center gap-1.5"
+              className="w-full px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-700 rounded hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50 inline-flex items-center justify-center gap-1.5"
             >
               {allLocked ? <Unlock size={14} aria-hidden="true" /> : <Lock size={14} aria-hidden="true" />}
               {allLocked ? 'Unlock all' : 'Lock remaining'}
@@ -1418,7 +1418,7 @@ export function PropertiesPanel() {
           <button
             type="button"
             onClick={() => update({ locked: false })}
-            className="px-2 py-1 rounded text-xs font-medium text-amber-800 dark:text-amber-200 bg-white dark:bg-gray-900 border border-amber-300 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/50 inline-flex items-center gap-1"
+            className="px-2 py-1 rounded text-xs font-medium text-amber-800 dark:text-amber-200 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-amber-300 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/50 inline-flex items-center gap-1"
           >
             <Unlock size={10} aria-hidden="true" /> Unlock to edit
           </button>
@@ -1435,7 +1435,7 @@ export function PropertiesPanel() {
             data-testid="properties-type-row"
             // `min-w-0` so the truncate on `typeLabel` actually engages
             // when the panel is narrow.
-            className="flex items-center gap-2 min-w-0 text-sm text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 bg-gray-50/60 dark:bg-gray-900/40"
+            className="flex items-center gap-2 min-w-0 text-sm text-gray-700 dark:text-gray-200 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded px-2 py-1.5 bg-[color:var(--color-paper-sunken)]/80 dark:bg-gray-900/40"
           >
             <identity.Icon size={14} aria-hidden="true" className="text-gray-500 dark:text-gray-400 flex-shrink-0" />
             <span className="truncate min-w-0">{identity.typeLabel}</span>
@@ -1542,7 +1542,7 @@ export function PropertiesPanel() {
             <label className={LABEL_CLASS}>Stroke</label>
             <input
               type="color"
-              className="w-full h-8 border border-gray-200 dark:border-gray-800 rounded cursor-pointer disabled:opacity-50"
+              className="w-full h-8 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded cursor-pointer disabled:opacity-50"
               value={el.style.stroke}
               disabled={lockedDisabled}
               onChange={(e) => update({ style: { ...el.style, stroke: e.target.value } })}
@@ -1554,7 +1554,7 @@ export function PropertiesPanel() {
               <label className={LABEL_CLASS}>Fill</label>
               <input
                 type="color"
-                className="w-full h-8 border border-gray-200 dark:border-gray-800 rounded cursor-pointer disabled:opacity-50"
+                className="w-full h-8 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded cursor-pointer disabled:opacity-50"
                 value={el.style.fill}
                 disabled={lockedDisabled}
                 onChange={(e) => update({ style: { ...el.style, fill: e.target.value } })}
@@ -1564,7 +1564,7 @@ export function PropertiesPanel() {
               <label className={LABEL_CLASS}>Stroke</label>
               <input
                 type="color"
-                className="w-full h-8 border border-gray-200 dark:border-gray-800 rounded cursor-pointer disabled:opacity-50"
+                className="w-full h-8 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded cursor-pointer disabled:opacity-50"
                 value={el.style.stroke}
                 disabled={lockedDisabled}
                 onChange={(e) => update({ style: { ...el.style, stroke: e.target.value } })}
@@ -1670,7 +1670,7 @@ export function PropertiesPanel() {
         <Section title="Door details">
           <div>
             <label className={LABEL_CLASS}>Attached to wall</label>
-            <div className="text-xs text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 bg-gray-50/60 dark:bg-gray-900/40 truncate font-mono">
+            <div className="text-xs text-gray-700 dark:text-gray-200 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded px-2 py-1.5 bg-[color:var(--color-paper-sunken)]/80 dark:bg-gray-900/40 truncate font-mono">
               {el.parentWallId || '— (orphan)'}
             </div>
           </div>
@@ -1738,7 +1738,7 @@ export function PropertiesPanel() {
         <Section title="Window details">
           <div>
             <label className={LABEL_CLASS}>Attached to wall</label>
-            <div className="text-xs text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 bg-gray-50/60 dark:bg-gray-900/40 truncate font-mono">
+            <div className="text-xs text-gray-700 dark:text-gray-200 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded px-2 py-1.5 bg-[color:var(--color-paper-sunken)]/80 dark:bg-gray-900/40 truncate font-mono">
               {el.parentWallId || '— (orphan)'}
             </div>
           </div>
@@ -1812,7 +1812,7 @@ export function PropertiesPanel() {
         <Section title="Decor">
           <div>
             <label className={LABEL_CLASS}>Shape</label>
-            <div className="text-xs text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 bg-gray-50/60 dark:bg-gray-900/40 truncate capitalize">
+            <div className="text-xs text-gray-700 dark:text-gray-200 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded px-2 py-1.5 bg-[color:var(--color-paper-sunken)]/80 dark:bg-gray-900/40 truncate capitalize">
               {el.shape}
             </div>
           </div>
@@ -1970,7 +1970,7 @@ export function PropertiesPanel() {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-sm text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5">
+                  <div className="text-sm text-gray-400 dark:text-gray-500 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded px-2 py-1.5">
                     No one assigned
                   </div>
                 )}
@@ -1984,7 +1984,7 @@ export function PropertiesPanel() {
           {isDeskElement(el) && !el.assignedEmployeeId && (
             <div>
               <label className={LABEL_CLASS}>Assigned To</label>
-              <div className="text-sm text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5">
+              <div className="text-sm text-gray-400 dark:text-gray-500 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded px-2 py-1.5">
                 No one assigned
               </div>
             </div>
@@ -2239,7 +2239,7 @@ export function PropertiesPanel() {
             <button
               type="button"
               onClick={() => setHistoryTargetId(el.id)}
-              className="w-full px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors inline-flex items-center justify-center gap-1.5"
+              className="w-full px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-700 rounded hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50 transition-colors inline-flex items-center justify-center gap-1.5"
               data-testid="properties-history-button"
             >
               <History size={14} aria-hidden="true" /> History

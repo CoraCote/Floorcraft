@@ -45,7 +45,7 @@ export function ScenarioAdjustmentRow({
 
   return (
     <div
-      className="flex items-center gap-2 text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5"
+      className="flex items-center gap-2 text-sm border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded px-2 py-1.5"
       data-testid="scenario-adjustment-row"
     >
       <span
@@ -63,7 +63,7 @@ export function ScenarioAdjustmentRow({
           <input
             type="text"
             aria-label="Department"
-            className="flex-1 px-2 py-1 border border-gray-200 dark:border-gray-800 rounded disabled:bg-gray-50 disabled:text-gray-500"
+            className="flex-1 px-2 py-1 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded disabled:bg-[color:var(--color-paper-sunken)] disabled:text-gray-500"
             list={datalistId}
             value={adjustment.department}
             disabled={!editable}
@@ -83,7 +83,7 @@ export function ScenarioAdjustmentRow({
         min={0}
         step={1}
         aria-label={isSeatsRow ? 'Seat count' : 'Headcount'}
-        className="w-24 px-2 py-1 border border-gray-200 dark:border-gray-800 rounded tabular-nums disabled:bg-gray-50 disabled:text-gray-500"
+        className="w-24 px-2 py-1 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded tabular-nums disabled:bg-[color:var(--color-paper-sunken)] disabled:text-gray-500"
         value={adjustment.count}
         disabled={!editable}
         onChange={(e) => {

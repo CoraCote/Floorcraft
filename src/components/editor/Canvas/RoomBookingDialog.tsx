@@ -93,7 +93,7 @@ function RoomBookingDialogBody({
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="border border-gray-200 dark:border-gray-800 rounded px-2 py-1 text-sm"
+            className="border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded px-2 py-1 text-sm"
           />
         </label>
 
@@ -143,7 +143,7 @@ function RoomBookingDialogBody({
             onChange={(e) => setNote(e.target.value)}
             maxLength={140}
             placeholder="Planning sync"
-            className="border border-gray-200 dark:border-gray-800 rounded px-2 py-1 text-sm"
+            className="border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded px-2 py-1 text-sm"
           />
         </label>
 

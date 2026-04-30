@@ -33,15 +33,15 @@ export function FloorComparePage() {
 
   if (!canView) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-gray-950 dark:to-gray-900">
+      <div className="min-h-screen bg-[color:var(--color-paper)] dark:bg-gray-950">
         <div className="max-w-5xl mx-auto px-6 py-10">
           <div
             role="alert"
-            className="mx-auto max-w-md rounded-xl border border-gray-200 bg-white p-8 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900"
+            className="mx-auto max-w-md rounded-xl border border-[color:var(--color-paper-line)] bg-[color:var(--color-paper-raised)] p-8 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900"
           >
             <div
               aria-hidden="true"
-              className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+              className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[color:var(--color-paper-sunken)] text-gray-500 dark:bg-gray-800 dark:text-gray-400"
             >
               <Lock size={22} />
             </div>
@@ -55,7 +55,7 @@ export function FloorComparePage() {
             </p>
             <Link
               to={officeHref}
-              className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
+              className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline"
             >
               <ArrowLeft size={14} aria-hidden="true" />
               Back to office
@@ -67,13 +67,13 @@ export function FloorComparePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-gray-950 dark:to-gray-900">
+    <div className="min-h-screen bg-[color:var(--color-paper)] dark:bg-gray-950">
       <div className="max-w-5xl mx-auto px-6 py-10 space-y-5">
         {/* "Back to reports" rendered as a chip-style link — matches
             the back-link idiom used elsewhere in the editor. */}
         <Link
           to={reportsHref}
-          className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800/50"
+          className="inline-flex items-center gap-1 rounded-md border border-[color:var(--color-paper-line)] bg-[color:var(--color-paper-raised)] px-2.5 py-1 text-xs font-medium text-gray-600 transition-colors hover:bg-[color:var(--color-paper-sunken)] dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800/50"
         >
           <ArrowLeft size={14} aria-hidden="true" />
           Back to reports
@@ -90,7 +90,7 @@ export function FloorComparePage() {
           </p>
         </header>
 
-        <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+        <section className="rounded-xl border border-[color:var(--color-paper-line)] bg-[color:var(--color-paper-raised)] p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
           <FloorCompareTable />
         </section>
       </div>

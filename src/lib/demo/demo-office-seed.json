@@ -2782,13 +2782,13 @@
             "strokeWidth": 2
           },
           "width": 8,
-          "height": 800,
+          "height": 1500,
           "locked": false,
           "points": [
             0,
             0,
             0,
-            800
+            1500
           ],
           "zIndex": 0,
           "groupId": null,
@@ -2912,8 +2912,8 @@
           "rotation": 0
         },
         "B8mJ1EA-Wz53gKFcHLj_9": {
-          "x": 1192,
-          "y": 60,
+          "x": 1492,
+          "y": 0,
           "id": "B8mJ1EA-Wz53gKFcHLj_9",
           "type": "wall",
           "label": "East wall",
@@ -2924,13 +2924,13 @@
             "strokeWidth": 2
           },
           "width": 8,
-          "height": 740,
+          "height": 1500,
           "locked": false,
           "points": [
             0,
             0,
             0,
-            740
+            1500
           ],
           "zIndex": 0,
           "groupId": null,
@@ -3005,7 +3005,7 @@
           ]
         },
         "ElrEkgndDhL0tYLqUTIqI": {
-          "x": 1188,
+          "x": 1488,
           "y": 600,
           "id": "ElrEkgndDhL0tYLqUTIqI",
           "type": "window",
@@ -3106,18 +3106,14 @@
             "opacity": 1,
             "strokeWidth": 2
           },
-          "width": 1200,
-          "height": 60,
+          "width": 1500,
+          "height": 8,
           "locked": false,
           "points": [
             0,
             0,
-            900,
-            0,
-            1000,
-            60,
-            1200,
-            60
+            1500,
+            0
           ],
           "zIndex": 0,
           "groupId": null,
@@ -3313,7 +3309,7 @@
           "rotation": 0
         },
         "dTjowlx_ctuIqKQIq_ZTA": {
-          "x": 1188,
+          "x": 1488,
           "y": 400,
           "id": "dTjowlx_ctuIqKQIq_ZTA",
           "type": "door",
@@ -3380,7 +3376,7 @@
           "assignedEmployeeId": "m1LjfW6OOJNeu-u1V3QGk"
         },
         "iaqTJDaxZul3Xmq9XGtkO": {
-          "x": 1188,
+          "x": 1488,
           "y": 250,
           "id": "iaqTJDaxZul3Xmq9XGtkO",
           "type": "window",
@@ -3423,7 +3419,7 @@
         },
         "lP0_I86uzeVPnK9NWmMIq": {
           "x": 0,
-          "y": 800,
+          "y": 1492,
           "id": "lP0_I86uzeVPnK9NWmMIq",
           "type": "wall",
           "label": "South wall",
@@ -3433,13 +3429,13 @@
             "opacity": 1,
             "strokeWidth": 2
           },
-          "width": 1200,
+          "width": 1500,
           "height": 8,
           "locked": false,
           "points": [
             0,
             0,
-            1200,
+            1500,
             0
           ],
           "zIndex": 0,
@@ -3587,7 +3583,7 @@
         },
         "yVx5gUPZjb0sJo7t-fd8X": {
           "x": 600,
-          "y": 796,
+          "y": 1488,
           "id": "yVx5gUPZjb0sJo7t-fd8X",
           "type": "door",
           "label": "Main entrance",
@@ -3693,7 +3689,7 @@
           "assignedEmployeeId": "l_TEYlR1t61zpDPfWLQ_D"
         },
         "666bUZGIej-1VvHaPPiYw": {
-          "x": 1188,
+          "x": 1488,
           "y": 180,
           "id": "666bUZGIej-1VvHaPPiYw",
           "type": "window",
@@ -3716,7 +3712,7 @@
         },
         "ESmUnKldfQmN0_ZRQT7io": {
           "x": 0,
-          "y": 760,
+          "y": 1492,
           "id": "ESmUnKldfQmN0_ZRQT7io",
           "type": "wall",
           "label": "South wall",
@@ -3726,14 +3722,14 @@
             "opacity": 1,
             "strokeWidth": 2
           },
-          "width": 1112,
-          "height": 40,
+          "width": 1500,
+          "height": 8,
           "locked": false,
           "points": [
             0,
             0,
-            1112,
-            40
+            1500,
+            0
           ],
           "zIndex": 0,
           "groupId": null,
@@ -3933,8 +3929,8 @@
           "rotation": 0
         },
         "aVDZg_bI3XYEIMp9-_zxR": {
-          "x": 1192,
-          "y": 40,
+          "x": 1492,
+          "y": 0,
           "id": "aVDZg_bI3XYEIMp9-_zxR",
           "type": "wall",
           "label": "East wall",
@@ -3944,20 +3940,18 @@
             "opacity": 1,
             "strokeWidth": 2
           },
-          "width": 80,
+          "width": 8,
           "bulges": [
             0,
             -30
           ],
-          "height": 760,
+          "height": 1500,
           "locked": false,
           "points": [
             0,
             0,
             0,
-            700,
-            -80,
-            760
+            1500
           ],
           "zIndex": 0,
           "groupId": null,
@@ -4104,13 +4098,13 @@
             "strokeWidth": 2
           },
           "width": 8,
-          "height": 760,
+          "height": 1500,
           "locked": false,
           "points": [
             0,
             0,
             0,
-            760
+            1500
           ],
           "zIndex": 0,
           "groupId": null,
@@ -4485,7 +4479,7 @@
           "assignedEmployeeId": "7p87hjtiQVHfsEDjbM94H"
         },
         "uJ3CjHN9WBB3adzAZ3qI0": {
-          "x": 1188,
+          "x": 1488,
           "y": 500,
           "id": "uJ3CjHN9WBB3adzAZ3qI0",
           "type": "window",
@@ -4570,16 +4564,14 @@
             "opacity": 1,
             "strokeWidth": 2
           },
-          "width": 1200,
-          "height": 40,
+          "width": 1500,
+          "height": 8,
           "locked": false,
           "points": [
             0,
             0,
-            100,
-            40,
-            1200,
-            40
+            1500,
+            0
           ],
           "zIndex": 0,
           "groupId": null,
@@ -4746,20 +4738,18 @@
             "opacity": 1,
             "strokeWidth": 2
           },
-          "width": 1200,
+          "width": 1500,
           "bulges": [
             0,
             40
           ],
-          "height": 80,
+          "height": 8,
           "locked": false,
           "points": [
             0,
             0,
-            1000,
-            0,
-            1200,
-            80
+            1500,
+            0
           ],
           "zIndex": 0,
           "groupId": null,
@@ -4911,7 +4901,7 @@
           ]
         },
         "Ss6sAPhtSxhTMDdyPRSH5": {
-          "x": 1188,
+          "x": 1488,
           "y": 200,
           "id": "Ss6sAPhtSxhTMDdyPRSH5",
           "type": "window",
@@ -5000,13 +4990,13 @@
             "strokeWidth": 2
           },
           "width": 8,
-          "height": 800,
+          "height": 1500,
           "locked": false,
           "points": [
             0,
             0,
             0,
-            800
+            1500
           ],
           "zIndex": 0,
           "groupId": null,
@@ -5016,7 +5006,7 @@
           "thickness": 8
         },
         "VmzQJI4lxu1_eDOWySWJu": {
-          "x": 1188,
+          "x": 1488,
           "y": 560,
           "id": "VmzQJI4lxu1_eDOWySWJu",
           "type": "window",
@@ -5065,7 +5055,7 @@
         },
         "dSHuZhJteM2L3vqJ7KSvE": {
           "x": 0,
-          "y": 800,
+          "y": 1492,
           "id": "dSHuZhJteM2L3vqJ7KSvE",
           "type": "wall",
           "label": "South wall",
@@ -5075,13 +5065,13 @@
             "opacity": 1,
             "strokeWidth": 2
           },
-          "width": 1200,
+          "width": 1500,
           "height": 8,
           "locked": false,
           "points": [
             0,
             0,
-            1200,
+            1500,
             0
           ],
           "zIndex": 0,
@@ -5092,8 +5082,8 @@
           "thickness": 8
         },
         "fDO7X-2bLmvMiBgdXvRj-": {
-          "x": 1192,
-          "y": 80,
+          "x": 1492,
+          "y": 0,
           "id": "fDO7X-2bLmvMiBgdXvRj-",
           "type": "wall",
           "label": "East wall",
@@ -5104,13 +5094,13 @@
             "strokeWidth": 2
           },
           "width": 8,
-          "height": 720,
+          "height": 1500,
           "locked": false,
           "points": [
             0,
             0,
             0,
-            720
+            1500
           ],
           "zIndex": 0,
           "groupId": null,

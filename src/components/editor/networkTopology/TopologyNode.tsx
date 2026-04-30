@@ -58,10 +58,10 @@ export function TopologyNodeCard({ data, selected }: NodeProps) {
   return (
     <div
       className={[
-        'relative w-[180px] rounded-lg border-2 bg-white dark:bg-gray-900 shadow-sm transition-all',
+        'relative w-[180px] rounded-lg border-2 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 shadow-sm transition-all',
         meta.accent,
         selected
-          ? 'ring-2 ring-blue-400 ring-offset-1 dark:ring-offset-gray-950'
+          ? 'ring-2 ring-[color:var(--color-blueprint)] ring-offset-1 dark:ring-offset-gray-950'
           : '',
       ].join(' ')}
     >
@@ -134,7 +134,7 @@ export function TopologyNodeCard({ data, selected }: NodeProps) {
               ? `Linked to ${d.linkedLabel}`
               : 'Linked to a floor element'
           }
-          className="absolute -top-1.5 -right-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full bg-emerald-500 text-white shadow ring-2 ring-white dark:ring-gray-900"
+          className="absolute -top-1.5 -right-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full bg-emerald-500 text-white shadow ring-2 ring-[color:var(--color-paper-raised)] dark:ring-gray-900"
           data-testid="topology-node-link-badge"
         >
           <MapPin size={10} aria-hidden="true" strokeWidth={2.5} />

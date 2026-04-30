@@ -77,7 +77,7 @@ export function StatusBar() {
     <div
       role="status"
       aria-label="Canvas status"
-      className="absolute bottom-0 left-0 right-0 h-8 bg-white/95 dark:bg-gray-900/95 backdrop-blur border-t border-gray-200 dark:border-gray-800 flex items-center px-4 text-[11px] text-gray-500 dark:text-gray-400 overflow-x-auto whitespace-nowrap"
+      className="absolute bottom-0 left-0 right-0 h-8 bg-[color:var(--color-paper-raised)]/95 dark:bg-gray-900/95 backdrop-blur border-t border-[color:var(--color-paper-line)] dark:border-gray-800 flex items-center px-4 text-[11px] text-gray-500 dark:text-gray-400 overflow-x-auto whitespace-nowrap"
     >
       <Group>
         <StatItem label="Desks" value={totalDesks} />
@@ -164,8 +164,8 @@ export function StatusBar() {
         title="Set canvas scale by clicking two points of a known distance"
         className={`text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded transition-colors ${
           activeTool === 'calibrate-scale'
-            ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300'
-            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
+            ? 'bg-[color:var(--color-blueprint-soft)] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]'
+            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800'
         }`}
       >
         Set scale
@@ -201,7 +201,7 @@ function StatItem({
 }) {
   const valueClass =
     accent === 'blue'
-      ? 'text-blue-600 dark:text-blue-300'
+      ? 'text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]'
       : accent === 'green'
         ? 'text-green-600 dark:text-green-300'
         : accent === 'amber'
@@ -211,7 +211,7 @@ function StatItem({
             : 'text-gray-700 dark:text-gray-200'
   return (
     <span className="inline-flex items-baseline gap-1.5">
-      <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+      <span className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500">
         {label}
       </span>
       <span className={`tabular-nums font-medium ${valueClass}`}>{value}</span>

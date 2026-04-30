@@ -64,8 +64,8 @@ export function ScaleSettingsPopover() {
         onClick={() => setOpen((v) => !v)}
         className={`text-xs px-2 py-1 rounded border ${
           open
-            ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 text-blue-700 dark:text-blue-300'
-            : 'border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+            ? 'bg-[color:var(--color-blueprint-soft)] border-[color:var(--color-blueprint)]/40 text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]'
+            : 'border-[color:var(--color-paper-line)] dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50'
         }`}
         title="Project scale and units"
         aria-haspopup="dialog"
@@ -78,7 +78,7 @@ export function ScaleSettingsPopover() {
         <div
           role="dialog"
           aria-label="Project scale"
-          className="absolute top-full mt-1 right-0 z-40 w-64 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-md shadow-lg p-3"
+          className="absolute top-full mt-1 right-0 z-40 w-64 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-md shadow-lg p-3"
         >
           <h3 className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
             Measurement
@@ -91,7 +91,7 @@ export function ScaleSettingsPopover() {
             id="scale-unit"
             value={scaleUnit}
             onChange={(e) => setSettings({ scaleUnit: e.target.value as typeof LENGTH_UNITS[number] })}
-            className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1 mb-3 focus:outline-none focus:border-blue-400"
+            className="w-full text-sm border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded px-2 py-1 mb-3 focus:outline-none focus:border-[color:var(--color-blueprint)]"
           >
             {LENGTH_UNITS.map((u) => (
               <option key={u} value={u}>
@@ -115,7 +115,7 @@ export function ScaleSettingsPopover() {
                 if (!Number.isFinite(v) || v <= 0) return
                 setSettings({ scale: v })
               }}
-              className="w-24 text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
+              className="w-24 text-sm border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded px-2 py-1 focus:outline-none focus:border-[color:var(--color-blueprint)]"
               disabled={scaleUnit === 'px'}
             />
             <span className="text-sm text-gray-500 dark:text-gray-400">{LENGTH_UNIT_SUFFIX[scaleUnit]}</span>

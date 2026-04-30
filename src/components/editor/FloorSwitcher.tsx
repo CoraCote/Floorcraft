@@ -320,7 +320,7 @@ export function FloorSwitcher() {
   }
 
   return (
-    <div className="h-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center px-4 gap-3">
+    <div className="h-10 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border-b border-[color:var(--color-paper-line)] dark:border-gray-800 flex items-center px-4 gap-3">
       {/* ───── Left: office identity ─────
           Wave 15D moved the editable office name out of the TopBar
           and into this strip alongside the floor tabs. The
@@ -334,7 +334,7 @@ export function FloorSwitcher() {
           <input
             ref={officeNameInputRef}
             aria-label="Rename office"
-            className="text-sm font-semibold px-2 py-1 border border-blue-400 rounded outline-none bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100 dark:border-blue-500 max-w-[220px]"
+            className="text-sm font-semibold px-2 py-1 border border-[color:var(--color-blueprint)] rounded outline-none bg-[color:var(--color-paper-raised)] text-gray-900 dark:bg-gray-800 dark:text-gray-100 dark:border-[color:var(--color-blueprint)] max-w-[220px]"
             value={officeNameValue}
             onChange={(e) => setOfficeNameValue(e.target.value)}
             onBlur={handleOfficeRenameSubmit}
@@ -382,14 +382,14 @@ export function FloorSwitcher() {
               <div
                 data-testid="floor-drop-caret"
                 aria-hidden="true"
-                className="bg-blue-500 w-0.5 h-6 mr-1"
+                className="bg-[color:var(--color-blueprint)] w-0.5 h-6 mr-1"
               />
             )}
             {renamingFloorId === floor.id ? (
               <input
                 ref={renameInputRef}
                 aria-label={`Rename floor ${floor.name}`}
-                className="px-3 py-1.5 text-sm font-medium rounded-t border border-blue-400 outline-none w-28"
+                className="px-3 py-1.5 text-sm font-medium rounded-t border border-[color:var(--color-blueprint)] outline-none w-28"
                 value={renameValue}
                 onChange={(e) => setRenameValue(e.target.value)}
                 onBlur={handleRenameSubmit}
@@ -409,8 +409,8 @@ export function FloorSwitcher() {
                 onDragEnd={handleDragEnd}
                 className={`px-3 py-1.5 text-sm font-medium rounded-t cursor-pointer transition-colors ${
                   floor.id === activeFloorId
-                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 bg-blue-50 dark:bg-blue-950/40'
-                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                    ? 'text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] border-b-2 border-[color:var(--color-blueprint)] bg-[color:var(--color-blueprint-soft)]'
+                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50'
                 } ${draggingFloorId === floor.id ? 'opacity-50' : ''}`}
                 onClick={() => handleSwitchFloor(floor.id)}
                 onContextMenu={(e) => handleContextMenu(e, floor.id)}
@@ -424,7 +424,7 @@ export function FloorSwitcher() {
               <div
                 data-testid="floor-drop-caret"
                 aria-hidden="true"
-                className="bg-blue-500 w-0.5 h-6 ml-1"
+                className="bg-[color:var(--color-blueprint)] w-0.5 h-6 ml-1"
               />
             )}
           </div>
@@ -442,7 +442,7 @@ export function FloorSwitcher() {
             type="button"
             onClick={handleAddFloor}
             aria-label="Add floor"
-            className="flex items-center gap-1 px-2 py-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+            className="flex items-center gap-1 px-2 py-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800 rounded transition-colors"
           >
             <Plus size={14} aria-hidden="true" />
             <span>Add floor</span>
@@ -453,17 +453,17 @@ export function FloorSwitcher() {
       {contextMenuFloorId && canEdit && (
         <div
           ref={contextMenuRef}
-          className="fixed bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg py-1 z-50 min-w-[120px]"
+          className="fixed bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-lg shadow-lg py-1 z-50 min-w-[120px]"
           style={{ left: contextMenuPos.x, top: contextMenuPos.y }}
         >
           <button
-            className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800"
             onClick={() => handleRenameStart(contextMenuFloorId)}
           >
             Rename
           </button>
           <button
-            className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800"
             onClick={() => handleDuplicate(contextMenuFloorId)}
           >
             Duplicate

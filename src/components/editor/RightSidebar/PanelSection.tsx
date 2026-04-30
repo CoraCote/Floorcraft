@@ -69,14 +69,14 @@ export function PanelSection({
   const headerClass = [
     'flex items-center justify-between gap-2',
     sticky
-      ? 'sticky top-0 z-[1] -mx-3 px-3 py-1.5 bg-white/95 dark:bg-gray-950/95 backdrop-blur'
+      ? 'sticky top-0 z-[1] -mx-3 px-3 py-1.5 bg-[color:var(--color-paper-raised)]/95 dark:bg-gray-950/95 backdrop-blur'
       : '',
   ]
     .filter(Boolean)
     .join(' ')
 
   const content = card ? (
-    <div className="rounded-md border border-gray-200 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-900/40 p-3">
+    <div className="rounded-md border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-sunken)]/80 dark:bg-gray-900/40 p-3">
       {children}
     </div>
   ) : (
@@ -90,7 +90,7 @@ export function PanelSection({
     >
       <div className={headerClass}>
         <div className="flex flex-col min-w-0">
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+          <h3 className="font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500">
             {title}
           </h3>
           {subtitle && (

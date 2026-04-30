@@ -73,7 +73,7 @@ export function TopologyEdgeRenderer({
             style={{
               transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
             }}
-            className="absolute pointer-events-none px-1.5 py-0.5 rounded bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-[10px] font-semibold text-gray-700 dark:text-gray-200 shadow-sm tabular-nums"
+            className="absolute pointer-events-none px-1.5 py-0.5 rounded bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-[color:var(--color-paper-line)] dark:border-gray-700 text-[10px] font-semibold text-gray-700 dark:text-gray-200 shadow-sm tabular-nums"
           >
             {labelText}
           </div>

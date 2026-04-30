@@ -46,7 +46,7 @@ function AlignButton({ label, icon: Icon, onClick }: AlignButtonProps) {
       onClick={onClick}
       // 28px square. `flex items-center justify-center` keeps the icon
       // visually centred regardless of its intrinsic baseline.
-      className="w-7 h-7 flex items-center justify-center rounded text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-1 focus:ring-blue-400"
+      className="w-7 h-7 flex items-center justify-center rounded text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800 focus:outline-none focus:ring-1 focus:ring-[color:var(--color-blueprint)]"
     >
       <Icon size={16} aria-hidden="true" />
     </button>
@@ -113,7 +113,7 @@ export function AlignDistributeToolbar() {
         data-testid="align-distribute-toolbar"
         role="toolbar"
         aria-label="Align and distribute selection"
-        className="pointer-events-auto absolute flex items-center gap-0.5 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-1.5 py-1 shadow-md"
+        className="pointer-events-auto absolute flex items-center gap-0.5 rounded-md border border-[color:var(--color-paper-line)] dark:border-gray-700 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 px-1.5 py-1 shadow-md"
         style={{ left: screenLeft, top, transform }}
       >
         <AlignButton

@@ -152,17 +152,17 @@ export function LinkFloorElementModal({ open, node, onClose, onLinked }: Props) 
         )}
 
         {candidates.length === 0 ? (
-          <div className="rounded-md border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/40 px-3 py-6 text-center text-sm text-gray-600 dark:text-gray-300">
+          <div className="rounded-md border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-sunken)] dark:bg-gray-900/40 px-3 py-6 text-center text-sm text-gray-600 dark:text-gray-300">
             No compatible, unlinked floor elements found.
             <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               Drop a matching device on the floor plan first, or unlink an existing topology node.
             </div>
           </div>
         ) : (
-          <div className="max-h-80 overflow-y-auto rounded-md border border-gray-200 dark:border-gray-800 divide-y divide-gray-100 dark:divide-gray-800">
+          <div className="max-h-80 overflow-y-auto rounded-md border border-[color:var(--color-paper-line)] dark:border-gray-800 divide-y divide-gray-100 dark:divide-gray-800">
             {Array.from(groups.entries()).map(([floorId, group]) => (
               <div key={floorId}>
-                <div className="px-3 py-1.5 bg-gray-50 dark:bg-gray-900/60 text-[10px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400">
+                <div className="px-3 py-1.5 bg-[color:var(--color-paper-sunken)] dark:bg-gray-900/60 text-[10px] uppercase tracking-wide font-semibold text-gray-500 dark:text-gray-400">
                   {group.floorName}
                 </div>
                 {group.rows.map((row) => {
@@ -174,8 +174,8 @@ export function LinkFloorElementModal({ open, node, onClose, onLinked }: Props) 
                       className={[
                         'flex items-center gap-3 px-3 py-2 cursor-pointer text-sm transition-colors',
                         checked
-                          ? 'bg-blue-50 dark:bg-blue-950/30'
-                          : 'hover:bg-gray-50 dark:hover:bg-gray-800/40',
+                          ? 'bg-[color:var(--color-blueprint-soft)]'
+                          : 'hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/40',
                       ].join(' ')}
                     >
                       <input

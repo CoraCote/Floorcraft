@@ -468,7 +468,7 @@ export function ElementHoverCard() {
         opacity: 1,
         transition: reduceMotion ? 'none' : 'opacity 120ms ease-out',
       }}
-      className="rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-md px-2.5 py-1.5 text-xs max-w-[260px]"
+      className="rounded-md border border-[color:var(--color-paper-line)] dark:border-gray-700 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 shadow-md px-2.5 py-1.5 text-xs max-w-[260px]"
     >
       {card.kind === 'summary' ? (
         <SummaryBody card={card} />
@@ -491,7 +491,7 @@ function SummaryBody({ card }: { card: SummaryCard }) {
     <>
       <div className="flex items-center gap-2">
         <span
-          className="inline-flex items-center justify-center w-5 h-5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 flex-shrink-0"
+          className="inline-flex items-center justify-center w-5 h-5 rounded bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 text-gray-600 dark:text-gray-300 flex-shrink-0"
           aria-hidden="true"
         >
           <Icon size={12} />
@@ -543,7 +543,7 @@ function SeatBody({
     <>
       <div className="flex items-center gap-2">
         <span
-          className="inline-flex items-center justify-center w-5 h-5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 flex-shrink-0"
+          className="inline-flex items-center justify-center w-5 h-5 rounded bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 text-gray-600 dark:text-gray-300 flex-shrink-0"
           aria-hidden="true"
         >
           <Icon size={12} />
@@ -615,7 +615,7 @@ function OccupantRow({
           {occupant.name ?? 'Seat assigned'}
         </span>
         {occupant.status === 'on-leave' && (
-          <span className="ml-1 px-1 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 text-[10px] uppercase tracking-wide">
+          <span className="ml-1 px-1 rounded bg-[color:var(--color-blueprint-soft)] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] text-[10px] uppercase tracking-wide">
             On leave
           </span>
         )}
@@ -651,7 +651,7 @@ function AccommodationChip({ accommodation }: { accommodation: Accommodation }) 
   const label = ACCOMMODATION_LABELS[accommodation.type]
   return (
     <span
-      className="inline-flex items-center gap-1 px-1 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-[10px]"
+      className="inline-flex items-center gap-1 px-1 py-0.5 rounded bg-[color:var(--color-blueprint-soft)] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] text-[10px]"
       title={accommodation.notes ? `${label} — ${accommodation.notes}` : label}
     >
       <Icon size={10} />

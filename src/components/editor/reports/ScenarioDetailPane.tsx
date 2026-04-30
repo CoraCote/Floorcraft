@@ -88,12 +88,12 @@ export function ScenarioDetailPane({
           disabled={!editable}
           onChange={(e) => renameScenario(scenario.id, e.target.value)}
           aria-label="Scenario name"
-          className="flex-1 text-xl font-semibold bg-transparent border-b border-transparent hover:border-gray-200 focus:border-blue-500 focus:outline-none disabled:text-gray-700"
+          className="flex-1 text-xl font-semibold bg-transparent border-b border-transparent hover:border-[color:var(--color-paper-line)] focus:border-[color:var(--color-blueprint)] focus:outline-none disabled:text-gray-700"
         />
         <button
           type="button"
           onClick={onClone}
-          className="text-xs px-3 py-1.5 border border-gray-200 dark:border-gray-800 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50"
+          className="text-xs px-3 py-1.5 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50"
         >
           Clone scenario
         </button>
@@ -149,7 +149,7 @@ export function ScenarioDetailPane({
               <button
                 type="button"
                 onClick={() => setMenuOpen((v) => !v)}
-                className="text-xs px-3 py-1.5 border border-gray-200 dark:border-gray-800 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                className="text-xs px-3 py-1.5 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50"
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
               >
@@ -158,7 +158,7 @@ export function ScenarioDetailPane({
               {menuOpen && (
                 <div
                   role="menu"
-                  className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded shadow-md z-10"
+                  className="absolute right-0 mt-1 w-48 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded shadow-md z-10"
                 >
                   <MenuItem onClick={() => handleAdd('add-headcount')}>
                     Add headcount
@@ -202,7 +202,7 @@ export function ScenarioDetailPane({
         </h3>
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left border-b border-gray-200 dark:border-gray-800">
+            <tr className="text-left border-b border-[color:var(--color-paper-line)] dark:border-gray-800">
               <th className="py-2">Department</th>
               <th className="text-right">Today</th>
               <th className="text-right">Projected</th>
@@ -216,7 +216,7 @@ export function ScenarioDetailPane({
                 const proj = projected.employeesByDepartment[dept] ?? 0
                 const d = proj - cur
                 return (
-                  <tr key={dept} className="border-b border-gray-100 dark:border-gray-800">
+                  <tr key={dept} className="border-b border-[color:var(--color-paper-line)] dark:border-gray-800">
                     <td className="py-2">{dept}</td>
                     <td className="text-right tabular-nums">{cur}</td>
                     <td className="text-right tabular-nums">{proj}</td>
@@ -269,7 +269,7 @@ function MetricTile({
   const deltaColor =
     delta > 0 ? 'text-emerald-700' : delta < 0 ? 'text-rose-700' : 'text-gray-400 dark:text-gray-500'
   return (
-    <div className="border border-gray-200 dark:border-gray-800 rounded p-3" data-testid={testId}>
+    <div className="border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded p-3" data-testid={testId}>
       <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">{label}</div>
       <div className="mt-1 flex items-baseline gap-3">
         <span className="text-2xl font-semibold tabular-nums">{fmt(projected)}</span>
@@ -286,7 +286,7 @@ function MenuItem({ onClick, children }: { onClick: () => void; children: React.
       type="button"
       role="menuitem"
       onClick={onClick}
-      className="block w-full text-left text-sm px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+      className="block w-full text-left text-sm px-3 py-2 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50"
     >
       {children}
     </button>

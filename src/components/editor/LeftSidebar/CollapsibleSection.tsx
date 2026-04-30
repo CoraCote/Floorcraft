@@ -41,7 +41,7 @@ export function CollapsibleSection({ title, defaultOpen = true, storageKey, trai
   const buttonId = `${idBase}-header`
   const panelId = `${idBase}-panel`
   return (
-    <div className="border-b border-gray-200 dark:border-gray-800 last:border-b-0">
+    <div className="border-b border-[color:var(--color-paper-line)] dark:border-gray-800 last:border-b-0">
       <button
         id={buttonId}
         type="button"
@@ -51,7 +51,7 @@ export function CollapsibleSection({ title, defaultOpen = true, storageKey, trai
         // `min-w-0` so the title truncates when its localisation grows
         // past the available width rather than pushing the trailing slot
         // off the right edge.
-        className="w-full flex items-center gap-1.5 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 min-w-0"
+        className="w-full flex items-center gap-1.5 px-3 py-2 font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-gray-600 dark:text-gray-300 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50 min-w-0"
       >
         <span className="flex-shrink-0">
           {open

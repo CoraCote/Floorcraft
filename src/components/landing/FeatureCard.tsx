@@ -24,15 +24,21 @@ export function FeatureCard({
   description: string
 }) {
   return (
-    <div className="group text-left rounded-xl border border-transparent p-5 -m-5 transition-all duration-150 hover:border-blue-100 hover:bg-white hover:shadow-sm hover:-translate-y-px dark:hover:border-blue-900/40 dark:hover:bg-gray-900/50 motion-reduce:transition-none motion-reduce:hover:transform-none">
+    <div className="group relative text-left bg-[color:var(--color-paper-raised)] dark:bg-gray-900 p-7 transition-colors hover:bg-[color:var(--color-blueprint-soft)] dark:hover:bg-gray-800/60">
+      {/* Hairline cyan top edge appears on hover — telegraphs that the
+          card is interactive without adding a chevron or button. */}
+      <span
+        aria-hidden="true"
+        className="absolute inset-x-0 top-0 h-px bg-[color:var(--color-blueprint)] opacity-0 transition-opacity group-hover:opacity-100"
+      />
       <div
-        className="bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300 w-12 h-12 rounded-full flex items-center justify-center mb-4 transition-colors group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50"
+        className="text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] w-10 h-10 rounded-md border border-[color:var(--color-paper-line)] dark:border-gray-700 bg-[color:var(--color-paper)] flex items-center justify-center mb-5"
         aria-hidden="true"
       >
         <Icon className="w-5 h-5" />
       </div>
       <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">{title}</h3>
-      <p className="text-gray-600 dark:text-gray-400 leading-relaxed">{description}</p>
+      <p className="text-gray-600 dark:text-gray-400 leading-relaxed text-sm">{description}</p>
     </div>
   )
 }

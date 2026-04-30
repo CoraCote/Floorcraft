@@ -60,7 +60,7 @@ export function PanelHeader({
   return (
     <div
       data-testid="panel-header"
-      className={`flex items-start justify-between gap-2 pb-2.5 border-b border-gray-100 dark:border-gray-800 mb-3 ${
+      className={`flex items-start justify-between gap-2 pb-2.5 border-b border-[color:var(--color-paper-line)] dark:border-gray-800 mb-3 ${
         className ?? ''
       }`}
     >
@@ -72,7 +72,7 @@ export function PanelHeader({
           {typeof count === 'number' && (
             <span
               data-testid="panel-header-count"
-              className="px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-[10px] font-medium text-gray-600 dark:text-gray-300 tabular-nums flex-shrink-0"
+              className="px-1.5 py-0.5 rounded-full bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 text-[10px] font-medium text-gray-600 dark:text-gray-300 tabular-nums flex-shrink-0"
             >
               {count}
             </span>

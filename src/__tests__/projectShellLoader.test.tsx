@@ -56,7 +56,7 @@ describe('ProjectShell loader', () => {
         </Routes>
       </MemoryRouter>,
     )
-    await waitFor(() => expect(screen.getByText(/office not found/i)).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText(/we can't find that office/i)).toBeInTheDocument())
   })
 
   it('shows 404 when the team slug is not accessible', async () => {
@@ -74,7 +74,7 @@ describe('ProjectShell loader', () => {
         </Routes>
       </MemoryRouter>,
     )
-    await waitFor(() => expect(screen.getByText(/office not found/i)).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText(/we can't find that office/i)).toBeInTheDocument())
     expect(loadOffice).not.toHaveBeenCalled()
   })
 

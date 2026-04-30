@@ -114,8 +114,8 @@ function SectionHeading({
       id={id}
       className={
         tone === 'danger'
-          ? 'text-[10px] font-semibold uppercase tracking-wider text-red-600 dark:text-red-400'
-          : 'text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400'
+          ? 'font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-red-600 dark:text-red-400'
+          : 'font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400'
       }
     >
       {children}
@@ -218,7 +218,7 @@ export function AccountPage() {
 
   if (session.status === 'loading') {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-gray-950 dark:to-gray-900">
+      <div className="min-h-screen bg-[color:var(--color-paper)] dark:bg-gray-950">
         <div className="max-w-5xl mx-auto px-3 sm:px-6 py-6 sm:py-10 text-sm text-gray-500 dark:text-gray-400">
           Loading account…
         </div>
@@ -232,7 +232,7 @@ export function AccountPage() {
   const subtitle = name.trim() ? email : 'Floorcraft account'
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-gray-950 dark:to-gray-900">
+    <div className="min-h-screen bg-[color:var(--color-paper)] dark:bg-gray-950">
       <div className="max-w-5xl mx-auto px-3 sm:px-6 py-6 sm:py-10">
         {/* Breadcrumb back-link — small + understated, positioned above
             the identity header so it reads as "how do I leave this
@@ -241,7 +241,7 @@ export function AccountPage() {
         <div className="mb-4">
           <Link
             to={backTo}
-            className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+            className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)] rounded"
           >
             <ArrowLeft size={12} aria-hidden="true" />
             {backLabel}
@@ -346,7 +346,7 @@ function ProfileSection({
   return (
     <section aria-labelledby="profile-heading" className="space-y-3">
       <SectionHeading id="profile-heading">Profile</SectionHeading>
-      <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900/60 p-5">
+      <div className="rounded-xl border border-[color:var(--color-paper-line)] bg-[color:var(--color-paper-raised)] dark:border-gray-800 dark:bg-gray-900/60 p-5">
         <form onSubmit={onSubmit} className="space-y-4">
           <label className="block">
             <span className="block mb-1 text-gray-700 dark:text-gray-300">
@@ -443,7 +443,7 @@ function ChangeEmailInfoDialog({ onClose }: { onClose: () => void }) {
       data-testid="change-email-info-backdrop"
     >
       <div
-        className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 max-w-md w-full space-y-4"
+        className="bg-[color:var(--color-paper-raised)] dark:bg-gray-900 rounded-xl shadow-2xl p-6 max-w-md w-full space-y-4"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -498,7 +498,7 @@ function SecuritySection({
   return (
     <section aria-labelledby="security-heading" className="space-y-3">
       <SectionHeading id="security-heading">Security</SectionHeading>
-      <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900/60 p-5">
+      <div className="rounded-xl border border-[color:var(--color-paper-line)] bg-[color:var(--color-paper-raised)] dark:border-gray-800 dark:bg-gray-900/60 p-5">
         <form onSubmit={onSubmit} className="space-y-4">
           <label className="block">
             <span className="block mb-1 text-gray-700 dark:text-gray-300">
@@ -614,7 +614,7 @@ function DataPrivacySection() {
   return (
     <section aria-labelledby="privacy-heading" className="space-y-3">
       <SectionHeading id="privacy-heading">Data &amp; privacy</SectionHeading>
-      <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900/60 p-5">
+      <div className="rounded-xl border border-[color:var(--color-paper-line)] bg-[color:var(--color-paper-raised)] dark:border-gray-800 dark:bg-gray-900/60 p-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="min-w-0">
             <div className="font-medium text-gray-900 dark:text-gray-100">
@@ -825,7 +825,7 @@ function DangerZoneSection({ onSignOut }: { onSignOut: () => void }) {
           data-testid="delete-account-backdrop"
         >
           <div
-            className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 max-w-md w-full space-y-4"
+            className="bg-[color:var(--color-paper-raised)] dark:bg-gray-900 rounded-xl shadow-2xl p-6 max-w-md w-full space-y-4"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"

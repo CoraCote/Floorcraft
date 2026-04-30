@@ -86,13 +86,14 @@ describe('StatusBar — JSON Crack-inspired polish', () => {
     expect(screen.queryByText('Selected')).toBeNull()
   })
 
-  it('shows the Selected stat in blue when items are selected', () => {
+  it('shows the Selected stat in the blueprint accent when items are selected', () => {
     useUIStore.setState({ selectedIds: ['a', 'b'] } as any)
     render(<StatusBar />)
     const value = valueFor('Selected')
     expect(value).toHaveTextContent('2')
-    // Accent="blue" → the value span gets text-blue-600 (light) class.
-    expect(value.className).toContain('text-blue-600')
+    // Wave 21A — accent="blue" now resolves to the blueprint-cyan token
+    // instead of the legacy `text-blue-600`.
+    expect(value.className).toContain('text-[color:var(--color-blueprint-strong)]')
   })
 
   it('hides the cursor block when no cursor position is set', () => {

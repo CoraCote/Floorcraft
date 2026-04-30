@@ -64,7 +64,11 @@ export function HoverOutline() {
         resizeEnabled={false}
         rotateEnabled={false}
         // `borderEnabled` defaults true; we just want the rectangle.
-        borderStroke="#60A5FA"
+        // Wave 21A — element-hover outline picks up the blueprint
+        // accent so it matches the canvas identity. Konva can't read
+        // CSS variables; this hex is the cyan-400 sibling of
+        // `--color-blueprint` (cyan-700), tuned for an outline weight.
+        borderStroke="#22D3EE"
         borderStrokeWidth={1}
         borderDash={[4, 3]}
         padding={3}

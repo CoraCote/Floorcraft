@@ -120,23 +120,23 @@ interface InnerProps {
  * just match the visual rhythm.
  */
 const SECTION_LABEL_CLASS =
-  'text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400'
+  'font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400'
 const TEXTAREA_CLASS =
-  'w-full text-xs border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 ' +
-  'focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/30 ' +
-  'bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 resize-y'
+  'w-full text-xs border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded px-2 py-1.5 ' +
+  'focus:outline-none focus:border-[color:var(--color-blueprint)] focus:ring-2 focus:ring-[color:var(--color-blueprint)]/30 ' +
+  'bg-[color:var(--color-paper-raised)] dark:bg-gray-900 text-gray-900 dark:text-gray-100 resize-y'
 const PRIMARY_BTN_CLASS =
-  'bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed ' +
-  'text-white px-3 py-1.5 text-xs rounded focus:outline-none focus:ring-2 focus:ring-blue-400'
+  'bg-[color:var(--color-blueprint)] hover:bg-[color:var(--color-blueprint-strong)] disabled:opacity-40 disabled:cursor-not-allowed ' +
+  'text-white px-3 py-1.5 text-xs rounded focus:outline-none focus:ring-2 focus:ring-[color:var(--color-blueprint)]'
 const SECONDARY_BTN_CLASS =
-  'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 ' +
-  'text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 ' +
-  'px-3 py-1.5 text-xs rounded focus:outline-none focus:ring-2 focus:ring-blue-400'
+  'bg-[color:var(--color-paper-raised)] dark:bg-gray-900 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800 ' +
+  'text-gray-700 dark:text-gray-200 border border-[color:var(--color-paper-line)] dark:border-gray-700 ' +
+  'px-3 py-1.5 text-xs rounded focus:outline-none focus:ring-2 focus:ring-[color:var(--color-blueprint)]'
 const DELETE_BTN_CLASS =
   'text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 ' +
   'px-3 py-1.5 text-xs rounded focus:outline-none focus:ring-2 focus:ring-red-400'
 const POPOVER_SHELL_CLASS =
-  'rounded-lg shadow-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-xs'
+  'rounded-lg shadow-xl bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-[color:var(--color-paper-line)] dark:border-gray-800 text-xs'
 
 /**
  * Trap focus inside the popover while it's open so Tab cycles through
@@ -190,7 +190,7 @@ function PopoverHeader({
   onClose: () => void
 }) {
   return (
-    <div className="sticky top-0 flex items-center gap-2 px-3 py-2 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 rounded-t-lg">
+    <div className="sticky top-0 flex items-center gap-2 px-3 py-2 border-b border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 rounded-t-lg">
       <MessageCircle
         size={14}
         aria-hidden="true"
@@ -203,7 +203,7 @@ function PopoverHeader({
         type="button"
         onClick={onClose}
         aria-label="Close annotation editor"
-        className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded p-0.5 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded p-0.5 focus:outline-none focus:ring-2 focus:ring-[color:var(--color-blueprint)]"
       >
         <X size={14} aria-hidden="true" />
       </button>
@@ -305,7 +305,7 @@ function CreatePopover({ containerRef, canEdit }: InnerProps) {
             </span>
           </div>
         </section>
-        <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800">
+        <div className="flex items-center justify-between pt-2 border-t border-[color:var(--color-paper-line)] dark:border-gray-800">
           <div />
           <div className="flex gap-2">
             <button
@@ -521,7 +521,7 @@ function ViewPopoverBody({
           </span>
         </section>
 
-        <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800">
+        <div className="flex items-center justify-between pt-2 border-t border-[color:var(--color-paper-line)] dark:border-gray-800">
           <div>
             {canEdit && !editMode && (
               <button

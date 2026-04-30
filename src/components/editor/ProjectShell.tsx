@@ -1,6 +1,7 @@
 import { Outlet, useLocation, useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { TopBar } from './TopBar'
+import { PrimaryNavRail } from './PrimaryNavRail'
 import { ImpersonationBanner } from './ImpersonationBanner'
 import { ContextMenu } from './ContextMenu'
 import { KeyboardShortcutsOverlay } from './KeyboardShortcutsOverlay'
@@ -313,21 +314,52 @@ export function ProjectShell() {
   }, [teamSlug, officeSlug])
 
   if (shellState === 'loading') {
-    return <div className="p-6 text-sm text-gray-500 dark:text-gray-400">Loading office…</div>
+    return (
+      <div
+        className="flex items-center justify-center h-screen w-screen bg-[color:var(--color-paper)] dark:bg-gray-950"
+        role="status"
+        aria-live="polite"
+      >
+        <div className="flex flex-col items-center gap-3">
+          <div className="relative h-8 w-8">
+            <span className="absolute inset-0 rounded-full border-2 border-[color:var(--color-paper-line)] dark:border-gray-800" />
+            <span className="absolute inset-0 rounded-full border-2 border-transparent border-t-[color:var(--color-blueprint)] animate-spin" />
+          </div>
+          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
+            Loading office
+          </p>
+        </div>
+      </div>
+    )
   }
   if (shellState === 'not_found') {
-    return <div className="p-6 text-sm text-red-600 dark:text-red-400">Office not found.</div>
+    return (
+      <div className="flex items-center justify-center h-screen w-screen bg-[color:var(--color-paper)] dark:bg-gray-950 px-6">
+        <div
+          role="alert"
+          className="w-full max-w-md rounded-xl border border-[color:var(--color-paper-line)] bg-[color:var(--color-paper-raised)] p-8 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900/80"
+        >
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+            We can't find that office
+          </h1>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            The link may be broken or the office may have been removed. Head
+            back to your dashboard to pick a different one.
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-gray-50 dark:bg-gray-800/50">
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[color:var(--color-paper-sunken)] dark:bg-gray-800/50">
       {/* Skip-to-main link: first interactive element inside the shell so
           keyboard users can bypass the TopBar/banner nav and land on the
           outlet directly. Hidden by default (`sr-only`) and becomes
           visually prominent when focused. */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:bg-white focus:px-3 focus:py-2 focus:shadow-lg focus:rounded"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:bg-[color:var(--color-paper-raised)] focus:px-3 focus:py-2 focus:shadow-lg focus:rounded"
       >
         Skip to main content
       </a>
@@ -341,8 +373,11 @@ export function ProjectShell() {
           impersonating" strip is still prominent across every view. */}
       <ImpersonationBanner />
       <TopBar />
-      <main id="main-content" tabIndex={-1} className="contents">
-        <Outlet />
+      <main id="main-content" tabIndex={-1} className="flex flex-1 overflow-hidden">
+        <PrimaryNavRail />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Outlet />
+        </div>
       </main>
       <ContextMenu />
       <KeyboardShortcutsOverlay />

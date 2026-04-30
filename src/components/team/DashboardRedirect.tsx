@@ -1,5 +1,6 @@
 import { Navigate } from 'react-router-dom'
 import { useMyTeams } from '../../lib/teams/useMyTeams'
+import { RouteLoadingFallback } from '../ui/RouteLoadingFallback'
 
 /**
  * Lands users on the right place after sign-in.
@@ -22,7 +23,7 @@ import { useMyTeams } from '../../lib/teams/useMyTeams'
  */
 export function DashboardRedirect() {
   const teams = useMyTeams()
-  if (!teams) return <div className="p-6 text-sm text-gray-500 dark:text-gray-400">Loading…</div>
+  if (!teams) return <RouteLoadingFallback />
   if (teams.length === 0) return <Navigate to="/onboarding/team" replace />
   return <Navigate to={`/t/${teams[0].slug}`} replace />
 }

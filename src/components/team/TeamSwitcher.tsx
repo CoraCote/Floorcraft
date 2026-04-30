@@ -113,7 +113,7 @@ export function TeamSwitcher({ currentSlug }: { currentSlug: string | undefined 
         {...triggerProps}
         type="button"
         onClick={toggle}
-        className="flex items-center gap-1 px-2 py-1 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
+        className="flex items-center gap-1 px-2 py-1 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800 rounded"
         data-testid="team-switcher-trigger"
       >
         {current?.name ?? 'Teams'}
@@ -125,13 +125,13 @@ export function TeamSwitcher({ currentSlug }: { currentSlug: string | undefined 
           role="menu"
           aria-label="Team switcher"
           className={cn(
-            'absolute left-0 mt-1 w-64 bg-white border border-gray-200 rounded shadow dark:bg-gray-900 dark:border-gray-800 dark:shadow-black/40 z-50 py-1 origin-top-left',
+            'absolute left-0 mt-1 w-64 bg-[color:var(--color-paper-raised)] border border-[color:var(--color-paper-line)] rounded shadow dark:bg-gray-900 dark:border-gray-800 dark:shadow-black/40 z-50 py-1 origin-top-left',
             !reduceMotion && 'dropdown-enter',
           )}
           data-testid="team-switcher-panel"
         >
           {showSearch && (
-            <div className="px-2 pt-1 pb-2 border-b border-gray-100 dark:border-gray-800">
+            <div className="px-2 pt-1 pb-2 border-b border-[color:var(--color-paper-line)] dark:border-gray-800">
               <div className="relative">
                 <Search
                   size={12}
@@ -145,7 +145,7 @@ export function TeamSwitcher({ currentSlug }: { currentSlug: string | undefined 
                   placeholder="Search teams"
                   aria-label="Search teams"
                   data-testid="team-switcher-search"
-                  className="w-full pl-6 pr-2 py-1 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-gray-700 dark:text-gray-200"
+                  className="w-full pl-6 pr-2 py-1 text-xs bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 border border-[color:var(--color-paper-line)] dark:border-gray-700 rounded focus:outline-none focus:ring-1 focus:ring-[color:var(--color-blueprint)] text-gray-700 dark:text-gray-200"
                 />
               </div>
             </div>
@@ -153,7 +153,7 @@ export function TeamSwitcher({ currentSlug }: { currentSlug: string | undefined 
 
           {showSwitchGroup && filteredTeams.length > 0 && (
             <div>
-              <div className="px-3 pt-1.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+              <div className="px-3 pt-1.5 pb-1 font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500">
                 Switch team
               </div>
               {filteredTeams.map((t, ti) => {
@@ -168,14 +168,14 @@ export function TeamSwitcher({ currentSlug }: { currentSlug: string | undefined 
                     tabIndex={focusedIndex === idx ? 0 : -1}
                     onClick={() => onRowClick({ kind: 'team', team: t })}
                     onMouseEnter={() => setFocusedIndex(idx)}
-                    className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800 focus:bg-gray-100 dark:focus:bg-gray-800 outline-none"
+                    className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-[color:var(--color-paper-sunken)] dark:text-gray-200 dark:hover:bg-gray-800 focus:bg-[color:var(--color-paper-sunken)] dark:focus:bg-gray-800 outline-none"
                     data-testid={`team-switcher-team-${t.slug}`}
                   >
                     <span
                       className={cn(
                         'inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold',
                         active
-                          ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+                          ? 'bg-[color:var(--color-blueprint-soft)] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]'
                           : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
                       )}
                       aria-hidden="true"
@@ -185,11 +185,11 @@ export function TeamSwitcher({ currentSlug }: { currentSlug: string | undefined 
                     {active && (
                       <span
                         aria-hidden="true"
-                        className="h-1.5 w-1.5 rounded-full bg-blue-500"
+                        className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-blueprint)]"
                       />
                     )}
                     <span className={cn('flex-1 truncate', active && 'font-medium')}>{t.name}</span>
-                    {active && <Check size={14} aria-hidden="true" className="text-blue-500" />}
+                    {active && <Check size={14} aria-hidden="true" className="text-[color:var(--color-blueprint-strong)]" />}
                   </button>
                 )
               })}
@@ -198,8 +198,8 @@ export function TeamSwitcher({ currentSlug }: { currentSlug: string | undefined 
 
           {current && (
             <div>
-              <div className="my-1 border-t border-gray-100 dark:border-gray-800" />
-              <div className="px-3 pt-1.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+              <div className="my-1 border-t border-[color:var(--color-paper-line)] dark:border-gray-800" />
+              <div className="px-3 pt-1.5 pb-1 font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500">
                 Manage
               </div>
               <button
@@ -209,7 +209,7 @@ export function TeamSwitcher({ currentSlug }: { currentSlug: string | undefined 
                 tabIndex={focusedIndex === settingsIdx ? 0 : -1}
                 onClick={() => onRowClick({ kind: 'settings' })}
                 onMouseEnter={() => setFocusedIndex(settingsIdx)}
-                className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800 focus:bg-gray-100 dark:focus:bg-gray-800 outline-none"
+                className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-[color:var(--color-paper-sunken)] dark:text-gray-200 dark:hover:bg-gray-800 focus:bg-[color:var(--color-paper-sunken)] dark:focus:bg-gray-800 outline-none"
                 data-testid="team-switcher-settings"
               >
                 <Settings size={14} aria-hidden="true" />
@@ -219,8 +219,8 @@ export function TeamSwitcher({ currentSlug }: { currentSlug: string | undefined 
           )}
 
           <div>
-            <div className="my-1 border-t border-gray-100 dark:border-gray-800" />
-            <div className="px-3 pt-1.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+            <div className="my-1 border-t border-[color:var(--color-paper-line)] dark:border-gray-800" />
+            <div className="px-3 pt-1.5 pb-1 font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500">
               Help
             </div>
             <button
@@ -230,7 +230,7 @@ export function TeamSwitcher({ currentSlug }: { currentSlug: string | undefined 
               tabIndex={focusedIndex === helpIdx ? 0 : -1}
               onClick={() => onRowClick({ kind: 'help' })}
               onMouseEnter={() => setFocusedIndex(helpIdx)}
-              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800 focus:bg-gray-100 dark:focus:bg-gray-800 outline-none"
+              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-[color:var(--color-paper-sunken)] dark:text-gray-200 dark:hover:bg-gray-800 focus:bg-[color:var(--color-paper-sunken)] dark:focus:bg-gray-800 outline-none"
               data-testid="team-switcher-help"
             >
               <HelpCircle size={14} aria-hidden="true" />
@@ -239,7 +239,7 @@ export function TeamSwitcher({ currentSlug }: { currentSlug: string | undefined 
           </div>
 
           <div>
-            <div className="my-1 border-t border-gray-100 dark:border-gray-800" />
+            <div className="my-1 border-t border-[color:var(--color-paper-line)] dark:border-gray-800" />
             <button
               ref={registerItemRef(createIdx)}
               role="menuitem"
@@ -247,7 +247,7 @@ export function TeamSwitcher({ currentSlug }: { currentSlug: string | undefined 
               tabIndex={focusedIndex === createIdx ? 0 : -1}
               onClick={() => onRowClick({ kind: 'create' })}
               onMouseEnter={() => setFocusedIndex(createIdx)}
-              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-800 focus:bg-gray-100 dark:focus:bg-gray-800 outline-none"
+              className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800 focus:bg-[color:var(--color-paper-sunken)] dark:focus:bg-gray-800 outline-none"
             >
               <Plus size={14} aria-hidden="true" />
               <span className="flex-1">Create new team</span>

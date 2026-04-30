@@ -173,7 +173,7 @@ export function InviteMemberModal({
           <div>
             <label
               htmlFor="invite-fallback-link"
-              className="block mb-1 text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400"
+              className="block mb-1 font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400"
             >
               Invite link
             </label>
@@ -239,7 +239,7 @@ export function InviteMemberModal({
               onChange={(e) => setRole(e.target.value as Role)}
               disabled={busy}
               aria-label="Role"
-              className="w-full rounded border border-gray-300 bg-white px-2.5 py-1.5 text-sm text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus-visible:ring-offset-gray-900 disabled:opacity-50"
+              className="w-full rounded border border-[color:var(--color-paper-line)] bg-[color:var(--color-paper-raised)] px-2.5 py-1.5 text-sm text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)] focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus-visible:ring-offset-gray-900 disabled:opacity-50"
             >
               <option value="member">Member — can view and edit offices</option>
               <option value="admin">Admin — can also manage team settings</option>

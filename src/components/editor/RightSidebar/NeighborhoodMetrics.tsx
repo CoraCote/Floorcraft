@@ -60,7 +60,7 @@ export function NeighborhoodMetrics() {
   if (rows.length === 0) return null
 
   return (
-    <div className="rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-2">
+    <div className="rounded-md border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 p-2">
       <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
         Neighborhoods
       </div>

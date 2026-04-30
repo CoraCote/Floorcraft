@@ -53,7 +53,7 @@ export function RosterBulkEditPopover({ selectedIds, onClose }: Props) {
 
   return (
     <div
-      className="absolute top-full left-0 mt-1 z-20 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-xl p-3 w-72"
+      className="absolute top-full left-0 mt-1 z-20 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-lg shadow-xl p-3 w-72"
       role="dialog"
       aria-label="Bulk edit selected employees"
     >
@@ -101,7 +101,7 @@ export function RosterBulkEditPopover({ selectedIds, onClose }: Props) {
         id="bulk-edit-status"
         value={status}
         onChange={(e) => setStatus(e.target.value as EmployeeStatus | '')}
-        className="w-full mb-3 px-2 py-1 border border-gray-300 dark:border-gray-700 rounded text-sm bg-white dark:bg-gray-900"
+        className="w-full mb-3 px-2 py-1 border border-gray-300 dark:border-gray-700 rounded text-sm bg-[color:var(--color-paper-raised)] dark:bg-gray-900"
       >
         <option value="">Leave unchanged</option>
         {EMPLOYEE_STATUSES.map((s) => (
@@ -120,7 +120,7 @@ export function RosterBulkEditPopover({ selectedIds, onClose }: Props) {
         <button
           type="button"
           onClick={apply}
-          className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+          className="px-3 py-1 bg-[color:var(--color-blueprint)] hover:bg-[color:var(--color-blueprint-strong)] text-white text-sm rounded transition-colors"
         >
           Apply
         </button>

@@ -211,7 +211,7 @@ export function SignupPage() {
           Already have an account?{' '}
           <Link
             to="/login"
-            className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
+            className="font-medium text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline"
           >
             Sign in
           </Link>

@@ -73,7 +73,7 @@ export function ForgotPasswordPage() {
               type="button"
               onClick={() => void submitReset(email)}
               disabled={busy}
-              className="text-blue-600 hover:underline disabled:cursor-not-allowed disabled:text-gray-400 disabled:no-underline dark:text-blue-400"
+              className="text-[color:var(--color-blueprint-strong)] hover:underline disabled:cursor-not-allowed disabled:text-gray-400 disabled:no-underline dark:text-[color:var(--color-blueprint)]"
             >
               {busy ? 'Sending…' : "Didn't get it? Resend"}
             </button>
@@ -144,7 +144,7 @@ export function ForgotPasswordPage() {
           Need an account?{' '}
           <Link
             to="/signup"
-            className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
+            className="font-medium text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline"
           >
             Sign up
           </Link>

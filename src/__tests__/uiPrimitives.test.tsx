@@ -12,7 +12,10 @@ describe('Button', () => {
     )
     const btn = screen.getByRole('button', { name: /save/i })
     expect(btn).toBeDisabled()
-    expect(btn.className).toMatch(/bg-blue-600/)
+    // Wave 21A — primary variant migrated from `bg-blue-600` to the
+    // `--color-blueprint` token. Match the token reference rather than
+    // the literal hex so the test stays stable across token renames.
+    expect(btn.className).toMatch(/bg-\[color:var\(--color-blueprint\)\]/)
   })
 })
 
@@ -21,7 +24,9 @@ describe('Input', () => {
     const ref = createRef<HTMLInputElement>()
     const { rerender } = render(<Input ref={ref} defaultValue="hi" />)
     expect(ref.current).toBeInstanceOf(HTMLInputElement)
-    expect(ref.current?.className).toMatch(/border-gray-300/)
+    // Wave 21A — Input border migrated from `border-gray-300` to the
+    // `--color-paper-line` token.
+    expect(ref.current?.className).toMatch(/border-\[color:var\(--color-paper-line\)\]/)
 
     rerender(<Input ref={ref} defaultValue="hi" invalid />)
     expect(ref.current?.className).toMatch(/border-red-500/)

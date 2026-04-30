@@ -17,7 +17,7 @@ interface UIState {
 
   // Panels
   rightSidebarOpen: boolean
-  rightSidebarTab: 'properties' | 'people' | 'reports' | 'devices' | 'insights'
+  rightSidebarTab: 'plan' | 'roster' | 'insights'
 
   // Modals
   shareModalOpen: boolean
@@ -155,7 +155,7 @@ function createUIStore() {
   flashingElementId: null,
   setFlashingElementId: (id) => set({ flashingElementId: id }),
   rightSidebarOpen: true,
-  rightSidebarTab: 'properties',
+  rightSidebarTab: 'plan',
   shareModalOpen: false,
   exportDialogOpen: false,
   templatePickerOpen: false,

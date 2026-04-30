@@ -81,13 +81,13 @@ function HelpSearchPaletteInner({
       role="presentation"
     >
       <div
-        className="w-full max-w-lg mx-4 bg-white dark:bg-gray-900 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden"
+        className="w-full max-w-lg mx-4 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 rounded-lg shadow-2xl border border-[color:var(--color-paper-line)] dark:border-gray-800 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-label="Search help sections"
         aria-modal="true"
       >
-        <div className="border-b border-gray-100 dark:border-gray-800 px-3">
+        <div className="border-b border-[color:var(--color-paper-line)] dark:border-gray-800 px-3">
           <input
             ref={inputRef}
             type="text"
@@ -114,7 +114,7 @@ function HelpSearchPaletteInner({
                 onMouseEnter={() => setActiveIdx(i)}
                 onClick={() => jumpTo(s.id)}
                 className={`px-4 py-2 text-sm cursor-pointer ${
-                  i === clampedIdx ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                  i === clampedIdx ? 'bg-[color:var(--color-blueprint-soft)] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]' : 'text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50'
                 }`}
               >
                 {s.title}
@@ -122,18 +122,18 @@ function HelpSearchPaletteInner({
             ))
           )}
         </ul>
-        <div className="border-t border-gray-100 dark:border-gray-800 px-3 py-2 text-xs text-gray-400 dark:text-gray-500 flex items-center gap-3">
+        <div className="border-t border-[color:var(--color-paper-line)] dark:border-gray-800 px-3 py-2 text-xs text-gray-400 dark:text-gray-500 flex items-center gap-3">
           <span>
-            <kbd className="px-1 py-0.5 rounded border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-300">↑</kbd>{' '}
-            <kbd className="px-1 py-0.5 rounded border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-300">↓</kbd>{' '}
+            <kbd className="px-1 py-0.5 rounded border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-sunken)] dark:bg-gray-800/50 text-gray-600 dark:text-gray-300">↑</kbd>{' '}
+            <kbd className="px-1 py-0.5 rounded border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-sunken)] dark:bg-gray-800/50 text-gray-600 dark:text-gray-300">↓</kbd>{' '}
             navigate
           </span>
           <span>
-            <kbd className="px-1 py-0.5 rounded border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-300">Enter</kbd>{' '}
+            <kbd className="px-1 py-0.5 rounded border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-sunken)] dark:bg-gray-800/50 text-gray-600 dark:text-gray-300">Enter</kbd>{' '}
             jump
           </span>
           <span>
-            <kbd className="px-1 py-0.5 rounded border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-300">Esc</kbd>{' '}
+            <kbd className="px-1 py-0.5 rounded border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-sunken)] dark:bg-gray-800/50 text-gray-600 dark:text-gray-300">Esc</kbd>{' '}
             close
           </span>
         </div>

@@ -113,8 +113,8 @@ export function UnassignedReport() {
                 onClick={() => handleEmpClick(emp.id)}
                 className={`flex items-center gap-2 w-full px-2.5 py-1.5 rounded text-left text-xs transition-colors ${
                   highlightedEmpId === emp.id
-                    ? 'bg-blue-100 dark:bg-blue-900/40 border border-blue-300'
-                    : 'bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                    ? 'bg-[color:var(--color-blueprint-soft)] border border-[color:var(--color-blueprint)]'
+                    : 'bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-[color:var(--color-paper-line)] dark:border-gray-800 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50'
                 }`}
               >
                 <div className="flex-1 min-w-0">
@@ -140,7 +140,7 @@ export function UnassignedReport() {
           <Monitor size={12} />
           Open Desks
           {highlightedEmpId && (
-            <span className="text-blue-600 dark:text-blue-400 font-normal ml-1">— click a desk to assign</span>
+            <span className="text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] font-normal ml-1">— click a desk to assign</span>
           )}
         </div>
         {openDesksByFloor.length === 0 ? (
@@ -160,8 +160,8 @@ export function UnassignedReport() {
                       disabled={!highlightedEmpId}
                       className={`px-2 py-1 text-[11px] rounded border transition-colors ${
                         highlightedEmpId
-                          ? 'border-blue-300 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 cursor-pointer'
-                          : 'border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 cursor-default'
+                          ? 'border-[color:var(--color-blueprint)] bg-[color:var(--color-blueprint-soft)] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:bg-[color:var(--color-blueprint-soft)] dark:hover:bg-[color:var(--color-blueprint-soft)] cursor-pointer'
+                          : 'border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-sunken)] dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 cursor-default'
                       }`}
                     >
                       {desk.label}

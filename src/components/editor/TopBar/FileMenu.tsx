@@ -158,7 +158,7 @@ export function FileMenu({ groups, triggerId }: FileMenuProps) {
           }
         }}
         onKeyDown={handleTriggerKey}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800 rounded"
+        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-[color:var(--color-paper-sunken)] dark:text-gray-200 dark:hover:bg-gray-800 rounded"
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
@@ -174,17 +174,17 @@ export function FileMenu({ groups, triggerId }: FileMenuProps) {
           role="menu"
           aria-label="File"
           onKeyDown={handleMenuKey}
-          className="absolute left-0 mt-1 w-64 bg-white border border-gray-200 rounded shadow dark:bg-gray-900 dark:border-gray-800 dark:shadow-black/40 z-50 py-1"
+          className="absolute left-0 mt-1 w-64 bg-[color:var(--color-paper-raised)] border border-[color:var(--color-paper-line)] rounded shadow dark:bg-gray-900 dark:border-gray-800 dark:shadow-black/40 z-50 py-1"
           data-testid="file-menu-panel"
         >
           {groups.map((group, gi) => (
             <div key={group.heading ?? `group-${gi}`}>
               {gi > 0 && (
-                <div className="my-1 border-t border-gray-100 dark:border-gray-800" />
+                <div className="my-1 border-t border-[color:var(--color-paper-line)] dark:border-gray-800" />
               )}
               {group.heading && (
                 <div
-                  className="px-3 pt-1.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500"
+                  className="px-3 pt-1.5 pb-1 font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500"
                   data-testid="file-menu-heading"
                 >
                   {group.heading}
@@ -204,7 +204,7 @@ export function FileMenu({ groups, triggerId }: FileMenuProps) {
                     tabIndex={focusedIndex === idx ? 0 : -1}
                     onClick={() => activate(item)}
                     onMouseEnter={() => setFocusedIndex(idx)}
-                    className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800 focus:bg-gray-100 dark:focus:bg-gray-800 outline-none"
+                    className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-[color:var(--color-paper-sunken)] dark:text-gray-200 dark:hover:bg-gray-800 focus:bg-[color:var(--color-paper-sunken)] dark:focus:bg-gray-800 outline-none"
                     data-testid={`file-menu-item-${item.id}`}
                   >
                     <Icon size={14} aria-hidden={true} />

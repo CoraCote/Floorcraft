@@ -174,7 +174,7 @@ export function InsightsPanel() {
       type="button"
       onClick={triggerAnalysis}
       disabled={isAnalyzing}
-      className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-800 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50 disabled:opacity-40"
+      className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-gray-600 dark:text-gray-300 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50 disabled:opacity-40"
       aria-label="Refresh insights"
       title="Re-run plan analysis"
     >
@@ -269,12 +269,12 @@ export function InsightsPanel() {
                     key={insight.id}
                     // `min-w-0` so a long insight title truncates rather
                     // than pushing the Restore button off the right edge.
-                    className="flex items-center justify-between px-3 py-2 min-w-0 bg-gray-50 dark:bg-gray-800/50 rounded text-xs text-gray-500 dark:text-gray-400"
+                    className="flex items-center justify-between px-3 py-2 min-w-0 bg-[color:var(--color-paper-sunken)] dark:bg-gray-800/50 rounded text-xs text-gray-500 dark:text-gray-400"
                   >
                     <span className="truncate min-w-0">{insight.title}</span>
                     <button
                       onClick={() => restoreInsight(insight.id)}
-                      className="ml-2 text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex-shrink-0"
+                      className="ml-2 text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:text-[color:var(--color-blueprint-strong)] dark:hover:text-[color:var(--color-blueprint)] flex-shrink-0"
                     >
                       Restore
                     </button>
@@ -288,7 +288,7 @@ export function InsightsPanel() {
 
       {/* Footer — quiet status line. The refresh action moved to the
           PanelHeader in Wave 17D. */}
-      <div className="pt-2 border-t border-gray-100 dark:border-gray-800 text-[10px] text-gray-400 dark:text-gray-500">
+      <div className="pt-2 border-t border-[color:var(--color-paper-line)] dark:border-gray-800 text-[10px] text-gray-400 dark:text-gray-500">
         <span className="tabular-nums">Last analyzed: {lastAnalyzedLabel}</span>
       </div>
     </div>

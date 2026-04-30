@@ -53,6 +53,29 @@
   --color-success-soft: #f0fdf4;       /* green-50                        */
   --color-warning: #d97706;            /* amber-600                       */
   --color-warning-soft: #fffbeb;       /* amber-50                        */
+
+  /*
+   * Drafting Studio palette (Wave 21A). Adds a warm-paper neutral and a
+   * blueprint-cyan accent the marketing surface and editor chrome opt
+   * into incrementally — existing components keep rendering against the
+   * blue-600 / gray-50 system above. Once a surface migrates, swap
+   * `bg-white`/`bg-slate-50` for `bg-paper` and `text-blue-600` for
+   * `text-blueprint`. The dark-mode overrides live in the `.dark` block
+   * below.
+   */
+  --color-paper: #FAFAF7;              /* warm off-white drafting paper   */
+  --color-paper-raised: #ffffff;       /* card on paper                   */
+  --color-paper-sunken: #F4F2EC;       /* recessed panel on paper         */
+  --color-paper-line: #E8E4D8;         /* hairline grid / divider on paper*/
+
+  --color-blueprint: #0E7490;          /* cyan-700 — primary accent       */
+  --color-blueprint-strong: #155E75;   /* cyan-800 — pressed / heading    */
+  --color-blueprint-soft: #ECFEFF;     /* cyan-50 — soft tint backgrounds */
+  --color-blueprint-line: #67E8F9;     /* cyan-300 — gridline accent      */
+
+  /* Mono font stack for measurements, coordinates, scale ratios. */
+  --font-mono: ui-monospace, "JetBrains Mono", "SFMono-Regular", "Menlo",
+    "Consolas", monospace;
 }
 
 /*
@@ -76,6 +99,19 @@
     --color-danger-soft: rgb(69 10 10 / 0.4); /* red-950 / 40%           */
     --color-success-soft: rgb(5 46 22 / 0.4); /* green-950 / 40%         */
     --color-warning-soft: rgb(69 26 3 / 0.4); /* amber-950 / 40%         */
+
+    /* Drafting Studio dark variants. Paper goes deep slate-blue (not
+       pure black) so the cyan accent still reads as architectural rather
+       than electric. */
+    --color-paper: #0B1220;            /* deep slate-blue                */
+    --color-paper-raised: #111A2B;     /* one step up                    */
+    --color-paper-sunken: #070C16;     /* recessed                       */
+    --color-paper-line: #1E2A40;       /* dark hairline                  */
+
+    --color-blueprint: #22D3EE;        /* cyan-400 — primary on dark     */
+    --color-blueprint-strong: #67E8F9; /* cyan-300 — emphasis on dark    */
+    --color-blueprint-soft: rgb(22 78 99 / 0.35); /* cyan-900 / 35%      */
+    --color-blueprint-line: #155E75;   /* cyan-800 — dim gridline        */
   }
 
   /* Native form widgets + scrollbars adopt the page theme. */
@@ -83,10 +119,12 @@
     color-scheme: dark;
   }
 
-  /* Selection color is surprisingly distracting on dark left at default;
-     pin it to a translucent blue that works against either surface. */
+  /* Selection color is surprisingly distracting at the browser default
+     blue. Pin it to a translucent blueprint cyan so highlighted text on
+     marketing copy and editor labels reads as a part of the Drafting
+     Studio identity rather than a foreign UA element. */
   ::selection {
-    background-color: rgb(37 99 235 / 0.30); /* blue-600 / 30% */
+    background-color: rgb(14 116 144 / 0.25); /* --color-blueprint @ 25% */
     color: inherit;
   }
 }
@@ -136,4 +174,146 @@
 
 .dropdown-enter {
   animation: dropdown-enter 120ms ease-out;
+}
+
+/*
+ * Wave 21A — modal entrance. The Modal primitive previously appeared
+ * with no transition, which on a dense canvas read as a teleported
+ * popover. A small fade + lift (16px → 0) over 140 ms gives the eye
+ * one frame to register that something new arrived without slowing
+ * the operator down. Skipped automatically when the user prefers
+ * reduced motion via the `motion-reduce:` Tailwind variants on the
+ * Modal panel.
+ */
+@keyframes modal-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes modal-backdrop-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-panel-enter {
+  animation: modal-enter 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.modal-backdrop-enter {
+  animation: modal-backdrop-enter 100ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-panel-enter,
+  .modal-backdrop-enter,
+  .dropdown-enter,
+  .hero-glow-pulse {
+    animation: none;
+  }
+}
+
+/*
+ * Wave 21A — slow pulse on the hero glow behind the landing-page
+ * technical drawing. Cycles opacity between 0.55 and 0.85 over 6
+ * seconds so the page feels gently alive without distracting from
+ * the headline. Skipped via the reduced-motion gate above.
+ */
+@keyframes hero-glow-pulse {
+  0%, 100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+.hero-glow-pulse {
+  animation: hero-glow-pulse 6000ms ease-in-out infinite;
+}
+
+/*
+ * Blueprint grid background. A two-layer linear-gradient produces a
+ * graph-paper feel: an 8px hairline grid for the minor lines and a 48px
+ * heavier line for the major grid. Used by the landing-page hero and
+ * the editor canvas backdrop. The lines reference `--color-paper-line`
+ * so dark mode and warm-paper light mode both work without overrides.
+ */
+.bg-blueprint-grid {
+  background-color: var(--color-paper);
+  background-image:
+    linear-gradient(to right, var(--color-paper-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-paper-line) 1px, transparent 1px),
+    linear-gradient(to right, var(--color-paper-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-paper-line) 1px, transparent 1px);
+  background-size: 48px 48px, 48px 48px, 8px 8px, 8px 8px;
+  background-position: -1px -1px, -1px -1px, -1px -1px, -1px -1px;
+}
+
+/* Subtler version — only the 8px minor grid, used inside cards and
+   inspector surfaces where a 48px major line would be too loud. */
+.bg-blueprint-grid-fine {
+  background-color: var(--color-paper);
+  background-image:
+    linear-gradient(to right, var(--color-paper-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-paper-line) 1px, transparent 1px);
+  background-size: 8px 8px;
+  background-position: -1px -1px;
+}
+
+/*
+ * Wave 21A — global typography polish for monospace text. Stat cards,
+ * status bar, and audit timestamps read better with tabular-nums and
+ * slashed-zero baked into the mono stack itself, so call sites don't
+ * have to remember `tabular-nums` everywhere. Applied at the layer-
+ * base level so Tailwind utilities can still override it when
+ * required.
+ */
+@layer base {
+  code,
+  kbd,
+  pre,
+  samp {
+    font-feature-settings: "tnum" 1, "zero" 1, "ss01" 1;
+  }
+}
+
+/*
+ * Soft scrollbar styling. The default UA scrollbar is a chunky gray
+ * strip that visually competes with the warm paper canvas chrome. The
+ * rules below use the paper-line token so the scrollbar reads as part
+ * of the page identity instead of an OS-level intrusion. Firefox uses
+ * `scrollbar-color` on the same elements; WebKit gets the pseudo
+ * `::-webkit-scrollbar*`. Browsers that ignore either fall back to
+ * UA defaults.
+ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-paper-line) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-paper-line);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-border-strong);
 }

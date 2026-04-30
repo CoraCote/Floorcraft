@@ -50,48 +50,43 @@ export function HowItWorks() {
   return (
     <section
       aria-labelledby="how-it-works-heading"
-      className="max-w-5xl mx-auto px-6 pb-20 sm:pb-24"
+      className="border-t border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-sunken)] dark:bg-gray-900/30"
     >
-      <div className="text-center mb-12">
-        <h2
-          id="how-it-works-heading"
-          className="text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400"
-        >
-          How it works
-        </h2>
-        <p className="mt-3 text-2xl sm:text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
-          From blank canvas to published floor in an hour.
-        </p>
+      <div className="max-w-5xl mx-auto px-6 py-20 lg:py-24">
+        <div className="text-center mb-14">
+          <p className="font-mono text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] mb-3">
+            §03 · Process
+          </p>
+          <h2
+            id="how-it-works-heading"
+            className="text-3xl sm:text-4xl font-bold tracking-tight"
+          >
+            Blank sheet to published floor — in an hour.
+          </h2>
+        </div>
+
+        <ol className="relative grid grid-cols-1 sm:grid-cols-3 gap-10 sm:gap-0 sm:divide-x sm:divide-[color:var(--color-paper-line)] sm:dark:divide-gray-800">
+          {STEPS.map((step) => {
+            const Icon = step.icon
+            return (
+              <li key={step.n} className="relative px-6 text-center sm:text-left">
+                <div className="font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400 mb-3 tabular-nums">
+                  Step {String(step.n).padStart(2, '0')}
+                </div>
+                <div className="flex items-center justify-center sm:justify-start gap-3 mb-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-paper-line)] dark:border-gray-700 bg-[color:var(--color-paper-raised)] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]">
+                    <Icon className="h-4.5 w-4.5" aria-hidden="true" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{step.title}</h3>
+                </div>
+                <p className="max-w-xs mx-auto sm:mx-0 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+                  {step.description}
+                </p>
+              </li>
+            )
+          })}
+        </ol>
       </div>
-
-      <ol className="relative grid grid-cols-1 sm:grid-cols-3 gap-10 sm:gap-8">
-        {/* Hairline connector line behind the three circles, sm+ only.
-            We position it with a fraction of the grid so it starts
-            mid-circle on the left step and ends mid-circle on the
-            right step, not edge-to-edge. */}
-        <div
-          aria-hidden="true"
-          className="hidden sm:block absolute top-6 left-[16.67%] right-[16.67%] h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent dark:via-gray-800"
-        />
-
-        {STEPS.map((step) => {
-          const Icon = step.icon
-          return (
-            <li key={step.n} className="relative text-center">
-              <div className="relative z-10 mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full border border-gray-200 bg-white text-blue-600 shadow-sm dark:border-gray-800 dark:bg-gray-900 dark:text-blue-400">
-                <Icon className="h-5 w-5" aria-hidden="true" />
-              </div>
-              <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-blue-500 dark:text-blue-400 tabular-nums">
-                Step {step.n}
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{step.title}</h3>
-              <p className="mt-2 max-w-xs mx-auto text-sm leading-relaxed text-gray-600 dark:text-gray-400">
-                {step.description}
-              </p>
-            </li>
-          )
-        })}
-      </ol>
     </section>
   )
 }

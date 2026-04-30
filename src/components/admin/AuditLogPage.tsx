@@ -181,11 +181,11 @@ function CenteredCard({
   cta?: { href: string; label: string }
 }) {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-gray-950 dark:to-gray-900">
+    <div className="min-h-screen bg-[color:var(--color-paper)] dark:bg-gray-950">
       <div className="max-w-7xl mx-auto px-6 py-10">
         <div
           role="alert"
-          className="mx-auto max-w-md rounded-xl border border-gray-200 bg-white p-8 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900"
+          className="mx-auto max-w-md rounded-xl border border-[color:var(--color-paper-line)] bg-[color:var(--color-paper-raised)] p-8 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900"
         >
           <div
             aria-hidden="true"
@@ -200,7 +200,7 @@ function CenteredCard({
           {cta && (
             <Link
               to={cta.href}
-              className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
+              className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline"
             >
               <ArrowLeft size={14} aria-hidden="true" />
               {cta.label}
@@ -343,7 +343,7 @@ export function AuditLogPage() {
   if (!teamId) return <NoTeam />
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-gray-950 dark:to-gray-900">
+    <div className="min-h-screen bg-[color:var(--color-paper)] dark:bg-gray-950">
       <div className="max-w-7xl mx-auto px-6 py-10 space-y-5">
         <header>
           <h1 className="text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
@@ -365,7 +365,7 @@ export function AuditLogPage() {
               placeholder="email, name, or user ID"
               value={actorQuery}
               onChange={(e) => setActorQuery(e.target.value)}
-              className="w-full rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-100 dark:placeholder:text-gray-500"
+              className="w-full rounded-md border border-[color:var(--color-paper-line)] bg-[color:var(--color-paper-raised)] px-2.5 py-1.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)] dark:border-gray-800 dark:bg-gray-900 dark:text-gray-100 dark:placeholder:text-gray-500"
               aria-label="Filter by actor email, name, or user ID"
             />
             {/*
@@ -387,7 +387,7 @@ export function AuditLogPage() {
             <select
               value={actionFilter}
               onChange={(e) => setActionFilter(e.target.value)}
-              className="w-full rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-100"
+              className="w-full rounded-md border border-[color:var(--color-paper-line)] bg-[color:var(--color-paper-raised)] px-2.5 py-1.5 text-sm text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)] dark:border-gray-800 dark:bg-gray-900 dark:text-gray-100"
               aria-label="Filter by action"
             >
               <option value="">All actions</option>
@@ -402,7 +402,7 @@ export function AuditLogPage() {
 
         {/* Table card. Border + dark-mode pairing matches the rest of
             the polished surfaces (FloorComparePage, TeamHomePage). */}
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+        <div className="overflow-hidden rounded-xl border border-[color:var(--color-paper-line)] bg-[color:var(--color-paper-raised)] shadow-sm dark:border-gray-800 dark:bg-gray-900">
           {loading ? (
             <div
               className="flex items-center justify-center gap-2 px-6 py-12 text-sm text-gray-500 dark:text-gray-400"
@@ -420,7 +420,7 @@ export function AuditLogPage() {
             <EmptyEvents />
           ) : (
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-left text-xs uppercase tracking-wider text-gray-500 dark:bg-gray-950/40 dark:text-gray-400">
+              <thead className="bg-[color:var(--color-paper-sunken)] text-left text-xs uppercase tracking-wider text-gray-500 dark:bg-gray-950/40 dark:text-gray-400">
                 <tr>
                   <th className="px-4 py-2.5 font-medium">Time</th>
                   <th className="px-4 py-2.5 font-medium">Actor</th>
@@ -447,10 +447,10 @@ export function AuditLogPage() {
                   return (
                     <tr
                       key={e.id ?? `${e.actor_id}-${e.created_at ?? ''}`}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-800/40"
+                      className="hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/40"
                     >
                       <td
-                        className="px-4 py-2.5 text-gray-600 dark:text-gray-300 whitespace-nowrap tabular-nums"
+                        className="px-4 py-2.5 font-mono text-xs text-gray-600 dark:text-gray-300 whitespace-nowrap tabular-nums"
                         title={e.created_at ?? ''}
                       >
                         {formatRelative(e.created_at, now)}

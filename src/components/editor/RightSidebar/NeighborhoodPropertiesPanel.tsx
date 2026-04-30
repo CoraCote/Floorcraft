@@ -77,7 +77,7 @@ export function NeighborhoodPropertiesPanel({ id }: { id: string }) {
       <div>
         <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Name</label>
         <input
-          className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+          className="w-full text-sm border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-[color:var(--color-blueprint)] disabled:bg-[color:var(--color-paper-sunken)] disabled:text-gray-500"
           value={nameDraft}
           disabled={inputDisabled}
           onChange={(e) => setNameDraft(e.target.value)}
@@ -101,7 +101,7 @@ export function NeighborhoodPropertiesPanel({ id }: { id: string }) {
           <input
             type="color"
             aria-label="Color"
-            className="w-10 h-8 border border-gray-200 dark:border-gray-800 rounded cursor-pointer disabled:opacity-50"
+            className="w-10 h-8 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded cursor-pointer disabled:opacity-50"
             value={n.color}
             disabled={inputDisabled}
             onChange={(e) => updateNeighborhood(id, { color: e.target.value })}
@@ -118,7 +118,7 @@ export function NeighborhoodPropertiesPanel({ id }: { id: string }) {
                 className={`w-5 h-5 rounded border ${
                   n.color.toLowerCase() === c.toLowerCase()
                     ? 'border-gray-800 ring-2 ring-offset-1 ring-gray-400'
-                    : 'border-gray-200 dark:border-gray-800'
+                    : 'border-[color:var(--color-paper-line)] dark:border-gray-800'
                 }`}
                 style={{ backgroundColor: c }}
               />
@@ -133,7 +133,7 @@ export function NeighborhoodPropertiesPanel({ id }: { id: string }) {
         </label>
         <input
           list="neighborhood-department-list"
-          className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+          className="w-full text-sm border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-[color:var(--color-blueprint)] disabled:bg-[color:var(--color-paper-sunken)] disabled:text-gray-500"
           value={deptDraft}
           disabled={inputDisabled}
           onChange={(e) => setDeptDraft(e.target.value)}
@@ -154,7 +154,7 @@ export function NeighborhoodPropertiesPanel({ id }: { id: string }) {
       <div>
         <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Team</label>
         <input
-          className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+          className="w-full text-sm border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-[color:var(--color-blueprint)] disabled:bg-[color:var(--color-paper-sunken)] disabled:text-gray-500"
           value={teamDraft}
           disabled={inputDisabled}
           onChange={(e) => setTeamDraft(e.target.value)}
@@ -171,7 +171,7 @@ export function NeighborhoodPropertiesPanel({ id }: { id: string }) {
         <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Notes</label>
         <textarea
           rows={3}
-          className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+          className="w-full text-sm border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-[color:var(--color-blueprint)] disabled:bg-[color:var(--color-paper-sunken)] disabled:text-gray-500"
           value={notesDraft}
           disabled={inputDisabled}
           onChange={(e) => setNotesDraft(e.target.value)}
@@ -189,7 +189,7 @@ export function NeighborhoodPropertiesPanel({ id }: { id: string }) {
           <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">X</label>
           <input
             type="number"
-            className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+            className="w-full text-sm border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-[color:var(--color-blueprint)] disabled:bg-[color:var(--color-paper-sunken)] disabled:text-gray-500"
             value={Math.round(n.x)}
             disabled={inputDisabled}
             onChange={(e) => updateNeighborhood(id, { x: Number(e.target.value) })}
@@ -199,7 +199,7 @@ export function NeighborhoodPropertiesPanel({ id }: { id: string }) {
           <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Y</label>
           <input
             type="number"
-            className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+            className="w-full text-sm border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-[color:var(--color-blueprint)] disabled:bg-[color:var(--color-paper-sunken)] disabled:text-gray-500"
             value={Math.round(n.y)}
             disabled={inputDisabled}
             onChange={(e) => updateNeighborhood(id, { y: Number(e.target.value) })}
@@ -213,7 +213,7 @@ export function NeighborhoodPropertiesPanel({ id }: { id: string }) {
           <input
             type="number"
             min={1}
-            className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+            className="w-full text-sm border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-[color:var(--color-blueprint)] disabled:bg-[color:var(--color-paper-sunken)] disabled:text-gray-500"
             value={Math.round(n.width)}
             disabled={inputDisabled}
             onChange={(e) => updateNeighborhood(id, { width: Math.max(1, Number(e.target.value)) })}
@@ -224,7 +224,7 @@ export function NeighborhoodPropertiesPanel({ id }: { id: string }) {
           <input
             type="number"
             min={1}
-            className="w-full text-sm border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-500"
+            className="w-full text-sm border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded px-2 py-1.5 focus:outline-none focus:border-[color:var(--color-blueprint)] disabled:bg-[color:var(--color-paper-sunken)] disabled:text-gray-500"
             value={Math.round(n.height)}
             disabled={inputDisabled}
             onChange={(e) => updateNeighborhood(id, { height: Math.max(1, Number(e.target.value)) })}

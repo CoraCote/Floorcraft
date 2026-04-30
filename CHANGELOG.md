@@ -7,6 +7,84 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.1.0] — 2026-04-30 — Drafting Studio redesign
+
+A comprehensive identity refresh that pulls Floorcraft's visual language
+out of generic 2021-era SaaS chrome (indigo gradients, blue-600 accents,
+slate-50 backgrounds) and into a coherent **architect's drafting** look:
+warm-paper backgrounds, blueprint-cyan accents, mono-numeric callouts,
+and a two-tier graph-paper grid that runs through the marketing surface
+*and* the editor canvas.
+
+### Added
+- **Drafting Studio design tokens** — `--color-paper`, `--color-paper-raised`,
+  `--color-paper-sunken`, `--color-paper-line`, `--color-blueprint`,
+  `--color-blueprint-strong`, `--color-blueprint-soft`, plus a
+  `--font-mono` stack. All theme-aware with light + dark variants in
+  `index.css`.
+- **Public `/demo` route** — mounts the bundled seed office in read-only
+  mode so visitors can poke at a real 3-floor populated plan without
+  an account. Includes the full editor chrome: tool rail, layers panel,
+  Plan/Roster/Insights right inspector, hover card, align toolbar,
+  status bar, and minimap.
+- **48-px primary nav rail** on the left edge of every editor view,
+  replacing the 6-tab cluster previously crammed into the TopBar.
+- **56-px tool rail** with grouped clusters (navigation · architecture
+  · shapes · measurement) replacing the 260-px label-list tool picker.
+- **3-tab right inspector** (Plan / Roster / Insights) replacing the
+  previous 5-tab strip.
+- **Compass-rose monogram** as the brand mark on every public surface.
+- **Two-tier blueprint grid** on the editor canvas + shared
+  `.bg-blueprint-grid` background utilities.
+- **Modal entrance / dropdown / hero-glow animations**, all gated
+  behind `prefers-reduced-motion: reduce`.
+- **Mobile sign-in link** in the landing nav so phone visitors can act
+  without scrolling past the hero.
+- **Compass-rose favicon** + 1200×630 OG share image (both SVG).
+- **theme-color meta tags** so mobile browser address bars tint to
+  match the page chrome.
+- Open Graph + Twitter card meta + proper page-level description.
+- Soft scrollbar styling, translucent blueprint-cyan text-selection
+  color, and `font-feature-settings` baked into mono surfaces.
+
+### Changed
+- **Landing page** rebuilt as a split hero (copy + technical drawing),
+  warm-paper background with blueprint grid, mono section markers
+  (A-101, §02, §03), and real footer destinations (the previous footer
+  had 12 links pointing at `/help`).
+- **FloorPlanHero** rebuilt as a real architectural drawing with
+  dimension lines, north arrow, scale bar, title block, and a
+  labelled desk callout.
+- **Auth pages** migrate from indigo-gradient slate-50 to warm-paper
+  blueprint grid.
+- **HelpPage**, **TeamHomePage**, **ProjectShell**, **OfficeCard**, and
+  every other major surface retoned to paper / blueprint tokens.
+- **`Button`, `Input`, `Modal` primitives** migrated to paper +
+  blueprint tokens.
+- **Section eyebrows** across the app unified to a single mono
+  cadence.
+- **Demo seed walls** cleaned to 1500×1500 squares on every floor
+  with doors and windows correctly anchored.
+- **Konva-rendered surfaces** (Minimap, hover outline, desk-id disc)
+  pin literal hex aliases of the blueprint tokens.
+- 200+ inline `bg-blue-*` / `text-blue-*` / `border-blue-*` /
+  `bg-gray-50` / `border-gray-200` / `bg-white` references migrated
+  across 100+ files.
+
+### Removed
+- Legacy `BrowserFrame.tsx` and the indigo-gradient diamond logo.
+- Placeholder Trusted-by-ACME/NIMBUS/ORBIT logo strip from the landing.
+- Footer columns of dead `/help` links (Pricing / Status / About /
+  Privacy / Terms / Changelog) — collapsed to two columns of real
+  destinations.
+
+### Tests
+- 1899 / 264 pass; assertions for `Button`, `Input`, `RightSidebar`,
+  `StatusBar`, `ElementLibrary`, and `ProjectShell` updated to match
+  the new tokens and copy. No behavioural regressions.
+
+[1.1.0]: https://github.com/rcasto123/Floorcraft/releases/tag/v1.1.0
+
 ## [1.0.0] — 2026-04-21
 
 ### Added

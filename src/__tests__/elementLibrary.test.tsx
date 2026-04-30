@@ -175,7 +175,9 @@ describe('ElementLibrary — Wave 12B polish', () => {
       // First "Desk" tile — its wrapper carries the active highlight class.
       const desk = screen.getAllByText('Desk')[0]
       const tile = desk.closest('[data-testid="library-tile"]') as HTMLElement
-      expect(tile.className).toContain('bg-blue-50')
+      // Wave 21A — active-tile highlight migrated from `bg-blue-50` to
+      // the `--color-blueprint-soft` token.
+      expect(tile.className).toContain('bg-[color:var(--color-blueprint-soft)]')
     })
   })
 

@@ -173,9 +173,9 @@ function ConnectStep({ onLoadSample }: { onLoadSample: () => void }) {
             type="button"
             onClick={onLoadSample}
             data-testid="meraki-load-sample"
-            className="text-left rounded-lg border border-blue-200 dark:border-blue-900 bg-blue-50/60 dark:bg-blue-950/30 p-4 hover:bg-blue-50 dark:hover:bg-blue-950/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="text-left rounded-lg border border-[color:var(--color-blueprint)]/40 dark:border-[color:var(--color-blueprint)]/40 bg-[color:var(--color-blueprint-soft)]/60 dark:bg-[color:var(--color-blueprint-soft)] p-4 hover:bg-[color:var(--color-blueprint-soft)] dark:hover:bg-[color:var(--color-blueprint-soft)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
           >
-            <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+            <div className="flex items-center gap-2 text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]">
               <Cloud size={16} aria-hidden="true" />
               <span className="text-sm font-semibold">Try with sample data</span>
             </div>
@@ -189,7 +189,7 @@ function ConnectStep({ onLoadSample }: { onLoadSample: () => void }) {
 
           <div
             aria-disabled
-            className="text-left rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/60 p-4 cursor-not-allowed"
+            className="text-left rounded-lg border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-sunken)] dark:bg-gray-900/60 p-4 cursor-not-allowed"
           >
             <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
               <Lock size={16} aria-hidden="true" />
@@ -206,7 +206,7 @@ function ConnectStep({ onLoadSample }: { onLoadSample: () => void }) {
           </div>
         </div>
 
-        <div className="mt-5 rounded-md border border-gray-200 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-900/40 p-3 text-xs text-gray-600 dark:text-gray-400 flex items-start gap-2">
+        <div className="mt-5 rounded-md border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-sunken)]/80 dark:bg-gray-900/40 p-3 text-xs text-gray-600 dark:text-gray-400 flex items-start gap-2">
           <Info size={14} aria-hidden="true" className="mt-0.5 text-gray-500" />
           <span>
             Read-only: nothing is sent to your Meraki dashboard from
@@ -290,10 +290,10 @@ function PreviewStep({
         )}
 
         <div
-          className="rounded-md border border-gray-200 dark:border-gray-800 overflow-hidden"
+          className="rounded-md border border-[color:var(--color-paper-line)] dark:border-gray-800 overflow-hidden"
           data-testid="meraki-entries-table"
         >
-          <div className="grid grid-cols-[28px_minmax(0,2fr)_minmax(0,1.4fr)_120px_120px] text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/60 border-b border-gray-200 dark:border-gray-800">
+          <div className="grid grid-cols-[28px_minmax(0,2fr)_minmax(0,1.4fr)_120px_120px] font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400 bg-[color:var(--color-paper-sunken)] dark:bg-gray-900/60 border-b border-[color:var(--color-paper-line)] dark:border-gray-800">
             <div className="px-2 py-2"></div>
             <div className="px-2 py-2">Device</div>
             <div className="px-2 py-2">Maps to</div>
@@ -376,13 +376,13 @@ function EntryRow({
   } else {
     actionBadge = {
       label: 'Update',
-      classes: 'bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-300',
+      classes: 'bg-[color:var(--color-blueprint-soft)] text-[color:var(--color-blueprint-strong)] dark:bg-[color:var(--color-blueprint-soft)] dark:text-[color:var(--color-blueprint)]',
     }
   }
 
   return (
     <li
-      className="grid grid-cols-[28px_minmax(0,2fr)_minmax(0,1.4fr)_120px_120px] items-center text-xs border-b last:border-b-0 border-gray-100 dark:border-gray-800/60 hover:bg-gray-50/60 dark:hover:bg-gray-900/30"
+      className="grid grid-cols-[28px_minmax(0,2fr)_minmax(0,1.4fr)_120px_120px] items-center text-xs border-b last:border-b-0 border-[color:var(--color-paper-line)] dark:border-gray-800/60 hover:bg-[color:var(--color-paper-sunken)]/80 dark:hover:bg-gray-900/30"
       data-testid={`meraki-entry-${entry.device.serial}`}
     >
       <div className="px-2 py-2 flex items-center justify-center">
@@ -456,11 +456,11 @@ function SuccessStep({
 const TONE_CLASS: Record<'positive' | 'info' | 'warning' | 'muted', string> = {
   positive:
     'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border-emerald-200 dark:border-emerald-900',
-  info: 'bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-900',
+  info: 'bg-[color:var(--color-blueprint-soft)] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] border-[color:var(--color-blueprint)]/40 dark:border-[color:var(--color-blueprint)]/40',
   warning:
     'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200 border-amber-200 dark:border-amber-900',
   muted:
-    'bg-gray-50 dark:bg-gray-900/40 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-800',
+    'bg-[color:var(--color-paper-sunken)] dark:bg-gray-900/40 text-gray-700 dark:text-gray-300 border-[color:var(--color-paper-line)] dark:border-gray-800',
 }
 
 function SummaryChip({

@@ -378,13 +378,13 @@ function CommandPaletteBody() {
       data-testid="command-palette"
     >
       <div
-        className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 w-full max-w-[600px] mx-4 overflow-hidden"
+        className="bg-[color:var(--color-paper-raised)] dark:bg-gray-900 rounded-xl shadow-2xl border border-[color:var(--color-paper-line)] dark:border-gray-800 w-full max-w-[600px] mx-4 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
         {/* Search row — borderless input with a leading lucide icon to
             mirror the FileMenu / CanvasFinder visual language. */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 dark:border-gray-800">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-[color:var(--color-paper-line)] dark:border-gray-800">
           <Search
             size={16}
             className="text-gray-400 dark:text-gray-500 flex-shrink-0"
@@ -413,7 +413,7 @@ function CommandPaletteBody() {
               onClick={toggleScope}
               data-testid="command-palette-scope-chip"
               data-scope={scope}
-              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-[11px] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus-visible:ring-1 focus-visible:ring-blue-400"
+              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-[color:var(--color-paper-line)] dark:border-gray-700 bg-[color:var(--color-paper-sunken)] dark:bg-gray-800/50 text-[11px] text-gray-600 dark:text-gray-300 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800 focus:outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--color-blueprint)]"
               aria-label={`Toggle scope (currently ${scope === 'office' ? 'this office' : 'all offices'})`}
             >
               {scope === 'office' ? (
@@ -434,7 +434,7 @@ function CommandPaletteBody() {
               data-testid="command-palette-scope-chip"
               data-scope={scope}
               data-readonly="true"
-              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-[11px] text-gray-500 dark:text-gray-400"
+              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-[color:var(--color-paper-line)] dark:border-gray-700 bg-[color:var(--color-paper-sunken)] dark:bg-gray-800/50 text-[11px] text-gray-500 dark:text-gray-400"
             >
               <Building2 size={11} aria-hidden="true" />
               <span>
@@ -454,7 +454,7 @@ function CommandPaletteBody() {
           {showRecents && (
             <li data-testid="command-palette-section-recent-wrap">
               <div
-                className="px-4 pt-3 pb-1 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider"
+                className="px-4 pt-3 pb-1 font-mono text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-[0.18em]"
                 data-testid="command-palette-section-recent"
               >
                 Recent
@@ -502,7 +502,7 @@ function CommandPaletteBody() {
             return (
               <li key={group.section}>
                 <div
-                  className="px-4 pt-3 pb-1 flex items-center gap-1.5 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider"
+                  className="px-4 pt-3 pb-1 flex items-center gap-1.5 font-mono text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-[0.18em]"
                   data-testid={`command-palette-section-${group.section}`}
                 >
                   <Icon size={11} aria-hidden="true" />
@@ -579,8 +579,8 @@ function PaletteRow({
       onClick={onActivate}
       className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 ${
         active
-          ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100'
-          : 'text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+          ? 'bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 text-gray-900 dark:text-gray-100'
+          : 'text-gray-800 dark:text-gray-100 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50'
       }`}
     >
       <Icon
@@ -596,7 +596,7 @@ function PaletteRow({
       )}
       {shortcut && (
         <kbd
-          className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/70 flex-shrink-0"
+          className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-[color:var(--color-paper-line)] dark:border-gray-700 text-gray-500 dark:text-gray-400 bg-[color:var(--color-paper-sunken)] dark:bg-gray-800/70 flex-shrink-0"
           data-testid={`${testId}-shortcut`}
         >
           {shortcut}
