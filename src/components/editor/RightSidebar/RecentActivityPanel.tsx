@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { History, RefreshCw } from 'lucide-react'
+import { Download, History, RefreshCw } from 'lucide-react'
 import { listEvents, type AuditEventRow } from '../../../lib/auditRepository'
 import { supabase } from '../../../lib/supabase'
 import { useProjectStore } from '../../../stores/projectStore'
@@ -57,6 +57,40 @@ export function RecentActivityPanel() {
   function onRefresh() {
     setRefreshing(true)
     setRefreshNonce((n) => n + 1)
+  }
+
+  function onExportCsv() {
+    if (!events || events.length === 0) return
+    const rows = [
+      ['created_at', 'action', 'actor_id', 'target_type', 'target_id', 'metadata'],
+      ...events.map((e) => [
+        e.created_at ?? '',
+        e.action,
+        e.actor_id,
+        e.target_type,
+        e.target_id ?? '',
+        JSON.stringify(e.metadata ?? {}),
+      ]),
+    ]
+    const csv = rows
+      .map((row) =>
+        row
+          .map((cell) => {
+            const s = String(cell ?? '')
+            return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+          })
+          .join(','),
+      )
+      .join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `activity-${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
   }
 
   // Real-time updates via Supabase channels. Subscribes to inserts on
@@ -121,20 +155,32 @@ export function RecentActivityPanel() {
         <span className="text-[11px] text-gray-500 dark:text-gray-400">
           {events.length} event{events.length === 1 ? '' : 's'}
         </span>
-        <button
-          type="button"
-          onClick={onRefresh}
-          disabled={refreshing}
-          className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-0.5 rounded disabled:opacity-50"
-          title="Refresh activity"
-          aria-label="Refresh activity"
-        >
-          <RefreshCw
-            size={11}
-            aria-hidden="true"
-            className={refreshing ? 'animate-spin motion-reduce:animate-none' : ''}
-          />
-        </button>
+        <span className="flex items-center gap-0.5">
+          <button
+            type="button"
+            onClick={onExportCsv}
+            disabled={events.length === 0}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-0.5 rounded disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Download activity as CSV"
+            aria-label="Download activity as CSV"
+          >
+            <Download size={11} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            onClick={onRefresh}
+            disabled={refreshing}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-0.5 rounded disabled:opacity-50"
+            title="Refresh activity"
+            aria-label="Refresh activity"
+          >
+            <RefreshCw
+              size={11}
+              aria-hidden="true"
+              className={refreshing ? 'animate-spin motion-reduce:animate-none' : ''}
+            />
+          </button>
+        </span>
       </div>
       <ul className="space-y-1.5">
       {events.map((e) => (
