@@ -36,6 +36,12 @@ export function OfficeCommentsPanel() {
   const [reply, setReply] = useState('')
   const [posting, setPosting] = useState(false)
   const [postError, setPostError] = useState<string | null>(null)
+  // Tokens that the owner has revoked. Built alongside the comment
+  // load so each comment can render a "via revoked link" badge when
+  // its source token is no longer live — surfaces a "this feedback
+  // came from a deprecated channel" signal that helps the owner
+  // prioritize follow-up.
+  const [revokedTokens, setRevokedTokens] = useState<Set<string>>(() => new Set())
   // Manual-refresh nonce. The user clicks the refresh button → we
   // bump this; the load effect's dep list includes it, so the
   // effect re-fires. Avoids extracting `load` to a callable while
@@ -49,22 +55,42 @@ export function OfficeCommentsPanel() {
     async function load() {
       if (!officeId) {
         setComments([])
+        setRevokedTokens(new Set())
         return
       }
-      const { data, error: err } = await supabase
-        .from('share_comments')
-        .select('*')
-        .eq('office_id', officeId)
-        .order('created_at', { ascending: false })
+      // Run the two queries in parallel — neither blocks the other.
+      // share_tokens is the small one (one row per share link the
+      // owner has ever created), so the count is bounded.
+      const [commentsRes, tokensRes] = await Promise.all([
+        supabase
+          .from('share_comments')
+          .select('*')
+          .eq('office_id', officeId)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('share_tokens')
+          .select('token, revoked_at')
+          .eq('office_id', officeId),
+      ])
       if (cancelled) return
       setRefreshing(false)
-      if (err) {
-        setError(err.message)
+      if (commentsRes.error) {
+        setError(commentsRes.error.message)
         setComments([])
         return
       }
       setError(null)
-      setComments((data ?? []) as ShareComment[])
+      setComments((commentsRes.data ?? []) as ShareComment[])
+      // Collect tokens whose revoked_at is non-null. The
+      // share_tokens_owner_select policy from #179 gates this query;
+      // a viewer would get an empty list and see no badges, which
+      // is the right fail-mode (display-only signal).
+      const revoked = new Set<string>()
+      const tokenRows = (tokensRes.data ?? []) as Array<{ token: string; revoked_at: string | null }>
+      for (const row of tokenRows) {
+        if (row.revoked_at) revoked.add(row.token)
+      }
+      setRevokedTokens(revoked)
     }
     void load()
     return () => {
@@ -181,6 +207,8 @@ export function OfficeCommentsPanel() {
         <ul className="space-y-2">
           {comments.map((c) => {
             const isOwnerReply = c.share_token === null
+            const viaRevokedLink =
+              !isOwnerReply && c.share_token !== null && revokedTokens.has(c.share_token)
             return (
               <li
                 key={c.id}
@@ -191,13 +219,21 @@ export function OfficeCommentsPanel() {
                 }`}
               >
                 <div className="flex items-baseline justify-between gap-2 mb-0.5">
-                  <span className="flex items-baseline gap-1.5 min-w-0">
+                  <span className="flex items-baseline gap-1.5 min-w-0 flex-wrap">
                     <span className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
                       {c.author_name?.trim() || 'Anonymous'}
                     </span>
                     {isOwnerReply && (
                       <span className="text-[9px] font-semibold uppercase tracking-wider text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] px-1 py-0.5 rounded bg-[color:var(--color-blueprint-soft)] dark:bg-gray-800">
                         Owner
+                      </span>
+                    )}
+                    {viaRevokedLink && (
+                      <span
+                        className="text-[9px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300 px-1 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40"
+                        title="The share link this comment came in through has been revoked. New comments through that link won't arrive."
+                      >
+                        Revoked link
                       </span>
                     )}
                   </span>
