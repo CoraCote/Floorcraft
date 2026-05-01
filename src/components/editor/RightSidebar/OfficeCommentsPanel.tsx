@@ -103,6 +103,57 @@ export function OfficeCommentsPanel() {
     setRefreshNonce((n) => n + 1)
   }
 
+  // Real-time updates via Supabase channels. Subscribes to inserts +
+  // deletes on `share_comments` filtered to the current office.
+  // RLS enforces visibility: the owner-side `share_comments_owner_read`
+  // policy from #0014 lets the owner / editor / team-admin receive
+  // the row payloads; non-permitted callers wouldn't get the
+  // delivery anyway. Realtime is additive on top of the initial
+  // fetch — the manual refresh button (#207) stays as a fallback if
+  // a subscription drops mid-session.
+  useEffect(() => {
+    if (!officeId) return
+    const channel = supabase
+      .channel(`share_comments:${officeId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'share_comments',
+          filter: `office_id=eq.${officeId}`,
+        },
+        (payload) => {
+          const inserted = payload.new as ShareComment
+          setComments((prev) => {
+            if (!prev) return [inserted]
+            // De-dupe: an INSERT we already optimistic-prepended
+            // (owner reply) shows up in the channel too.
+            if (prev.some((c) => c.id === inserted.id)) return prev
+            return [inserted, ...prev]
+          })
+        },
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'share_comments',
+          filter: `office_id=eq.${officeId}`,
+        },
+        (payload) => {
+          const oldId = (payload.old as { id?: string }).id
+          if (!oldId) return
+          setComments((prev) => prev?.filter((c) => c.id !== oldId) ?? prev)
+        },
+      )
+      .subscribe()
+    return () => {
+      void supabase.removeChannel(channel)
+    }
+  }, [officeId])
+
   async function onSubmitReply(e: React.FormEvent) {
     e.preventDefault()
     if (!officeId || posting) return
