@@ -79,6 +79,36 @@ export function SharedProjectView() {
     }
   }, [projectId, token])
 
+  // Anon viewers can't subscribe to Supabase realtime channels (no
+  // SELECT permission on share_comments — they go through the RPC
+  // path), so we approximate live updates with a poll-on-focus:
+  // whenever the tab comes back to the foreground, re-fetch the
+  // comment list. This catches the "owner replied while I was in
+  // another tab" case, which is the most-common refresh trigger
+  // for share-link reviewers.
+  useEffect(() => {
+    if (!projectId || !token) return
+    let cancelled = false
+    async function poll() {
+      const list = await listShareComments({ token: token!, officeId: projectId! })
+      if (cancelled) return
+      if (list !== null) {
+        setComments(list)
+        setCommentsStatus('idle')
+      }
+    }
+    function onVisible() {
+      if (!document.hidden) void poll()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', onVisible)
+    return () => {
+      cancelled = true
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', onVisible)
+    }
+  }, [projectId, token])
+
   if (status === 'loading') return <div className="p-6 text-sm text-gray-500 dark:text-gray-400">Loading shared project…</div>
   if (status === 'invalid') return <div className="p-6 text-sm">This share link isn't valid.</div>
 
