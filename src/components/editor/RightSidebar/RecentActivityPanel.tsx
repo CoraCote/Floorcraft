@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Download, History, RefreshCw } from 'lucide-react'
+import { Download, History, RefreshCw, Search, X as XIcon } from 'lucide-react'
 import { listEvents, type AuditEventRow } from '../../../lib/auditRepository'
 import { supabase } from '../../../lib/supabase'
 import { useProjectStore } from '../../../stores/projectStore'
@@ -26,6 +26,10 @@ export function RecentActivityPanel() {
   const [now, setNow] = useState<number>(() => Date.now())
   const [refreshNonce, setRefreshNonce] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
+  // Free-text filter — matched against action / target_type /
+  // target_id / metadata-as-JSON. Trims whitespace and is case-
+  // insensitive; no debounce needed at the 20-row scale.
+  const [query, setQuery] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -149,11 +153,28 @@ export function RecentActivityPanel() {
       </div>
     )
   }
+  const trimmedQuery = query.trim().toLowerCase()
+  const visibleEvents = trimmedQuery
+    ? events.filter((e) => {
+        const haystack = [
+          e.action,
+          e.target_type,
+          e.target_id ?? '',
+          JSON.stringify(e.metadata ?? {}),
+        ]
+          .join(' ')
+          .toLowerCase()
+        return haystack.includes(trimmedQuery)
+      })
+    : events
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-[11px] text-gray-500 dark:text-gray-400">
-          {events.length} event{events.length === 1 ? '' : 's'}
+          {trimmedQuery
+            ? `${visibleEvents.length} of ${events.length}`
+            : `${events.length} event${events.length === 1 ? '' : 's'}`}
         </span>
         <span className="flex items-center gap-0.5">
           <button
@@ -182,8 +203,38 @@ export function RecentActivityPanel() {
           </button>
         </span>
       </div>
+      <div className="relative">
+        <Search
+          size={10}
+          aria-hidden="true"
+          className="absolute left-1.5 top-1.5 text-gray-400 dark:text-gray-500"
+        />
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Filter events…"
+          aria-label="Filter events"
+          className="block w-full rounded border border-[color:var(--color-paper-line)] dark:border-gray-700 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 text-[11px] text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 pl-5 pr-5 py-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--color-blueprint)]"
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={() => setQuery('')}
+            aria-label="Clear filter"
+            className="absolute right-1 top-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+          >
+            <XIcon size={10} aria-hidden="true" />
+          </button>
+        )}
+      </div>
+      {trimmedQuery && visibleEvents.length === 0 ? (
+        <p className="text-[11px] text-gray-500 dark:text-gray-400 italic">
+          No events match &ldquo;{trimmedQuery}&rdquo;.
+        </p>
+      ) : null}
       <ul className="space-y-1.5">
-      {events.map((e) => (
+      {visibleEvents.map((e) => (
         <li
           key={e.id ?? `${e.action}-${e.created_at}`}
           className="rounded border border-[color:var(--color-paper-line)] dark:border-gray-800 px-2 py-1.5"
