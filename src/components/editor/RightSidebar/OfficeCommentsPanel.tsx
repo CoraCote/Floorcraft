@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { MessageSquare, RefreshCw, Send, Trash2 } from 'lucide-react'
+import { Download, MessageSquare, RefreshCw, Send, Trash2 } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
 import { useProjectStore } from '../../../stores/projectStore'
 import { useSession } from '../../../lib/auth/AuthProvider'
@@ -101,6 +101,48 @@ export function OfficeCommentsPanel() {
   function onRefresh() {
     setRefreshing(true)
     setRefreshNonce((n) => n + 1)
+  }
+
+  // CSV export — owners often forward review feedback to a teammate
+  // by email or Slack. Building the file client-side keeps the
+  // surface zero-server-cost; the volumes (single-office comment
+  // lists) easily fit in memory.
+  function onExportCsv() {
+    if (!comments || comments.length === 0) return
+    const rows = [
+      ['created_at', 'author_name', 'source', 'body'],
+      ...comments.map((c) => [
+        c.created_at,
+        c.author_name?.trim() || 'Anonymous',
+        c.share_token === null
+          ? 'owner'
+          : revokedTokens.has(c.share_token)
+            ? 'revoked-link'
+            : 'share-link',
+        c.body,
+      ]),
+    ]
+    const csv = rows
+      .map((row) =>
+        row
+          .map((cell) => {
+            const s = String(cell ?? '')
+            // RFC 4180: quote when the cell contains a quote, comma,
+            // or newline; double-up internal quotes.
+            return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+          })
+          .join(','),
+      )
+      .join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `comments-${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
   }
 
   // Real-time updates via Supabase channels. Subscribes to inserts +
@@ -231,20 +273,32 @@ export function OfficeCommentsPanel() {
             ? 'No comments'
             : `${comments.length} comment${comments.length === 1 ? '' : 's'}`}
         </span>
-        <button
-          type="button"
-          onClick={onRefresh}
-          disabled={refreshing}
-          className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-0.5 rounded disabled:opacity-50"
-          title="Refresh comments"
-          aria-label="Refresh comments"
-        >
-          <RefreshCw
-            size={11}
-            aria-hidden="true"
-            className={refreshing ? 'animate-spin motion-reduce:animate-none' : ''}
-          />
-        </button>
+        <span className="flex items-center gap-0.5">
+          <button
+            type="button"
+            onClick={onExportCsv}
+            disabled={comments.length === 0}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-0.5 rounded disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Download comments as CSV"
+            aria-label="Download comments as CSV"
+          >
+            <Download size={11} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            onClick={onRefresh}
+            disabled={refreshing}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-0.5 rounded disabled:opacity-50"
+            title="Refresh comments"
+            aria-label="Refresh comments"
+          >
+            <RefreshCw
+              size={11}
+              aria-hidden="true"
+              className={refreshing ? 'animate-spin motion-reduce:animate-none' : ''}
+            />
+          </button>
+        </span>
       </div>
       {comments.length === 0 ? (
         <div className="text-xs text-gray-500 dark:text-gray-400 flex items-start gap-2">
