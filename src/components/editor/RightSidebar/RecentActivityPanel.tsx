@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { History, RefreshCw } from 'lucide-react'
 import { listEvents, type AuditEventRow } from '../../../lib/auditRepository'
+import { supabase } from '../../../lib/supabase'
 import { useProjectStore } from '../../../stores/projectStore'
 
 /**
@@ -57,6 +58,41 @@ export function RecentActivityPanel() {
     setRefreshing(true)
     setRefreshNonce((n) => n + 1)
   }
+
+  // Real-time updates via Supabase channels. Subscribes to inserts on
+  // audit_events filtered to the current team. Limit-20 cap is
+  // applied client-side: when a fresh insert arrives, prepend and
+  // drop the tail. RLS gates delivery — `audit_events` is
+  // team-scoped and members get the broadcast; non-members
+  // wouldn't subscribe at all because they can't read the table.
+  useEffect(() => {
+    if (!teamId) return
+    const channel = supabase
+      .channel(`audit_events:${teamId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'audit_events',
+          filter: `team_id=eq.${teamId}`,
+        },
+        (payload) => {
+          const inserted = payload.new as AuditEventRow
+          setEvents((prev) => {
+            if (!prev) return [inserted]
+            if (prev.some((e) => e.id === inserted.id)) return prev
+            // Cap at 20 — same limit the initial fetch applies.
+            return [inserted, ...prev].slice(0, 20)
+          })
+          setNow(Date.now())
+        },
+      )
+      .subscribe()
+    return () => {
+      void supabase.removeChannel(channel)
+    }
+  }, [teamId])
 
   if (events === null) {
     return <p className="text-xs text-gray-500 dark:text-gray-400">Loading activity…</p>
