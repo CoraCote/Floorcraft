@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CreditCard, Download, Search, AlertTriangle, Sparkles } from 'lucide-react'
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  CreditCard,
+  Download,
+  Search,
+  AlertTriangle,
+  Sparkles,
+} from 'lucide-react'
 import Papa from 'papaparse'
 import {
   adminListSubscriptions,
@@ -23,11 +32,27 @@ import { ConfirmDialog } from '../editor/ConfirmDialog'
  * wrappers + Stripe Dashboard links survive longer than rebuilt
  * billing UI.
  */
+type SortKey = 'team_name' | 'effective_plan' | 'status' | 'seats' | 'current_period_end'
+type SortDir = 'asc' | 'desc'
+
+const STATUS_RANK: Record<string, number> = {
+  past_due: 1,
+  unpaid: 2,
+  incomplete: 3,
+  active: 4,
+  trialing: 5,
+  canceled: 6,
+  inactive: 7,
+}
+
 export function AdminBillingPage() {
   useDocumentTitle('Billing · Admin — Floorcraft')
   const [subs, setSubs] = useState<AdminSubscription[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
+  const [atRiskOnly, setAtRiskOnly] = useState(false)
+  const [sortKey, setSortKey] = useState<SortKey>('status')
+  const [sortDir, setSortDir] = useState<SortDir>('asc')
   const [refreshNonce, setRefreshNonce] = useState(0)
 
   useEffect(() => {
@@ -50,16 +75,45 @@ export function AdminBillingPage() {
   }, [refreshNonce])
 
   const trimmedQuery = query.trim().toLowerCase()
-  const visibleSubs = subs
-    ? trimmedQuery
+  const visibleSubs = useMemo(() => {
+    if (!subs) return null
+    let rows = trimmedQuery
       ? subs.filter((s) =>
           [s.team_name, s.team_slug, s.plan ?? '', s.effective_plan]
             .join(' ')
             .toLowerCase()
             .includes(trimmedQuery),
         )
-      : subs
-    : null
+      : subs.slice()
+    if (atRiskOnly) {
+      rows = rows.filter(
+        (s) =>
+          s.status === 'past_due' ||
+          s.status === 'unpaid' ||
+          s.status === 'incomplete',
+      )
+    }
+    rows.sort((a, b) => {
+      const cmp = compareSubs(a, b, sortKey)
+      return sortDir === 'asc' ? cmp : -cmp
+    })
+    return rows
+  }, [subs, trimmedQuery, atRiskOnly, sortKey, sortDir])
+
+  function onHeaderClick(key: SortKey) {
+    if (key === sortKey) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortKey(key)
+      // Status defaults asc (past_due → trialing); seats / period
+      // default desc (highest first); text columns default asc.
+      setSortDir(
+        key === 'team_name' || key === 'effective_plan' || key === 'status'
+          ? 'asc'
+          : 'desc',
+      )
+    }
+  }
 
   // Per-status counts across the *unfiltered* subs — the strip shows
   // platform health regardless of what the operator is currently
@@ -198,8 +252,8 @@ export function AdminBillingPage() {
         </div>
       )}
 
-      <div className="mb-3 flex items-center gap-2">
-        <div className="relative flex-1 max-w-sm">
+      <div className="mb-3 flex items-center gap-2 flex-wrap">
+        <div className="relative flex-1 min-w-[16rem] max-w-sm">
           <Search
             size={12}
             aria-hidden="true"
@@ -214,6 +268,25 @@ export function AdminBillingPage() {
             className="block w-full rounded border border-[color:var(--color-paper-line)] dark:border-gray-700 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 text-sm pl-7 pr-2 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
           />
         </div>
+        <label
+          className={`flex items-center gap-1.5 text-xs select-none cursor-pointer ${
+            atRiskCount > 0
+              ? 'text-amber-700 dark:text-amber-300'
+              : 'text-gray-500 dark:text-gray-400'
+          }`}
+          title="Past due, unpaid, or incomplete subscriptions"
+        >
+          <input
+            type="checkbox"
+            checked={atRiskOnly}
+            onChange={(e) => setAtRiskOnly(e.target.checked)}
+            className="accent-amber-600"
+          />
+          At risk only
+          {atRiskCount > 0 && (
+            <span className="font-mono tabular-nums opacity-90">({atRiskCount})</span>
+          )}
+        </label>
         <button
           type="button"
           onClick={onExport}
@@ -243,11 +316,18 @@ export function AdminBillingPage() {
           <table className="w-full text-sm">
             <thead className="bg-[color:var(--color-paper-sunken)] dark:bg-gray-800/50">
               <tr className="text-left text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                <th className="px-3 py-2">Team</th>
-                <th className="px-3 py-2">Plan</th>
-                <th className="px-3 py-2">Status</th>
-                <th className="px-3 py-2 text-right">Seats</th>
-                <th className="px-3 py-2">Renews</th>
+                <SortHeader k="team_name" label="Team" sortKey={sortKey} sortDir={sortDir} onClick={onHeaderClick} />
+                <SortHeader k="effective_plan" label="Plan" sortKey={sortKey} sortDir={sortDir} onClick={onHeaderClick} />
+                <SortHeader k="status" label="Status" sortKey={sortKey} sortDir={sortDir} onClick={onHeaderClick} />
+                <SortHeader
+                  k="seats"
+                  label="Seats"
+                  align="right"
+                  sortKey={sortKey}
+                  sortDir={sortDir}
+                  onClick={onHeaderClick}
+                />
+                <SortHeader k="current_period_end" label="Renews" sortKey={sortKey} sortDir={sortDir} onClick={onHeaderClick} />
                 <th className="px-3 py-2">Stripe</th>
                 <th className="px-3 py-2"></th>
               </tr>
@@ -434,5 +514,61 @@ function StatusPill({ status }: { status: AdminSubscription['status'] }) {
     >
       {status}
     </span>
+  )
+}
+
+function compareSubs(a: AdminSubscription, b: AdminSubscription, key: SortKey): number {
+  switch (key) {
+    case 'team_name':
+      return a.team_name.localeCompare(b.team_name)
+    case 'effective_plan':
+      return a.effective_plan.localeCompare(b.effective_plan)
+    case 'status': {
+      const ar = STATUS_RANK[a.status ?? 'inactive'] ?? 99
+      const br = STATUS_RANK[b.status ?? 'inactive'] ?? 99
+      return ar - br
+    }
+    case 'seats':
+      return (a.seats ?? 0) - (b.seats ?? 0)
+    case 'current_period_end':
+      return (a.current_period_end ?? '').localeCompare(b.current_period_end ?? '')
+  }
+}
+
+function SortHeader({
+  k,
+  label,
+  align,
+  sortKey,
+  sortDir,
+  onClick,
+}: {
+  k: SortKey
+  label: string
+  align?: 'right'
+  sortKey: SortKey
+  sortDir: SortDir
+  onClick: (k: SortKey) => void
+}) {
+  const isActive = sortKey === k
+  const Icon = !isActive ? ArrowUpDown : sortDir === 'asc' ? ArrowUp : ArrowDown
+  return (
+    <th className={`px-3 py-2 ${align === 'right' ? 'text-right' : 'text-left'}`}>
+      <button
+        type="button"
+        onClick={() => onClick(k)}
+        aria-sort={isActive ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+        className={`inline-flex items-center gap-1 transition-colors ${
+          align === 'right' ? 'flex-row-reverse' : ''
+        } ${
+          isActive
+            ? 'text-gray-900 dark:text-gray-100'
+            : 'hover:text-gray-700 dark:hover:text-gray-300'
+        }`}
+      >
+        <span>{label}</span>
+        <Icon size={11} aria-hidden="true" className={isActive ? 'opacity-100' : 'opacity-40'} />
+      </button>
+    </th>
   )
 }
