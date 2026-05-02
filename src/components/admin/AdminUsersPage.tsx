@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { ArrowDown, ArrowUp, ArrowUpDown, Download, Search, ShieldCheck, ShieldOff } from 'lucide-react'
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Download,
+  Search,
+  ShieldCheck,
+  ShieldOff,
+} from 'lucide-react'
 import Papa from 'papaparse'
 import { adminListUsers, type AdminUserRow } from '../../lib/adminLists'
 import { grantPlatformAdmin, revokePlatformAdmin } from '../../lib/platformAdmin'
@@ -47,6 +55,20 @@ export function AdminUsersPage() {
   >(null)
   const [actionBusy, setActionBusy] = useState(false)
 
+  // Bulk-select state. Stored as a Set of user ids so toggle-by-id
+  // is O(1) and "select all visible" is a single new Set. We don't
+  // persist selection across filter changes — narrowing the search
+  // and then clicking "select all" is a focused-bulk pattern (the
+  // operator wants to act on the *visible* rows), so the
+  // selection always lives within the current visibleUsers slice.
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkAction, setBulkAction] = useState<'grant' | 'revoke' | null>(null)
+  const [bulkBusy, setBulkBusy] = useState(false)
+  const [bulkResults, setBulkResults] = useState<
+    | Array<{ email: string; status: 'ok' | 'skipped' | 'error'; message?: string }>
+    | null
+  >(null)
+
   useEffect(() => {
     let cancelled = false
     async function load() {
@@ -89,6 +111,59 @@ export function AdminUsersPage() {
     } else {
       setSortKey(key)
       setSortDir(key === 'email' || key === 'name' ? 'asc' : 'desc')
+    }
+  }
+
+  async function runBulk() {
+    if (!bulkAction || bulkBusy || !visibleUsers) return
+    const targets = visibleUsers.filter((u) => selectedIds.has(u.id))
+    if (targets.length === 0) return
+    setBulkBusy(true)
+    setBulkResults(null)
+    const results: Array<{
+      email: string
+      status: 'ok' | 'skipped' | 'error'
+      message?: string
+    }> = []
+    for (const u of targets) {
+      try {
+        if (bulkAction === 'grant') {
+          if (u.is_platform_admin) {
+            results.push({ email: u.email, status: 'skipped', message: 'already admin' })
+            continue
+          }
+          const r = await grantPlatformAdmin(u.id)
+          if (r.kind === 'error') {
+            results.push({ email: u.email, status: 'error', message: r.message })
+          } else {
+            results.push({ email: u.email, status: 'ok' })
+          }
+        } else {
+          if (!u.is_platform_admin) {
+            results.push({ email: u.email, status: 'skipped', message: 'not an admin' })
+            continue
+          }
+          const r = await revokePlatformAdmin(u.id)
+          if (r.kind === 'error') {
+            results.push({ email: u.email, status: 'error', message: r.message })
+          } else {
+            results.push({ email: u.email, status: 'ok' })
+          }
+        }
+      } catch (err) {
+        results.push({
+          email: u.email,
+          status: 'error',
+          message: err instanceof Error ? err.message : 'unknown error',
+        })
+      }
+    }
+    setBulkResults(results)
+    setBulkBusy(false)
+    setBulkAction(null)
+    if (results.some((r) => r.status === 'ok')) {
+      setSelectedIds(new Set())
+      setRefreshNonce((n) => n + 1)
     }
   }
 
@@ -190,10 +265,90 @@ export function AdminUsersPage() {
             : 'No users yet.'}
         </p>
       ) : (
+        <>
+          {selectedIds.size > 0 && (
+            <div className="mb-2 flex items-center gap-3 rounded-lg border border-[color:var(--color-blueprint)]/40 bg-[color:var(--color-blueprint-soft)] dark:bg-gray-800/60 px-3 py-2 text-sm">
+              <span className="font-mono text-xs text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]">
+                {selectedIds.size} selected
+              </span>
+              <button
+                type="button"
+                onClick={() => setBulkAction('grant')}
+                disabled={bulkBusy}
+                className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800 disabled:opacity-50"
+              >
+                <ShieldCheck size={11} aria-hidden="true" />
+                Grant admin
+              </button>
+              <button
+                type="button"
+                onClick={() => setBulkAction('revoke')}
+                disabled={bulkBusy}
+                className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-50"
+              >
+                <ShieldOff size={11} aria-hidden="true" />
+                Revoke
+              </button>
+              <span className="flex-1" />
+              <button
+                type="button"
+                onClick={() => setSelectedIds(new Set())}
+                className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+              >
+                Clear selection
+              </button>
+            </div>
+          )}
+          {bulkResults && bulkResults.length > 0 && (
+            <ul className="mb-2 max-h-40 overflow-y-auto divide-y divide-[color:var(--color-paper-line)] dark:divide-gray-800 rounded border border-[color:var(--color-paper-line)] dark:border-gray-800">
+              {bulkResults.map((r) => (
+                <li
+                  key={r.email}
+                  className="flex items-center justify-between gap-2 px-3 py-1.5 text-xs"
+                >
+                  <span className="font-mono truncate">{r.email}</span>
+                  <span
+                    className={
+                      r.status === 'ok'
+                        ? 'text-emerald-700 dark:text-emerald-300'
+                        : r.status === 'skipped'
+                          ? 'text-gray-500 dark:text-gray-400'
+                          : 'text-red-600 dark:text-red-400'
+                    }
+                    title={r.message}
+                  >
+                    {r.status === 'ok' && '✓ Done'}
+                    {r.status === 'skipped' && (r.message ?? 'Skipped')}
+                    {r.status === 'error' && '✗ Error'}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         <div className="rounded-lg border border-[color:var(--color-paper-line)] dark:border-gray-800 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-[color:var(--color-paper-sunken)] dark:bg-gray-800/50">
               <tr className="text-left text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                <th className="px-3 py-2 w-8">
+                  <input
+                    type="checkbox"
+                    aria-label="Select all visible users"
+                    checked={
+                      visibleUsers.length > 0 &&
+                      visibleUsers.every((u) => selectedIds.has(u.id))
+                    }
+                    onChange={(e) => {
+                      const next = new Set(selectedIds)
+                      if (e.target.checked) {
+                        for (const u of visibleUsers) next.add(u.id)
+                      } else {
+                        for (const u of visibleUsers) next.delete(u.id)
+                      }
+                      setSelectedIds(next)
+                    }}
+                    className="accent-[color:var(--color-blueprint)]"
+                  />
+                </th>
                 <SortHeader k="email" label="Email" sortKey={sortKey} sortDir={sortDir} onClick={onHeaderClick} />
                 <SortHeader k="name" label="Name" sortKey={sortKey} sortDir={sortDir} onClick={onHeaderClick} />
                 <SortHeader
@@ -217,6 +372,20 @@ export function AdminUsersPage() {
             <tbody className="divide-y divide-[color:var(--color-paper-line)] dark:divide-gray-800">
               {visibleUsers.map((u) => (
                 <tr key={u.id} className="hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/30">
+                  <td className="px-3 py-2">
+                    <input
+                      type="checkbox"
+                      aria-label={`Select ${u.email}`}
+                      checked={selectedIds.has(u.id)}
+                      onChange={(e) => {
+                        const next = new Set(selectedIds)
+                        if (e.target.checked) next.add(u.id)
+                        else next.delete(u.id)
+                        setSelectedIds(next)
+                      }}
+                      className="accent-[color:var(--color-blueprint)]"
+                    />
+                  </td>
                   <td className="px-3 py-2">
                     <span className="inline-flex items-center gap-1.5">
                       <span className="text-gray-900 dark:text-gray-100">{u.email}</span>
@@ -268,6 +437,62 @@ export function AdminUsersPage() {
             </tbody>
           </table>
         </div>
+        </>
+      )}
+
+      {bulkAction && (
+        <ConfirmDialog
+          title={
+            bulkAction === 'grant'
+              ? `Grant platform admin to ${selectedIds.size} user${selectedIds.size === 1 ? '' : 's'}?`
+              : `Revoke platform admin from ${selectedIds.size} user${selectedIds.size === 1 ? '' : 's'}?`
+          }
+          body={
+            bulkAction === 'grant' ? (
+              <div className="space-y-2">
+                <p>
+                  Each selected user will get full platform-admin access.
+                  Already-admin rows are skipped.
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Errors on individual rows surface inline; the rest of
+                  the batch still runs.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p>
+                  Each selected user will lose platform-admin access.
+                  Non-admin rows are skipped.
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  The last remaining admin can&rsquo;t be revoked — that
+                  row will surface as an error and the rest of the batch
+                  continues.
+                </p>
+              </div>
+            )
+          }
+          confirmLabel={
+            bulkBusy
+              ? bulkAction === 'grant'
+                ? 'Granting…'
+                : 'Revoking…'
+              : bulkAction === 'grant'
+                ? 'Grant admin'
+                : 'Revoke admin'
+          }
+          cancelLabel="Cancel"
+          tone={bulkAction === 'grant' ? 'primary' : 'danger'}
+          onConfirm={() => {
+            if (bulkBusy) return
+            void runBulk()
+          }}
+          onCancel={() => {
+            if (bulkBusy) return
+            setBulkAction(null)
+          }}
+        />
       )}
 
       {pending && (
