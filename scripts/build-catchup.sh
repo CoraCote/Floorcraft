@@ -40,6 +40,7 @@ BUNDLE=(
   "0024_admin_team_offices.sql"
   "0025_admin_user_detail.sql"
   "0026_admin_signups_histogram.sql"
+  "0027_admin_team_activity_histogram.sql"
 )
 
 # Verify every bundled migration exists before touching the output —

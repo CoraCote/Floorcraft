@@ -172,6 +172,33 @@ export async function adminSignupsHistogram(
   return (data ?? []) as SignupHistogramPoint[]
 }
 
+export interface ActivityHistogramPoint {
+  day: string // YYYY-MM-DD
+  count: number
+}
+
+/**
+ * Per-day audit-event count for a single team, oldest first. Backs
+ * the activity sparkline on AdminTeamDetailPage.
+ *
+ * Migration 0027. Best-effort: pre-0027 projects return null and
+ * the card is hidden.
+ */
+export async function adminTeamActivityHistogram(
+  teamId: string,
+  days = 30,
+): Promise<ActivityHistogramPoint[] | null> {
+  const { data, error } = await supabase.rpc('admin_team_activity_histogram', {
+    p_team_id: teamId,
+    p_days: days,
+  })
+  if (error) {
+    console.warn('[admin-launch] team activity histogram failed', error)
+    return null
+  }
+  return (data ?? []) as ActivityHistogramPoint[]
+}
+
 /**
  * Generates a password-recovery link for `userId` and returns the
  * action URL. The admin pastes that URL to the user out-of-band

@@ -21,6 +21,7 @@ import {
 } from '../../lib/adminLaunch'
 import { useDocumentTitle } from '../../lib/useDocumentTitle'
 import { ConfirmDialog } from '../editor/ConfirmDialog'
+import { TeamActivityCard } from './TeamActivityCard'
 
 /**
  * Per-team detail surface for platform admins. Shows membership +
@@ -157,6 +158,8 @@ export function AdminTeamDetailPage() {
           {sub && <BillingCard sub={sub} />}
 
           {usage && <UsageCard usage={usage} />}
+
+          <TeamActivityCard teamId={detail.id} />
 
           {offices && (
             <OfficesCard offices={offices} teamSlug={detail.slug} />
