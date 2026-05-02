@@ -3,10 +3,12 @@ import {
   HelpCircle,
   Keyboard,
   LogOut,
+  ShieldCheck,
   User as UserIcon,
 } from 'lucide-react'
 import { useSession } from '../../lib/auth/session'
 import { supabase } from '../../lib/supabase'
+import { useIsPlatformAdmin } from '../../lib/platformAdmin'
 import { useUIStore } from '../../stores/uiStore'
 import { useDropdownMenu } from '../../hooks/useDropdownMenu'
 import { ThemeToggle } from '../ui/ThemeToggle'
@@ -37,6 +39,12 @@ export function UserMenu() {
   const session = useSession()
   const navigate = useNavigate()
   const setShortcutsOverlayOpen = useUIStore((s) => s.setShortcutsOverlayOpen)
+  // Platform-admin status drives the optional "Platform admin"
+  // section. Returns null while the role check is in flight; we
+  // render the section only when it resolves to true so the menu
+  // doesn't briefly flash an admin link to a non-admin user
+  // mid-load.
+  const isPlatformAdmin = useIsPlatformAdmin()
   const {
     open,
     toggle,
@@ -66,9 +74,13 @@ export function UserMenu() {
 
   // Rows that participate in arrow-key focus. Theme is NOT a row — the
   // ThemeToggle inside it is a radiogroup that owns its own focus.
-  // Ordered: Profile, User guide, Keyboard shortcuts, Sign out.
+  // Ordered: Profile, [Platform admin], User guide, Keyboard
+  // shortcuts, Sign out. The admin row only counts toward the index
+  // when the user is actually an admin, so the focus order matches
+  // what's rendered.
   let idx = 0
   const profileIdx = idx++
+  const adminIdx = isPlatformAdmin ? idx++ : -1
   const helpIdx = idx++
   const shortcutsIdx = idx++
   const signOutIdx = idx++
@@ -141,6 +153,32 @@ export function UserMenu() {
               <ThemeToggle />
             </div>
           </div>
+
+          {isPlatformAdmin && (
+            <div>
+              <div className="my-1 border-t border-[color:var(--color-paper-line)] dark:border-gray-800" />
+              <div className="px-3 pt-1.5 pb-1 font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500">
+                Platform
+              </div>
+              <button
+                ref={registerItemRef(adminIdx)}
+                role="menuitem"
+                type="button"
+                tabIndex={focusedIndex === adminIdx ? 0 : -1}
+                onClick={() => activate(() => navigate('/admin'))}
+                onMouseEnter={() => setFocusedIndex(adminIdx)}
+                className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-[color:var(--color-paper-sunken)] dark:text-gray-200 dark:hover:bg-gray-800 focus:bg-[color:var(--color-paper-sunken)] dark:focus:bg-gray-800 outline-none"
+                data-testid="user-menu-platform-admin"
+              >
+                <ShieldCheck
+                  size={14}
+                  aria-hidden="true"
+                  className="text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]"
+                />
+                <span className="flex-1">Platform admin</span>
+              </button>
+            </div>
+          )}
 
           <div>
             <div className="my-1 border-t border-[color:var(--color-paper-line)] dark:border-gray-800" />
