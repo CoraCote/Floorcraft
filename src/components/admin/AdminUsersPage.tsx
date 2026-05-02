@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowDown, ArrowUp, ArrowUpDown, Download, Search, ShieldCheck } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, Download, Search, ShieldCheck, ShieldOff } from 'lucide-react'
 import Papa from 'papaparse'
 import { adminListUsers, type AdminUserRow } from '../../lib/adminLists'
+import { grantPlatformAdmin, revokePlatformAdmin } from '../../lib/platformAdmin'
 import { downloadCsv } from '../../lib/reports/csvExport'
 import { useDocumentTitle } from '../../lib/useDocumentTitle'
+import { ConfirmDialog } from '../editor/ConfirmDialog'
 
 /**
  * Read-only platform-wide user list. Newest signups first; client-
@@ -28,6 +30,15 @@ export function AdminUsersPage() {
   const [adminsOnly, setAdminsOnly] = useState(false)
   const [sortKey, setSortKey] = useState<SortKey>('created_at')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
+  const [refreshNonce, setRefreshNonce] = useState(0)
+  // Pending action target for the grant/revoke confirm dialog. Same
+  // safety pattern as #241 — we always confirm before flipping a
+  // platform-admin flag.
+  const [pending, setPending] = useState<
+    | { kind: 'grant' | 'revoke'; user: AdminUserRow }
+    | null
+  >(null)
+  const [actionBusy, setActionBusy] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -46,7 +57,7 @@ export function AdminUsersPage() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [refreshNonce])
 
   const visibleUsers = useMemo(() => {
     if (!users) return null
@@ -72,6 +83,23 @@ export function AdminUsersPage() {
       setSortKey(key)
       setSortDir(key === 'email' || key === 'name' ? 'asc' : 'desc')
     }
+  }
+
+  async function onConfirmAction() {
+    if (!pending || actionBusy) return
+    setActionBusy(true)
+    const result =
+      pending.kind === 'grant'
+        ? await grantPlatformAdmin(pending.user.id)
+        : await revokePlatformAdmin(pending.user.id)
+    setActionBusy(false)
+    setPending(null)
+    if (result.kind === 'error') {
+      setError(result.message)
+      return
+    }
+    setError(null)
+    setRefreshNonce((n) => n + 1)
   }
 
   function onExport() {
@@ -176,6 +204,7 @@ export function AdminUsersPage() {
                   sortDir={sortDir}
                   onClick={onHeaderClick}
                 />
+                <th className="px-3 py-2 text-right" aria-label="Actions" />
               </tr>
             </thead>
             <tbody className="divide-y divide-[color:var(--color-paper-line)] dark:divide-gray-800">
@@ -204,11 +233,85 @@ export function AdminUsersPage() {
                   <td className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
                     {new Date(u.created_at).toLocaleDateString()}
                   </td>
+                  <td className="px-3 py-2 text-right">
+                    {u.is_platform_admin ? (
+                      <button
+                        type="button"
+                        onClick={() => setPending({ kind: 'revoke', user: u })}
+                        title="Revoke platform admin"
+                        className="inline-flex items-center gap-1 text-[11px] text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 px-2 py-1 rounded"
+                      >
+                        <ShieldOff size={11} aria-hidden="true" />
+                        Revoke
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setPending({ kind: 'grant', user: u })}
+                        title="Grant platform admin"
+                        className="inline-flex items-center gap-1 text-[11px] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:bg-[color:var(--color-blueprint-soft)] dark:hover:bg-gray-800 px-2 py-1 rounded"
+                      >
+                        <ShieldCheck size={11} aria-hidden="true" />
+                        Make admin
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      )}
+
+      {pending && (
+        <ConfirmDialog
+          title={
+            pending.kind === 'grant'
+              ? `Grant platform admin to ${pending.user.email}?`
+              : `Revoke platform admin from ${pending.user.email}?`
+          }
+          body={
+            pending.kind === 'grant' ? (
+              <div className="space-y-2">
+                <p>
+                  They&rsquo;ll get access to every team, the audit log,
+                  billing, and the ability to grant or revoke other
+                  admins. Reserve this for trusted operators.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p>
+                  They&rsquo;ll lose access to the platform admin
+                  surfaces. Their team-side roles are unaffected.
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  The last remaining admin can&rsquo;t be revoked — promote
+                  a teammate first if this would empty the role.
+                </p>
+              </div>
+            )
+          }
+          confirmLabel={
+            actionBusy
+              ? pending.kind === 'grant'
+                ? 'Granting…'
+                : 'Revoking…'
+              : pending.kind === 'grant'
+                ? 'Grant admin'
+                : 'Revoke admin'
+          }
+          cancelLabel="Cancel"
+          tone={pending.kind === 'grant' ? 'primary' : 'danger'}
+          onConfirm={() => {
+            if (actionBusy) return
+            void onConfirmAction()
+          }}
+          onCancel={() => {
+            if (actionBusy) return
+            setPending(null)
+          }}
+        />
       )}
     </div>
   )
