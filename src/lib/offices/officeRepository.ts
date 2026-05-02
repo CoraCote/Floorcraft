@@ -123,6 +123,24 @@ export async function renameOffice(officeId: string, newName: string): Promise<v
 }
 
 /**
+ * Toggle the `is_private` flag on an office. Private offices are
+ * gated by RLS — only invited collaborators can read/write — so
+ * flipping this is a meaningful permission change. Same edit-gate
+ * as renameOffice; the database refuses if the caller lacks
+ * permissions.
+ */
+export async function setOfficePrivacy(
+  officeId: string,
+  isPrivate: boolean,
+): Promise<void> {
+  const { error } = await supabase
+    .from('offices')
+    .update({ is_private: isPrivate })
+    .eq('id', officeId)
+  if (error) throw error
+}
+
+/**
  * Duplicate an office by copying its `payload` into a brand-new row.
  * The caller picks the new name (the kebab menu suggests
  * "<original> (copy)"); we slug the name and let any unique-slug

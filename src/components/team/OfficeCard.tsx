@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Archive, ArchiveRestore, Check, Copy, Link2, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import { Archive, ArchiveRestore, Check, Copy, Globe, Link2, Lock, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import { OfficeThumbnail, type ThumbnailElement } from './OfficeThumbnail'
 import { formatRelative } from '../../lib/time'
 import type { OfficeListItem } from '../../lib/offices/officeRepository'
@@ -34,6 +34,9 @@ interface Props {
   /** Open the rename modal for this office. Parent owns the modal
    *  state and the actual update call. */
   onRename: (office: OfficeListItem) => void
+  /** Flip is_private on this office. Parent handles the RPC + the
+   *  optimistic UI update. */
+  onTogglePrivacy: (office: OfficeListItem) => void
 }
 
 /**
@@ -52,6 +55,7 @@ export function OfficeCard({
   onArchive,
   onDuplicate,
   onRename,
+  onTogglePrivacy,
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -248,6 +252,36 @@ export function OfficeCard({
               >
                 <Pencil size={14} aria-hidden="true" />
                 Rename
+              </button>
+            )}
+            {!isArchived && (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setMenuOpen(false)
+                  onTogglePrivacy(office)
+                }}
+                className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800"
+                title={
+                  office.is_private
+                    ? 'Make this office accessible to anyone with the URL'
+                    : 'Restrict this office to invited collaborators'
+                }
+              >
+                {office.is_private ? (
+                  <>
+                    <Globe size={14} aria-hidden="true" />
+                    Make public
+                  </>
+                ) : (
+                  <>
+                    <Lock size={14} aria-hidden="true" />
+                    Make private
+                  </>
+                )}
               </button>
             )}
             {isArchived ? (

@@ -17,6 +17,7 @@ import {
   unarchiveOffice,
   duplicateOffice,
   renameOffice,
+  setOfficePrivacy,
   saveOffice,
   type OfficeListItem,
 } from '../../lib/offices/officeRepository'
@@ -646,6 +647,25 @@ export function TeamHomePage() {
     }
   }
 
+  // Privacy toggle. The server enforces the actual permission with
+  // RLS; we flip the flag optimistically so the "Private" pill on
+  // the card responds instantly, then roll back on error. Same
+  // error banner everything else in the kebab uses.
+  async function performTogglePrivacy(office: OfficeListItem) {
+    const next = !office.is_private
+    const prev = offices
+    setArchiveError(null)
+    setOffices((os) => os.map((o) => (o.id === office.id ? { ...o, is_private: next } : o)))
+    try {
+      await setOfficePrivacy(office.id, next)
+    } catch (err) {
+      console.warn('Toggle privacy failed; restoring list', err)
+      setOffices(prev)
+      const msg = err instanceof Error ? err.message : 'privacy toggle failed'
+      setArchiveError(msg)
+    }
+  }
+
   // ----- derived view state ---------------------------------------
   // Filter → search → sort, in that order. Each step is a pure
   // transform over the prior list; the intermediate `filtered` is
@@ -1014,6 +1034,7 @@ export function TeamHomePage() {
                           onArchive={(target) => void performArchive(target)}
                           onDuplicate={(target) => void performDuplicate(target)}
                           onRename={(target) => setRenameTarget(target)}
+                          onTogglePrivacy={(target) => void performTogglePrivacy(target)}
                         />
                       </li>
                     )
@@ -1067,6 +1088,7 @@ export function TeamHomePage() {
                           onArchive={(target) => void performArchive(target)}
                           onDuplicate={(target) => void performDuplicate(target)}
                           onRename={(target) => setRenameTarget(target)}
+                          onTogglePrivacy={(target) => void performTogglePrivacy(target)}
                         />
                       </li>
                     )
