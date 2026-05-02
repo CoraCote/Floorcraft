@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CreditCard, Search, AlertTriangle, Sparkles } from 'lucide-react'
+import { CreditCard, Download, Search, AlertTriangle, Sparkles } from 'lucide-react'
+import Papa from 'papaparse'
 import {
   adminListSubscriptions,
   adminClearSubscriptionOverride,
   type AdminSubscription,
 } from '../../lib/billing'
+import { downloadCsv } from '../../lib/reports/csvExport'
 import { useDocumentTitle } from '../../lib/useDocumentTitle'
 
 /**
@@ -92,6 +94,46 @@ export function AdminBillingPage() {
     setRefreshNonce((n) => n + 1)
   }
 
+  function onExport() {
+    if (!visibleSubs || visibleSubs.length === 0) return
+    const csv = Papa.unparse(
+      visibleSubs.map((s) => ({
+        team_id: s.team_id,
+        team_slug: s.team_slug,
+        team_name: s.team_name,
+        plan: s.plan ?? '',
+        effective_plan: s.effective_plan,
+        status: s.status ?? 'inactive',
+        seats: s.seats ?? 0,
+        current_period_end: s.current_period_end ?? '',
+        has_override: s.has_override ? 'true' : 'false',
+        override_until: s.override_until ?? '',
+        override_reason: s.override_reason ?? '',
+        stripe_customer_id: s.stripe_customer_id ?? '',
+        stripe_subscription_id: s.stripe_subscription_id ?? '',
+      })),
+      {
+        columns: [
+          'team_id',
+          'team_slug',
+          'team_name',
+          'plan',
+          'effective_plan',
+          'status',
+          'seats',
+          'current_period_end',
+          'has_override',
+          'override_until',
+          'override_reason',
+          'stripe_customer_id',
+          'stripe_subscription_id',
+        ],
+      },
+    )
+    const stamp = new Date().toISOString().slice(0, 10)
+    downloadCsv(`floorcraft-subscriptions-${stamp}.csv`, csv)
+  }
+
   return (
     <div className="p-8 max-w-6xl">
       <header className="mb-6">
@@ -145,20 +187,32 @@ export function AdminBillingPage() {
         </div>
       )}
 
-      <div className="mb-3 relative max-w-sm">
-        <Search
-          size={12}
-          aria-hidden="true"
-          className="absolute left-2 top-2.5 text-gray-400 dark:text-gray-500"
-        />
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Filter by team or plan…"
-          aria-label="Filter subscriptions"
-          className="block w-full rounded border border-[color:var(--color-paper-line)] dark:border-gray-700 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 text-sm pl-7 pr-2 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
-        />
+      <div className="mb-3 flex items-center gap-2">
+        <div className="relative flex-1 max-w-sm">
+          <Search
+            size={12}
+            aria-hidden="true"
+            className="absolute left-2 top-2.5 text-gray-400 dark:text-gray-500"
+          />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Filter by team or plan…"
+            aria-label="Filter subscriptions"
+            className="block w-full rounded border border-[color:var(--color-paper-line)] dark:border-gray-700 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 text-sm pl-7 pr-2 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={onExport}
+          disabled={!visibleSubs || visibleSubs.length === 0}
+          title="Download visible rows as CSV"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-sm border border-[color:var(--color-paper-line)] dark:border-gray-700 rounded text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
+        >
+          <Download size={12} aria-hidden="true" />
+          Export CSV
+        </button>
       </div>
 
       {error && (
