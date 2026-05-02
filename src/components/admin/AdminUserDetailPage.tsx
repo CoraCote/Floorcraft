@@ -24,6 +24,7 @@ import {
 import { useDocumentTitle } from '../../lib/useDocumentTitle'
 import { useSession } from '../../lib/auth/AuthProvider'
 import { ConfirmDialog } from '../editor/ConfirmDialog'
+import { UserAuditCard } from './UserAuditCard'
 
 /**
  * Per-user detail surface for platform admins. Shows the user's
@@ -381,6 +382,8 @@ export function AdminUserDetailPage() {
               </p>
             )}
           </section>
+
+          <UserAuditCard userId={detail.id} />
 
           <section className="mt-6">
             <h2 className="text-sm font-semibold mb-2 text-gray-900 dark:text-gray-100">

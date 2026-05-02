@@ -204,6 +204,47 @@ export async function adminTeamActivityHistogram(
   return (data ?? []) as ActivityHistogramPoint[]
 }
 
+export interface UserAuditRow {
+  id: string
+  team_id: string | null
+  team_slug: string | null
+  team_name: string | null
+  actor_id: string | null
+  actor_email: string | null
+  action: string
+  target_type: string | null
+  target_id: string | null
+  metadata: Record<string, unknown> | null
+  created_at: string
+  /** 'actor' = this user did the action; 'target' = action was done
+   *  to this user; 'self' = both (e.g. they updated their own
+   *  profile). Used by the UI to render a chip. */
+  involvement: 'actor' | 'target' | 'self'
+}
+
+/**
+ * Audit events involving a single user (as actor or target).
+ * Mirrors the platform-audit shape with an extra `involvement`
+ * column so the UI can render which side the user was on.
+ *
+ * Migration 0029. Best-effort: pre-0029 projects return null and
+ * the card is hidden.
+ */
+export async function adminListUserAudit(
+  userId: string,
+  limit = 50,
+): Promise<UserAuditRow[] | null> {
+  const { data, error } = await supabase.rpc('admin_list_user_audit', {
+    p_user_id: userId,
+    p_limit: limit,
+  })
+  if (error) {
+    console.warn('[admin-launch] user audit failed', error)
+    return null
+  }
+  return (data ?? []) as UserAuditRow[]
+}
+
 /**
  * Generates a password-recovery link for `userId` and returns the
  * action URL. The admin pastes that URL to the user out-of-band
