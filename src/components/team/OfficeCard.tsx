@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Archive, ArchiveRestore, MoreHorizontal, Trash2 } from 'lucide-react'
+import { Archive, ArchiveRestore, Copy, MoreHorizontal, Trash2 } from 'lucide-react'
 import { OfficeThumbnail, type ThumbnailElement } from './OfficeThumbnail'
 import { formatRelative } from '../../lib/time'
 import type { OfficeListItem } from '../../lib/offices/officeRepository'
@@ -28,6 +28,9 @@ interface Props {
   /** Soft-archive (or restore an archived) office. Optimistic remove
    *  / restore is the parent's responsibility. */
   onArchive: (office: OfficeListItem) => void
+  /** Duplicate the office's payload into a fresh row. Parent decides
+   *  the new name + handles navigation. */
+  onDuplicate: (office: OfficeListItem) => void
 }
 
 /**
@@ -44,6 +47,7 @@ export function OfficeCard({
   avatars,
   onDelete,
   onArchive,
+  onDuplicate,
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -216,6 +220,22 @@ export function OfficeCard({
               >
                 <Archive size={14} aria-hidden="true" />
                 Archive
+              </button>
+            )}
+            {!isArchived && (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setMenuOpen(false)
+                  onDuplicate(office)
+                }}
+                className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800"
+              >
+                <Copy size={14} aria-hidden="true" />
+                Duplicate
               </button>
             )}
             <button

@@ -15,6 +15,7 @@ import {
   deleteOffice,
   archiveOffice,
   unarchiveOffice,
+  duplicateOffice,
   saveOffice,
   type OfficeListItem,
 } from '../../lib/offices/officeRepository'
@@ -537,6 +538,24 @@ export function TeamHomePage() {
     }
   }
 
+  // Duplicate copies the original payload into a new office named
+  // "<original> (copy)". On success we navigate the user straight
+  // into the new office's editor — taking them to the work they
+  // wanted to do (edit a copy) rather than dropping them back on a
+  // dashboard with two near-identical cards.
+  async function performDuplicate(office: OfficeListItem) {
+    if (!team) return
+    setArchiveError(null)
+    try {
+      const created = await duplicateOffice(office.id, team.id, `${office.name} (copy)`)
+      navigate(`/t/${team.slug}/o/${created.slug}/map`)
+    } catch (err) {
+      console.warn('Duplicate office failed', err)
+      const msg = err instanceof Error ? err.message : 'duplicate failed'
+      setArchiveError(msg)
+    }
+  }
+
   // ----- derived view state ---------------------------------------
   // Filter → search → sort, in that order. Each step is a pure
   // transform over the prior list; the intermediate `filtered` is
@@ -903,6 +922,7 @@ export function TeamHomePage() {
                           avatars={avatars}
                           onDelete={(target) => setPendingDelete(target)}
                           onArchive={(target) => void performArchive(target)}
+                          onDuplicate={(target) => void performDuplicate(target)}
                         />
                       </li>
                     )
@@ -954,6 +974,7 @@ export function TeamHomePage() {
                           avatars={avatars}
                           onDelete={(target) => setPendingDelete(target)}
                           onArchive={(target) => void performArchive(target)}
+                          onDuplicate={(target) => void performDuplicate(target)}
                         />
                       </li>
                     )

@@ -102,6 +102,50 @@ export async function createOffice(teamId: string, name: string): Promise<Office
   return data as OfficeListItem
 }
 
+/**
+ * Duplicate an office by copying its `payload` into a brand-new row.
+ * The caller picks the new name (the kebab menu suggests
+ * "<original> (copy)"); we slug the name and let any unique-slug
+ * collision surface as a normal supabase error so the UI can show a
+ * meaningful message rather than silently swallowing it.
+ *
+ * Privacy is intentionally NOT copied — duplicating a private office
+ * into another private office would be surprising for the team that
+ * was supposed to be the only audience. The duplicate starts public
+ * by default; the operator can toggle privacy in office settings if
+ * they want.
+ *
+ * Share tokens, comments, and history are not part of the payload;
+ * they live in their own tables and are not copied. This matches
+ * Linear/Notion duplicate semantics — you get a fresh, clean copy of
+ * the document, not an entangled clone of the surrounding metadata.
+ */
+export async function duplicateOffice(
+  sourceId: string,
+  teamId: string,
+  newName: string,
+): Promise<OfficeListItem> {
+  const { data: src, error: loadErr } = await supabase
+    .from('offices')
+    .select('payload')
+    .eq('id', sourceId)
+    .single()
+  if (loadErr) throw loadErr
+  const payload = (src as { payload: Record<string, unknown> | null } | null)?.payload ?? {}
+  const { data, error } = await supabase
+    .from('offices')
+    .insert({
+      team_id: teamId,
+      name: newName,
+      slug: slugFromName(newName),
+      payload,
+    })
+    .select('id, slug, name, updated_at, is_private')
+    .single()
+  if (error) throw error
+  return data as OfficeListItem
+}
+
 export interface SaveResult {
   ok: true
   updated_at: string
