@@ -1,5 +1,6 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import { ShieldCheck, ShieldOff, UserPlus } from 'lucide-react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { ArrowDown, ArrowUp, Download, ShieldCheck, ShieldOff, UserPlus } from 'lucide-react'
+import Papa from 'papaparse'
 import {
   findUserByEmail,
   grantPlatformAdmin,
@@ -7,6 +8,7 @@ import {
   revokePlatformAdmin,
   type PlatformAdminRow,
 } from '../../lib/platformAdmin'
+import { downloadCsv } from '../../lib/reports/csvExport'
 import { useDocumentTitle } from '../../lib/useDocumentTitle'
 import { ConfirmDialog } from '../editor/ConfirmDialog'
 
@@ -37,6 +39,10 @@ export function AdminAdminsPage() {
   // surfaces the email so the operator double-checks.
   const [pendingRevoke, setPendingRevoke] = useState<PlatformAdminRow | null>(null)
   const [revokeBusy, setRevokeBusy] = useState(false)
+
+  // Sort the (small) admin list by email so a multi-admin platform
+  // is easier to scan. Toggle by clicking the column label.
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
 
   useEffect(() => {
     let cancelled = false
@@ -81,6 +87,30 @@ export function AdminAdminsPage() {
     }
     setEmailInput('')
     setRefreshNonce((n) => n + 1)
+  }
+
+  const sortedAdmins = useMemo(() => {
+    if (!admins) return null
+    const rows = admins.slice()
+    rows.sort((a, b) => {
+      const cmp = a.email.localeCompare(b.email)
+      return sortDir === 'asc' ? cmp : -cmp
+    })
+    return rows
+  }, [admins, sortDir])
+
+  function onExport() {
+    if (!sortedAdmins || sortedAdmins.length === 0) return
+    const csv = Papa.unparse(
+      sortedAdmins.map((a) => ({
+        id: a.id,
+        email: a.email,
+        name: a.name ?? '',
+      })),
+      { columns: ['id', 'email', 'name'] },
+    )
+    const stamp = new Date().toISOString().slice(0, 10)
+    downloadCsv(`floorcraft-platform-admins-${stamp}.csv`, csv)
   }
 
   async function onConfirmRevoke() {
@@ -147,16 +177,45 @@ export function AdminAdminsPage() {
         </div>
       )}
 
-      <h2 className="text-sm font-semibold mb-2 flex items-center gap-2">
-        <ShieldCheck size={14} aria-hidden="true" /> Current admins
-      </h2>
-      {admins === null ? (
+      <div className="flex items-center justify-between mb-2 gap-2">
+        <h2 className="text-sm font-semibold flex items-center gap-2">
+          <ShieldCheck size={14} aria-hidden="true" /> Current admins
+        </h2>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))}
+            title={`Sort by email ${sortDir === 'asc' ? 'descending' : 'ascending'}`}
+            className="inline-flex items-center gap-1 text-[11px] text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
+          >
+            <span>Sort</span>
+            {sortDir === 'asc' ? (
+              <ArrowUp size={11} aria-hidden="true" />
+            ) : (
+              <ArrowDown size={11} aria-hidden="true" />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={onExport}
+            disabled={!sortedAdmins || sortedAdmins.length === 0}
+            title="Download admin list as CSV"
+            className="inline-flex items-center gap-1.5 px-2 py-1 text-xs border border-[color:var(--color-paper-line)] dark:border-gray-700 rounded text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Download size={11} aria-hidden="true" />
+            Export CSV
+          </button>
+        </div>
+      </div>
+      {sortedAdmins === null ? (
         <p className="text-sm text-gray-500 dark:text-gray-400">Loading…</p>
-      ) : admins.length === 0 ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">No admins. (How are you here?)</p>
+      ) : sortedAdmins.length === 0 ? (
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          No platform admins yet. Promote a user above to bootstrap.
+        </p>
       ) : (
         <ul className="rounded-lg border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 divide-y divide-[color:var(--color-paper-line)] dark:divide-gray-800">
-          {admins.map((a) => (
+          {sortedAdmins.map((a) => (
             <li key={a.id} className="flex items-center justify-between px-4 py-2.5">
               <div className="min-w-0">
                 <div className="text-sm text-gray-900 dark:text-gray-100 truncate">
