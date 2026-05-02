@@ -4,6 +4,7 @@ import { LayoutDashboard, Users, Building2, ShieldCheck, CreditCard, History } f
 import { useDocumentTitle } from '../../lib/useDocumentTitle'
 import { getPlatformOverview, type PlatformOverview } from '../../lib/platformAdmin'
 import { adminListSubscriptions } from '../../lib/billing'
+import { AdminPalette } from './AdminPalette'
 
 /**
  * Two-pane shell for the platform-admin surfaces. Left rail =
@@ -113,6 +114,7 @@ export function AdminLayout() {
       <main className="flex-1 overflow-y-auto">
         <Outlet />
       </main>
+      <AdminPalette />
     </div>
   )
 }
