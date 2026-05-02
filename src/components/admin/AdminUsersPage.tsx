@@ -13,6 +13,8 @@ import {
 import Papa from 'papaparse'
 import { adminListUsers, type AdminUserRow } from '../../lib/adminLists'
 import { grantPlatformAdmin, revokePlatformAdmin } from '../../lib/platformAdmin'
+import { adminSetUserSuspension } from '../../lib/adminLaunch'
+import { useSession } from '../../lib/auth/AuthProvider'
 import { downloadCsv } from '../../lib/reports/csvExport'
 import { useDocumentTitle } from '../../lib/useDocumentTitle'
 import { ConfirmDialog } from '../editor/ConfirmDialog'
@@ -45,6 +47,9 @@ export function AdminUsersPage() {
   // read this once: subsequent typing in the search input owns the
   // query state without writing back to the URL.
   const [searchParams] = useSearchParams()
+  const session = useSession()
+  const currentUserId =
+    session.status === 'authenticated' ? session.user.id : null
   const [users, setUsers] = useState<AdminUserRow[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState(() => searchParams.get('q') ?? '')
@@ -86,7 +91,12 @@ export function AdminUsersPage() {
   // operator wants to act on the *visible* rows), so the
   // selection always lives within the current visibleUsers slice.
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [bulkAction, setBulkAction] = useState<'grant' | 'revoke' | null>(null)
+  const [bulkAction, setBulkAction] = useState<
+    'grant' | 'revoke' | 'suspend' | 'unsuspend' | null
+  >(null)
+  // Single reason applied to every user in a bulk-suspend run.
+  // Captured in the confirm dialog and reset after the run.
+  const [bulkSuspendReason, setBulkSuspendReason] = useState('')
   const [bulkBusy, setBulkBusy] = useState(false)
   const [bulkResults, setBulkResults] = useState<
     | Array<{ email: string; status: 'ok' | 'skipped' | 'error'; message?: string }>
@@ -201,6 +211,7 @@ export function AdminUsersPage() {
       status: 'ok' | 'skipped' | 'error'
       message?: string
     }> = []
+    const reason = bulkSuspendReason.trim() || null
     for (const u of targets) {
       try {
         if (bulkAction === 'grant') {
@@ -214,12 +225,42 @@ export function AdminUsersPage() {
           } else {
             results.push({ email: u.email, status: 'ok' })
           }
-        } else {
+        } else if (bulkAction === 'revoke') {
           if (!u.is_platform_admin) {
             results.push({ email: u.email, status: 'skipped', message: 'not an admin' })
             continue
           }
           const r = await revokePlatformAdmin(u.id)
+          if (r.kind === 'error') {
+            results.push({ email: u.email, status: 'error', message: r.message })
+          } else {
+            results.push({ email: u.email, status: 'ok' })
+          }
+        } else if (bulkAction === 'suspend') {
+          // Self-protection: never suspend the operator. The Edge
+          // Function rejects this server-side too, but skipping here
+          // keeps the result row useful + avoids the error path.
+          if (u.id === currentUserId) {
+            results.push({ email: u.email, status: 'skipped', message: 'cannot suspend yourself' })
+            continue
+          }
+          if (u.suspended_at) {
+            results.push({ email: u.email, status: 'skipped', message: 'already suspended' })
+            continue
+          }
+          const r = await adminSetUserSuspension(u.id, true, reason)
+          if (r.kind === 'error') {
+            results.push({ email: u.email, status: 'error', message: r.message })
+          } else {
+            results.push({ email: u.email, status: 'ok' })
+          }
+        } else {
+          // unsuspend
+          if (!u.suspended_at) {
+            results.push({ email: u.email, status: 'skipped', message: 'not suspended' })
+            continue
+          }
+          const r = await adminSetUserSuspension(u.id, false, null)
           if (r.kind === 'error') {
             results.push({ email: u.email, status: 'error', message: r.message })
           } else {
@@ -237,6 +278,7 @@ export function AdminUsersPage() {
     setBulkResults(results)
     setBulkBusy(false)
     setBulkAction(null)
+    setBulkSuspendReason('')
     if (results.some((r) => r.status === 'ok')) {
       setSelectedIds(new Set())
       setRefreshNonce((n) => n + 1)
@@ -419,6 +461,29 @@ export function AdminUsersPage() {
                 <ShieldOff size={11} aria-hidden="true" />
                 Revoke
               </button>
+              {hasSuspensionData && (
+                <>
+                  <span className="text-gray-300 dark:text-gray-700">|</span>
+                  <button
+                    type="button"
+                    onClick={() => setBulkAction('suspend')}
+                    disabled={bulkBusy}
+                    className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-50"
+                  >
+                    <ShieldAlert size={11} aria-hidden="true" />
+                    Suspend
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBulkAction('unsuspend')}
+                    disabled={bulkBusy}
+                    className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 disabled:opacity-50"
+                  >
+                    <ShieldCheck size={11} aria-hidden="true" />
+                    Unsuspend
+                  </button>
+                </>
+              )}
               <span className="flex-1" />
               <button
                 type="button"
@@ -600,48 +665,15 @@ export function AdminUsersPage() {
 
       {bulkAction && (
         <ConfirmDialog
-          title={
-            bulkAction === 'grant'
-              ? `Grant platform admin to ${selectedIds.size} user${selectedIds.size === 1 ? '' : 's'}?`
-              : `Revoke platform admin from ${selectedIds.size} user${selectedIds.size === 1 ? '' : 's'}?`
-          }
-          body={
-            bulkAction === 'grant' ? (
-              <div className="space-y-2">
-                <p>
-                  Each selected user will get full platform-admin access.
-                  Already-admin rows are skipped.
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Errors on individual rows surface inline; the rest of
-                  the batch still runs.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <p>
-                  Each selected user will lose platform-admin access.
-                  Non-admin rows are skipped.
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  The last remaining admin can&rsquo;t be revoked — that
-                  row will surface as an error and the rest of the batch
-                  continues.
-                </p>
-              </div>
-            )
-          }
-          confirmLabel={
-            bulkBusy
-              ? bulkAction === 'grant'
-                ? 'Granting…'
-                : 'Revoking…'
-              : bulkAction === 'grant'
-                ? 'Grant admin'
-                : 'Revoke admin'
-          }
+          title={bulkConfirmTitle(bulkAction, selectedIds.size)}
+          body={bulkConfirmBody(bulkAction, bulkSuspendReason, setBulkSuspendReason, bulkBusy)}
+          confirmLabel={bulkConfirmLabel(bulkAction, bulkBusy)}
           cancelLabel="Cancel"
-          tone={bulkAction === 'grant' ? 'primary' : 'danger'}
+          tone={
+            bulkAction === 'grant' || bulkAction === 'unsuspend'
+              ? 'primary'
+              : 'danger'
+          }
           onConfirm={() => {
             if (bulkBusy) return
             void runBulk()
@@ -649,6 +681,7 @@ export function AdminUsersPage() {
           onCancel={() => {
             if (bulkBusy) return
             setBulkAction(null)
+            setBulkSuspendReason('')
           }}
         />
       )}
@@ -813,4 +846,113 @@ function formatRelative(ms: number): string {
   if (mo < 12) return `${mo}mo ago`
   const yr = Math.floor(day / 365)
   return `${yr}y ago`
+}
+
+type BulkAction = 'grant' | 'revoke' | 'suspend' | 'unsuspend'
+
+function bulkConfirmTitle(action: BulkAction, count: number): string {
+  const noun = `${count} user${count === 1 ? '' : 's'}`
+  switch (action) {
+    case 'grant':
+      return `Grant platform admin to ${noun}?`
+    case 'revoke':
+      return `Revoke platform admin from ${noun}?`
+    case 'suspend':
+      return `Suspend ${noun}?`
+    case 'unsuspend':
+      return `Unsuspend ${noun}?`
+  }
+}
+
+function bulkConfirmLabel(action: BulkAction, busy: boolean): string {
+  if (busy) {
+    switch (action) {
+      case 'grant':
+        return 'Granting…'
+      case 'revoke':
+        return 'Revoking…'
+      case 'suspend':
+        return 'Suspending…'
+      case 'unsuspend':
+        return 'Unsuspending…'
+    }
+  }
+  switch (action) {
+    case 'grant':
+      return 'Grant admin'
+    case 'revoke':
+      return 'Revoke admin'
+    case 'suspend':
+      return 'Suspend users'
+    case 'unsuspend':
+      return 'Unsuspend users'
+  }
+}
+
+function bulkConfirmBody(
+  action: BulkAction,
+  reason: string,
+  setReason: (v: string) => void,
+  busy: boolean,
+): React.ReactNode {
+  if (action === 'grant') {
+    return (
+      <div className="space-y-2">
+        <p>
+          Each selected user will get full platform-admin access.
+          Already-admin rows are skipped.
+        </p>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          Errors on individual rows surface inline; the rest of the
+          batch still runs.
+        </p>
+      </div>
+    )
+  }
+  if (action === 'revoke') {
+    return (
+      <div className="space-y-2">
+        <p>
+          Each selected user will lose platform-admin access. Non-admin
+          rows are skipped.
+        </p>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          The last remaining admin can&rsquo;t be revoked — that row
+          will surface as an error and the rest of the batch continues.
+        </p>
+      </div>
+    )
+  }
+  if (action === 'suspend') {
+    return (
+      <div className="space-y-3">
+        <p>
+          Each selected user will be signed out of every active session
+          and blocked from signing in. Already-suspended rows are
+          skipped, and you can&rsquo;t suspend yourself.
+        </p>
+        <label className="block">
+          <span className="block text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
+            Reason (applied to every user, optional)
+          </span>
+          <input
+            type="text"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            disabled={busy}
+            maxLength={500}
+            placeholder="e.g. policy violation — case #4421"
+            className="block w-full rounded border border-[color:var(--color-paper-line)] dark:border-gray-700 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 text-sm px-2 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)] disabled:opacity-50"
+          />
+        </label>
+      </div>
+    )
+  }
+  return (
+    <p>
+      Each selected user will be able to sign in again immediately.
+      Their team memberships and roles were preserved. Non-suspended
+      rows are skipped.
+    </p>
+  )
 }
