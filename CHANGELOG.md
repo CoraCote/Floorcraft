@@ -7,6 +7,77 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.2.0] — 2026-05-01 — Collaboration, comments, billing, admin
+
+The first release after Drafting Studio. ~100 PRs of polish + new
+capabilities, organised around four themes: collaboration with
+external stakeholders (comment-mode share links), a real-time editor
+sidebar (Recent Activity), a platform-admin surface for the
+multi-tenant operator, and a Stripe billing scaffold so teams can
+self-serve subscriptions.
+
+### Added
+- **Comment-mode share links** — anonymous viewers leave threaded
+  comments on a shared office; owners reply and delete; "Revoked
+  link" badges mark comments whose token has since been revoked;
+  CSV export of every conversation. (#197 #198 #205 #206 #208 #209
+  #210 #212 #213)
+- **Recent Activity panel** in the editor's Insights tab, pulled from
+  the team's audit feed. Real-time updates via Supabase channels;
+  client-side search/filter; refresh chip; one-click CSV export.
+  (#202 #207 #211 #214 #215)
+- **Office archive** (#222) — soft-delete via the team-home kebab.
+  Archived offices stay restorable; "Show archived" toggle on the
+  dashboard surfaces them. Migration `0021_office_archive.sql` adds
+  `archived_at`/`archived_by` columns and `archive_office` /
+  `unarchive_office` SECURITY DEFINER RPCs.
+- **Office duplicate** (#225) — clone a floor plan into a new office
+  in one click. Payload only — share tokens, comments, and history
+  start fresh, mirroring Linear/Notion duplicate semantics.
+- **Roster cards-view parity** — keyboard navigation (Track C),
+  per-row seat picker (Track A), bulk auto-assign to a neighborhood,
+  per-column hide/show toggles. (#191 #194 #199 #200)
+- **PDF / image underlay tooling** — insert via the file menu,
+  calibrate scale by drawing a measured line, dedicated visibility
+  category in the layers panel, drop-zone overlay on the canvas,
+  multi-page PDF picker. (#192 #193 #195 #196 #203)
+- **Platform-admin surface** (Phase 1 + 2 + Sprint 1A) — Overview
+  dashboard with team / user / office counts, Teams browser, Users
+  browser, Admins management, Audit log, and a per-team **Suspend**
+  affordance backed by a database trigger that blocks writes while a
+  member-facing banner explains it. (#217 #218 #220)
+- **Stripe billing scaffold** — admin subscription console with
+  at-risk-first sort, comp/override hatch for grants, Stripe-Dashboard
+  deep-links; team-side `Settings → Billing` tab with current-plan
+  card, status pill, Subscribe (Checkout) and Manage Billing
+  (Customer Portal) buttons. Edge Functions for webhook + checkout +
+  portal mints. (#221 #223)
+- **Contextual `document.title`** across team, settings, account,
+  admin, marketing, auth, invite, 404, and demo surfaces, plus a
+  Mac-style "•" prefix on the editor tab when there are unsaved
+  changes. (#224 #226 #228 #229 #232)
+- **Per-team team-home preferences** (#230) — sort, filter, and
+  "Show archived" toggle persist per team in localStorage.
+- **Help: billing & subscription section** (#231) — dedicated guide
+  for the new billing surface (subscribe, manage, statuses, comp).
+- **Onboarding bootstrap script** for the first platform admin
+  (#219) — one-paste SQL for getting a fresh project to the admin
+  dashboard.
+
+### Fixed
+- Editor tool-rail: rich tooltips, the dotted-line continuation in
+  the rail, and presentation rail behavior. (#201 #204)
+
+### Internal
+- New `useDocumentTitle` hook (`src/lib/useDocumentTitle.ts`)
+  centralises the set-and-restore pattern that previously lived
+  inline in `ProjectShell`.
+- Migrations `0019_team_suspension.sql`, `0020_billing.sql`,
+  `0021_office_archive.sql`.
+- Edge Functions `stripe-webhook`, `stripe-checkout`, `stripe-portal`.
+
+---
+
 ## [1.1.0] — 2026-04-30 — Drafting Studio redesign
 
 A comprehensive identity refresh that pulls Floorcraft's visual language
