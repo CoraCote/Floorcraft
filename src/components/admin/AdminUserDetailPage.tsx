@@ -14,6 +14,7 @@ import {
 import {
   adminGetUserDetail,
   adminGeneratePasswordResetLink,
+  adminSetUserSuspension,
   type AdminUserDetail,
 } from '../../lib/adminLaunch'
 import {
@@ -21,6 +22,7 @@ import {
   revokePlatformAdmin,
 } from '../../lib/platformAdmin'
 import { useDocumentTitle } from '../../lib/useDocumentTitle'
+import { useSession } from '../../lib/auth/AuthProvider'
 import { ConfirmDialog } from '../editor/ConfirmDialog'
 
 /**
@@ -36,11 +38,22 @@ import { ConfirmDialog } from '../editor/ConfirmDialog'
  */
 export function AdminUserDetailPage() {
   const { userId } = useParams<{ userId: string }>()
+  const session = useSession()
+  const currentUserId =
+    session.status === 'authenticated' ? session.user.id : null
   const [detail, setDetail] = useState<AdminUserDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [refreshNonce, setRefreshNonce] = useState(0)
   const [pending, setPending] = useState<'grant' | 'revoke' | null>(null)
   const [busy, setBusy] = useState(false)
+  // Suspension card state. The reason input is shown when the
+  // operator is about to suspend; on the unsuspend path we skip
+  // straight to the confirm dialog.
+  const [suspendReason, setSuspendReason] = useState('')
+  const [pendingSuspend, setPendingSuspend] = useState<
+    'suspend' | 'unsuspend' | null
+  >(null)
+  const [suspendBusy, setSuspendBusy] = useState(false)
   // Password-reset link state. We surface the generated link in a
   // small modal with a Copy button so the admin can hand it to the
   // user out-of-band. `pendingLink` is null while idle, 'pending'
@@ -113,6 +126,26 @@ export function AdminUserDetailPage() {
     setRefreshNonce((n) => n + 1)
   }
 
+  async function onConfirmSuspend() {
+    if (!detail || !pendingSuspend || suspendBusy) return
+    const suspending = pendingSuspend === 'suspend'
+    setSuspendBusy(true)
+    const r = await adminSetUserSuspension(
+      detail.id,
+      suspending,
+      suspending ? suspendReason.trim() || null : null,
+    )
+    setSuspendBusy(false)
+    setPendingSuspend(null)
+    if (r.kind === 'error') {
+      setError(r.message)
+      return
+    }
+    setError(null)
+    setSuspendReason('')
+    setRefreshNonce((n) => n + 1)
+  }
+
   if (!userId) return null
 
   return (
@@ -150,6 +183,19 @@ export function AdminUserDetailPage() {
                     Admin
                   </span>
                 )}
+                {detail.suspended_at && (
+                  <span
+                    title={
+                      detail.suspended_reason
+                        ? `Suspended: ${detail.suspended_reason}`
+                        : 'Suspended'
+                    }
+                    className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300"
+                  >
+                    <ShieldAlert size={11} aria-hidden="true" />
+                    Suspended
+                  </span>
+                )}
               </h1>
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -165,6 +211,105 @@ export function AdminUserDetailPage() {
               · signed up {new Date(detail.created_at).toLocaleDateString()}
             </p>
           </header>
+
+          {/*
+           * Suspension card. Pre-0028 projects don't have the
+           * `suspended_at` field on AdminUserDetail (the RPC's
+           * jsonb response just omits it), so we render the card
+           * unconditionally — the absence of the field is treated
+           * as "not suspended" and the operator can suspend.
+           * If the Edge Function isn't deployed the call fails
+           * with a network error and we surface it.
+           */}
+          <section
+            className={`mb-6 rounded-lg border p-4 ${
+              detail.suspended_at
+                ? 'border-red-300 dark:border-red-900/50 bg-red-50/40 dark:bg-red-950/20'
+                : 'border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-raised)] dark:bg-gray-900'
+            }`}
+          >
+            <h2 className="text-sm font-semibold mb-1 flex items-center gap-2">
+              {detail.suspended_at ? (
+                <ShieldAlert size={14} aria-hidden="true" />
+              ) : (
+                <ShieldOff size={14} aria-hidden="true" />
+              )}
+              Suspension
+            </h2>
+            {detail.suspended_at ? (
+              <>
+                <p className="text-xs text-red-800 dark:text-red-200 mb-2">
+                  This user is suspended — they can&rsquo;t sign in or
+                  refresh their session. Suspended{' '}
+                  {new Date(detail.suspended_at).toLocaleString()}
+                  {detail.suspended_reason ? (
+                    <>
+                      {' '}
+                      · reason:{' '}
+                      <span className="italic">
+                        {detail.suspended_reason}
+                      </span>
+                    </>
+                  ) : null}
+                  .
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setPendingSuspend('unsuspend')}
+                  disabled={suspendBusy}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded border border-emerald-600 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 disabled:opacity-50"
+                >
+                  <ShieldCheck size={12} aria-hidden="true" />
+                  Unsuspend user
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-gray-600 dark:text-gray-300 mb-2">
+                  Suspending blocks sign-in and refreshes the user
+                  out of every active session. Their data is
+                  preserved; team-side roles are unaffected. Reason
+                  is optional but shows up in the audit log + on
+                  this page.
+                </p>
+                <label className="block mb-2">
+                  <span className="block text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
+                    Reason (optional)
+                  </span>
+                  <input
+                    type="text"
+                    value={suspendReason}
+                    onChange={(e) => setSuspendReason(e.target.value)}
+                    placeholder="e.g. abuse report — case #4421"
+                    maxLength={500}
+                    disabled={
+                      suspendBusy || detail.id === currentUserId
+                    }
+                    className="block w-full rounded border border-[color:var(--color-paper-line)] dark:border-gray-700 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 text-sm px-2 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)] disabled:opacity-50"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setPendingSuspend('suspend')}
+                  disabled={suspendBusy || detail.id === currentUserId}
+                  title={
+                    detail.id === currentUserId
+                      ? 'You cannot suspend yourself.'
+                      : undefined
+                  }
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded border border-red-600 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ShieldAlert size={12} aria-hidden="true" />
+                  Suspend user
+                </button>
+                {detail.id === currentUserId && (
+                  <p className="mt-2 text-[11px] text-gray-500 dark:text-gray-400">
+                    You can&rsquo;t suspend yourself.
+                  </p>
+                )}
+              </>
+            )}
+          </section>
 
           <section className="rounded-lg border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 p-4">
             <h2 className="text-sm font-semibold mb-1 flex items-center gap-2">
@@ -417,6 +562,59 @@ export function AdminUserDetailPage() {
           onCancel={() => {
             if (busy) return
             setPending(null)
+          }}
+        />
+      )}
+
+      {pendingSuspend && detail && (
+        <ConfirmDialog
+          title={
+            pendingSuspend === 'suspend'
+              ? `Suspend ${detail.email}?`
+              : `Unsuspend ${detail.email}?`
+          }
+          body={
+            pendingSuspend === 'suspend' ? (
+              <div className="space-y-2">
+                <p>
+                  This signs them out of every active session and
+                  blocks any future sign-in or token refresh.
+                </p>
+                {suspendReason.trim() ? (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Reason: <span className="italic">{suspendReason.trim()}</span>
+                  </p>
+                ) : (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    No reason provided — consider adding one for the audit log.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p>
+                They&rsquo;ll be able to sign in again immediately.
+                Their team memberships and roles were preserved.
+              </p>
+            )
+          }
+          confirmLabel={
+            suspendBusy
+              ? pendingSuspend === 'suspend'
+                ? 'Suspending…'
+                : 'Unsuspending…'
+              : pendingSuspend === 'suspend'
+                ? 'Suspend user'
+                : 'Unsuspend user'
+          }
+          cancelLabel="Cancel"
+          tone={pendingSuspend === 'suspend' ? 'danger' : 'primary'}
+          onConfirm={() => {
+            if (suspendBusy) return
+            void onConfirmSuspend()
+          }}
+          onCancel={() => {
+            if (suspendBusy) return
+            setPendingSuspend(null)
           }}
         />
       )}

@@ -124,6 +124,11 @@ export interface AdminUserDetail {
   name: string | null
   created_at: string
   is_platform_admin: boolean
+  /** Migration 0028. Null on pre-0028 projects, in which case the
+   *  field is omitted from the RPC's jsonb response. */
+  suspended_at?: string | null
+  suspended_by?: string | null
+  suspended_reason?: string | null
   teams: AdminUserTeam[]
 }
 
@@ -247,4 +252,52 @@ export async function adminGeneratePasswordResetLink(
   }
   const body = (await res.json()) as { action_link: string; email: string }
   return { kind: 'ok', actionLink: body.action_link, email: body.email }
+}
+
+/**
+ * Suspends or un-suspends a user. Goes through the
+ * `admin-set-user-suspension` Edge Function which:
+ *   1. Verifies caller is a platform admin
+ *   2. Flips Supabase Auth's `banned_until` (the load-bearing block)
+ *   3. Writes our profiles audit-trail columns + an audit_events row
+ *
+ * Rejects self-suspension server-side.
+ */
+export async function adminSetUserSuspension(
+  userId: string,
+  suspended: boolean,
+  reason: string | null = null,
+): Promise<{ kind: 'ok' } | { kind: 'error'; message: string }> {
+  const session = await supabase.auth.getSession()
+  const accessToken = session.data.session?.access_token
+  if (!accessToken) return { kind: 'error', message: 'Not authenticated' }
+
+  const base = import.meta.env.VITE_SUPABASE_URL as string | undefined
+  if (!base) return { kind: 'error', message: 'VITE_SUPABASE_URL is not set' }
+
+  const url = new URL('/functions/v1/admin-set-user-suspension', base)
+  let res: Response
+  try {
+    res = await fetch(url.toString(), {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ user_id: userId, suspended, reason }),
+    })
+  } catch (err) {
+    return {
+      kind: 'error',
+      message: err instanceof Error ? err.message : 'Network error',
+    }
+  }
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as { error?: string }
+    return {
+      kind: 'error',
+      message: body.error ?? `Suspend failed (${res.status})`,
+    }
+  }
+  return { kind: 'ok' }
 }

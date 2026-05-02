@@ -347,6 +347,15 @@ npx supabase functions deploy send-invite-email
 npx supabase secrets set RESEND_API_KEY=<your-key> APP_URL=https://floorcraft.space
 ```
 
+The platform-admin surface uses two more Edge Functions. Deploy them after merging any PR that touches them:
+
+```bash
+npx supabase functions deploy admin-send-password-reset
+npx supabase functions deploy admin-set-user-suspension
+```
+
+Both rely on the platform's `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` secrets, which Supabase sets automatically.
+
 ---
 
 ## Contributing
