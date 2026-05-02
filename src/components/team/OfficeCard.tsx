@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Archive, ArchiveRestore, Copy, MoreHorizontal, Trash2 } from 'lucide-react'
+import { Archive, ArchiveRestore, Check, Copy, Link2, MoreHorizontal, Trash2 } from 'lucide-react'
 import { OfficeThumbnail, type ThumbnailElement } from './OfficeThumbnail'
 import { formatRelative } from '../../lib/time'
 import type { OfficeListItem } from '../../lib/offices/officeRepository'
@@ -50,7 +50,46 @@ export function OfficeCard({
   onDuplicate,
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  // Reset the "Copied!" badge after a short delay so the menu item
+  // returns to its idle label whether the user reopens the menu or
+  // not. The timer is owned by the effect so it's cleaned up on
+  // unmount and on re-trigger.
+  useEffect(() => {
+    if (!copied) return
+    const t = window.setTimeout(() => setCopied(false), 1500)
+    return () => window.clearTimeout(t)
+  }, [copied])
+
+  async function onCopyLink(e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    const url = `${window.location.origin}/t/${teamSlug}/o/${office.slug}/map`
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+    } catch (err) {
+      // Clipboard API rejects in non-secure contexts and on some old
+      // browsers. Fall back to a hidden textarea + execCommand so the
+      // action still succeeds for the common case where the user
+      // clicked from inside Floorcraft.
+      const ta = document.createElement('textarea')
+      ta.value = url
+      ta.setAttribute('readonly', '')
+      ta.style.position = 'absolute'
+      ta.style.left = '-9999px'
+      document.body.appendChild(ta)
+      ta.select()
+      try {
+        document.execCommand('copy')
+        setCopied(true)
+      } catch {
+        console.warn('[office-card] clipboard copy failed', err)
+      }
+      document.body.removeChild(ta)
+    }
+  }
   // Click-outside / Escape handlers for the kebab popover. Same shape
   // the FileMenu primitive uses; this card is small enough that
   // hand-rolling is cheaper than reaching for a generic dropdown.
@@ -238,6 +277,24 @@ export function OfficeCard({
                 Duplicate
               </button>
             )}
+            <button
+              type="button"
+              role="menuitem"
+              onClick={onCopyLink}
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800"
+            >
+              {copied ? (
+                <>
+                  <Check size={14} aria-hidden="true" className="text-emerald-600 dark:text-emerald-400" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <Link2 size={14} aria-hidden="true" />
+                  Copy link
+                </>
+              )}
+            </button>
             <button
               type="button"
               role="menuitem"
