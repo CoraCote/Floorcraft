@@ -100,7 +100,7 @@ export function AdminTeamsPage() {
                 <tr key={t.id} className="hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/30">
                   <td className="px-3 py-2">
                     <Link
-                      to={`/t/${t.slug}`}
+                      to={`/admin/teams/${t.id}`}
                       className="text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline"
                     >
                       {t.name}

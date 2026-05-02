@@ -2,6 +2,7 @@ import { Outlet, useLocation, useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { TopBar } from './TopBar'
 import { ImpersonationBanner } from './ImpersonationBanner'
+import { TeamSuspendedBanner } from '../team/TeamSuspendedBanner'
 import { ContextMenu } from './ContextMenu'
 import { KeyboardShortcutsOverlay } from './KeyboardShortcutsOverlay'
 import { CommandPalette } from './CommandPalette'
@@ -371,6 +372,7 @@ export function ProjectShell() {
           ImpersonationBanner stays here so the amber "you're
           impersonating" strip is still prominent across every view. */}
       <ImpersonationBanner />
+      <TeamSuspendedBanner />
       <TopBar />
       <main id="main-content" tabIndex={-1} className="contents">
         <Outlet />

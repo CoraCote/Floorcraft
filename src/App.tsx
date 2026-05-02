@@ -136,6 +136,11 @@ const AdminTeamsPage = lazy(() =>
     default: m.AdminTeamsPage,
   })),
 )
+const AdminTeamDetailPage = lazy(() =>
+  import('./components/admin/AdminTeamDetailPage').then((m) => ({
+    default: m.AdminTeamDetailPage,
+  })),
+)
 const AdminUsersPage = lazy(() =>
   import('./components/admin/AdminUsersPage').then((m) => ({
     default: m.AdminUsersPage,
@@ -335,6 +340,7 @@ function App() {
             >
               <Route index element={<AdminOverviewPage />} />
               <Route path="teams" element={<AdminTeamsPage />} />
+              <Route path="teams/:teamId" element={<AdminTeamDetailPage />} />
               <Route path="users" element={<AdminUsersPage />} />
               <Route path="admins" element={<AdminAdminsPage />} />
               <Route path="billing" element={<AdminBillingPage />} />

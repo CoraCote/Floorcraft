@@ -14,7 +14,17 @@ vi.mock('../lib/offices/officeRepository', () => ({
   saveOffice: (...a: unknown[]) => saveOffice(...a),
   saveOfficeForce: (...a: unknown[]) => saveOfficeForce(...a),
 }))
-vi.mock('../lib/supabase', () => ({ supabase: { from: (...a: unknown[]) => fromMock(...a) } }))
+vi.mock('../lib/supabase', () => ({
+  supabase: {
+    from: (...a: unknown[]) => fromMock(...a),
+    // TeamSuspendedBanner subscribes to a realtime channel — stub it
+    // so the JSDOM tests don't throw on `supabase.channel(...)`.
+    channel: () => ({
+      on: () => ({ on: () => ({ subscribe: () => null }), subscribe: () => null }),
+    }),
+    removeChannel: () => undefined,
+  },
+}))
 vi.mock('../lib/auth/session', () => ({
   useSession: () => ({ status: 'authenticated', user: { id: 'u1', email: 'a@b.c' } }),
 }))
@@ -42,6 +52,13 @@ describe('ProjectShell loader', () => {
       select: () => ({
         eq: () => ({
           single: () => Promise.resolve({ data: { id: 't1', slug: 'acme', name: 'Acme' }, error: null }),
+          // TeamSuspendedBanner reads suspension state via maybeSingle().
+          // Default: not suspended.
+          maybeSingle: () =>
+            Promise.resolve({
+              data: { is_suspended: false, suspension_reason: null, suspended_at: null },
+              error: null,
+            }),
         }),
       }),
     }))
@@ -64,6 +81,7 @@ describe('ProjectShell loader', () => {
       select: () => ({
         eq: () => ({
           single: () => Promise.resolve({ data: null, error: null }),
+          maybeSingle: () => Promise.resolve({ data: null, error: null }),
         }),
       }),
     }))
@@ -103,6 +121,13 @@ describe('ProjectShell loader', () => {
             maybeSingle: () => Promise.resolve({ data: null, error: null }),
           }),
           single: () => Promise.resolve({ data: { id: 't1', slug: 'acme', name: 'Acme' }, error: null }),
+          // TeamSuspendedBanner reads suspension state via maybeSingle()
+          // on the single-eq chain. Default: not suspended.
+          maybeSingle: () =>
+            Promise.resolve({
+              data: { is_suspended: false, suspension_reason: null, suspended_at: null },
+              error: null,
+            }),
         }),
       }),
     }))
