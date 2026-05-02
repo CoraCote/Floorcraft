@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
+  Download,
   History,
   Loader2,
   Lock,
@@ -16,10 +17,12 @@ import {
   Building2,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import Papa from 'papaparse'
 import { useCan } from '../../hooks/useCan'
 import { useProjectStore } from '../../stores/projectStore'
 import { listEvents, type AuditEventRow } from '../../lib/auditRepository'
 import { listTeamMembers } from '../../lib/teams/teamRepository'
+import { downloadCsv } from '../../lib/reports/csvExport'
 import { useDocumentTitle } from '../../lib/useDocumentTitle'
 import type { TeamMember } from '../../types/team'
 
@@ -248,6 +251,13 @@ export function AuditLogPage() {
   const [loading, setLoading] = useState(true)
   const [actorQuery, setActorQuery] = useState('')
   const [actionFilter, setActionFilter] = useState<string>('')
+  // Optional inclusive date range. Inputs use the native `date`
+  // picker (YYYY-MM-DD); we expand to ISO timestamps before passing
+  // through to listEvents — `from` becomes start-of-day UTC, `to`
+  // becomes end-of-day UTC so a single-day filter (from == to)
+  // captures every event recorded that day.
+  const [fromDate, setFromDate] = useState<string>('')
+  const [toDate, setToDate] = useState<string>('')
   const [members, setMembers] = useState<TeamMember[]>([])
   // `now` is the reference time for relative labels ("3m ago"). We
   // stamp it inside the fetch effect — calling `Date.now()` directly
@@ -317,9 +327,16 @@ export function AuditLogPage() {
   useEffect(() => {
     if (!canView || !teamId) return
     let cancelled = false
+    // Expand the date inputs into inclusive UTC bounds. `fromDate`
+    // becomes 00:00:00 of that day; `toDate` becomes 23:59:59.999 so
+    // a same-day filter (from == to) captures every event that day.
+    const from = fromDate ? `${fromDate}T00:00:00.000Z` : undefined
+    const to = toDate ? `${toDate}T23:59:59.999Z` : undefined
     listEvents(teamId, {
       actorId: actorIdForQuery,
       action: actionFilter || undefined,
+      from,
+      to,
     })
       .then((rows) => {
         if (!cancelled) {
@@ -336,7 +353,33 @@ export function AuditLogPage() {
     return () => {
       cancelled = true
     }
-  }, [canView, teamId, actorIdForQuery, actionFilter])
+  }, [canView, teamId, actorIdForQuery, actionFilter, fromDate, toDate])
+
+  function onExportCsv() {
+    if (events.length === 0) return
+    const csv = Papa.unparse(
+      events.map((e) => ({
+        created_at: e.created_at,
+        action: e.action,
+        actor_id: e.actor_id,
+        target_type: e.target_type,
+        target_id: e.target_id ?? '',
+        metadata: e.metadata ? JSON.stringify(e.metadata) : '',
+      })),
+      {
+        columns: [
+          'created_at',
+          'action',
+          'actor_id',
+          'target_type',
+          'target_id',
+          'metadata',
+        ],
+      },
+    )
+    const stamp = new Date().toISOString().slice(0, 10)
+    downloadCsv(`floorcraft-audit-${stamp}.csv`, csv)
+  }
 
   const officeHref =
     teamSlug && officeSlug ? `/t/${teamSlug}/o/${officeSlug}/map` : '/dashboard'
@@ -400,6 +443,38 @@ export function AuditLogPage() {
               ))}
             </select>
           </label>
+          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400 sm:w-44">
+            <span className="font-medium">From</span>
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              max={toDate || undefined}
+              className="w-full rounded-md border border-[color:var(--color-paper-line)] bg-[color:var(--color-paper-raised)] px-2.5 py-1.5 text-sm text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)] dark:border-gray-800 dark:bg-gray-900 dark:text-gray-100"
+              aria-label="Filter events from date"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400 sm:w-44">
+            <span className="font-medium">To</span>
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+              min={fromDate || undefined}
+              className="w-full rounded-md border border-[color:var(--color-paper-line)] bg-[color:var(--color-paper-raised)] px-2.5 py-1.5 text-sm text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)] dark:border-gray-800 dark:bg-gray-900 dark:text-gray-100"
+              aria-label="Filter events to date"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={onExportCsv}
+            disabled={events.length === 0}
+            title="Download visible events as CSV"
+            className="self-end inline-flex items-center gap-1.5 px-2.5 py-1.5 text-sm border border-[color:var(--color-paper-line)] dark:border-gray-700 rounded text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
+          >
+            <Download size={12} aria-hidden="true" />
+            Export CSV
+          </button>
         </div>
 
         {/* Table card. Border + dark-mode pairing matches the rest of
