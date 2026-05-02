@@ -6,6 +6,7 @@ import {
   ArrowUpDown,
   CreditCard,
   Download,
+  RefreshCw,
   Search,
   AlertTriangle,
   Sparkles,
@@ -54,12 +55,15 @@ export function AdminBillingPage() {
   const [sortKey, setSortKey] = useState<SortKey>('status')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
   const [refreshNonce, setRefreshNonce] = useState(0)
+  const [refreshing, setRefreshing] = useState(false)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
   useEffect(() => {
     let cancelled = false
     async function load() {
       const list = await adminListSubscriptions()
       if (cancelled) return
+      setRefreshing(false)
       if (list === null) {
         setError('Could not load subscriptions.')
         setSubs([])
@@ -67,12 +71,18 @@ export function AdminBillingPage() {
       }
       setError(null)
       setSubs(list)
+      setLastUpdated(new Date())
     }
     void load()
     return () => {
       cancelled = true
     }
   }, [refreshNonce])
+
+  function onRefresh() {
+    setRefreshing(true)
+    setRefreshNonce((n) => n + 1)
+  }
 
   const trimmedQuery = query.trim().toLowerCase()
   const visibleSubs = useMemo(() => {
@@ -287,6 +297,24 @@ export function AdminBillingPage() {
             <span className="font-mono tabular-nums opacity-90">({atRiskCount})</span>
           )}
         </label>
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={refreshing}
+          title={
+            lastUpdated
+              ? `Last updated ${lastUpdated.toLocaleTimeString()}`
+              : 'Reload subscription data'
+          }
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-sm border border-[color:var(--color-paper-line)] dark:border-gray-700 rounded text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
+        >
+          <RefreshCw
+            size={12}
+            aria-hidden="true"
+            className={refreshing ? 'animate-spin motion-reduce:animate-none' : ''}
+          />
+          Refresh
+        </button>
         <button
           type="button"
           onClick={onExport}
