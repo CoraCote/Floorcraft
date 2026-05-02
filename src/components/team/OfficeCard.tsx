@@ -155,32 +155,56 @@ export function OfficeCard({
               Hidden when there are no desks; the existing "No one
               assigned yet" line in the avatars block covers that
               case. */}
-          {stats.desks > 0 && (
-            <div className="mt-2">
-              <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400 mb-0.5">
-                <span>
-                  {stats.assigned} / {stats.desks} seats
-                </span>
-                <span className="tabular-nums">
-                  {Math.round((stats.assigned / stats.desks) * 100)}%
-                </span>
-              </div>
-              <div
-                className="h-1 rounded bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 overflow-hidden"
-                role="progressbar"
-                aria-label="Seat occupancy"
-                aria-valuenow={stats.assigned}
-                aria-valuemax={stats.desks}
-              >
-                <div
-                  className="h-full bg-[color:var(--color-blueprint-strong)] transition-[width] duration-300 motion-reduce:transition-none"
-                  style={{
-                    width: `${Math.min(100, Math.round((stats.assigned / stats.desks) * 100))}%`,
-                  }}
-                />
-              </div>
-            </div>
-          )}
+          {stats.desks > 0 &&
+            (() => {
+              const pct = Math.round((stats.assigned / stats.desks) * 100)
+              // Tone bands the same idiom an ops dashboard uses:
+              //   < 80%  → blueprint cyan (healthy, has headroom)
+              //   80–100% → amber (filling up, plan ahead)
+              //   > 100% → red (overbooked — more assigned than desks)
+              // The percent number gets the same tone so the signal
+              // is visible without relying on color alone.
+              const tone =
+                pct > 100
+                  ? 'red'
+                  : pct >= 80
+                    ? 'amber'
+                    : 'ok'
+              const fillClass =
+                tone === 'red'
+                  ? 'bg-red-500 dark:bg-red-500'
+                  : tone === 'amber'
+                    ? 'bg-amber-500 dark:bg-amber-500'
+                    : 'bg-[color:var(--color-blueprint-strong)]'
+              const textClass =
+                tone === 'red'
+                  ? 'text-red-700 dark:text-red-400'
+                  : tone === 'amber'
+                    ? 'text-amber-700 dark:text-amber-300'
+                    : 'text-gray-500 dark:text-gray-400'
+              return (
+                <div className="mt-2">
+                  <div className="flex items-center justify-between text-[11px] mb-0.5">
+                    <span className="text-gray-500 dark:text-gray-400">
+                      {stats.assigned} / {stats.desks} seats
+                    </span>
+                    <span className={`tabular-nums ${textClass}`}>{pct}%</span>
+                  </div>
+                  <div
+                    className="h-1 rounded bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 overflow-hidden"
+                    role="progressbar"
+                    aria-label="Seat occupancy"
+                    aria-valuenow={stats.assigned}
+                    aria-valuemax={stats.desks}
+                  >
+                    <div
+                      className={`h-full transition-[width] duration-300 motion-reduce:transition-none ${fillClass}`}
+                      style={{ width: `${Math.min(100, pct)}%` }}
+                    />
+                  </div>
+                </div>
+              )
+            })()}
           <div className="mt-3 pt-3 border-t border-[color:var(--color-paper-line)] dark:border-gray-800 flex items-center justify-between">
             {avatars.length > 0 ? (
               <div className="flex -space-x-2">
