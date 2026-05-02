@@ -496,6 +496,14 @@ export function TeamHomePage() {
     return { floors, desks, assigned, employees, occupancyPct }
   }, [officeStats])
 
+  // Count of private offices in the current visible set. Surfaced
+  // in the stat strip so an admin scanning the dashboard sees how
+  // many of their offices are restricted at a glance.
+  const privateCount = useMemo(
+    () => offices.reduce((n, o) => n + (o.is_private ? 1 : 0), 0),
+    [offices],
+  )
+
   // Modal-state for the rebuilt "name this office" flow. The mode tag
   // tells the submit handler whether to land in the editor (`new`) or
   // the roster with `?import=csv` queued (`import`). Replaces the
@@ -895,7 +903,7 @@ export function TeamHomePage() {
             Grid collapses to 2 columns on mobile. */}
         {!loadingOffices && !isTeamEmpty && (
           <div
-            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-6 mb-6"
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-6 mb-6"
             aria-label="Team summary"
           >
             <StatCard label="Offices" value={offices.length} />
@@ -903,6 +911,7 @@ export function TeamHomePage() {
             <StatCard label="Seats" value={totals.desks} />
             <StatCard label="Occupancy" value={`${totals.occupancyPct}%`} />
             <StatCard label="Members" value={memberCount} />
+            <StatCard label="Private" value={privateCount} />
           </div>
         )}
 
