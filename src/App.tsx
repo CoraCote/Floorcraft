@@ -97,6 +97,11 @@ const TeamSettingsMembers = lazy(() =>
     default: m.TeamSettingsMembers,
   })),
 )
+const TeamSettingsBilling = lazy(() =>
+  import('./components/team/TeamSettingsBilling').then((m) => ({
+    default: m.TeamSettingsBilling,
+  })),
+)
 const DashboardRedirect = lazy(() =>
   import('./components/team/DashboardRedirect').then((m) => ({
     default: m.DashboardRedirect,
@@ -208,6 +213,11 @@ function TeamSettingsMembersBridge() {
   return <TeamSettingsMembers team={team} isAdmin={isAdmin} />
 }
 
+function TeamSettingsBillingBridge() {
+  const { team, isAdmin } = useOutletContext<{ team: Team; isAdmin: boolean }>()
+  return <TeamSettingsBilling team={team} isAdmin={isAdmin} />
+}
+
 function App() {
   return (
     <ThemeProvider>
@@ -308,6 +318,7 @@ function App() {
             >
               <Route index element={<TeamSettingsGeneralBridge />} />
               <Route path="members" element={<TeamSettingsMembersBridge />} />
+              <Route path="billing" element={<TeamSettingsBillingBridge />} />
             </Route>
 
             {/* Platform admin (super-admin role). Distinct from

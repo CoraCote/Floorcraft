@@ -133,6 +133,9 @@ export function TeamSettingsPage() {
           <NavLink to="members" className={pillClass} role="tab">
             Members
           </NavLink>
+          <NavLink to="billing" className={pillClass} role="tab">
+            Billing
+          </NavLink>
         </nav>
 
         <Outlet context={{ team, isAdmin }} />

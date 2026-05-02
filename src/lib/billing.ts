@@ -34,6 +34,35 @@ export interface TeamSubscription {
   override_until: string | null
 }
 
+export interface PublicPlan {
+  id: string
+  name: string
+  price_cents: number
+  currency: string
+  interval: 'month' | 'year'
+  seat_limit: number | null
+  sort_order: number
+}
+
+/**
+ * Public list of buyable plans. Pulled directly via the table policy
+ * (`billing_plans_public_read`) so we don't need a dedicated RPC.
+ * Filtered server-side to active + public; ordered by `sort_order`
+ * so the marketing page and team settings page show plans in the
+ * same sequence the operator chose in Stripe.
+ */
+export async function listPublicPlans(): Promise<PublicPlan[]> {
+  const { data, error } = await supabase
+    .from('billing_plans')
+    .select('id, name, price_cents, currency, interval, seat_limit, sort_order')
+    .order('sort_order', { ascending: true })
+  if (error) {
+    console.warn('[billing] list public plans failed', error)
+    return []
+  }
+  return (data ?? []) as PublicPlan[]
+}
+
 export async function adminListSubscriptions(): Promise<AdminSubscription[] | null> {
   const { data, error } = await supabase.rpc('admin_list_subscriptions')
   if (error) {
