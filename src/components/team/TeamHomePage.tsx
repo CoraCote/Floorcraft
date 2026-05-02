@@ -5,6 +5,7 @@ import {
   Plus,
   Upload,
   Search,
+  ShieldAlert,
   X,
 } from 'lucide-react'
 import { useSession } from '../../lib/auth/session'
@@ -52,9 +53,15 @@ import { UserMenu } from './UserMenu'
  *    offices, distinct from the "no search matches" state.
  */
 
-/** Narrow `unknown` to a defensive team-with-optional-logo shape. */
+/** Narrow `unknown` to a defensive team-with-optional-logo shape.
+ *  Suspension fields are optional because pre-0019 projects didn't
+ *  have them; the banner gates on `is_suspended === true` so a
+ *  null/undefined value means "not suspended" and renders nothing. */
 interface TeamWithOptionalLogo extends Team {
   logo_url?: string | null
+  is_suspended?: boolean | null
+  suspension_reason?: string | null
+  suspended_at?: string | null
 }
 
 // ------------------------------------------------------------------
@@ -922,6 +929,13 @@ export function TeamHomePage() {
           </div>
         </header>
 
+        {team.is_suspended && (
+          <SuspensionBanner
+            reason={team.suspension_reason ?? null}
+            suspendedAt={team.suspended_at ?? null}
+          />
+        )}
+
         {/* Stat strip — matches the Wave 13C ReportsPage idiom.
             Grid collapses to 2 columns on mobile. */}
         {!loadingOffices && !isTeamEmpty && (
@@ -1408,6 +1422,57 @@ function NoMatchesState({
       >
         Clear search & filters
       </button>
+    </div>
+  )
+}
+
+/**
+ * Inline banner shown when the team is suspended (set by a platform
+ * admin via `admin_set_team_suspended`). Tells the team admin /
+ * member what's happening, since otherwise they'd just hit RLS
+ * errors trying to edit offices and have no idea why.
+ */
+function SuspensionBanner({
+  reason,
+  suspendedAt,
+}: {
+  reason: string | null
+  suspendedAt: string | null
+}) {
+  return (
+    <div
+      role="alert"
+      className="mt-4 mb-2 rounded-lg border border-red-300 dark:border-red-900/50 bg-red-50 dark:bg-red-950/30 p-4 flex items-start gap-3"
+    >
+      <ShieldAlert
+        size={20}
+        aria-hidden="true"
+        className="text-red-600 dark:text-red-400 shrink-0 mt-0.5"
+      />
+      <div className="text-sm text-red-900 dark:text-red-200 min-w-0">
+        <p className="font-semibold">This team is suspended.</p>
+        <p className="mt-1 text-red-800 dark:text-red-300">
+          You can read your offices, but creating or editing them is
+          temporarily blocked.
+          {reason ? (
+            <>
+              {' '}
+              <span className="italic">Reason: {reason}.</span>
+            </>
+          ) : null}
+          {suspendedAt ? (
+            <>
+              {' '}
+              <span className="text-red-700/80 dark:text-red-400/80 text-xs">
+                (since {new Date(suspendedAt).toLocaleDateString()})
+              </span>
+            </>
+          ) : null}
+        </p>
+        <p className="mt-1 text-xs text-red-800/90 dark:text-red-300/90">
+          Contact your platform administrator to resolve.
+        </p>
+      </div>
     </div>
   )
 }
