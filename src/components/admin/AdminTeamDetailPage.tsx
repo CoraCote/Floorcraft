@@ -133,7 +133,15 @@ export function AdminTeamDetailPage() {
                   <tbody className="divide-y divide-[color:var(--color-paper-line)] dark:divide-gray-800">
                     {detail.members.map((m) => (
                       <tr key={m.user_id}>
-                        <td className="px-3 py-2 text-gray-900 dark:text-gray-100">{m.email}</td>
+                        <td className="px-3 py-2">
+                          <Link
+                            to={`/admin/users?q=${encodeURIComponent(m.email)}`}
+                            title={`Find ${m.email} on the Users page`}
+                            className="text-gray-900 dark:text-gray-100 hover:text-[color:var(--color-blueprint-strong)] dark:hover:text-[color:var(--color-blueprint)] hover:underline"
+                          >
+                            {m.email}
+                          </Link>
+                        </td>
                         <td className="px-3 py-2 text-gray-700 dark:text-gray-200">
                           {m.name?.trim() || <span className="text-gray-400">—</span>}
                         </td>

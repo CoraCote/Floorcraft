@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { ArrowDown, ArrowUp, ArrowUpDown, Download, Search, ShieldCheck, ShieldOff } from 'lucide-react'
 import Papa from 'papaparse'
 import { adminListUsers, type AdminUserRow } from '../../lib/adminLists'
@@ -24,9 +25,15 @@ type SortDir = 'asc' | 'desc'
 
 export function AdminUsersPage() {
   useDocumentTitle('Users · Admin — Floorcraft')
+  // Honour `?q=…` on initial mount so cross-page links (e.g. a
+  // member email click on AdminTeamDetailPage) can deep-link
+  // straight into the user list with a pre-filled filter. We only
+  // read this once: subsequent typing in the search input owns the
+  // query state without writing back to the URL.
+  const [searchParams] = useSearchParams()
   const [users, setUsers] = useState<AdminUserRow[] | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = useState(() => searchParams.get('q') ?? '')
   const [adminsOnly, setAdminsOnly] = useState(false)
   const [sortKey, setSortKey] = useState<SortKey>('created_at')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
