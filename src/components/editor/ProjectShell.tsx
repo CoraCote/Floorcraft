@@ -80,6 +80,7 @@ export function ProjectShell() {
   const employeeDirectoryOpen = useUIStore((s) => s.employeeDirectoryOpen)
   const currentProject = useProjectStore((s) => s.currentProject)
   const conflict = useProjectStore((s) => s.conflict)
+  const isDirty = useProjectStore((s) => s.isDirty)
   const session = useSession()
 
   useKeyboardShortcuts()
@@ -97,12 +98,18 @@ export function ProjectShell() {
       : location.pathname.includes('/map')
         ? 'Map'
         : ''
+    // Mac convention: a leading "•" marks a tab with unsaved changes
+    // so a user with a dozen Floorcraft tabs open can spot which one
+    // still has work to autosave before closing the laptop.
+    const dirtyMark = isDirty ? '• ' : ''
     const prev = document.title
-    document.title = view ? `${view} · ${name} — Floorcraft` : `${name} — Floorcraft`
+    document.title = view
+      ? `${dirtyMark}${view} · ${name} — Floorcraft`
+      : `${dirtyMark}${name} — Floorcraft`
     return () => {
       document.title = prev
     }
-  }, [currentProject?.name, location.pathname])
+  }, [currentProject?.name, location.pathname, isDirty])
 
   // Supabase loader. The team lookup is a single-select by slug and the
   // office is fetched via `loadOffice` so RLS policies apply uniformly.
