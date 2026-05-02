@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CreditCard, Search, AlertTriangle, Sparkles } from 'lucide-react'
 import {
@@ -58,6 +58,31 @@ export function AdminBillingPage() {
       : subs
     : null
 
+  // Per-status counts across the *unfiltered* subs — the strip shows
+  // platform health regardless of what the operator is currently
+  // searching for (filtering would make "5 past-due" disappear when
+  // they search for one team and mislead them about overall risk).
+  const statusCounts = useMemo(() => {
+    const seed: Record<string, number> = {
+      active: 0,
+      trialing: 0,
+      past_due: 0,
+      unpaid: 0,
+      incomplete: 0,
+      canceled: 0,
+      inactive: 0,
+    }
+    if (!subs) return seed
+    for (const s of subs) {
+      const k = s.status ?? 'inactive'
+      seed[k] = (seed[k] ?? 0) + 1
+    }
+    return seed
+  }, [subs])
+
+  const atRiskCount =
+    statusCounts.past_due + statusCounts.unpaid + statusCounts.incomplete
+
   async function onClearOverride(teamId: string) {
     const result = await adminClearSubscriptionOverride(teamId)
     if (result.kind === 'error') {
@@ -80,6 +105,45 @@ export function AdminBillingPage() {
           Dashboard customer page.
         </p>
       </header>
+
+      {subs && subs.length > 0 && (
+        <div
+          className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4"
+          aria-label="Subscription status summary"
+        >
+          <SummaryTile
+            label="Active"
+            value={statusCounts.active + statusCounts.trialing}
+            tone="ok"
+            hint={
+              statusCounts.trialing > 0
+                ? `${statusCounts.trialing} on trial`
+                : undefined
+            }
+          />
+          <SummaryTile
+            label="At risk"
+            value={atRiskCount}
+            tone={atRiskCount > 0 ? 'warn' : 'muted'}
+            hint={
+              atRiskCount > 0
+                ? `past_due ${statusCounts.past_due} · unpaid ${statusCounts.unpaid} · incomplete ${statusCounts.incomplete}`
+                : 'No risky subscriptions'
+            }
+          />
+          <SummaryTile
+            label="Canceled"
+            value={statusCounts.canceled}
+            tone="muted"
+          />
+          <SummaryTile
+            label="Free / no sub"
+            value={statusCounts.inactive}
+            tone="muted"
+            hint={`${subs.length} teams total`}
+          />
+        </div>
+      )}
 
       <div className="mb-3 relative max-w-sm">
         <Search
@@ -221,6 +285,38 @@ export function AdminBillingPage() {
           </li>
         </ol>
       </div>
+    </div>
+  )
+}
+
+function SummaryTile({
+  label,
+  value,
+  tone,
+  hint,
+}: {
+  label: string
+  value: number
+  tone: 'ok' | 'warn' | 'muted'
+  hint?: string
+}) {
+  const valueClass =
+    tone === 'ok'
+      ? 'text-emerald-700 dark:text-emerald-300'
+      : tone === 'warn'
+        ? 'text-amber-700 dark:text-amber-300'
+        : 'text-gray-700 dark:text-gray-200'
+  return (
+    <div className="rounded-lg border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 p-3">
+      <div className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
+        {label}
+      </div>
+      <div className={`mt-1 font-mono text-2xl font-medium tabular-nums ${valueClass}`}>
+        {value.toLocaleString()}
+      </div>
+      {hint && (
+        <div className="mt-0.5 text-[10px] text-gray-500 dark:text-gray-400">{hint}</div>
+      )}
     </div>
   )
 }
