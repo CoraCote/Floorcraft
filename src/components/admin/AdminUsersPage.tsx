@@ -6,6 +6,7 @@ import {
   ArrowUpDown,
   Download,
   Search,
+  ShieldAlert,
   ShieldCheck,
   ShieldOff,
 } from 'lucide-react'
@@ -43,6 +44,11 @@ export function AdminUsersPage() {
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState(() => searchParams.get('q') ?? '')
   const [adminsOnly, setAdminsOnly] = useState(false)
+  // Status filter: All / Active / Suspended. Empty = All. Migration
+  // 0030 surfaces `suspended_at` on every row; pre-0030 RPC omits
+  // the field, so the filter dropdown hides itself when no row in
+  // the list has the field defined.
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'suspended'>('all')
   const [sortKey, setSortKey] = useState<SortKey>('created_at')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [refreshNonce, setRefreshNonce] = useState(0)
@@ -98,12 +104,30 @@ export function AdminUsersPage() {
         })
       : users.slice()
     if (adminsOnly) rows = rows.filter((u) => u.is_platform_admin)
+    if (statusFilter === 'suspended') {
+      rows = rows.filter((u) => !!u.suspended_at)
+    } else if (statusFilter === 'active') {
+      rows = rows.filter((u) => !u.suspended_at)
+    }
     rows.sort((a, b) => {
       const cmp = compareRows(a, b, sortKey)
       return sortDir === 'asc' ? cmp : -cmp
     })
     return rows
-  }, [users, query, adminsOnly, sortKey, sortDir])
+  }, [users, query, adminsOnly, statusFilter, sortKey, sortDir])
+
+  // Whether ANY row exposes a `suspended_at` field — drives whether
+  // the status filter renders. On a pre-0030 project the RPC omits
+  // the field on every row, so we hide the filter rather than show
+  // a useless control.
+  const hasSuspensionData = useMemo(
+    () => !!users && users.some((u) => 'suspended_at' in u),
+    [users],
+  )
+  const suspendedCount = useMemo(
+    () => (users ? users.filter((u) => !!u.suspended_at).length : 0),
+    [users],
+  )
 
   function onHeaderClick(key: SortKey) {
     if (key === sortKey) {
@@ -194,9 +218,18 @@ export function AdminUsersPage() {
         is_platform_admin: u.is_platform_admin ? 'true' : 'false',
         teams: u.team_count,
         created_at: u.created_at,
+        suspended_at: u.suspended_at ?? '',
       })),
       {
-        columns: ['id', 'email', 'name', 'is_platform_admin', 'teams', 'created_at'],
+        columns: [
+          'id',
+          'email',
+          'name',
+          'is_platform_admin',
+          'teams',
+          'created_at',
+          'suspended_at',
+        ],
       },
     )
     const stamp = new Date().toISOString().slice(0, 10)
@@ -238,6 +271,26 @@ export function AdminUsersPage() {
           />
           Admins only
         </label>
+        {hasSuspensionData && (
+          <label className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">
+            <span>Status</span>
+            <select
+              value={statusFilter}
+              onChange={(e) =>
+                setStatusFilter(
+                  e.target.value as 'all' | 'active' | 'suspended',
+                )
+              }
+              className="rounded border border-[color:var(--color-paper-line)] dark:border-gray-700 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 text-sm px-1.5 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
+            >
+              <option value="all">All</option>
+              <option value="active">Active</option>
+              <option value="suspended">
+                Suspended ({suspendedCount})
+              </option>
+            </select>
+          </label>
+        )}
         <button
           type="button"
           onClick={onExport}
@@ -260,7 +313,7 @@ export function AdminUsersPage() {
         <p className="text-sm text-gray-500 dark:text-gray-400">Loading…</p>
       ) : visibleUsers.length === 0 ? (
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          {query.trim() || adminsOnly
+          {query.trim() || adminsOnly || statusFilter !== 'all'
             ? 'No users match the current filter.'
             : 'No users yet.'}
         </p>
@@ -401,6 +454,15 @@ export function AdminUsersPage() {
                         >
                           <ShieldCheck size={9} aria-hidden="true" />
                           Admin
+                        </span>
+                      )}
+                      {u.suspended_at && (
+                        <span
+                          title={`Suspended ${new Date(u.suspended_at).toLocaleString()}`}
+                          className="inline-flex items-center gap-0.5 text-[9px] font-semibold uppercase tracking-wider text-red-700 dark:text-red-300 px-1 py-0.5 rounded bg-red-50 dark:bg-red-950/40"
+                        >
+                          <ShieldAlert size={9} aria-hidden="true" />
+                          Suspended
                         </span>
                       )}
                     </span>

@@ -22,6 +22,10 @@ export interface AdminUserRow {
   created_at: string
   is_platform_admin: boolean
   team_count: number
+  /** Migration 0030. Optional so older projects (RPC not yet
+   *  updated) keep compiling — undefined means "we don't know"
+   *  and the UI hides the Suspended badge / filter. */
+  suspended_at?: string | null
 }
 
 /**
