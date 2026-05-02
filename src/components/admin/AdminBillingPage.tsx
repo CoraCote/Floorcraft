@@ -6,6 +6,7 @@ import {
   adminClearSubscriptionOverride,
   type AdminSubscription,
 } from '../../lib/billing'
+import { useDocumentTitle } from '../../lib/useDocumentTitle'
 
 /**
  * Platform-admin billing surface. Lists every team with their
@@ -20,6 +21,7 @@ import {
  * billing UI.
  */
 export function AdminBillingPage() {
+  useDocumentTitle('Billing · Admin — Floorcraft')
   const [subs, setSubs] = useState<AdminSubscription[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')

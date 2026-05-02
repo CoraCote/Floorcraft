@@ -1,17 +1,33 @@
-import { useEffect, useState } from 'react'
-import { Search, ShieldCheck } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { ArrowDown, ArrowUp, ArrowUpDown, Download, Search, ShieldCheck } from 'lucide-react'
+import Papa from 'papaparse'
 import { adminListUsers, type AdminUserRow } from '../../lib/adminLists'
+import { downloadCsv } from '../../lib/reports/csvExport'
+import { useDocumentTitle } from '../../lib/useDocumentTitle'
 
 /**
  * Read-only platform-wide user list. Newest signups first; client-
  * side filter narrows by email or name. Capped at 200 rows by
  * default (the RPC clamps the upper bound to 1000) — when the
  * platform passes that, server-side pagination + search lands.
+ *
+ * Wave 22B adds:
+ *   - Sortable column headers (click to toggle, click twice to flip).
+ *   - "Admins only" toggle for finding platform admins quickly.
+ *   - One-click CSV export of the currently visible rows.
  */
+
+type SortKey = 'email' | 'name' | 'team_count' | 'created_at'
+type SortDir = 'asc' | 'desc'
+
 export function AdminUsersPage() {
+  useDocumentTitle('Users · Admin — Floorcraft')
   const [users, setUsers] = useState<AdminUserRow[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
+  const [adminsOnly, setAdminsOnly] = useState(false)
+  const [sortKey, setSortKey] = useState<SortKey>('created_at')
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
 
   useEffect(() => {
     let cancelled = false
@@ -32,15 +48,50 @@ export function AdminUsersPage() {
     }
   }, [])
 
-  const trimmedQuery = query.trim().toLowerCase()
-  const visibleUsers = users
-    ? trimmedQuery
+  const visibleUsers = useMemo(() => {
+    if (!users) return null
+    const trimmed = query.trim().toLowerCase()
+    let rows = trimmed
       ? users.filter((u) => {
           const haystack = [u.email, u.name ?? ''].join(' ').toLowerCase()
-          return haystack.includes(trimmedQuery)
+          return haystack.includes(trimmed)
         })
-      : users
-    : null
+      : users.slice()
+    if (adminsOnly) rows = rows.filter((u) => u.is_platform_admin)
+    rows.sort((a, b) => {
+      const cmp = compareRows(a, b, sortKey)
+      return sortDir === 'asc' ? cmp : -cmp
+    })
+    return rows
+  }, [users, query, adminsOnly, sortKey, sortDir])
+
+  function onHeaderClick(key: SortKey) {
+    if (key === sortKey) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortKey(key)
+      setSortDir(key === 'email' || key === 'name' ? 'asc' : 'desc')
+    }
+  }
+
+  function onExport() {
+    if (!visibleUsers || visibleUsers.length === 0) return
+    const csv = Papa.unparse(
+      visibleUsers.map((u) => ({
+        id: u.id,
+        email: u.email,
+        name: u.name ?? '',
+        is_platform_admin: u.is_platform_admin ? 'true' : 'false',
+        teams: u.team_count,
+        created_at: u.created_at,
+      })),
+      {
+        columns: ['id', 'email', 'name', 'is_platform_admin', 'teams', 'created_at'],
+      },
+    )
+    const stamp = new Date().toISOString().slice(0, 10)
+    downloadCsv(`floorcraft-users-${stamp}.csv`, csv)
+  }
 
   return (
     <div className="p-8 max-w-5xl">
@@ -52,20 +103,41 @@ export function AdminUsersPage() {
         </p>
       </header>
 
-      <div className="mb-3 relative max-w-sm">
-        <Search
-          size={12}
-          aria-hidden="true"
-          className="absolute left-2 top-2.5 text-gray-400 dark:text-gray-500"
-        />
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Filter by email or name…"
-          aria-label="Filter users"
-          className="block w-full rounded border border-[color:var(--color-paper-line)] dark:border-gray-700 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 text-sm pl-7 pr-2 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
-        />
+      <div className="mb-3 flex items-center gap-2 flex-wrap">
+        <div className="relative flex-1 min-w-[16rem] max-w-sm">
+          <Search
+            size={12}
+            aria-hidden="true"
+            className="absolute left-2 top-2.5 text-gray-400 dark:text-gray-500"
+          />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Filter by email or name…"
+            aria-label="Filter users"
+            className="block w-full rounded border border-[color:var(--color-paper-line)] dark:border-gray-700 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 text-sm pl-7 pr-2 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
+          />
+        </div>
+        <label className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300 select-none cursor-pointer">
+          <input
+            type="checkbox"
+            checked={adminsOnly}
+            onChange={(e) => setAdminsOnly(e.target.checked)}
+            className="accent-[color:var(--color-blueprint)]"
+          />
+          Admins only
+        </label>
+        <button
+          type="button"
+          onClick={onExport}
+          disabled={!visibleUsers || visibleUsers.length === 0}
+          title="Download visible rows as CSV"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-sm border border-[color:var(--color-paper-line)] dark:border-gray-700 rounded text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
+        >
+          <Download size={12} aria-hidden="true" />
+          Export CSV
+        </button>
       </div>
 
       {error && (
@@ -78,17 +150,32 @@ export function AdminUsersPage() {
         <p className="text-sm text-gray-500 dark:text-gray-400">Loading…</p>
       ) : visibleUsers.length === 0 ? (
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          {trimmedQuery ? `No users match "${trimmedQuery}".` : 'No users yet.'}
+          {query.trim() || adminsOnly
+            ? 'No users match the current filter.'
+            : 'No users yet.'}
         </p>
       ) : (
         <div className="rounded-lg border border-[color:var(--color-paper-line)] dark:border-gray-800 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-[color:var(--color-paper-sunken)] dark:bg-gray-800/50">
               <tr className="text-left text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                <th className="px-3 py-2">Email</th>
-                <th className="px-3 py-2">Name</th>
-                <th className="px-3 py-2 text-right">Teams</th>
-                <th className="px-3 py-2">Signed up</th>
+                <SortHeader k="email" label="Email" sortKey={sortKey} sortDir={sortDir} onClick={onHeaderClick} />
+                <SortHeader k="name" label="Name" sortKey={sortKey} sortDir={sortDir} onClick={onHeaderClick} />
+                <SortHeader
+                  k="team_count"
+                  label="Teams"
+                  align="right"
+                  sortKey={sortKey}
+                  sortDir={sortDir}
+                  onClick={onHeaderClick}
+                />
+                <SortHeader
+                  k="created_at"
+                  label="Signed up"
+                  sortKey={sortKey}
+                  sortDir={sortDir}
+                  onClick={onHeaderClick}
+                />
               </tr>
             </thead>
             <tbody className="divide-y divide-[color:var(--color-paper-line)] dark:divide-gray-800">
@@ -124,5 +211,56 @@ export function AdminUsersPage() {
         </div>
       )}
     </div>
+  )
+}
+
+function compareRows(a: AdminUserRow, b: AdminUserRow, key: SortKey): number {
+  switch (key) {
+    case 'email':
+      return a.email.localeCompare(b.email)
+    case 'name':
+      return (a.name ?? '').localeCompare(b.name ?? '')
+    case 'team_count':
+      return a.team_count - b.team_count
+    case 'created_at':
+      return a.created_at.localeCompare(b.created_at)
+  }
+}
+
+function SortHeader({
+  k,
+  label,
+  align,
+  sortKey,
+  sortDir,
+  onClick,
+}: {
+  k: SortKey
+  label: string
+  align?: 'right'
+  sortKey: SortKey
+  sortDir: SortDir
+  onClick: (k: SortKey) => void
+}) {
+  const isActive = sortKey === k
+  const Icon = !isActive ? ArrowUpDown : sortDir === 'asc' ? ArrowUp : ArrowDown
+  return (
+    <th className={`px-3 py-2 ${align === 'right' ? 'text-right' : 'text-left'}`}>
+      <button
+        type="button"
+        onClick={() => onClick(k)}
+        aria-sort={isActive ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+        className={`inline-flex items-center gap-1 transition-colors ${
+          align === 'right' ? 'flex-row-reverse' : ''
+        } ${
+          isActive
+            ? 'text-gray-900 dark:text-gray-100'
+            : 'hover:text-gray-700 dark:hover:text-gray-300'
+        }`}
+      >
+        <span>{label}</span>
+        <Icon size={11} aria-hidden="true" className={isActive ? 'opacity-100' : 'opacity-40'} />
+      </button>
+    </th>
   )
 }

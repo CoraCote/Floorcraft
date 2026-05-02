@@ -6,6 +6,7 @@ import {
   adminSetTeamSuspended,
   type AdminTeamDetail,
 } from '../../lib/adminSuspend'
+import { useDocumentTitle } from '../../lib/useDocumentTitle'
 
 /**
  * Per-team detail surface for platform admins. Shows membership +
@@ -23,6 +24,7 @@ export function AdminTeamDetailPage() {
   const [detail, setDetail] = useState<AdminTeamDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [refreshNonce, setRefreshNonce] = useState(0)
+  useDocumentTitle(detail ? `${detail.name} · Admin — Floorcraft` : null)
 
   useEffect(() => {
     if (!teamId) return

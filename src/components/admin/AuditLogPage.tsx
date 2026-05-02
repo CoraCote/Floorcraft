@@ -20,6 +20,7 @@ import { useCan } from '../../hooks/useCan'
 import { useProjectStore } from '../../stores/projectStore'
 import { listEvents, type AuditEventRow } from '../../lib/auditRepository'
 import { listTeamMembers } from '../../lib/teams/teamRepository'
+import { useDocumentTitle } from '../../lib/useDocumentTitle'
 import type { TeamMember } from '../../types/team'
 
 /**
@@ -235,6 +236,7 @@ function NoTeam() {
 }
 
 export function AuditLogPage() {
+  useDocumentTitle('Audit log — Floorcraft')
   const canView = useCan('viewAuditLog')
   const teamId = useProjectStore((s) => s.currentTeamId)
   const { teamSlug, officeSlug } = useParams<{

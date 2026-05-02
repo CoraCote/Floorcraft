@@ -7,6 +7,7 @@ import {
   revokePlatformAdmin,
   type PlatformAdminRow,
 } from '../../lib/platformAdmin'
+import { useDocumentTitle } from '../../lib/useDocumentTitle'
 
 /**
  * Manage the set of platform admins. Lists current admins; lets an
@@ -19,6 +20,7 @@ import {
  * server stays the source of truth.
  */
 export function AdminAdminsPage() {
+  useDocumentTitle('Admins · Admin — Floorcraft')
   const [admins, setAdmins] = useState<PlatformAdminRow[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [refreshNonce, setRefreshNonce] = useState(0)
