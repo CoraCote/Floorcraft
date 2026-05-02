@@ -26,6 +26,10 @@ export interface AdminUserRow {
    *  updated) keep compiling — undefined means "we don't know"
    *  and the UI hides the Suspended badge / filter. */
   suspended_at?: string | null
+  /** Migration 0031. Optional for the same reason. Null = the user
+   *  has never signed in (still possible for invitee-only accounts
+   *  that haven't accepted yet). */
+  last_sign_in_at?: string | null
 }
 
 /**

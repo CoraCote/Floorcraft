@@ -29,7 +29,12 @@ import { ConfirmDialog } from '../editor/ConfirmDialog'
  *   - One-click CSV export of the currently visible rows.
  */
 
-type SortKey = 'email' | 'name' | 'team_count' | 'created_at'
+type SortKey =
+  | 'email'
+  | 'name'
+  | 'team_count'
+  | 'created_at'
+  | 'last_sign_in_at'
 type SortDir = 'asc' | 'desc'
 
 export function AdminUsersPage() {
@@ -49,6 +54,19 @@ export function AdminUsersPage() {
   // the field, so the filter dropdown hides itself when no row in
   // the list has the field defined.
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'suspended'>('all')
+  // Activity filter: All / Active in last 30d / Dormant 30d+ / Never
+  // signed in. Migration 0031 adds last_sign_in_at; pre-0031 RPC
+  // omits the field, so the dropdown hides itself.
+  const [activityFilter, setActivityFilter] = useState<
+    'all' | 'recent' | 'dormant' | 'never'
+  >('all')
+  // Captured "now" for relative-time math. React 19's purity rule
+  // disallows Date.now() directly in render — the functional state
+  // initializer runs lazily (before the first render's purity check
+  // applies) and is the codebase's idiomatic pattern for this (see
+  // AuditLogPage). Re-stamped on Refresh so dormant counts stay
+  // current across long sessions.
+  const [nowMs, setNowMs] = useState<number>(() => Date.now())
   const [sortKey, setSortKey] = useState<SortKey>('created_at')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [refreshNonce, setRefreshNonce] = useState(0)
@@ -109,12 +127,24 @@ export function AdminUsersPage() {
     } else if (statusFilter === 'active') {
       rows = rows.filter((u) => !u.suspended_at)
     }
+    if (activityFilter !== 'all') {
+      const dormantCutoff = nowMs - 30 * 24 * 60 * 60 * 1000
+      rows = rows.filter((u) => {
+        const last = u.last_sign_in_at
+          ? new Date(u.last_sign_in_at).getTime()
+          : null
+        if (activityFilter === 'never') return last === null
+        if (activityFilter === 'recent') return last !== null && last >= dormantCutoff
+        // 'dormant' — signed in at some point but not in the last 30 days
+        return last !== null && last < dormantCutoff
+      })
+    }
     rows.sort((a, b) => {
       const cmp = compareRows(a, b, sortKey)
       return sortDir === 'asc' ? cmp : -cmp
     })
     return rows
-  }, [users, query, adminsOnly, statusFilter, sortKey, sortDir])
+  }, [users, query, adminsOnly, statusFilter, activityFilter, nowMs, sortKey, sortDir])
 
   // Whether ANY row exposes a `suspended_at` field — drives whether
   // the status filter renders. On a pre-0030 project the RPC omits
@@ -126,6 +156,28 @@ export function AdminUsersPage() {
   )
   const suspendedCount = useMemo(
     () => (users ? users.filter((u) => !!u.suspended_at).length : 0),
+    [users],
+  )
+  // Same pattern for last_sign_in_at — present iff the project is on
+  // migration 0031+, otherwise hide the activity filter and the
+  // Last seen column entirely.
+  const hasActivityData = useMemo(
+    () => !!users && users.some((u) => 'last_sign_in_at' in u),
+    [users],
+  )
+  const dormantCount = useMemo(() => {
+    if (!users) return 0
+    const cutoff = nowMs - 30 * 24 * 60 * 60 * 1000
+    return users.filter((u) => {
+      const t = u.last_sign_in_at ? new Date(u.last_sign_in_at).getTime() : null
+      return t !== null && t < cutoff
+    }).length
+  }, [users, nowMs])
+  const neverSignedInCount = useMemo(
+    () =>
+      users
+        ? users.filter((u) => 'last_sign_in_at' in u && !u.last_sign_in_at).length
+        : 0,
     [users],
   )
 
@@ -188,6 +240,7 @@ export function AdminUsersPage() {
     if (results.some((r) => r.status === 'ok')) {
       setSelectedIds(new Set())
       setRefreshNonce((n) => n + 1)
+      setNowMs(Date.now())
     }
   }
 
@@ -219,6 +272,7 @@ export function AdminUsersPage() {
         teams: u.team_count,
         created_at: u.created_at,
         suspended_at: u.suspended_at ?? '',
+        last_sign_in_at: u.last_sign_in_at ?? '',
       })),
       {
         columns: [
@@ -229,6 +283,7 @@ export function AdminUsersPage() {
           'teams',
           'created_at',
           'suspended_at',
+          'last_sign_in_at',
         ],
       },
     )
@@ -291,6 +346,25 @@ export function AdminUsersPage() {
             </select>
           </label>
         )}
+        {hasActivityData && (
+          <label className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">
+            <span>Activity</span>
+            <select
+              value={activityFilter}
+              onChange={(e) =>
+                setActivityFilter(
+                  e.target.value as 'all' | 'recent' | 'dormant' | 'never',
+                )
+              }
+              className="rounded border border-[color:var(--color-paper-line)] dark:border-gray-700 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 text-sm px-1.5 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
+            >
+              <option value="all">All</option>
+              <option value="recent">Active &lt; 30d</option>
+              <option value="dormant">Dormant 30d+ ({dormantCount})</option>
+              <option value="never">Never signed in ({neverSignedInCount})</option>
+            </select>
+          </label>
+        )}
         <button
           type="button"
           onClick={onExport}
@@ -313,7 +387,10 @@ export function AdminUsersPage() {
         <p className="text-sm text-gray-500 dark:text-gray-400">Loading…</p>
       ) : visibleUsers.length === 0 ? (
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          {query.trim() || adminsOnly || statusFilter !== 'all'
+          {query.trim() ||
+          adminsOnly ||
+          statusFilter !== 'all' ||
+          activityFilter !== 'all'
             ? 'No users match the current filter.'
             : 'No users yet.'}
         </p>
@@ -419,6 +496,15 @@ export function AdminUsersPage() {
                   sortDir={sortDir}
                   onClick={onHeaderClick}
                 />
+                {hasActivityData && (
+                  <SortHeader
+                    k="last_sign_in_at"
+                    label="Last seen"
+                    sortKey={sortKey}
+                    sortDir={sortDir}
+                    onClick={onHeaderClick}
+                  />
+                )}
                 <th className="px-3 py-2 text-right" aria-label="Actions" />
               </tr>
             </thead>
@@ -476,6 +562,11 @@ export function AdminUsersPage() {
                   <td className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
                     {new Date(u.created_at).toLocaleDateString()}
                   </td>
+                  {hasActivityData && (
+                    <td className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
+                      <LastSeenCell value={u.last_sign_in_at ?? null} nowMs={nowMs} />
+                    </td>
+                  )}
                   <td className="px-3 py-2 text-right">
                     {u.is_platform_admin ? (
                       <button
@@ -626,6 +717,13 @@ function compareRows(a: AdminUserRow, b: AdminUserRow, key: SortKey): number {
       return a.team_count - b.team_count
     case 'created_at':
       return a.created_at.localeCompare(b.created_at)
+    case 'last_sign_in_at': {
+      // Never-signed-in (null/undefined) sorts oldest. Comparing the
+      // ISO strings directly is fine — they're all UTC.
+      const av = a.last_sign_in_at ?? ''
+      const bv = b.last_sign_in_at ?? ''
+      return av.localeCompare(bv)
+    }
   }
 }
 
@@ -665,4 +763,54 @@ function SortHeader({
       </button>
     </th>
   )
+}
+
+/**
+ * Renders `last_sign_in_at` as a relative time ("3d ago", "5mo ago"),
+ * with the absolute timestamp on hover. Null = never signed in,
+ * shown as a muted dash with an explanatory tooltip.
+ */
+function LastSeenCell({
+  value,
+  nowMs,
+}: {
+  value: string | null
+  nowMs: number
+}) {
+  if (!value) {
+    return (
+      <span
+        className="text-gray-400 dark:text-gray-500"
+        title="This user has never signed in (likely a pending invitee)."
+      >
+        never
+      </span>
+    )
+  }
+  const ts = new Date(value)
+  const ms = nowMs - ts.getTime()
+  const dormant = ms > 30 * 24 * 60 * 60 * 1000
+  return (
+    <span
+      title={ts.toLocaleString()}
+      className={dormant ? 'text-amber-700 dark:text-amber-400' : ''}
+    >
+      {formatRelative(ms)}
+    </span>
+  )
+}
+
+function formatRelative(ms: number): string {
+  const sec = Math.floor(ms / 1000)
+  if (sec < 60) return `${sec}s ago`
+  const min = Math.floor(sec / 60)
+  if (min < 60) return `${min}m ago`
+  const hr = Math.floor(min / 60)
+  if (hr < 24) return `${hr}h ago`
+  const day = Math.floor(hr / 24)
+  if (day < 30) return `${day}d ago`
+  const mo = Math.floor(day / 30)
+  if (mo < 12) return `${mo}mo ago`
+  const yr = Math.floor(day / 365)
+  return `${yr}y ago`
 }
