@@ -3,6 +3,7 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { LayoutDashboard, Users, Building2, ShieldCheck, CreditCard, History } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/useDocumentTitle'
 import { getPlatformOverview, type PlatformOverview } from '../../lib/platformAdmin'
+import { adminListSubscriptions } from '../../lib/billing'
 
 /**
  * Two-pane shell for the platform-admin surfaces. Left rail =
@@ -24,11 +25,32 @@ export function AdminLayout() {
   // the call costs a single extra round-trip and avoids the layout
   // having to know about the page's refresh state.
   const [overview, setOverview] = useState<PlatformOverview | null>(null)
+  // At-risk subscription count for the Billing nav badge. Best-
+  // effort: a project without the billing migration returns null,
+  // and we just hide the indicator. We don't refetch as the user
+  // navigates around — accepting the moment-of-load snapshot is
+  // the right tradeoff for a sidebar dot that's a "look here"
+  // signal, not a live counter.
+  const [atRiskCount, setAtRiskCount] = useState<number | null>(null)
   useEffect(() => {
     let cancelled = false
     void getPlatformOverview().then((o) => {
       if (!cancelled) setOverview(o)
     })
+    void adminListSubscriptions()
+      .then((subs) => {
+        if (cancelled || !subs) return
+        const count = subs.filter(
+          (s) =>
+            s.status === 'past_due' ||
+            s.status === 'unpaid' ||
+            s.status === 'incomplete',
+        ).length
+        setAtRiskCount(count)
+      })
+      .catch(() => {
+        // Migration not applied yet — leave the indicator hidden.
+      })
     return () => {
       cancelled = true
     }
@@ -67,7 +89,12 @@ export function AdminLayout() {
           >
             Admins
           </AdminNavLink>
-          <AdminNavLink to="/admin/billing" icon={<CreditCard size={14} aria-hidden="true" />}>
+          <AdminNavLink
+            to="/admin/billing"
+            icon={<CreditCard size={14} aria-hidden="true" />}
+            alertCount={atRiskCount && atRiskCount > 0 ? atRiskCount : undefined}
+            alertLabel="at-risk subscriptions"
+          >
             Billing
           </AdminNavLink>
           <AdminNavLink to="/admin/audit" icon={<History size={14} aria-hidden="true" />}>
@@ -95,6 +122,8 @@ function AdminNavLink({
   end,
   icon,
   count,
+  alertCount,
+  alertLabel,
   children,
 }: {
   to: string
@@ -102,6 +131,11 @@ function AdminNavLink({
   icon: React.ReactNode
   /** Optional count badge rendered on the right side of the link. */
   count?: number
+  /** Amber alert chip — when set, replaces the neutral count chip
+   *  and surfaces "something needs attention here" without an
+   *  extra row in the sidebar. */
+  alertCount?: number
+  alertLabel?: string
   children: React.ReactNode
 }) {
   return (
@@ -118,14 +152,22 @@ function AdminNavLink({
     >
       {icon}
       <span className="flex-1">{children}</span>
-      {count !== undefined && (
+      {alertCount !== undefined ? (
+        <span
+          aria-label={`${alertCount} ${alertLabel ?? 'alerts'}`}
+          title={`${alertCount} ${alertLabel ?? 'alerts'}`}
+          className="font-mono text-[10px] tabular-nums px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+        >
+          {alertCount.toLocaleString()}
+        </span>
+      ) : count !== undefined ? (
         <span
           aria-label={`${count} ${count === 1 ? 'item' : 'items'}`}
           className="font-mono text-[10px] tabular-nums text-gray-400 dark:text-gray-500"
         >
           {count.toLocaleString()}
         </span>
-      )}
+      ) : null}
     </NavLink>
   )
 }
