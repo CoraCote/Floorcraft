@@ -1,11 +1,15 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, AlertTriangle, ShieldAlert, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, AlertTriangle, CreditCard, ShieldAlert, ShieldCheck, Sparkles } from 'lucide-react'
 import {
   adminGetTeamDetail,
   adminSetTeamSuspended,
   type AdminTeamDetail,
 } from '../../lib/adminSuspend'
+import {
+  teamGetSubscription,
+  type TeamSubscription,
+} from '../../lib/billing'
 import { useDocumentTitle } from '../../lib/useDocumentTitle'
 
 /**
@@ -22,6 +26,7 @@ export function AdminTeamDetailPage() {
   const { teamId } = useParams<{ teamId: string }>()
   const navigate = useNavigate()
   const [detail, setDetail] = useState<AdminTeamDetail | null>(null)
+  const [sub, setSub] = useState<TeamSubscription | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [refreshNonce, setRefreshNonce] = useState(0)
   useDocumentTitle(detail ? `${detail.name} · Admin — Floorcraft` : null)
@@ -30,13 +35,20 @@ export function AdminTeamDetailPage() {
     if (!teamId) return
     let cancelled = false
     async function load() {
-      const result = await adminGetTeamDetail(teamId!)
+      const [result, subResult] = await Promise.all([
+        adminGetTeamDetail(teamId!),
+        // Subscription lookup is best-effort — a project that hasn't
+        // applied the billing migration yet will return null and we
+        // hide the card. Don't block team-detail rendering on it.
+        teamGetSubscription(teamId!).catch(() => null),
+      ])
       if (cancelled) return
       if (!result) {
         setError('Could not load team detail.')
         return
       }
       setDetail(result)
+      setSub(subResult)
     }
     void load()
     return () => {
@@ -98,6 +110,8 @@ export function AdminTeamDetailPage() {
             onChanged={() => setRefreshNonce((n) => n + 1)}
             onError={(msg) => setError(msg)}
           />
+
+          {sub && <BillingCard sub={sub} />}
 
           <section className="mt-6">
             <h2 className="text-sm font-semibold mb-2 text-gray-900 dark:text-gray-100">
@@ -293,4 +307,122 @@ function SuspendCard({
       </button>
     </form>
   )
+}
+
+/**
+ * Billing snapshot card. Read-only summary of the team's
+ * subscription state — admin actions (overrides, Stripe Dashboard
+ * deep-link) live on /admin/billing. We surface the plan + status
+ * here so an operator triaging a team doesn't have to hop between
+ * pages to know "are they paying?".
+ */
+function BillingCard({ sub }: { sub: TeamSubscription }) {
+  const renews = sub.current_period_end
+    ? new Date(sub.current_period_end).toLocaleDateString()
+    : null
+  return (
+    <section className="mt-6 rounded-lg border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 p-4">
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <h2 className="text-sm font-semibold flex items-center gap-2 text-gray-900 dark:text-gray-100">
+          <CreditCard size={14} aria-hidden="true" />
+          Billing
+        </h2>
+        <Link
+          to="/admin/billing"
+          className="text-xs text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline"
+        >
+          Manage on Billing →
+        </Link>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <Field label="Plan" value={humanPlan(sub.plan)} />
+        <Field
+          label="Status"
+          value={<BillingStatusPill status={sub.status} />}
+        />
+        <Field label="Seats" value={sub.seats > 0 ? sub.seats.toLocaleString() : '—'} />
+        <Field
+          label={sub.status === 'canceled' ? 'Ends' : 'Renews'}
+          value={renews ?? '—'}
+        />
+      </div>
+      {sub.has_override && (
+        <div className="mt-3 inline-flex items-center gap-1 rounded bg-amber-50 dark:bg-amber-950/30 px-2 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-300">
+          <Sparkles size={10} aria-hidden="true" />
+          Comp override active
+          {sub.override_until && (
+            <span className="opacity-80">
+              {' '}
+              until {new Date(sub.override_until).toLocaleDateString()}
+            </span>
+          )}
+        </div>
+      )}
+    </section>
+  )
+}
+
+function Field({
+  label,
+  value,
+}: {
+  label: string
+  value: React.ReactNode
+}) {
+  return (
+    <div>
+      <div className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
+        {label}
+      </div>
+      <div className="mt-0.5 text-sm text-gray-900 dark:text-gray-100">{value}</div>
+    </div>
+  )
+}
+
+function BillingStatusPill({ status }: { status: TeamSubscription['status'] }) {
+  const m: Record<string, { label: string; cls: string }> = {
+    active: {
+      label: 'Active',
+      cls: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300',
+    },
+    trialing: {
+      label: 'Trial',
+      cls: 'bg-sky-100 text-sky-800 dark:bg-sky-950/40 dark:text-sky-300',
+    },
+    past_due: {
+      label: 'Past due',
+      cls: 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300',
+    },
+    unpaid: {
+      label: 'Unpaid',
+      cls: 'bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-300',
+    },
+    incomplete: {
+      label: 'Incomplete',
+      cls: 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300',
+    },
+    canceled: {
+      label: 'Canceled',
+      cls: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+    },
+    inactive: {
+      label: 'No subscription',
+      cls: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+    },
+  }
+  const v = m[status] ?? m.inactive
+  return (
+    <span
+      className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider ${v.cls}`}
+    >
+      {v.label}
+    </span>
+  )
+}
+
+function humanPlan(plan: string): string {
+  if (plan === 'free') return 'Free'
+  if (plan === 'comp') return 'Complimentary'
+  if (plan.startsWith('price_')) return 'Paid'
+  return plan
 }
