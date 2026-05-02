@@ -151,6 +151,11 @@ const AdminBillingPage = lazy(() =>
     default: m.AdminBillingPage,
   })),
 )
+const AdminAuditPage = lazy(() =>
+  import('./components/admin/AdminAuditPage').then((m) => ({
+    default: m.AdminAuditPage,
+  })),
+)
 const RequirePlatformAdmin = lazy(() =>
   import('./components/admin/RequirePlatformAdmin').then((m) => ({
     default: m.RequirePlatformAdmin,
@@ -344,6 +349,7 @@ function App() {
               <Route path="users" element={<AdminUsersPage />} />
               <Route path="admins" element={<AdminAdminsPage />} />
               <Route path="billing" element={<AdminBillingPage />} />
+              <Route path="audit" element={<AdminAuditPage />} />
             </Route>
 
             {/* Office editor — ProjectShell is the layout route; leaf

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
-import { LayoutDashboard, Users, Building2, ShieldCheck, CreditCard } from 'lucide-react'
+import { LayoutDashboard, Users, Building2, ShieldCheck, CreditCard, History } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/useDocumentTitle'
 import { getPlatformOverview, type PlatformOverview } from '../../lib/platformAdmin'
 
@@ -69,6 +69,9 @@ export function AdminLayout() {
           </AdminNavLink>
           <AdminNavLink to="/admin/billing" icon={<CreditCard size={14} aria-hidden="true" />}>
             Billing
+          </AdminNavLink>
+          <AdminNavLink to="/admin/audit" icon={<History size={14} aria-hidden="true" />}>
+            Audit
           </AdminNavLink>
         </nav>
         <div className="px-4 py-3 border-t border-[color:var(--color-paper-line)] dark:border-gray-800">

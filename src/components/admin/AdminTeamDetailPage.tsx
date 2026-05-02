@@ -10,7 +10,13 @@ import {
   teamGetSubscription,
   type TeamSubscription,
 } from '../../lib/billing'
+import {
+  adminTeamUsage,
+  adminDeleteTeam,
+  type TeamUsage,
+} from '../../lib/adminLaunch'
 import { useDocumentTitle } from '../../lib/useDocumentTitle'
+import { ConfirmDialog } from '../editor/ConfirmDialog'
 
 /**
  * Per-team detail surface for platform admins. Shows membership +
@@ -27,20 +33,26 @@ export function AdminTeamDetailPage() {
   const navigate = useNavigate()
   const [detail, setDetail] = useState<AdminTeamDetail | null>(null)
   const [sub, setSub] = useState<TeamSubscription | null>(null)
+  const [usage, setUsage] = useState<TeamUsage | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [refreshNonce, setRefreshNonce] = useState(0)
+  const [pendingDelete, setPendingDelete] = useState(false)
+  const [deleteBusy, setDeleteBusy] = useState(false)
   useDocumentTitle(detail ? `${detail.name} · Admin — Floorcraft` : null)
 
   useEffect(() => {
     if (!teamId) return
     let cancelled = false
     async function load() {
-      const [result, subResult] = await Promise.all([
+      const [result, subResult, usageResult] = await Promise.all([
         adminGetTeamDetail(teamId!),
-        // Subscription lookup is best-effort — a project that hasn't
-        // applied the billing migration yet will return null and we
-        // hide the card. Don't block team-detail rendering on it.
+        // Best-effort: a project that hasn't applied the billing
+        // migration returns null and we hide the card. Don't block
+        // team-detail rendering on it.
         teamGetSubscription(teamId!).catch(() => null),
+        // Usage RPC came in migration 0022. Same best-effort
+        // pattern — projects on older migrations skip the card.
+        adminTeamUsage(teamId!).catch(() => null),
       ])
       if (cancelled) return
       if (!result) {
@@ -49,6 +61,7 @@ export function AdminTeamDetailPage() {
       }
       setDetail(result)
       setSub(subResult)
+      setUsage(usageResult)
     }
     void load()
     return () => {
@@ -113,6 +126,8 @@ export function AdminTeamDetailPage() {
 
           {sub && <BillingCard sub={sub} />}
 
+          {usage && <UsageCard usage={usage} />}
+
           <section className="mt-6">
             <h2 className="text-sm font-semibold mb-2 text-gray-900 dark:text-gray-100">
               Members
@@ -166,12 +181,129 @@ export function AdminTeamDetailPage() {
               </div>
             )}
           </section>
+
+          <DangerZone
+            teamName={detail.name}
+            onDelete={() => setPendingDelete(true)}
+          />
         </>
       )}
-      {/* `navigate` referenced so future "Delete team" hard-action lands here */}
-      {void navigate}
+
+      {pendingDelete && detail && (
+        <ConfirmDialog
+          title={`Delete "${detail.name}"?`}
+          body={
+            <div className="space-y-2">
+              <p>
+                This permanently deletes the team and every office,
+                roster, share token, comment, and audit row attached
+                to it. There is no undo.
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Use Suspend instead if you only need to temporarily
+                block writes — the team data stays intact and the
+                operation is reversible.
+              </p>
+            </div>
+          }
+          confirmLabel={deleteBusy ? 'Deleting…' : 'Delete team'}
+          cancelLabel="Cancel"
+          tone="danger"
+          onConfirm={async () => {
+            if (deleteBusy || !detail) return
+            setDeleteBusy(true)
+            const r = await adminDeleteTeam(detail.id)
+            setDeleteBusy(false)
+            if (r.kind === 'error') {
+              setError(r.message)
+              setPendingDelete(false)
+              return
+            }
+            navigate('/admin/teams', { replace: true })
+          }}
+          onCancel={() => {
+            if (deleteBusy) return
+            setPendingDelete(false)
+          }}
+        />
+      )}
     </div>
   )
+}
+
+function UsageCard({ usage }: { usage: TeamUsage }) {
+  return (
+    <section className="mt-6 rounded-lg border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 p-4">
+      <h2 className="text-sm font-semibold mb-2 text-gray-900 dark:text-gray-100">
+        Usage
+      </h2>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <Field
+          label="Offices"
+          value={
+            usage.archived_office_count > 0
+              ? `${usage.office_count.toLocaleString()} (${usage.archived_office_count} archived)`
+              : usage.office_count.toLocaleString()
+          }
+        />
+        <Field label="Members" value={usage.member_count.toLocaleString()} />
+        <Field label="Audit events" value={usage.audit_event_count.toLocaleString()} />
+        <Field
+          label="Payload size"
+          value={formatBytes(usage.payload_bytes)}
+        />
+      </div>
+      {usage.last_office_update_at && (
+        <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+          Last office update{' '}
+          {new Date(usage.last_office_update_at).toLocaleString()}
+          {usage.last_audit_at && (
+            <>
+              {' · '}last audit event{' '}
+              {new Date(usage.last_audit_at).toLocaleString()}
+            </>
+          )}
+        </p>
+      )}
+    </section>
+  )
+}
+
+function DangerZone({
+  teamName,
+  onDelete,
+}: {
+  teamName: string
+  onDelete: () => void
+}) {
+  return (
+    <section className="mt-6 rounded-lg border border-red-200 dark:border-red-900/40 bg-red-50/50 dark:bg-red-950/20 p-4">
+      <h2 className="text-sm font-semibold mb-1 text-red-700 dark:text-red-300 flex items-center gap-2">
+        <AlertTriangle size={14} aria-hidden="true" />
+        Danger zone
+      </h2>
+      <p className="text-xs text-red-700 dark:text-red-300/90 mb-3">
+        Force-delete <strong>{teamName}</strong>. Cascades through every
+        office, roster, share token, comment, and audit row. There is
+        no undo. Suspend the team first if there&rsquo;s any chance you
+        want it back.
+      </p>
+      <button
+        type="button"
+        onClick={onDelete}
+        className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded bg-red-600 text-white hover:bg-red-700"
+      >
+        Delete team…
+      </button>
+    </section>
+  )
+}
+
+function formatBytes(n: number): string {
+  if (n < 1024) return `${n} B`
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
+  if (n < 1024 * 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`
+  return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`
 }
 
 function SuspendCard({
