@@ -910,6 +910,85 @@ const sections: Section[] = [
     ),
   },
   {
+    id: 'billing',
+    label: 'Billing & subscription',
+    icon: '💳',
+    searchText:
+      'billing subscription stripe checkout customer portal plan upgrade pricing payment card invoice cancel comp override grant trial past-due failed payment seats',
+    body: (
+      <div className="space-y-4">
+        <p>
+          Floorcraft uses Stripe for payments. Billing is per-team —
+          each team has its own subscription, plan, payment method, and
+          invoices. Team admins can manage billing; other members see
+          the current plan and status but no payment buttons.
+        </p>
+
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+          Where billing lives
+        </h3>
+        <p>
+          Open <strong>Settings → Billing</strong> from the team home.
+          The page shows your current plan card (with a status pill) and,
+          if you're an admin, the buttons to upgrade or manage the
+          subscription.
+        </p>
+
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">
+          Subscribing for the first time
+        </h3>
+        <ol className="list-decimal pl-6 space-y-1.5 text-gray-700 dark:text-gray-200">
+          <li>Click <strong>Subscribe</strong> next to the plan you want.</li>
+          <li>You're redirected to Stripe Checkout — secure, PCI-compliant.</li>
+          <li>Enter a card and confirm. We get a webhook back from Stripe within seconds.</li>
+          <li>Return to <strong>Settings → Billing</strong>; the status pill flips to <strong>Active</strong>.</li>
+        </ol>
+
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">
+          Managing an existing subscription
+        </h3>
+        <p>
+          Click <strong>Manage Billing</strong>. You're routed to the
+          Stripe Customer Portal to update the payment method, change
+          plan, download past invoices, or cancel. Cancellations take
+          effect at the end of the current billing period — your team
+          keeps access until then.
+        </p>
+
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">
+          Subscription statuses
+        </h3>
+        <ul className="list-disc pl-6 space-y-1.5 text-gray-700 dark:text-gray-200">
+          <li><strong>Active</strong> — paid through the current period.</li>
+          <li><strong>Trial</strong> — active under a free trial; converts at the end of the trial.</li>
+          <li><strong>Past due</strong> — last charge failed; Stripe is retrying. Update the card to clear it.</li>
+          <li><strong>Unpaid</strong> — Stripe has given up retrying. Add a new card to reactivate.</li>
+          <li><strong>Canceled</strong> — access continues until the period end shown on the card.</li>
+          <li><strong>No subscription</strong> — team is on Free; the Subscribe buttons offer upgrade.</li>
+        </ul>
+
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">
+          Comp / override
+        </h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          A platform admin can grant a team a complimentary plan
+          override (e.g. "Pro for 90 days"). When that's active, the
+          billing card shows an amber note explaining the override and
+          its end date. The team retains access during the override
+          window even if the underlying Stripe subscription is missing
+          or canceled.
+        </p>
+
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Source of truth for everything billing is Stripe. We cache
+          enough state in our database to render banners and gate
+          features; for invoices, refunds, dispute history, or anything
+          tax-related, the Customer Portal is the destination.
+        </p>
+      </div>
+    ),
+  },
+  {
     id: 'audit-log',
     label: 'Audit log',
     icon: '📋',
