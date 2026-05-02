@@ -29,6 +29,7 @@ import type { ThumbnailElement } from './OfficeThumbnail'
 import type { Team } from '../../types/team'
 import { getRecents } from '../../lib/recentOffices'
 import { useDocumentTitle } from '../../lib/useDocumentTitle'
+import { UserMenu } from './UserMenu'
 
 /**
  * Wave 14A: refresh the post-login dashboard to match the JSON-Crack /
@@ -911,6 +912,13 @@ export function TeamHomePage() {
             >
               Help
             </Link>
+            {/* Account dropdown — same component the editor TopBar
+                uses, so the affordance is consistent across surfaces.
+                The disc anchors to the right edge of the action
+                cluster; on narrow widths it wraps with the rest. */}
+            <div className="ml-1">
+              <UserMenu />
+            </div>
           </div>
         </header>
 

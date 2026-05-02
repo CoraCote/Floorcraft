@@ -6,6 +6,7 @@ import { getPlatformOverview, type PlatformOverview } from '../../lib/platformAd
 import { adminListSubscriptions } from '../../lib/billing'
 import { adminListTeams } from '../../lib/adminLists'
 import { AdminPalette } from './AdminPalette'
+import { UserMenu } from '../team/UserMenu'
 
 /**
  * Two-pane shell for the platform-admin surfaces. Left rail =
@@ -136,9 +137,21 @@ export function AdminLayout() {
           </NavLink>
         </div>
       </aside>
-      <main className="flex-1 overflow-y-auto">
-        <Outlet />
-      </main>
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top bar — host for the AccountUserMenu disc on the right.
+            The admin surface is admin-gated so a sign-out / profile
+            link wasn't accessible without leaving the surface
+            entirely; this puts the same menu the editor uses one
+            click away. The bar is intentionally thin (40px) and
+            blank on the left because each admin page already
+            renders its own h1/header. */}
+        <header className="flex items-center justify-end h-10 px-4 border-b border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 shrink-0">
+          <UserMenu />
+        </header>
+        <main className="flex-1 overflow-y-auto">
+          <Outlet />
+        </main>
+      </div>
       <AdminPalette />
     </div>
   )
