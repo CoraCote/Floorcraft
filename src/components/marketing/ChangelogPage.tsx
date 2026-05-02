@@ -17,6 +17,23 @@ type Release = {
 
 const RELEASES: ReadonlyArray<Release> = [
   {
+    version: '1.2.0',
+    date: '2026-05-01',
+    title: 'Collaboration, comments, billing',
+    bullets: [
+      'Comment-mode share links — anonymous viewers can leave threaded comments; owners reply, delete, and see "Revoked link" badges; CSV export of every conversation.',
+      'Realtime everywhere — comments and Recent Activity now stream via Supabase channels; the Insights panel shows refresh chips and unread-count badges.',
+      'Recent Activity panel in the editor sidebar with client-side search/filter and one-click CSV export.',
+      'Roster cards view: keyboard navigation (Track C), seat picker (Track A), bulk auto-assign to a neighborhood, hide/show columns.',
+      'Office archive — soft-delete via the dashboard kebab; archived offices stay restorable until an admin hard-deletes them.',
+      'Office duplicate — clone a floor plan into a new office in one click (payload only; share tokens, comments, and history start fresh).',
+      'PDF/image underlay tools: insert via the file menu, calibrate scale, dedicated visibility category, drop-zone overlay on the canvas.',
+      'Platform admin surface — overview dashboard, teams + users browsers, suspend-team write-block with member banner, audit log.',
+      'Stripe billing scaffold — admin subscription console + team-side Subscribe / Manage Billing buttons; comp / override hatch for grants.',
+      'Contextual document.title across team, settings, account, admin, and marketing pages.',
+    ],
+  },
+  {
     version: '1.1.0',
     date: '2026-04-30',
     title: 'Drafting Studio redesign',
