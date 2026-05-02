@@ -113,6 +113,29 @@ const AuditLogPage = lazy(() =>
     default: m.AuditLogPage,
   })),
 )
+const AdminLayout = lazy(() =>
+  import('./components/admin/AdminLayout').then((m) => ({ default: m.AdminLayout })),
+)
+const AdminOverviewPage = lazy(() =>
+  import('./components/admin/AdminOverviewPage').then((m) => ({
+    default: m.AdminOverviewPage,
+  })),
+)
+const AdminAdminsPage = lazy(() =>
+  import('./components/admin/AdminAdminsPage').then((m) => ({
+    default: m.AdminAdminsPage,
+  })),
+)
+const AdminBillingPage = lazy(() =>
+  import('./components/admin/AdminBillingPage').then((m) => ({
+    default: m.AdminBillingPage,
+  })),
+)
+const RequirePlatformAdmin = lazy(() =>
+  import('./components/admin/RequirePlatformAdmin').then((m) => ({
+    default: m.RequirePlatformAdmin,
+  })),
+)
 const ReportsPage = lazy(() =>
   import('./components/reports/ReportsPage').then((m) => ({
     default: m.ReportsPage,
@@ -275,6 +298,23 @@ function App() {
             >
               <Route index element={<TeamSettingsGeneralBridge />} />
               <Route path="members" element={<TeamSettingsMembersBridge />} />
+            </Route>
+
+            {/* Platform admin (super-admin role). Distinct from
+                team-admin: this gates the whole-service overview +
+                billing surfaces. Anyone without `is_platform_admin`
+                gets redirected to /dashboard via RequirePlatformAdmin. */}
+            <Route
+              path="/admin"
+              element={
+                <RequirePlatformAdmin>
+                  <AdminLayout />
+                </RequirePlatformAdmin>
+              }
+            >
+              <Route index element={<AdminOverviewPage />} />
+              <Route path="admins" element={<AdminAdminsPage />} />
+              <Route path="billing" element={<AdminBillingPage />} />
             </Route>
 
             {/* Office editor — ProjectShell is the layout route; leaf
