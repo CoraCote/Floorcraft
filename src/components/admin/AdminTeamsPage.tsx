@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowDown, ArrowUp, ArrowUpDown, Download, Search } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, Download, Search, ShieldAlert } from 'lucide-react'
 import Papa from 'papaparse'
 import { adminListTeams, type AdminTeamRow } from '../../lib/adminLists'
 import { downloadCsv } from '../../lib/reports/csvExport'
+import { formatRelative } from '../../lib/time'
 import { useDocumentTitle } from '../../lib/useDocumentTitle'
 
 /**
@@ -15,14 +16,22 @@ import { useDocumentTitle } from '../../lib/useDocumentTitle'
  *   - one-click CSV export of the currently visible (filtered+sorted) rows
  */
 
-type SortKey = 'name' | 'slug' | 'member_count' | 'office_count' | 'created_at'
+type SortKey =
+  | 'name'
+  | 'slug'
+  | 'member_count'
+  | 'office_count'
+  | 'created_at'
+  | 'last_activity_at'
 type SortDir = 'asc' | 'desc'
+type StatusFilter = 'all' | 'active' | 'suspended'
 
 export function AdminTeamsPage() {
   useDocumentTitle('Teams · Admin — Floorcraft')
   const [teams, setTeams] = useState<AdminTeamRow[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [sortKey, setSortKey] = useState<SortKey>('created_at')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
 
@@ -48,19 +57,35 @@ export function AdminTeamsPage() {
   const visibleTeams = useMemo(() => {
     if (!teams) return null
     const trimmed = query.trim().toLowerCase()
-    const rows = trimmed
+    let rows = trimmed
       ? teams.filter(
           (t) =>
             t.name.toLowerCase().includes(trimmed) ||
             t.slug.toLowerCase().includes(trimmed),
         )
       : teams.slice()
+    if (statusFilter === 'suspended') {
+      rows = rows.filter((t) => t.is_suspended === true)
+    } else if (statusFilter === 'active') {
+      // Treat undefined `is_suspended` (older RPC shape) as active
+      // so the page still renders teams on a project that hasn't
+      // applied migration 0023.
+      rows = rows.filter((t) => t.is_suspended !== true)
+    }
     rows.sort((a, b) => {
       const cmp = compareRows(a, b, sortKey)
       return sortDir === 'asc' ? cmp : -cmp
     })
     return rows
-  }, [teams, query, sortKey, sortDir])
+  }, [teams, query, statusFilter, sortKey, sortDir])
+
+  // Suspended count surfaces in the filter dropdown so the operator
+  // sees how many teams are in that bucket without flipping the
+  // filter to find out.
+  const suspendedCount = useMemo(
+    () => (teams ?? []).filter((t) => t.is_suspended === true).length,
+    [teams],
+  )
 
   function onHeaderClick(key: SortKey) {
     if (key === sortKey) {
@@ -83,8 +108,21 @@ export function AdminTeamsPage() {
         members: t.member_count,
         offices: t.office_count,
         created_at: t.created_at,
+        is_suspended: t.is_suspended ? 'true' : 'false',
+        last_activity_at: t.last_activity_at ?? '',
       })),
-      { columns: ['id', 'slug', 'name', 'members', 'offices', 'created_at'] },
+      {
+        columns: [
+          'id',
+          'slug',
+          'name',
+          'members',
+          'offices',
+          'created_at',
+          'is_suspended',
+          'last_activity_at',
+        ],
+      },
     )
     const stamp = new Date().toISOString().slice(0, 10)
     downloadCsv(`floorcraft-teams-${stamp}.csv`, csv)
@@ -100,8 +138,8 @@ export function AdminTeamsPage() {
         </p>
       </header>
 
-      <div className="mb-3 flex items-center gap-2">
-        <div className="relative flex-1 max-w-sm">
+      <div className="mb-3 flex items-center gap-2 flex-wrap">
+        <div className="relative flex-1 min-w-[16rem] max-w-sm">
           <Search
             size={12}
             aria-hidden="true"
@@ -116,6 +154,21 @@ export function AdminTeamsPage() {
             className="block w-full rounded border border-[color:var(--color-paper-line)] dark:border-gray-700 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 text-sm pl-7 pr-2 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
           />
         </div>
+        <label className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">
+          <span>Status</span>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+            aria-label="Filter by suspension state"
+            className="rounded border border-[color:var(--color-paper-line)] dark:border-gray-700 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 text-sm px-1.5 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
+          >
+            <option value="all">All</option>
+            <option value="active">Active</option>
+            <option value="suspended">
+              Suspended{suspendedCount > 0 ? ` (${suspendedCount})` : ''}
+            </option>
+          </select>
+        </label>
         <button
           type="button"
           onClick={onExport}
@@ -170,18 +223,36 @@ export function AdminTeamsPage() {
                   sortDir={sortDir}
                   onClick={onHeaderClick}
                 />
+                <SortHeader
+                  k="last_activity_at"
+                  label="Last activity"
+                  sortKey={sortKey}
+                  sortDir={sortDir}
+                  onClick={onHeaderClick}
+                />
               </tr>
             </thead>
             <tbody className="divide-y divide-[color:var(--color-paper-line)] dark:divide-gray-800">
               {visibleTeams.map((t) => (
                 <tr key={t.id} className="hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/30">
                   <td className="px-3 py-2">
-                    <Link
-                      to={`/admin/teams/${t.id}`}
-                      className="text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline"
-                    >
-                      {t.name}
-                    </Link>
+                    <span className="inline-flex items-center gap-1.5">
+                      <Link
+                        to={`/admin/teams/${t.id}`}
+                        className="text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline"
+                      >
+                        {t.name}
+                      </Link>
+                      {t.is_suspended && (
+                        <span
+                          title="Suspended"
+                          className="inline-flex items-center gap-0.5 text-[9px] font-semibold uppercase tracking-wider px-1 py-0.5 rounded bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300"
+                        >
+                          <ShieldAlert size={9} aria-hidden="true" />
+                          Suspended
+                        </span>
+                      )}
+                    </span>
                   </td>
                   <td className="px-3 py-2 font-mono text-xs text-gray-600 dark:text-gray-300">
                     {t.slug}
@@ -194,6 +265,15 @@ export function AdminTeamsPage() {
                   </td>
                   <td className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
                     {new Date(t.created_at).toLocaleDateString()}
+                  </td>
+                  <td className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
+                    {t.last_activity_at ? (
+                      <span title={new Date(t.last_activity_at).toUTCString()}>
+                        {formatRelative(t.last_activity_at)}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -217,6 +297,10 @@ function compareRows(a: AdminTeamRow, b: AdminTeamRow, key: SortKey): number {
       return a.office_count - b.office_count
     case 'created_at':
       return a.created_at.localeCompare(b.created_at)
+    case 'last_activity_at':
+      // Teams with no activity sort last in desc (the default for
+      // this column) — empty string sorts before any timestamp.
+      return (a.last_activity_at ?? '').localeCompare(b.last_activity_at ?? '')
   }
 }
 

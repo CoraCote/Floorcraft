@@ -7,6 +7,12 @@ export interface AdminTeamRow {
   created_at: string
   member_count: number
   office_count: number
+  /** Migration 0023 adds these. Optional so older projects (RPC
+   *  not yet updated) keep compiling at the call site — a `null`
+   *  / `undefined` means "we don't know" and the UI hides the
+   *  related affordance. */
+  is_suspended?: boolean
+  last_activity_at?: string | null
 }
 
 export interface AdminUserRow {
