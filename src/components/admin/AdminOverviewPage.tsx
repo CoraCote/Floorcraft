@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Users, Building2, Layers, UserPlus, ShieldCheck, RefreshCw } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Users, Building2, Layers, UserPlus, ShieldCheck, RefreshCw, History } from 'lucide-react'
 import { getPlatformOverview, type PlatformOverview } from '../../lib/platformAdmin'
+import {
+  adminListPlatformAudit,
+  type PlatformAuditRow,
+} from '../../lib/adminLaunch'
 import { useDocumentTitle } from '../../lib/useDocumentTitle'
 
 /**
@@ -17,6 +22,7 @@ import { useDocumentTitle } from '../../lib/useDocumentTitle'
 export function AdminOverviewPage() {
   useDocumentTitle('Overview · Admin — Floorcraft')
   const [overview, setOverview] = useState<PlatformOverview | null>(null)
+  const [recent, setRecent] = useState<PlatformAuditRow[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [refreshNonce, setRefreshNonce] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
@@ -25,15 +31,23 @@ export function AdminOverviewPage() {
   useEffect(() => {
     let cancelled = false
     async function load() {
-      const result = await getPlatformOverview()
+      // Both the overview counts and the recent activity feed run
+      // in parallel — the activity feed is best-effort (returns
+      // null when migration 0022 isn't applied) so we don't block
+      // the page on it.
+      const [overviewResult, recentResult] = await Promise.all([
+        getPlatformOverview(),
+        adminListPlatformAudit({ limit: 5 }).catch(() => null),
+      ])
       if (cancelled) return
       setRefreshing(false)
-      if (!result) {
+      if (!overviewResult) {
         setError('Could not load platform overview.')
         return
       }
       setError(null)
-      setOverview(result)
+      setOverview(overviewResult)
+      setRecent(recentResult)
       setLastUpdated(new Date())
     }
     void load()
@@ -118,6 +132,64 @@ export function AdminOverviewPage() {
           icon={<ShieldCheck size={16} aria-hidden="true" />}
         />
       </div>
+
+      {recent && recent.length > 0 && (
+        <section className="mt-6 rounded-lg border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-[color:var(--color-paper-line)] dark:border-gray-800">
+            <h2 className="text-sm font-semibold flex items-center gap-2 text-gray-900 dark:text-gray-100">
+              <History size={14} aria-hidden="true" />
+              Recent activity
+            </h2>
+            <Link
+              to="/admin/audit"
+              className="text-xs text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline"
+            >
+              All events →
+            </Link>
+          </div>
+          <ul className="divide-y divide-[color:var(--color-paper-line)] dark:divide-gray-800">
+            {recent.map((r) => (
+              <li
+                key={r.id}
+                className="flex items-center gap-3 px-4 py-2 text-xs"
+              >
+                <span
+                  className="text-gray-400 dark:text-gray-500 tabular-nums w-32 shrink-0"
+                  title={new Date(r.created_at).toUTCString()}
+                >
+                  {new Date(r.created_at).toLocaleString()}
+                </span>
+                <span className="font-mono text-gray-700 dark:text-gray-200 w-44 truncate shrink-0">
+                  {r.action}
+                </span>
+                <span className="flex-1 truncate text-gray-600 dark:text-gray-300">
+                  {r.actor_email ?? '—'}
+                </span>
+                {r.team_id && (
+                  <Link
+                    to={`/admin/teams/${r.team_id}`}
+                    className="text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline truncate max-w-[160px]"
+                  >
+                    {r.team_name ?? r.team_slug}
+                  </Link>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {recent && recent.length === 0 && (
+        <p className="mt-6 text-sm text-gray-500 dark:text-gray-400">
+          No recent platform activity.
+        </p>
+      )}
+
+      {!recent && (
+        <p className="mt-6 text-xs text-gray-400 dark:text-gray-500">
+          Recent activity feed needs migration <code>0022_admin_launch_wave.sql</code> applied.
+        </p>
+      )}
     </div>
   )
 }
