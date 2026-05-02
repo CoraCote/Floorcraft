@@ -228,6 +228,51 @@ const FILTER_OPTIONS: Array<{ value: FilterMode; label: string }> = [
 ]
 
 // ------------------------------------------------------------------
+// Per-team preference persistence (sort / filter / showArchived).
+// localStorage round-trips with try/catch so private-mode browsers or
+// quota-exceeded errors degrade silently to in-memory state.
+// ------------------------------------------------------------------
+
+const isSortMode = (v: unknown): v is SortMode =>
+  v === 'name' || v === 'recent' || v === 'employees' || v === 'occupancy'
+
+const isFilterMode = (v: unknown): v is FilterMode =>
+  v === 'all' || v === 'unassigned' || v === 'empty'
+
+const isBool = (v: unknown): v is boolean => typeof v === 'boolean'
+
+function readPref<T>(
+  key: string | null,
+  field: string,
+  fallback: T,
+  guard: (v: unknown) => v is T,
+): T {
+  if (!key) return fallback
+  try {
+    const raw = window.localStorage.getItem(key)
+    if (!raw) return fallback
+    const obj = JSON.parse(raw) as Record<string, unknown>
+    const v = obj[field]
+    return guard(v) ? v : fallback
+  } catch {
+    return fallback
+  }
+}
+
+function writePrefs(
+  key: string | null,
+  prefs: { sortMode: SortMode; filterMode: FilterMode; showArchived: boolean },
+) {
+  if (!key) return
+  try {
+    window.localStorage.setItem(key, JSON.stringify(prefs))
+  } catch {
+    // Quota exceeded or storage disabled — skip silently. The user
+    // still has their in-memory state for this session.
+  }
+}
+
+// ------------------------------------------------------------------
 // Presentational sub-components.
 // ------------------------------------------------------------------
 
@@ -286,12 +331,25 @@ export function TeamHomePage() {
   const [offices, setOffices] = useState<OfficeListItem[]>([])
   const [loadingOffices, setLoadingOffices] = useState(true)
   const [q, setQ] = useState('')
-  const [sortMode, setSortMode] = useState<SortMode>('recent')
-  const [filterMode, setFilterMode] = useState<FilterMode>('all')
+  // Sort / filter / showArchived are scoped per-team in localStorage
+  // — Acme might want occupancy-sorted, BetaCo might want name-sorted,
+  // and a user who toggles "Show archived" once usually wants it on
+  // for that team's whole session. Read on mount via lazy initializer
+  // so we don't double-render. The initialisers below all key off
+  // `teamSlug`, which is stable for the lifetime of this route.
+  const prefsKey = teamSlug ? `floocraft.team-home-prefs.${teamSlug}` : null
+  const [sortMode, setSortMode] = useState<SortMode>(() =>
+    readPref(prefsKey, 'sortMode', 'recent', isSortMode),
+  )
+  const [filterMode, setFilterMode] = useState<FilterMode>(() =>
+    readPref(prefsKey, 'filterMode', 'all', isFilterMode),
+  )
   const [creating, setCreating] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<OfficeListItem | null>(null)
   const [deleting, setDeleting] = useState(false)
-  const [showArchived, setShowArchived] = useState(false)
+  const [showArchived, setShowArchived] = useState(() =>
+    readPref(prefsKey, 'showArchived', false, isBool),
+  )
   const [archiveError, setArchiveError] = useState<string | null>(null)
   const [memberCount, setMemberCount] = useState<number>(0)
   const [canCreateOffices, setCanCreateOffices] = useState(false)
@@ -355,6 +413,13 @@ export function TeamHomePage() {
     }
     load()
   }, [teamSlug, sessionStatus, sessionUserId, showArchived])
+
+  // Persist per-team prefs whenever they change. Keep the write
+  // narrow (only the three persisted fields) so the storage shape
+  // doesn't drift if other state grows around it.
+  useEffect(() => {
+    writePrefs(prefsKey, { sortMode, filterMode, showArchived })
+  }, [prefsKey, sortMode, filterMode, showArchived])
 
   // Global "/" shortcut focuses the search input. Matches the
   // Linear / GitHub pattern — a single unshifted "/" while nothing
