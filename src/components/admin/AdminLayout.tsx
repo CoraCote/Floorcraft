@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { LayoutDashboard, Users, CreditCard } from 'lucide-react'
+import { LayoutDashboard, Users, Building2, ShieldCheck, CreditCard } from 'lucide-react'
 
 /**
  * Two-pane shell for the platform-admin surfaces. Left rail =
@@ -23,7 +23,13 @@ export function AdminLayout() {
           <AdminNavLink to="/admin" end icon={<LayoutDashboard size={14} aria-hidden="true" />}>
             Overview
           </AdminNavLink>
-          <AdminNavLink to="/admin/admins" icon={<Users size={14} aria-hidden="true" />}>
+          <AdminNavLink to="/admin/teams" icon={<Building2 size={14} aria-hidden="true" />}>
+            Teams
+          </AdminNavLink>
+          <AdminNavLink to="/admin/users" icon={<Users size={14} aria-hidden="true" />}>
+            Users
+          </AdminNavLink>
+          <AdminNavLink to="/admin/admins" icon={<ShieldCheck size={14} aria-hidden="true" />}>
             Admins
           </AdminNavLink>
           <AdminNavLink to="/admin/billing" icon={<CreditCard size={14} aria-hidden="true" />}>
