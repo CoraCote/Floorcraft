@@ -2,13 +2,18 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
+  Check,
+  Copy,
+  KeyRound,
   ShieldAlert,
   ShieldCheck,
   ShieldOff,
   User as UserIcon,
+  X as XIcon,
 } from 'lucide-react'
 import {
   adminGetUserDetail,
+  adminGeneratePasswordResetLink,
   type AdminUserDetail,
 } from '../../lib/adminLaunch'
 import {
@@ -36,6 +41,16 @@ export function AdminUserDetailPage() {
   const [refreshNonce, setRefreshNonce] = useState(0)
   const [pending, setPending] = useState<'grant' | 'revoke' | null>(null)
   const [busy, setBusy] = useState(false)
+  // Password-reset link state. We surface the generated link in a
+  // small modal with a Copy button so the admin can hand it to the
+  // user out-of-band. `pendingLink` is null while idle, 'pending'
+  // while the Edge Function is running, or holds the link.
+  const [resetState, setResetState] = useState<
+    | { kind: 'idle' }
+    | { kind: 'busy' }
+    | { kind: 'ok'; link: string; copied: boolean }
+    | { kind: 'error'; message: string }
+  >({ kind: 'idle' })
   useDocumentTitle(detail ? `${detail.email} · Admin — Floorcraft` : null)
 
   useEffect(() => {
@@ -58,6 +73,28 @@ export function AdminUserDetailPage() {
       cancelled = true
     }
   }, [userId, refreshNonce])
+
+  async function onGenerateResetLink() {
+    if (!detail) return
+    setResetState({ kind: 'busy' })
+    const r = await adminGeneratePasswordResetLink(detail.id)
+    if (r.kind === 'error') {
+      setResetState({ kind: 'error', message: r.message })
+      return
+    }
+    setResetState({ kind: 'ok', link: r.actionLink, copied: false })
+  }
+
+  async function onCopyResetLink() {
+    if (resetState.kind !== 'ok') return
+    try {
+      await navigator.clipboard.writeText(resetState.link)
+      setResetState({ ...resetState, copied: true })
+    } catch {
+      // Best-effort. The link is also visible in the modal so the
+      // operator can copy by selection if clipboard is denied.
+    }
+  }
 
   async function onConfirm() {
     if (!detail || !pending || busy) return
@@ -162,6 +199,44 @@ export function AdminUserDetailPage() {
             )}
           </section>
 
+          <section className="mt-6 rounded-lg border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 p-4">
+            <h2 className="text-sm font-semibold mb-1 flex items-center gap-2">
+              <KeyRound size={14} aria-hidden="true" />
+              Password reset
+            </h2>
+            <p className="text-xs text-gray-600 dark:text-gray-300 mb-2">
+              Generate a one-time recovery link for this user. The
+              link doesn&rsquo;t auto-email — copy it and send via
+              your support channel. Useful when a user can&rsquo;t
+              receive the standard reset email.
+            </p>
+            <button
+              type="button"
+              onClick={() => void onGenerateResetLink()}
+              disabled={resetState.kind === 'busy'}
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded border border-[color:var(--color-paper-line)] dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800 disabled:opacity-50"
+            >
+              <KeyRound size={12} aria-hidden="true" />
+              {resetState.kind === 'busy'
+                ? 'Generating…'
+                : 'Generate reset link'}
+            </button>
+            {resetState.kind === 'error' && (
+              <p
+                role="alert"
+                className="mt-2 text-xs text-red-600 dark:text-red-400"
+              >
+                {resetState.message}
+                {resetState.message.includes('not found') && (
+                  <span className="block text-gray-500 mt-0.5">
+                    The Edge Function may not be deployed yet — see
+                    README for the supabase functions deploy command.
+                  </span>
+                )}
+              </p>
+            )}
+          </section>
+
           <section className="mt-6">
             <h2 className="text-sm font-semibold mb-2 text-gray-900 dark:text-gray-100">
               Teams
@@ -227,6 +302,75 @@ export function AdminUserDetailPage() {
             )}
           </section>
         </>
+      )}
+
+      {resetState.kind === 'ok' && detail && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Password reset link"
+          className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/30 dark:bg-black/60 backdrop-blur-sm"
+          onClick={() => setResetState({ kind: 'idle' })}
+        >
+          <div
+            className="w-full max-w-lg rounded-xl border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 shadow-2xl p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-semibold flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                <KeyRound size={14} aria-hidden="true" />
+                Recovery link generated
+              </h3>
+              <button
+                type="button"
+                onClick={() => setResetState({ kind: 'idle' })}
+                aria-label="Close"
+                className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+              >
+                <XIcon size={14} aria-hidden="true" />
+              </button>
+            </div>
+            <p className="text-xs text-gray-600 dark:text-gray-300 mb-3">
+              Send this link to <strong>{detail.email}</strong> via Slack,
+              email, or your support channel. It&rsquo;s a one-time link
+              that lets them set a new password. Treat it like a
+              credential — anyone with it can take over the account.
+            </p>
+            <textarea
+              value={resetState.link}
+              readOnly
+              rows={3}
+              onClick={(e) => (e.target as HTMLTextAreaElement).select()}
+              className="block w-full rounded border border-[color:var(--color-paper-line)] dark:border-gray-700 bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 text-xs px-2 py-1.5 font-mono break-all"
+            />
+            <div className="mt-3 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => void onCopyResetLink()}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded bg-[color:var(--color-blueprint-strong)] text-white hover:bg-[color:var(--color-blueprint)]"
+              >
+                {resetState.copied ? (
+                  <>
+                    <Check size={12} aria-hidden="true" />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy size={12} aria-hidden="true" />
+                    Copy link
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setResetState({ kind: 'idle' })}
+                className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {pending && detail && (

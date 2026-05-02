@@ -146,3 +146,53 @@ export async function adminGetUserDetail(
   }
   return data as AdminUserDetail
 }
+
+/**
+ * Generates a password-recovery link for `userId` and returns the
+ * action URL. The admin pastes that URL to the user out-of-band
+ * (Slack, email, support ticket); Supabase's `generateLink` does
+ * not auto-send a recovery email, and the public reset flow
+ * (`auth.resetPasswordForEmail`) requires the user themselves —
+ * neither fits the admin-initiated reset shape.
+ *
+ * Goes through the `admin-send-password-reset` Edge Function which
+ * gates on `is_current_user_platform_admin()` server-side and uses
+ * the service role to call `auth.admin.generateLink`.
+ */
+export async function adminGeneratePasswordResetLink(
+  userId: string,
+): Promise<{ kind: 'ok'; actionLink: string; email: string } | { kind: 'error'; message: string }> {
+  const session = await supabase.auth.getSession()
+  const accessToken = session.data.session?.access_token
+  if (!accessToken) return { kind: 'error', message: 'Not authenticated' }
+
+  const base = import.meta.env.VITE_SUPABASE_URL as string | undefined
+  if (!base) return { kind: 'error', message: 'VITE_SUPABASE_URL is not set' }
+
+  const url = new URL('/functions/v1/admin-send-password-reset', base)
+  let res: Response
+  try {
+    res = await fetch(url.toString(), {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ user_id: userId }),
+    })
+  } catch (err) {
+    return {
+      kind: 'error',
+      message: err instanceof Error ? err.message : 'Network error',
+    }
+  }
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as { error?: string }
+    return {
+      kind: 'error',
+      message: body.error ?? `Reset failed (${res.status})`,
+    }
+  }
+  const body = (await res.json()) as { action_link: string; email: string }
+  return { kind: 'ok', actionLink: body.action_link, email: body.email }
+}
