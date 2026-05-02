@@ -26,6 +26,7 @@ export function StatusPage() {
   return (
     <PublicPageShell
       eyebrow="§09 · Status"
+      documentTitle="Status — Floorcraft"
       title="All systems operational."
       subtitle="Floorcraft's services as of right now. Refresh for the latest snapshot."
     >

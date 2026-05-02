@@ -11,6 +11,7 @@ export function ContactPage() {
   return (
     <PublicPageShell
       eyebrow="§06 · Contact"
+      documentTitle="Contact — Floorcraft"
       title="Get in touch."
       subtitle="Pick the channel that fits the question — we're a small team and try to answer everything."
     >

@@ -51,6 +51,7 @@ export function ChangelogPage() {
   return (
     <PublicPageShell
       eyebrow="§05 · Release notes"
+      documentTitle="Changelog — Floorcraft"
       title="What's new in Floorcraft."
       subtitle="Every release lands here, newest first. Major waves get their own version; smaller polish ships continuously."
     >

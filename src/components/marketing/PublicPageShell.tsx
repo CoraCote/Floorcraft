@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { LandingNav } from '../landing/LandingNav'
 import { LandingFooter } from '../landing/LandingFooter'
+import { useDocumentTitle } from '../../lib/useDocumentTitle'
 
 /**
  * Shared shell for the small static-content marketing pages
@@ -20,10 +21,24 @@ export interface PublicPageShellProps {
   title: string
   /** Optional one-line subtitle directly under the headline. */
   subtitle?: string
+  /**
+   * Optional override for the browser tab title. Defaults to
+   * `"<title> — Floorcraft"`, which is the right answer for almost
+   * every page. Pages with a long visible h1 (e.g. the changelog)
+   * can pass a shorter alternative.
+   */
+  documentTitle?: string
   children: ReactNode
 }
 
-export function PublicPageShell({ eyebrow, title, subtitle, children }: PublicPageShellProps) {
+export function PublicPageShell({
+  eyebrow,
+  title,
+  subtitle,
+  documentTitle,
+  children,
+}: PublicPageShellProps) {
+  useDocumentTitle(documentTitle ?? `${title} — Floorcraft`)
   return (
     <div className="min-h-screen flex flex-col bg-[color:var(--color-paper)] text-gray-900 dark:text-gray-100">
       <LandingNav />

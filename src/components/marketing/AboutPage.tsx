@@ -11,6 +11,7 @@ export function AboutPage() {
   return (
     <PublicPageShell
       eyebrow="§01 · About"
+      documentTitle="About — Floorcraft"
       title="Office planning, the way an architect would draw it."
       subtitle="Floorcraft is built for IT operations teams, office managers, and workplace administrators who plan where people sit."
     >

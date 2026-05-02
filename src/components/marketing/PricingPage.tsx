@@ -14,6 +14,7 @@ export function PricingPage() {
   return (
     <PublicPageShell
       eyebrow="§04 · Pricing"
+      documentTitle="Pricing — Floorcraft"
       title="Pick a plan that fits the room."
       subtitle="Floorcraft is free for the first 25 employees. Larger teams talk to us about Team and Enterprise."
     >

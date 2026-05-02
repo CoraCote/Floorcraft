@@ -63,6 +63,7 @@ export function CsvTemplatesPage() {
   return (
     <PublicPageShell
       eyebrow="§02 · CSV templates"
+      documentTitle="CSV templates — Floorcraft"
       title="Bring your roster in from a spreadsheet."
       subtitle="Floorcraft's roster import accepts a single CSV. Download the template, fill it in, drop it back into the editor."
     >
