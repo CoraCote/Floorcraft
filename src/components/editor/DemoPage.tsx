@@ -31,6 +31,7 @@ import { useReservationsStore } from '../../stores/reservationsStore'
 import { useRoomBookingsStore } from '../../stores/roomBookingsStore'
 import { useSeatSwapsStore } from '../../stores/seatSwapsStore'
 import type { Project } from '../../types/project'
+import { useDocumentTitle } from '../../lib/useDocumentTitle'
 
 /**
  * Public `/demo` route. Mounts the bundled demo office (the same seed
@@ -55,6 +56,7 @@ import type { Project } from '../../types/project'
  * canvas, not the editor surface.
  */
 export function DemoPage() {
+  useDocumentTitle('Demo office — Floorcraft')
   // Subscribe to the right-sidebar open flag so toggling via the
   // floating pull-tab or the inline collapse handle updates the layout
   // reactively. Demo opens with the sidebar visible so visitors see the
