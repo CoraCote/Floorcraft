@@ -42,6 +42,23 @@ export function AdminAuditPage() {
   const [actionFilter, setActionFilter] = useState('')
   const [sinceDays, setSinceDays] = useState<'7' | '30' | '90' | 'all'>('30')
 
+  // "Load older" bumps the row limit. The RPC caps at 200/query, so
+  // we re-fetch with a larger limit each time. Filter changes reset
+  // it back to the default — handled in the change handlers below
+  // (avoiding a setState-in-effect cycle for the React 19 lint).
+  const PAGE_SIZE = 200
+  const [limit, setLimit] = useState(PAGE_SIZE)
+  const [hasMore, setHasMore] = useState(false)
+
+  function onChangeSinceDays(v: '7' | '30' | '90' | 'all') {
+    setSinceDays(v)
+    setLimit(PAGE_SIZE)
+  }
+  function onChangeActionFilter(v: string) {
+    setActionFilter(v)
+    setLimit(PAGE_SIZE)
+  }
+
   useEffect(() => {
     let cancelled = false
     async function load() {
@@ -51,7 +68,7 @@ export function AdminAuditPage() {
             Date.now() - parseInt(sinceDays, 10) * 24 * 60 * 60 * 1000,
           ).toISOString()
       const result = await adminListPlatformAudit({
-        limit: 200,
+        limit,
         since,
         action: actionFilter || undefined,
       })
@@ -63,17 +80,19 @@ export function AdminAuditPage() {
           'Could not load platform audit. Migration 0022 may not be applied yet — paste scripts/catchup-admin-rpcs.sql into Supabase SQL editor.',
         )
         setRows([])
+        setHasMore(false)
         return
       }
       setError(null)
       setRows(result)
+      setHasMore(result.length >= limit)
       setLastUpdated(new Date())
     }
     void load()
     return () => {
       cancelled = true
     }
-  }, [sinceDays, actionFilter, refreshNonce])
+  }, [sinceDays, actionFilter, refreshNonce, limit])
 
   // Distinct actions present in the loaded rows — drives the
   // action-filter dropdown so the operator only sees actions
@@ -223,7 +242,7 @@ export function AdminAuditPage() {
           <select
             value={sinceDays}
             onChange={(e) =>
-              setSinceDays(e.target.value as '7' | '30' | '90' | 'all')
+              onChangeSinceDays(e.target.value as '7' | '30' | '90' | 'all')
             }
             className="rounded border border-[color:var(--color-paper-line)] dark:border-gray-700 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 text-sm px-1.5 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
           >
@@ -237,7 +256,7 @@ export function AdminAuditPage() {
           <span>Action</span>
           <select
             value={actionFilter}
-            onChange={(e) => setActionFilter(e.target.value)}
+            onChange={(e) => onChangeActionFilter(e.target.value)}
             className="rounded border border-[color:var(--color-paper-line)] dark:border-gray-700 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 text-sm px-1.5 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
           >
             <option value="">All</option>
@@ -341,7 +360,26 @@ export function AdminAuditPage() {
               ))}
             </tbody>
           </table>
+          {hasMore && (
+            <div className="flex items-center justify-center border-t border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-sunken)] dark:bg-gray-900/50 px-3 py-2">
+              <button
+                type="button"
+                onClick={() => setLimit((l) => l + PAGE_SIZE)}
+                disabled={loading || refreshing}
+                className="text-xs text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline disabled:opacity-50 disabled:no-underline"
+              >
+                Load {PAGE_SIZE} older
+              </button>
+            </div>
+          )}
         </div>
+      )}
+
+      {visibleRows && visibleRows.length > 0 && (
+        <p className="mt-3 text-[11px] text-gray-400 dark:text-gray-500 tabular-nums">
+          Showing {visibleRows.length} of {rows?.length ?? 0} loaded
+          {hasMore ? ' (more available)' : ''}
+        </p>
       )}
     </div>
   )
