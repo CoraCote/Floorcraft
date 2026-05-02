@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { ArrowDown, ArrowUp, Download, ShieldCheck, ShieldOff, UserPlus } from 'lucide-react'
+import {
+  ArrowDown,
+  ArrowUp,
+  Check,
+  Download,
+  ShieldCheck,
+  ShieldOff,
+  UserPlus,
+  Users,
+  X as XIcon,
+} from 'lucide-react'
 import Papa from 'papaparse'
 import {
   findUserByEmail,
@@ -44,6 +54,20 @@ export function AdminAdminsPage() {
   // is easier to scan. Toggle by clicking the column label.
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
 
+  // Bulk-grant state. Onboarding multiple admins at once is the
+  // common shape during launch (e.g. promoting the founding ops
+  // team), and the single-email form forces an N-step round-trip.
+  const [bulkInput, setBulkInput] = useState('')
+  const [bulkBusy, setBulkBusy] = useState(false)
+  const [bulkResults, setBulkResults] = useState<
+    | Array<{
+        email: string
+        status: 'ok' | 'already-admin' | 'not-found' | 'error'
+        message?: string
+      }>
+    | null
+  >(null)
+
   useEffect(() => {
     let cancelled = false
     async function load() {
@@ -87,6 +111,59 @@ export function AdminAdminsPage() {
     }
     setEmailInput('')
     setRefreshNonce((n) => n + 1)
+  }
+
+  async function onBulkGrant() {
+    if (bulkBusy) return
+    // Parse the textarea: split on commas / newlines / whitespace,
+    // trim each, dedupe with a Set, drop blanks. We keep parsing
+    // permissive on input (people paste from spreadsheets, Slack
+    // messages, etc.) and let the per-row result tell them which
+    // entries weren't valid users.
+    const raw = bulkInput
+      .split(/[\s,;]+/)
+      .map((s) => s.trim().toLowerCase())
+      .filter((s) => s.length > 0)
+    const emails = Array.from(new Set(raw))
+    if (emails.length === 0) return
+    setBulkBusy(true)
+    setBulkResults(null)
+    const results: Array<{
+      email: string
+      status: 'ok' | 'already-admin' | 'not-found' | 'error'
+      message?: string
+    }> = []
+    for (const email of emails) {
+      try {
+        const lookup = await findUserByEmail(email)
+        if (!lookup) {
+          results.push({ email, status: 'not-found' })
+          continue
+        }
+        if (lookup.is_platform_admin) {
+          results.push({ email, status: 'already-admin' })
+          continue
+        }
+        const r = await grantPlatformAdmin(lookup.id)
+        if (r.kind === 'error') {
+          results.push({ email, status: 'error', message: r.message })
+        } else {
+          results.push({ email, status: 'ok' })
+        }
+      } catch (err) {
+        results.push({
+          email,
+          status: 'error',
+          message: err instanceof Error ? err.message : 'unknown error',
+        })
+      }
+    }
+    setBulkResults(results)
+    setBulkBusy(false)
+    if (results.some((r) => r.status === 'ok')) {
+      setBulkInput('')
+      setRefreshNonce((n) => n + 1)
+    }
   }
 
   const sortedAdmins = useMemo(() => {
@@ -168,6 +245,85 @@ export function AdminAdminsPage() {
           <p role="alert" className="mt-2 text-xs text-red-600 dark:text-red-400">
             {promoteError}
           </p>
+        )}
+      </section>
+
+      <section className="mb-6 rounded-lg border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 p-4">
+        <h2 className="text-sm font-semibold mb-1 flex items-center gap-2">
+          <Users size={14} aria-hidden="true" /> Bulk grant
+        </h2>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+          Paste a list of emails (commas, spaces, or newlines work).
+          Each user must already have a Floorcraft account.
+        </p>
+        <textarea
+          value={bulkInput}
+          onChange={(e) => setBulkInput(e.target.value)}
+          rows={3}
+          placeholder={'alice@example.com\nbob@example.com\ncarol@example.com'}
+          disabled={bulkBusy}
+          className="block w-full rounded border border-[color:var(--color-paper-line)] dark:border-gray-700 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 text-sm px-2.5 py-1.5 font-mono focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
+        />
+        <div className="mt-2 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void onBulkGrant()}
+            disabled={bulkBusy || bulkInput.trim().length === 0}
+            className="px-3 py-1.5 text-sm font-medium rounded bg-[color:var(--color-blueprint-strong)] text-white hover:bg-[color:var(--color-blueprint)] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {bulkBusy ? 'Running…' : 'Run bulk grant'}
+          </button>
+          {bulkResults && bulkResults.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setBulkResults(null)}
+              className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+            >
+              Clear results
+            </button>
+          )}
+        </div>
+        {bulkResults && bulkResults.length > 0 && (
+          <ul className="mt-3 max-h-48 overflow-y-auto divide-y divide-[color:var(--color-paper-line)] dark:divide-gray-800 rounded border border-[color:var(--color-paper-line)] dark:border-gray-800">
+            {bulkResults.map((r) => (
+              <li
+                key={r.email}
+                className="flex items-center justify-between gap-2 px-3 py-1.5 text-xs"
+              >
+                <span className="font-mono truncate">{r.email}</span>
+                <span
+                  className={`inline-flex items-center gap-1 ${
+                    r.status === 'ok'
+                      ? 'text-emerald-700 dark:text-emerald-300'
+                      : r.status === 'already-admin'
+                        ? 'text-gray-500 dark:text-gray-400'
+                        : 'text-red-600 dark:text-red-400'
+                  }`}
+                  title={r.message}
+                >
+                  {r.status === 'ok' && (
+                    <>
+                      <Check size={11} aria-hidden="true" />
+                      Granted
+                    </>
+                  )}
+                  {r.status === 'already-admin' && 'Already admin'}
+                  {r.status === 'not-found' && (
+                    <>
+                      <XIcon size={11} aria-hidden="true" />
+                      Not found
+                    </>
+                  )}
+                  {r.status === 'error' && (
+                    <>
+                      <XIcon size={11} aria-hidden="true" />
+                      Error
+                    </>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
         )}
       </section>
 
