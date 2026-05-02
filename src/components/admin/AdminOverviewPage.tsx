@@ -8,6 +8,7 @@ import {
 } from '../../lib/adminLaunch'
 import { useDocumentTitle } from '../../lib/useDocumentTitle'
 import { SignupsTrendCard } from './SignupsTrendCard'
+import { RecentAdminActionsCard } from './RecentAdminActionsCard'
 
 /**
  * Read-only platform-overview dashboard. Pulls a single jsonb of
@@ -135,6 +136,8 @@ export function AdminOverviewPage() {
       </div>
 
       <SignupsTrendCard refreshNonce={refreshNonce} />
+
+      <RecentAdminActionsCard refreshNonce={refreshNonce} />
 
       {recent && recent.length > 0 && (
         <section className="mt-6 rounded-lg border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 overflow-hidden">

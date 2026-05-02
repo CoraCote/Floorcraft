@@ -46,7 +46,12 @@ esac
 
 if [ "$push_migrations" -eq 1 ]; then
   echo "==> Pushing migrations to remote…"
-  npx supabase db push --linked
+  # --include-all so a "newer migration on remote, missing one in
+  # the middle locally" state still applies cleanly. Without it the
+  # CLI bails with "Found local migration files to be inserted before
+  # the last migration on remote" — common when rebasing a branch
+  # whose number was assigned before a sibling PR landed.
+  npx supabase db push --linked --include-all
   echo
 fi
 
