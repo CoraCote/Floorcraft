@@ -62,6 +62,38 @@ export function OfficeCard({ office, teamSlug, thumbnailElements, stats, avatars
           >
             {metaParts.join(' · ')}
           </div>
+          {/* Occupancy bar — shows the assigned/desks ratio at a glance
+              so an owner managing multiple offices can see at the team
+              dashboard whether each plan is full or has headroom.
+              Hidden when there are no desks; the existing "No one
+              assigned yet" line in the avatars block covers that
+              case. */}
+          {stats.desks > 0 && (
+            <div className="mt-2">
+              <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400 mb-0.5">
+                <span>
+                  {stats.assigned} / {stats.desks} seats
+                </span>
+                <span className="tabular-nums">
+                  {Math.round((stats.assigned / stats.desks) * 100)}%
+                </span>
+              </div>
+              <div
+                className="h-1 rounded bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 overflow-hidden"
+                role="progressbar"
+                aria-label="Seat occupancy"
+                aria-valuenow={stats.assigned}
+                aria-valuemax={stats.desks}
+              >
+                <div
+                  className="h-full bg-[color:var(--color-blueprint-strong)] transition-[width] duration-300 motion-reduce:transition-none"
+                  style={{
+                    width: `${Math.min(100, Math.round((stats.assigned / stats.desks) * 100))}%`,
+                  }}
+                />
+              </div>
+            </div>
+          )}
           {office.is_private && (
             <div className="mt-2 text-xs text-amber-700 dark:text-amber-300">Private</div>
           )}
