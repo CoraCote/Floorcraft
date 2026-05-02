@@ -108,3 +108,41 @@ export async function adminListTeamOffices(
   }
   return (data ?? []) as AdminTeamOffice[]
 }
+
+export interface AdminUserTeam {
+  team_id: string
+  team_name: string
+  team_slug: string
+  role: string
+  joined_at: string
+  is_suspended: boolean
+}
+
+export interface AdminUserDetail {
+  id: string
+  email: string
+  name: string | null
+  created_at: string
+  is_platform_admin: boolean
+  teams: AdminUserTeam[]
+}
+
+/**
+ * Per-user detail for the admin user-detail page. Returns the
+ * user's profile alongside every team they're a member of (with
+ * role + joined-at + the team's suspension state).
+ *
+ * Migration 0025. Best-effort: pre-0025 projects return null.
+ */
+export async function adminGetUserDetail(
+  userId: string,
+): Promise<AdminUserDetail | null> {
+  const { data, error } = await supabase.rpc('admin_get_user_detail', {
+    p_user_id: userId,
+  })
+  if (error) {
+    console.warn('[admin-launch] user detail failed', error)
+    return null
+  }
+  return data as AdminUserDetail
+}

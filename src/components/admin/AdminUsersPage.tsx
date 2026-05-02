@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   ArrowDown,
   ArrowUp,
@@ -388,7 +388,12 @@ export function AdminUsersPage() {
                   </td>
                   <td className="px-3 py-2">
                     <span className="inline-flex items-center gap-1.5">
-                      <span className="text-gray-900 dark:text-gray-100">{u.email}</span>
+                      <Link
+                        to={`/admin/users/${u.id}`}
+                        className="text-gray-900 dark:text-gray-100 hover:text-[color:var(--color-blueprint-strong)] dark:hover:text-[color:var(--color-blueprint)] hover:underline"
+                      >
+                        {u.email}
+                      </Link>
                       {u.is_platform_admin && (
                         <span
                           title="Platform admin"

@@ -156,6 +156,11 @@ const AdminAuditPage = lazy(() =>
     default: m.AdminAuditPage,
   })),
 )
+const AdminUserDetailPage = lazy(() =>
+  import('./components/admin/AdminUserDetailPage').then((m) => ({
+    default: m.AdminUserDetailPage,
+  })),
+)
 const RequirePlatformAdmin = lazy(() =>
   import('./components/admin/RequirePlatformAdmin').then((m) => ({
     default: m.RequirePlatformAdmin,
@@ -347,6 +352,7 @@ function App() {
               <Route path="teams" element={<AdminTeamsPage />} />
               <Route path="teams/:teamId" element={<AdminTeamDetailPage />} />
               <Route path="users" element={<AdminUsersPage />} />
+              <Route path="users/:userId" element={<AdminUserDetailPage />} />
               <Route path="admins" element={<AdminAdminsPage />} />
               <Route path="billing" element={<AdminBillingPage />} />
               <Route path="audit" element={<AdminAuditPage />} />

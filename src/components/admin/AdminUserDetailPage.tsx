@@ -1,0 +1,281 @@
+import { useEffect, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
+import {
+  ArrowLeft,
+  ShieldAlert,
+  ShieldCheck,
+  ShieldOff,
+  User as UserIcon,
+} from 'lucide-react'
+import {
+  adminGetUserDetail,
+  type AdminUserDetail,
+} from '../../lib/adminLaunch'
+import {
+  grantPlatformAdmin,
+  revokePlatformAdmin,
+} from '../../lib/platformAdmin'
+import { useDocumentTitle } from '../../lib/useDocumentTitle'
+import { ConfirmDialog } from '../editor/ConfirmDialog'
+
+/**
+ * Per-user detail surface for platform admins. Shows the user's
+ * profile fields and the list of teams they're a member of.
+ * Mirrors AdminTeamDetailPage's shape — header, identity strip,
+ * action card (grant / revoke admin), member-list table.
+ *
+ * Read-only on team membership for now: removing a user from a
+ * team happens inside the team's own settings, not the platform-
+ * admin surface. Adding the same dance here would risk doing it
+ * by accident.
+ */
+export function AdminUserDetailPage() {
+  const { userId } = useParams<{ userId: string }>()
+  const [detail, setDetail] = useState<AdminUserDetail | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [refreshNonce, setRefreshNonce] = useState(0)
+  const [pending, setPending] = useState<'grant' | 'revoke' | null>(null)
+  const [busy, setBusy] = useState(false)
+  useDocumentTitle(detail ? `${detail.email} · Admin — Floorcraft` : null)
+
+  useEffect(() => {
+    if (!userId) return
+    let cancelled = false
+    async function load() {
+      const result = await adminGetUserDetail(userId!)
+      if (cancelled) return
+      if (!result) {
+        setError(
+          'Could not load user detail. Migration 0025 may not be applied yet.',
+        )
+        return
+      }
+      setError(null)
+      setDetail(result)
+    }
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [userId, refreshNonce])
+
+  async function onConfirm() {
+    if (!detail || !pending || busy) return
+    setBusy(true)
+    const r =
+      pending === 'grant'
+        ? await grantPlatformAdmin(detail.id)
+        : await revokePlatformAdmin(detail.id)
+    setBusy(false)
+    setPending(null)
+    if (r.kind === 'error') {
+      setError(r.message)
+      return
+    }
+    setError(null)
+    setRefreshNonce((n) => n + 1)
+  }
+
+  if (!userId) return null
+
+  return (
+    <div className="p-8 max-w-4xl">
+      <Link
+        to="/admin/users"
+        className="inline-flex items-center gap-1 text-xs text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline mb-3"
+      >
+        <ArrowLeft size={12} aria-hidden="true" />
+        All users
+      </Link>
+
+      {error && (
+        <div className="mb-4 rounded border border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-950/30 p-3 text-sm text-amber-800 dark:text-amber-200">
+          {error}
+        </div>
+      )}
+
+      {detail === null && !error && (
+        <p className="text-sm text-gray-500 dark:text-gray-400">Loading…</p>
+      )}
+
+      {detail && (
+        <>
+          <header className="mb-6">
+            <div className="flex items-baseline justify-between gap-4 mb-1 flex-wrap">
+              <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 flex items-baseline gap-2 min-w-0">
+                <span className="truncate">{detail.email}</span>
+                {detail.is_platform_admin && (
+                  <span
+                    title="Platform admin"
+                    className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-[color:var(--color-blueprint-soft)] dark:bg-gray-800 text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]"
+                  >
+                    <ShieldCheck size={11} aria-hidden="true" />
+                    Admin
+                  </span>
+                )}
+              </h1>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {detail.name?.trim() ? (
+                <>
+                  <span>{detail.name}</span> ·{' '}
+                </>
+              ) : null}
+              <span>
+                {detail.teams.length} team
+                {detail.teams.length === 1 ? '' : 's'}
+              </span>{' '}
+              · signed up {new Date(detail.created_at).toLocaleDateString()}
+            </p>
+          </header>
+
+          <section className="rounded-lg border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 p-4">
+            <h2 className="text-sm font-semibold mb-1 flex items-center gap-2">
+              <UserIcon size={14} aria-hidden="true" />
+              Platform admin
+            </h2>
+            <p className="text-xs text-gray-600 dark:text-gray-300 mb-2">
+              {detail.is_platform_admin
+                ? 'This user has full platform-admin access. Revoking removes their access to /admin and team-side bypass; their team-side roles are unaffected.'
+                : 'This user is a regular member. Granting admin gives them full access to every team, audit log, billing, and the ability to grant or revoke other admins.'}
+            </p>
+            {detail.is_platform_admin ? (
+              <button
+                type="button"
+                onClick={() => setPending('revoke')}
+                disabled={busy}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded border border-red-600 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-50"
+              >
+                <ShieldOff size={12} aria-hidden="true" />
+                Revoke admin
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setPending('grant')}
+                disabled={busy}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded bg-[color:var(--color-blueprint-strong)] text-white hover:bg-[color:var(--color-blueprint)] disabled:opacity-50"
+              >
+                <ShieldCheck size={12} aria-hidden="true" />
+                Grant admin
+              </button>
+            )}
+          </section>
+
+          <section className="mt-6">
+            <h2 className="text-sm font-semibold mb-2 text-gray-900 dark:text-gray-100">
+              Teams
+            </h2>
+            {detail.teams.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Not a member of any team.
+              </p>
+            ) : (
+              <div className="rounded-lg border border-[color:var(--color-paper-line)] dark:border-gray-800 overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-[color:var(--color-paper-sunken)] dark:bg-gray-800/50">
+                    <tr className="text-left text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                      <th className="px-3 py-2">Team</th>
+                      <th className="px-3 py-2">Role</th>
+                      <th className="px-3 py-2">Joined</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[color:var(--color-paper-line)] dark:divide-gray-800">
+                    {detail.teams.map((t) => (
+                      <tr key={t.team_id}>
+                        <td className="px-3 py-2">
+                          <span className="inline-flex items-center gap-1.5">
+                            <Link
+                              to={`/admin/teams/${t.team_id}`}
+                              className="text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline"
+                            >
+                              {t.team_name}
+                            </Link>
+                            {t.is_suspended && (
+                              <span
+                                title="Suspended"
+                                className="inline-flex items-center gap-0.5 text-[9px] font-semibold uppercase tracking-wider px-1 py-0.5 rounded bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300"
+                              >
+                                <ShieldAlert size={9} aria-hidden="true" />
+                                Suspended
+                              </span>
+                            )}
+                          </span>
+                          <div className="font-mono text-[10px] text-gray-400 mt-0.5">
+                            {t.team_slug}
+                          </div>
+                        </td>
+                        <td className="px-3 py-2 text-xs">
+                          <span
+                            className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider ${
+                              t.role === 'admin'
+                                ? 'bg-[color:var(--color-blueprint-soft)] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]'
+                                : 'bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 text-gray-600 dark:text-gray-300'
+                            }`}
+                          >
+                            {t.role}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
+                          {new Date(t.joined_at).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        </>
+      )}
+
+      {pending && detail && (
+        <ConfirmDialog
+          title={
+            pending === 'grant'
+              ? `Grant platform admin to ${detail.email}?`
+              : `Revoke platform admin from ${detail.email}?`
+          }
+          body={
+            pending === 'grant' ? (
+              <p>
+                They&rsquo;ll get access to every team, the audit log,
+                billing, and the ability to grant or revoke other
+                admins. Reserve this for trusted operators.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                <p>
+                  They&rsquo;ll lose access to the platform admin
+                  surfaces. Their team-side roles are unaffected.
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  The last remaining admin can&rsquo;t be revoked.
+                </p>
+              </div>
+            )
+          }
+          confirmLabel={
+            busy
+              ? pending === 'grant'
+                ? 'Granting…'
+                : 'Revoking…'
+              : pending === 'grant'
+                ? 'Grant admin'
+                : 'Revoke admin'
+          }
+          cancelLabel="Cancel"
+          tone={pending === 'grant' ? 'primary' : 'danger'}
+          onConfirm={() => {
+            if (busy) return
+            void onConfirm()
+          }}
+          onCancel={() => {
+            if (busy) return
+            setPending(null)
+          }}
+        />
+      )}
+    </div>
+  )
+}

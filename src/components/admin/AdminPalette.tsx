@@ -205,7 +205,7 @@ export function AdminPalette() {
             hint: u.name?.trim() || undefined,
             group: 'Users' as const,
             Icon: Users,
-            to: `/admin/users?q=${encodeURIComponent(u.email)}`,
+            to: `/admin/users/${u.id}`,
           }))
       : []
     return [...pageResults, ...teamResults, ...userResults]
