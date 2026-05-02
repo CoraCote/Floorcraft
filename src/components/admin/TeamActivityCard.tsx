@@ -4,17 +4,13 @@ import {
   adminTeamActivityHistogram,
   type ActivityHistogramPoint,
 } from '../../lib/adminLaunch'
+import { Sparkline, TrendBadge } from './Sparkline'
+import { summarizeSeries } from './sparklineUtil'
 
 /**
  * 30-day per-team audit-event sparkline. Shown on AdminTeamDetailPage
- * between the usage card and the recent-events list, so an admin can
- * tell at a glance whether a team is busy, dormant, or has gone dark
- * without scanning the raw event list.
- *
- * Card hides itself entirely if the RPC returns null (migration 0027
- * not applied yet) so older projects degrade gracefully. Mirrors
- * SignupsTrendCard — both share the same SVG bar-chart shape; an
- * extraction is pending after both ship.
+ * between the usage card and the recent-events list. Hides itself if
+ * migration 0027 isn't applied so older projects degrade gracefully.
  */
 export function TeamActivityCard({ teamId }: { teamId: string }) {
   const [points, setPoints] = useState<ActivityHistogramPoint[] | null>(null)
@@ -40,16 +36,7 @@ export function TeamActivityCard({ teamId }: { teamId: string }) {
     }
   }, [teamId])
 
-  const summary = useMemo(() => {
-    if (!points || points.length === 0) return null
-    const total = points.reduce((acc, p) => acc + p.count, 0)
-    const max = Math.max(...points.map((p) => p.count), 1)
-    const half = Math.floor(points.length / 2)
-    const recent = points.slice(half).reduce((a, p) => a + p.count, 0)
-    const earlier = points.slice(0, half).reduce((a, p) => a + p.count, 0)
-    const delta = recent - earlier
-    return { total, max, recent, earlier, delta }
-  }, [points])
+  const summary = useMemo(() => summarizeSeries(points ?? []), [points])
 
   if (missing) return null
   if (loading) {
@@ -81,7 +68,7 @@ export function TeamActivityCard({ teamId }: { teamId: string }) {
         </div>
       </header>
       <div className="mt-3">
-        <Sparkline points={points} max={summary.max} />
+        <Sparkline points={points} max={summary.max} unit="event" />
       </div>
       <p className="mt-2 text-[10px] text-gray-400 dark:text-gray-500 tabular-nums flex justify-between">
         <span>{points[0]?.day}</span>
@@ -93,71 +80,5 @@ export function TeamActivityCard({ teamId }: { teamId: string }) {
         </p>
       )}
     </section>
-  )
-}
-
-function TrendBadge({ delta }: { delta: number }) {
-  if (delta === 0) {
-    return (
-      <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-[11px] tabular-nums">
-        flat
-      </span>
-    )
-  }
-  const positive = delta > 0
-  return (
-    <span
-      className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] tabular-nums ${
-        positive
-          ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
-          : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300'
-      }`}
-      title="Recent half vs earlier half of the window"
-    >
-      {positive ? '↑' : '↓'} {Math.abs(delta)} vs prior half
-    </span>
-  )
-}
-
-function Sparkline({
-  points,
-  max,
-}: {
-  points: ActivityHistogramPoint[]
-  max: number
-}) {
-  const width = 100
-  const height = 32
-  const barWidth = width / points.length
-  const gap = barWidth * 0.2
-  return (
-    <svg
-      viewBox={`0 0 ${width} ${height}`}
-      preserveAspectRatio="none"
-      className="block w-full h-12 text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]"
-      role="img"
-      aria-label={`Daily audit events for the last ${points.length} days`}
-    >
-      {points.map((p, i) => {
-        const h = max > 0 ? (p.count / max) * (height - 2) : 0
-        const x = i * barWidth + gap / 2
-        const y = height - h
-        return (
-          <rect
-            key={p.day}
-            x={x}
-            y={y}
-            width={barWidth - gap}
-            height={Math.max(h, p.count > 0 ? 0.6 : 0)}
-            fill="currentColor"
-            opacity={p.count > 0 ? 1 : 0.15}
-          >
-            <title>
-              {p.day}: {p.count} event{p.count === 1 ? '' : 's'}
-            </title>
-          </rect>
-        )
-      })}
-    </svg>
   )
 }
