@@ -3,6 +3,7 @@ import { NavLink, Outlet, useParams, Link } from 'react-router-dom'
 import { ArrowLeft, Building2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useSession } from '../../lib/auth/session'
+import { useDocumentTitle } from '../../lib/useDocumentTitle'
 import type { Team } from '../../types/team'
 
 /**
@@ -31,6 +32,7 @@ export function TeamSettingsPage() {
   const sessionUserId =
     session.status === 'authenticated' ? session.user.id : null
   const sessionStatus = session.status
+  useDocumentTitle(team ? `Settings · ${team.name} — Floorcraft` : null)
 
   useEffect(() => {
     async function load() {

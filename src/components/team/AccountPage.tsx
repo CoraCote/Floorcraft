@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useSession } from '../../lib/auth/session'
+import { useDocumentTitle } from '../../lib/useDocumentTitle'
 import { humanizeError } from '../../lib/errorMessages'
 import { Button, Input } from '../ui'
 
@@ -131,6 +132,7 @@ export function AccountPage() {
   const session = useSession()
   const navigate = useNavigate()
   const location = useLocation()
+  useDocumentTitle('Account — Floorcraft')
 
   // Resolve the back-link target. If the user got here from somewhere
   // sensible (the user-menu carries `from` state in a future pass),

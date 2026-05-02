@@ -25,6 +25,7 @@ import { OfficeCard } from './OfficeCard'
 import type { ThumbnailElement } from './OfficeThumbnail'
 import type { Team } from '../../types/team'
 import { getRecents } from '../../lib/recentOffices'
+import { useDocumentTitle } from '../../lib/useDocumentTitle'
 
 /**
  * Wave 14A: refresh the post-login dashboard to match the JSON-Crack /
@@ -301,6 +302,7 @@ export function TeamHomePage() {
   const searchRef = useRef<HTMLInputElement>(null)
   const session = useSession()
   const navigate = useNavigate()
+  useDocumentTitle(team ? `${team.name} — Floorcraft` : null)
 
   // The session object identity changes on every render (zustand
   // returns a fresh selector snapshot); depend on the stable

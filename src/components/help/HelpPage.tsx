@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { HelpSearchPalette } from './HelpSearchPalette'
 import { HELP_SECTIONS } from './helpSections'
+import { useDocumentTitle } from '../../lib/useDocumentTitle'
 
 /**
  * Single-page user guide + FAQ. Deliberately kept in one file with
@@ -1379,6 +1380,7 @@ function SectionHeading({
 }
 
 export function HelpPage() {
+  useDocumentTitle('Help — Floorcraft')
   const [activeId, setActiveId] = useState(sections[0].id)
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({})
   const [paletteOpen, setPaletteOpen] = useState(false)

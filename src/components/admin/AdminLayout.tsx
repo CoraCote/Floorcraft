@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { LayoutDashboard, Users, Building2, ShieldCheck, CreditCard } from 'lucide-react'
+import { useDocumentTitle } from '../../lib/useDocumentTitle'
 
 /**
  * Two-pane shell for the platform-admin surfaces. Left rail =
@@ -11,6 +12,7 @@ import { LayoutDashboard, Users, Building2, ShieldCheck, CreditCard } from 'luci
  * layout itself doesn't need to re-check the role.
  */
 export function AdminLayout() {
+  useDocumentTitle('Platform admin — Floorcraft')
   return (
     <div className="flex h-screen bg-[color:var(--color-paper)] dark:bg-gray-950">
       <aside className="w-56 flex-shrink-0 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border-r border-[color:var(--color-paper-line)] dark:border-gray-800 flex flex-col">
