@@ -181,9 +181,6 @@ export function OfficeCard({
               </div>
             </div>
           )}
-          {office.is_private && (
-            <div className="mt-2 text-xs text-amber-700 dark:text-amber-300">Private</div>
-          )}
           <div className="mt-3 pt-3 border-t border-[color:var(--color-paper-line)] dark:border-gray-800 flex items-center justify-between">
             {avatars.length > 0 ? (
               <div className="flex -space-x-2">
@@ -366,15 +363,33 @@ export function OfficeCard({
           </div>
         )}
       </div>
-      {isArchived && (
-        <span
-          aria-label="Archived"
-          title="Archived"
-          className="absolute top-[10px] left-[10px] inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold text-amber-700 dark:text-amber-300 bg-amber-50/95 dark:bg-amber-950/40 px-1.5 py-0.5 rounded backdrop-blur-sm"
-        >
-          <Archive size={11} aria-hidden="true" />
-          Archived
-        </span>
+      {/* Status badges in the top-left of the thumbnail. The
+          Archived + Private badges stack vertically when both apply
+          (rare but legal — an admin might archive a sensitive office
+          and we should still surface that it was private). */}
+      {(isArchived || office.is_private) && (
+        <div className="absolute top-[10px] left-[10px] flex flex-col items-start gap-1">
+          {isArchived && (
+            <span
+              aria-label="Archived"
+              title="Archived"
+              className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold text-amber-700 dark:text-amber-300 bg-amber-50/95 dark:bg-amber-950/40 px-1.5 py-0.5 rounded backdrop-blur-sm"
+            >
+              <Archive size={11} aria-hidden="true" />
+              Archived
+            </span>
+          )}
+          {office.is_private && (
+            <span
+              aria-label="Private — restricted to invited collaborators"
+              title="Private — restricted to invited collaborators"
+              className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] bg-[color:var(--color-blueprint-soft)]/95 dark:bg-gray-900/80 px-1.5 py-0.5 rounded backdrop-blur-sm ring-1 ring-[color:var(--color-blueprint)]/30"
+            >
+              <Lock size={11} aria-hidden="true" />
+              Private
+            </span>
+          )}
+        </div>
       )}
     </div>
   )
