@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Archive, ArchiveRestore, Check, Copy, Link2, MoreHorizontal, Trash2 } from 'lucide-react'
+import { Archive, ArchiveRestore, Check, Copy, Link2, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import { OfficeThumbnail, type ThumbnailElement } from './OfficeThumbnail'
 import { formatRelative } from '../../lib/time'
 import type { OfficeListItem } from '../../lib/offices/officeRepository'
@@ -31,6 +31,9 @@ interface Props {
   /** Duplicate the office's payload into a fresh row. Parent decides
    *  the new name + handles navigation. */
   onDuplicate: (office: OfficeListItem) => void
+  /** Open the rename modal for this office. Parent owns the modal
+   *  state and the actual update call. */
+  onRename: (office: OfficeListItem) => void
 }
 
 /**
@@ -48,6 +51,7 @@ export function OfficeCard({
   onDelete,
   onArchive,
   onDuplicate,
+  onRename,
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -230,6 +234,22 @@ export function OfficeCard({
             role="menu"
             className="absolute right-0 mt-1 w-44 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-lg shadow-lg py-1 z-10"
           >
+            {!isArchived && (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setMenuOpen(false)
+                  onRename(office)
+                }}
+                className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800"
+              >
+                <Pencil size={14} aria-hidden="true" />
+                Rename
+              </button>
+            )}
             {isArchived ? (
               <button
                 type="button"

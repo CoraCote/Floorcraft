@@ -103,6 +103,26 @@ export async function createOffice(teamId: string, name: string): Promise<Office
 }
 
 /**
+ * Rename an office. Updates only the `name` column — the `slug`
+ * stays put. Renaming a slug would silently break every share link,
+ * bookmark, and `/t/<team>/o/<slug>/...` URL the user has handed
+ * out, so we keep the slug stable and let the operator generate a
+ * new office (Duplicate + delete) if they want a fresh slug.
+ *
+ * RLS gates the update to owners + editors; the database returns a
+ * permission error which surfaces to the UI as a normal error.
+ */
+export async function renameOffice(officeId: string, newName: string): Promise<void> {
+  const trimmed = newName.trim()
+  if (trimmed.length === 0) throw new Error('Office name cannot be empty')
+  const { error } = await supabase
+    .from('offices')
+    .update({ name: trimmed })
+    .eq('id', officeId)
+  if (error) throw error
+}
+
+/**
  * Duplicate an office by copying its `payload` into a brand-new row.
  * The caller picks the new name (the kebab menu suggests
  * "<original> (copy)"); we slug the name and let any unique-slug
