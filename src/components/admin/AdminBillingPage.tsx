@@ -9,6 +9,7 @@ import {
 } from '../../lib/billing'
 import { downloadCsv } from '../../lib/reports/csvExport'
 import { useDocumentTitle } from '../../lib/useDocumentTitle'
+import { ConfirmDialog } from '../editor/ConfirmDialog'
 
 /**
  * Platform-admin billing surface. Lists every team with their
@@ -85,8 +86,18 @@ export function AdminBillingPage() {
   const atRiskCount =
     statusCounts.past_due + statusCounts.unpaid + statusCounts.incomplete
 
-  async function onClearOverride(teamId: string) {
-    const result = await adminClearSubscriptionOverride(teamId)
+  // Clearing an override flips the team back to whatever Stripe says
+  // — that can be a meaningful access change ("comp Pro plan ends
+  // immediately"), so two-step confirm prevents an accidental click.
+  const [pendingClear, setPendingClear] = useState<AdminSubscription | null>(null)
+  const [clearBusy, setClearBusy] = useState(false)
+
+  async function onConfirmClear() {
+    if (!pendingClear || clearBusy) return
+    setClearBusy(true)
+    const result = await adminClearSubscriptionOverride(pendingClear.team_id)
+    setClearBusy(false)
+    setPendingClear(null)
     if (result.kind === 'error') {
       setError(result.message)
       return
@@ -294,7 +305,7 @@ export function AdminBillingPage() {
                     {s.has_override && (
                       <button
                         type="button"
-                        onClick={() => onClearOverride(s.team_id)}
+                        onClick={() => setPendingClear(s)}
                         className="text-[11px] text-amber-700 dark:text-amber-300 hover:underline"
                         title="Clear override"
                       >
@@ -339,6 +350,38 @@ export function AdminBillingPage() {
           </li>
         </ol>
       </div>
+
+      {pendingClear && (
+        <ConfirmDialog
+          title={`Clear comp override on "${pendingClear.team_name}"?`}
+          body={
+            <div className="space-y-2">
+              <p>
+                The team will revert to whatever its Stripe subscription
+                says. If their override was carrying their access (no
+                paid subscription), they&rsquo;ll drop to the free tier
+                immediately.
+              </p>
+              {pendingClear.override_reason && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Reason on file: <em>{pendingClear.override_reason}</em>
+                </p>
+              )}
+            </div>
+          }
+          confirmLabel={clearBusy ? 'Clearing…' : 'Clear override'}
+          cancelLabel="Cancel"
+          tone="danger"
+          onConfirm={() => {
+            if (clearBusy) return
+            void onConfirmClear()
+          }}
+          onCancel={() => {
+            if (clearBusy) return
+            setPendingClear(null)
+          }}
+        />
+      )}
     </div>
   )
 }

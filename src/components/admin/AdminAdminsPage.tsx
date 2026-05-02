@@ -8,6 +8,7 @@ import {
   type PlatformAdminRow,
 } from '../../lib/platformAdmin'
 import { useDocumentTitle } from '../../lib/useDocumentTitle'
+import { ConfirmDialog } from '../editor/ConfirmDialog'
 
 /**
  * Manage the set of platform admins. Lists current admins; lets an
@@ -29,6 +30,13 @@ export function AdminAdminsPage() {
   const [emailInput, setEmailInput] = useState('')
   const [promoteError, setPromoteError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+
+  // Revoke-confirm state — single click was a footgun (the only
+  // remaining admin can't revoke themselves *but* an admin with
+  // peers can accidentally remove the wrong one). Two-step confirm
+  // surfaces the email so the operator double-checks.
+  const [pendingRevoke, setPendingRevoke] = useState<PlatformAdminRow | null>(null)
+  const [revokeBusy, setRevokeBusy] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -75,8 +83,12 @@ export function AdminAdminsPage() {
     setRefreshNonce((n) => n + 1)
   }
 
-  async function onRevoke(userId: string) {
-    const result = await revokePlatformAdmin(userId)
+  async function onConfirmRevoke() {
+    if (!pendingRevoke || revokeBusy) return
+    setRevokeBusy(true)
+    const result = await revokePlatformAdmin(pendingRevoke.id)
+    setRevokeBusy(false)
+    setPendingRevoke(null)
     if (result.kind === 'error') {
       setError(result.message)
       return
@@ -158,7 +170,7 @@ export function AdminAdminsPage() {
               </div>
               <button
                 type="button"
-                onClick={() => onRevoke(a.id)}
+                onClick={() => setPendingRevoke(a)}
                 className="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 px-2 py-1 rounded"
                 title="Revoke admin"
               >
@@ -168,6 +180,36 @@ export function AdminAdminsPage() {
             </li>
           ))}
         </ul>
+      )}
+
+      {pendingRevoke && (
+        <ConfirmDialog
+          title={`Revoke admin from ${pendingRevoke.email}?`}
+          body={
+            <div className="space-y-2">
+              <p>
+                They&rsquo;ll lose access to the platform admin surfaces:
+                Overview, Teams, Users, Admins, Billing, and the audit log.
+                They keep their team-side roles.
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                The last remaining admin can&rsquo;t be revoked — promote a
+                teammate first if this would empty the role.
+              </p>
+            </div>
+          }
+          confirmLabel={revokeBusy ? 'Revoking…' : 'Revoke admin'}
+          cancelLabel="Cancel"
+          tone="danger"
+          onConfirm={() => {
+            if (revokeBusy) return
+            void onConfirmRevoke()
+          }}
+          onCancel={() => {
+            if (revokeBusy) return
+            setPendingRevoke(null)
+          }}
+        />
       )}
     </div>
   )
