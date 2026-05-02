@@ -437,30 +437,45 @@ export function TeamHomePage() {
     writePrefs(prefsKey, { sortMode, filterMode, showArchived })
   }, [prefsKey, sortMode, filterMode, showArchived])
 
-  // Global "/" shortcut focuses the search input. Matches the
-  // Linear / GitHub pattern — a single unshifted "/" while nothing
-  // else is focused jumps to search. Skip when the user is already
-  // typing somewhere or a modifier is held.
+  // Global keyboard shortcuts. `/` focuses the search (Linear/GitHub
+  // idiom), `n` opens the new-office modal for users who can create,
+  // and `?` toggles the small help card. All skip when the user is
+  // already typing, when a modifier is held, or when a modal is up.
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key !== '/') return
       if (e.ctrlKey || e.metaKey || e.altKey) return
       const target = e.target as HTMLElement | null
-      if (
-        target &&
+      const inField =
+        !!target &&
         (target.tagName === 'INPUT' ||
           target.tagName === 'TEXTAREA' ||
           target.isContentEditable)
-      ) {
+      // Escape closes the help card no matter where focus is.
+      if (e.key === 'Escape' && shortcutsOpen) {
+        setShortcutsOpen(false)
         return
       }
-      e.preventDefault()
-      searchRef.current?.focus()
-      searchRef.current?.select()
+      if (inField) return
+      if (e.key === '/') {
+        e.preventDefault()
+        searchRef.current?.focus()
+        searchRef.current?.select()
+        return
+      }
+      if (e.key === '?') {
+        e.preventDefault()
+        setShortcutsOpen((o) => !o)
+        return
+      }
+      if (e.key === 'n' && canCreateOffices && !creating) {
+        e.preventDefault()
+        setCreateModal({ mode: 'new', defaultName: nextOfficeName(offices) })
+      }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [])
+  }, [shortcutsOpen, canCreateOffices, creating, offices])
 
   // Precompute per-office stats once per office-list change.
   const officeStats = useMemo(() => {
@@ -1235,8 +1250,54 @@ export function TeamHomePage() {
             onSubmit={performRename}
           />
         )}
+
+        {shortcutsOpen && (
+          <div
+            role="dialog"
+            aria-label="Keyboard shortcuts"
+            className="fixed bottom-6 right-6 z-30 w-72 rounded-xl border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 shadow-lg p-4"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <p className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
+                Shortcuts
+              </p>
+              <button
+                type="button"
+                onClick={() => setShortcutsOpen(false)}
+                aria-label="Close shortcuts"
+                className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 -mr-1"
+              >
+                <X size={14} aria-hidden="true" />
+              </button>
+            </div>
+            <ul className="space-y-1.5 text-sm">
+              <ShortcutRow keys={['/']} label="Focus search" />
+              {canCreateOffices && <ShortcutRow keys={['n']} label="New office" />}
+              <ShortcutRow keys={['?']} label="Toggle this card" />
+              <ShortcutRow keys={['Esc']} label="Close" />
+            </ul>
+          </div>
+        )}
       </div>
     </div>
+  )
+}
+
+function ShortcutRow({ keys, label }: { keys: string[]; label: string }) {
+  return (
+    <li className="flex items-center justify-between gap-3">
+      <span className="text-gray-700 dark:text-gray-200">{label}</span>
+      <span className="flex items-center gap-1">
+        {keys.map((k) => (
+          <kbd
+            key={k}
+            className="font-mono text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 text-gray-700 dark:text-gray-200 ring-1 ring-[color:var(--color-paper-line)] dark:ring-gray-700"
+          >
+            {k}
+          </kbd>
+        ))}
+      </span>
+    </li>
   )
 }
 
