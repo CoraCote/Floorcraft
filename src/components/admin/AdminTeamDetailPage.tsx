@@ -14,6 +14,8 @@ import {
   adminTeamUsage,
   adminDeleteTeam,
   adminListPlatformAudit,
+  adminListTeamOffices,
+  type AdminTeamOffice,
   type PlatformAuditRow,
   type TeamUsage,
 } from '../../lib/adminLaunch'
@@ -37,6 +39,7 @@ export function AdminTeamDetailPage() {
   const [sub, setSub] = useState<TeamSubscription | null>(null)
   const [usage, setUsage] = useState<TeamUsage | null>(null)
   const [recent, setRecent] = useState<PlatformAuditRow[] | null>(null)
+  const [offices, setOffices] = useState<AdminTeamOffice[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [refreshNonce, setRefreshNonce] = useState(0)
   const [pendingDelete, setPendingDelete] = useState(false)
@@ -47,20 +50,24 @@ export function AdminTeamDetailPage() {
     if (!teamId) return
     let cancelled = false
     async function load() {
-      const [result, subResult, usageResult, recentResult] = await Promise.all([
-        adminGetTeamDetail(teamId!),
-        // Best-effort: a project that hasn't applied the billing
-        // migration returns null and we hide the card. Don't block
-        // team-detail rendering on it.
-        teamGetSubscription(teamId!).catch(() => null),
-        // Usage RPC came in migration 0022. Same best-effort
-        // pattern — projects on older migrations skip the card.
-        adminTeamUsage(teamId!).catch(() => null),
-        // Recent audit events for this team — same RPC the platform
-        // audit page uses, just pulled with a smaller limit. Best-
-        // effort like the others.
-        adminListPlatformAudit({ limit: 50 }).catch(() => null),
-      ])
+      const [result, subResult, usageResult, recentResult, officesResult] =
+        await Promise.all([
+          adminGetTeamDetail(teamId!),
+          // Best-effort: a project that hasn't applied the billing
+          // migration returns null and we hide the card. Don't block
+          // team-detail rendering on it.
+          teamGetSubscription(teamId!).catch(() => null),
+          // Usage RPC came in migration 0022. Same best-effort
+          // pattern — projects on older migrations skip the card.
+          adminTeamUsage(teamId!).catch(() => null),
+          // Recent audit events for this team — same RPC the
+          // platform audit page uses, just pulled with a smaller
+          // limit. Best-effort like the others.
+          adminListPlatformAudit({ limit: 50 }).catch(() => null),
+          // Offices for this team via migration 0024's RPC. Best-
+          // effort: pre-0024 projects skip the card.
+          adminListTeamOffices(teamId!).catch(() => null),
+        ])
       if (cancelled) return
       if (!result) {
         setError('Could not load team detail.')
@@ -76,6 +83,7 @@ export function AdminTeamDetailPage() {
       setRecent(
         recentResult ? recentResult.filter((r) => r.team_id === teamId) : null,
       )
+      setOffices(officesResult)
     }
     void load()
     return () => {
@@ -149,6 +157,10 @@ export function AdminTeamDetailPage() {
           {sub && <BillingCard sub={sub} />}
 
           {usage && <UsageCard usage={usage} />}
+
+          {offices && (
+            <OfficesCard offices={offices} teamSlug={detail.slug} />
+          )}
 
           {recent && <RecentEventsCard rows={recent} teamId={detail.id} />}
 
@@ -289,6 +301,83 @@ function UsageCard({ usage }: { usage: TeamUsage }) {
           )}
         </p>
       )}
+    </section>
+  )
+}
+
+function OfficesCard({
+  offices,
+  teamSlug,
+}: {
+  offices: AdminTeamOffice[]
+  teamSlug: string
+}) {
+  if (offices.length === 0) {
+    return (
+      <section className="mt-6 rounded-lg border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 p-4">
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">
+          Offices
+        </h2>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          No offices on this team.
+        </p>
+      </section>
+    )
+  }
+  const active = offices.filter((o) => !o.archived_at)
+  const archived = offices.filter((o) => o.archived_at)
+  return (
+    <section className="mt-6 rounded-lg border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-[color:var(--color-paper-line)] dark:border-gray-800">
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+          Offices{' '}
+          <span className="font-mono text-[10px] text-gray-500 dark:text-gray-400 ml-1">
+            {active.length} active
+            {archived.length > 0 ? ` · ${archived.length} archived` : ''}
+          </span>
+        </h2>
+      </div>
+      <ul className="divide-y divide-[color:var(--color-paper-line)] dark:divide-gray-800">
+        {[...active, ...archived].map((o) => (
+          <li
+            key={o.id}
+            className="flex items-center gap-3 px-4 py-2 text-sm"
+          >
+            <Link
+              to={`/t/${teamSlug}/o/${o.slug}/map`}
+              className="flex-1 min-w-0 text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline truncate"
+              title={`Open ${o.name}`}
+            >
+              {o.name}
+            </Link>
+            <span className="font-mono text-[10px] text-gray-400 dark:text-gray-500 truncate max-w-[10rem]">
+              {o.slug}
+            </span>
+            {o.is_private && (
+              <span
+                title="Private"
+                className="inline-flex items-center text-[9px] font-semibold uppercase tracking-wider px-1 py-0.5 rounded bg-[color:var(--color-blueprint-soft)] dark:bg-gray-800 text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]"
+              >
+                Private
+              </span>
+            )}
+            {o.archived_at && (
+              <span
+                title={`Archived ${new Date(o.archived_at).toLocaleDateString()}`}
+                className="inline-flex items-center text-[9px] font-semibold uppercase tracking-wider px-1 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300"
+              >
+                Archived
+              </span>
+            )}
+            <span
+              className="text-xs text-gray-500 dark:text-gray-400 tabular-nums shrink-0"
+              title={new Date(o.updated_at).toUTCString()}
+            >
+              {new Date(o.updated_at).toLocaleDateString()}
+            </span>
+          </li>
+        ))}
+      </ul>
     </section>
   )
 }
