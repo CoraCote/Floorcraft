@@ -59,7 +59,7 @@ export function LoginPage() {
   }
 
   return (
-    <AuthShell>
+    <AuthShell documentTitle="Sign in">
       <AuthHeading title="Welcome back" subtitle="Sign in to your workspace." />
 
       {error && <AuthErrorBanner id="login-form-error" message={error} />}

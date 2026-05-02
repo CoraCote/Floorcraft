@@ -36,7 +36,7 @@ export function AuthVerifyPage() {
 
   if (error) {
     return (
-      <AuthShell>
+      <AuthShell documentTitle="Verification failed">
         <div className="flex flex-col items-center text-center">
           <span
             aria-hidden="true"
@@ -69,7 +69,7 @@ export function AuthVerifyPage() {
   }
 
   return (
-    <AuthShell>
+    <AuthShell documentTitle="Verifying email">
       <div className="flex flex-col items-center text-center">
         <span
           aria-hidden="true"

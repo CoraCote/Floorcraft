@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { AlertCircle } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { useDocumentTitle } from '../../lib/useDocumentTitle'
 
 /**
  * Wave 17A shared chrome for every auth screen. The five auth pages
@@ -15,7 +16,19 @@ import type { ReactNode } from 'react'
  * banner / link row. Anything richer (spinners, icons) is assembled
  * per page using the UI-kit `Button` and `Input` primitives.
  */
-export function AuthShell({ children }: { children: ReactNode }) {
+export function AuthShell({
+  children,
+  /**
+   * Browser tab title for this auth screen, e.g. "Sign in" or
+   * "Create account". The shell appends "— Floorcraft" so the
+   * suffix stays consistent with the rest of the app.
+   */
+  documentTitle,
+}: {
+  children: ReactNode
+  documentTitle?: string
+}) {
+  useDocumentTitle(documentTitle ? `${documentTitle} — Floorcraft` : null)
   return (
     <div className="min-h-screen flex flex-col bg-blueprint-grid">
       <header className="px-6 pt-6 sm:pt-8">

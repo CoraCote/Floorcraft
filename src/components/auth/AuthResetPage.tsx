@@ -59,7 +59,7 @@ export function AuthResetPage() {
   }
 
   return (
-    <AuthShell>
+    <AuthShell documentTitle="Set new password">
       <AuthHeading
         title="Choose a new password"
         subtitle="Your old one is now inactive."

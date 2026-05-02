@@ -83,7 +83,7 @@ export function SignupPage() {
 
   if (done) {
     return (
-      <AuthShell>
+      <AuthShell documentTitle="Check your inbox">
         <div className="flex flex-col items-center text-center">
           <span
             aria-hidden="true"
@@ -111,7 +111,7 @@ export function SignupPage() {
   }
 
   return (
-    <AuthShell>
+    <AuthShell documentTitle="Create account">
       <AuthHeading
         title="Create your workspace"
         subtitle="Start planning your office in minutes. Free for small teams."

@@ -52,7 +52,7 @@ export function ForgotPasswordPage() {
 
   if (done) {
     return (
-      <AuthShell>
+      <AuthShell documentTitle="Reset link sent">
         <div className="flex flex-col items-center text-center">
           <span
             aria-hidden="true"
@@ -92,7 +92,7 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <AuthShell>
+    <AuthShell documentTitle="Reset password">
       <AuthHeading
         title="Reset your password"
         subtitle="We'll email you a link to set a new one."

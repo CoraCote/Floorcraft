@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Compass } from 'lucide-react'
+import { useDocumentTitle } from '../lib/useDocumentTitle'
 
 /**
  * Wave 18A: a real 404 surface.
@@ -31,6 +32,7 @@ import { Compass } from 'lucide-react'
  */
 export function NotFoundPage() {
   const location = useLocation()
+  useDocumentTitle('Page not found — Floorcraft')
 
   useEffect(() => {
     // Logged once per missing path so a parent re-render doesn't spam

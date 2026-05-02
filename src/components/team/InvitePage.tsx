@@ -5,6 +5,7 @@ import { useSession } from '../../lib/auth/session'
 import { supabase } from '../../lib/supabase'
 import { humanizeError } from '../../lib/errorMessages'
 import { previewInvite, type InvitePreview } from '../../lib/invitePreview'
+import { useDocumentTitle } from '../../lib/useDocumentTitle'
 import { Button } from '../ui'
 
 /**
@@ -28,6 +29,7 @@ export function InvitePage() {
   const { token } = useParams<{ token: string }>()
   const session = useSession()
   const navigate = useNavigate()
+  useDocumentTitle('Team invite — Floorcraft')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [preview, setPreview] = useState<InvitePreview | null>(null)
