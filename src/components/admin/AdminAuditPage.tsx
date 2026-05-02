@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { Download, History, RefreshCw, Search } from 'lucide-react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { Download, History, RefreshCw, Search, X as XIcon } from 'lucide-react'
 import Papa from 'papaparse'
 import {
   adminListPlatformAudit,
@@ -29,6 +29,13 @@ export function AdminAuditPage() {
   const [refreshing, setRefreshing] = useState(false)
   const [refreshNonce, setRefreshNonce] = useState(0)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+
+  // `?team=<id>` deep-links scope the audit feed to a single team
+  // (links from AdminTeamDetailPage land here). Read on mount so a
+  // refresh keeps the scope; the operator can clear it from the
+  // header chip.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const teamScope = searchParams.get('team')
 
   // Filters. Empty string → don't filter on that field.
   const [query, setQuery] = useState('') // free-text across actor / team / action
@@ -78,15 +85,38 @@ export function AdminAuditPage() {
 
   const visibleRows = useMemo(() => {
     if (!rows) return null
+    let result = rows
+    // Team scope (from ?team=<id>) is applied first — it's a hard
+    // narrowing, not an OR with other filters.
+    if (teamScope) {
+      result = result.filter((r) => r.team_id === teamScope)
+    }
     const trimmed = query.trim().toLowerCase()
-    if (!trimmed) return rows
-    return rows.filter((r) =>
-      [r.actor_email ?? '', r.team_name ?? '', r.team_slug ?? '', r.action]
-        .join(' ')
-        .toLowerCase()
-        .includes(trimmed),
-    )
-  }, [rows, query])
+    if (trimmed) {
+      result = result.filter((r) =>
+        [r.actor_email ?? '', r.team_name ?? '', r.team_slug ?? '', r.action]
+          .join(' ')
+          .toLowerCase()
+          .includes(trimmed),
+      )
+    }
+    return result
+  }, [rows, query, teamScope])
+
+  // Display name for the team-scope chip — pull from the first
+  // event we have for that team. May be undefined for the brief
+  // window before rows load; the chip falls back to the raw id.
+  const scopedTeamLabel = useMemo(() => {
+    if (!teamScope || !rows) return null
+    const first = rows.find((r) => r.team_id === teamScope)
+    return first?.team_name ?? first?.team_slug ?? teamScope.slice(0, 8)
+  }, [teamScope, rows])
+
+  function clearTeamScope() {
+    const next = new URLSearchParams(searchParams)
+    next.delete('team')
+    setSearchParams(next, { replace: true })
+  }
 
   function onRefresh() {
     setRefreshing(true)
@@ -137,6 +167,18 @@ export function AdminAuditPage() {
             Cross-team audit feed. Default window is 30 days; bumped via
             the dropdown below. Capped at 200 events per query.
           </p>
+          {teamScope && (
+            <button
+              type="button"
+              onClick={clearTeamScope}
+              title="Clear team scope and show all teams"
+              className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[color:var(--color-blueprint-soft)] text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] dark:bg-gray-800 text-xs hover:underline"
+            >
+              <span className="font-mono">team:</span>
+              <span className="font-medium">{scopedTeamLabel}</span>
+              <XIcon size={11} aria-hidden="true" className="ml-0.5" />
+            </button>
+          )}
         </div>
         <div className="flex flex-col items-end gap-1 shrink-0">
           <button

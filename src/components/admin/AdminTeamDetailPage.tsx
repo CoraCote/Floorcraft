@@ -103,12 +103,20 @@ export function AdminTeamDetailPage() {
                   </span>
                 )}
               </h1>
-              <Link
-                to={`/t/${detail.slug}`}
-                className="text-xs text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline"
-              >
-                Open team home →
-              </Link>
+              <div className="flex items-center gap-3 shrink-0">
+                <Link
+                  to={`/admin/audit?team=${detail.id}`}
+                  className="text-xs text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline"
+                >
+                  View audit →
+                </Link>
+                <Link
+                  to={`/t/${detail.slug}`}
+                  className="text-xs text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline"
+                >
+                  Open team home →
+                </Link>
+              </div>
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               <span className="font-mono">{detail.slug}</span> ·{' '}
