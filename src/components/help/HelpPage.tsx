@@ -208,7 +208,7 @@ const sections: Section[] = [
     label: 'Team home dashboard',
     icon: '🏠',
     searchText:
-      "team home dashboard identity header logo name summary 5-card stat strip offices employees seats occupancy members recents row recent 3 office cards grid search slash / shortcut sort dropdown name recently opened most employees highest occupancy filter dropdown all has unassigned empty first-run welcome empty state no-match new office button gated team_members role",
+      "team home dashboard identity header logo name summary 6-card stat strip offices employees seats occupancy members private recents row recent 3 office cards grid search slash / shortcut sort dropdown name recently opened most employees highest occupancy filter dropdown all has unassigned empty first-run welcome empty state no-match new office button gated team_members role kebab menu rename make private make public archive unarchive duplicate copy link delete show archived count keyboard shortcuts ? n new office",
     body: (
       <div className="space-y-4">
         <p>
@@ -224,11 +224,11 @@ const sections: Section[] = [
             one-line summary (office count, member count, etc).
           </li>
           <li>
-            <strong>Stat strip</strong> — five cards across the top:{' '}
+            <strong>Stat strip</strong> — six cards across the top:{' '}
             <strong>Offices</strong>, <strong>Employees</strong>,{' '}
-            <strong>Seats</strong>, <strong>Occupancy</strong>, and{' '}
-            <strong>Members</strong>. Calculated live from the team's
-            offices.
+            <strong>Seats</strong>, <strong>Occupancy</strong>,{' '}
+            <strong>Members</strong>, and <strong>Private</strong>.
+            Calculated live from the team's offices.
           </li>
           <li>
             <strong>Recents row</strong> — up to three most-recently-opened
@@ -262,6 +262,61 @@ const sections: Section[] = [
           check) see the button disabled with a tooltip explaining who to
           ask.
         </p>
+
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">
+          Office card kebab menu
+        </h3>
+        <p>
+          Hover an office card and the kebab (⋯) appears in the top-right
+          corner. It groups every per-office action so you don&rsquo;t need to
+          open the office to manage it:
+        </p>
+        <ul className="list-disc pl-6 space-y-1.5 text-gray-700 dark:text-gray-200">
+          <li>
+            <strong>Rename</strong> — opens a small modal with the current
+            name pre-selected. The slug stays the same so existing share
+            links keep working.
+          </li>
+          <li>
+            <strong>Make private</strong> / <strong>Make public</strong> —
+            toggles the office&rsquo;s privacy flag. Private offices are
+            restricted to invited collaborators; public offices are
+            accessible to anyone with the URL. A 🔒 lock badge appears on
+            the card thumbnail when private.
+          </li>
+          <li>
+            <strong>Duplicate</strong> — clones the floor plan into a new
+            office named &ldquo;{'<'}original{'>'} (copy)&rdquo;. Share
+            tokens, comments, and history start fresh; privacy resets to
+            public so a sensitive copy doesn&rsquo;t carry forward.
+          </li>
+          <li>
+            <strong>Copy link</strong> — copies the office URL to your
+            clipboard. The menu item flashes &ldquo;Copied!&rdquo; for a
+            moment to confirm.
+          </li>
+          <li>
+            <strong>Archive</strong> — soft-deletes the office. Archived
+            offices stay restorable; the dashboard hides them by default.
+            Toggle the <strong>Show archived (N)</strong> chip below the
+            search input to surface them, then click the kebab on an
+            archived card to <strong>Unarchive</strong>.
+          </li>
+          <li>
+            <strong>Delete</strong> — hard-deletes the office and its
+            payload. Asks for confirmation; cannot be undone.
+          </li>
+        </ul>
+
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-4">
+          Keyboard shortcuts
+        </h3>
+        <ul className="list-disc pl-6 space-y-1.5 text-gray-700 dark:text-gray-200">
+          <li><kbd>/</kbd> — focus the search input</li>
+          <li><kbd>n</kbd> — open the New office modal (admins / members)</li>
+          <li><kbd>?</kbd> — toggle the on-screen shortcut card</li>
+          <li><kbd>Esc</kbd> — close any open card or modal</li>
+        </ul>
       </div>
     ),
   },
