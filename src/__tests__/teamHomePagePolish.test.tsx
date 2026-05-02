@@ -105,6 +105,19 @@ const { fromMock, setTeamData, setMemberRole, setMemberCount } = vi.hoisted(() =
         },
       }
     }
+    if (table === 'offices') {
+      // The team-home page also runs a `head: true` count of
+      // archived offices to drive the "Show archived (N)" chip.
+      // Mock the chain shape it expects (.select(..., {head}) →
+      // .eq → .not).
+      return {
+        select: () => ({
+          eq: () => ({
+            not: () => Promise.resolve({ count: 0, data: null, error: null }),
+          }),
+        }),
+      }
+    }
     return {
       select: () => ({
         eq: () => ({

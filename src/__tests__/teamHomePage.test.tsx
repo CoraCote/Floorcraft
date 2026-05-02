@@ -48,6 +48,16 @@ const { fromMock } = vi.hoisted(() => {
         },
       }
     }
+    if (table === 'offices') {
+      // Archived-count head query for the "Show archived (N)" chip.
+      return {
+        select: () => ({
+          eq: () => ({
+            not: () => Promise.resolve({ count: 0, data: null, error: null }),
+          }),
+        }),
+      }
+    }
     return {
       select: () => ({
         eq: () => ({

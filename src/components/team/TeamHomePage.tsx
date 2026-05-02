@@ -354,6 +354,7 @@ export function TeamHomePage() {
   )
   const [archiveError, setArchiveError] = useState<string | null>(null)
   const [memberCount, setMemberCount] = useState<number>(0)
+  const [archivedCount, setArchivedCount] = useState<number>(0)
   const [canCreateOffices, setCanCreateOffices] = useState(false)
   // `recentSlugs` is captured at mount; we intentionally don't reactively
   // update it as the user navigates away and back — the Recent row
@@ -386,6 +387,19 @@ export function TeamHomePage() {
         setTeam(t as TeamWithOptionalLogo)
         setOffices(await listOffices((t as Team).id, { includeArchived: showArchived }))
         setRecentSlugs(getRecents())
+
+        // Always fetch the archived-count separately so the toggle
+        // can show "Show archived (N)" — when the toggle is OFF the
+        // listOffices call doesn't include archived rows, so we'd
+        // otherwise have no way to tell the user how many are
+        // hiding. `head: true` skips the row payload so the round-
+        // trip is a single-int.
+        const { count: archived } = await supabase
+          .from('offices')
+          .select('id', { count: 'exact', head: true })
+          .eq('team_id', (t as Team).id)
+          .not('archived_at', 'is', null)
+        setArchivedCount(archived ?? 0)
 
         // Team-admin gate for "+ New office". We check the session's
         // membership row; RLS on `offices` will ultimately refuse the
@@ -580,6 +594,7 @@ export function TeamHomePage() {
   async function performArchive(office: OfficeListItem) {
     const wasArchived = Boolean(office.archived_at)
     const prev = offices
+    const prevArchivedCount = archivedCount
     setArchiveError(null)
     setOffices((os) => {
       if (wasArchived) {
@@ -594,12 +609,15 @@ export function TeamHomePage() {
           : o,
       )
     })
+    // Keep the "Show archived (N)" chip in sync optimistically.
+    setArchivedCount((n) => Math.max(0, n + (wasArchived ? -1 : 1)))
     try {
       if (wasArchived) await unarchiveOffice(office.id)
       else await archiveOffice(office.id)
     } catch (err) {
       console.warn('Archive toggle failed; restoring list', err)
       setOffices(prev)
+      setArchivedCount(prevArchivedCount)
       const msg = err instanceof Error ? err.message : 'archive failed'
       setArchiveError(msg)
     }
@@ -979,14 +997,31 @@ export function TeamHomePage() {
                   ))}
                 </select>
               </label>
-              <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 select-none cursor-pointer">
+              <label
+                className={`flex items-center gap-1.5 text-xs select-none ${
+                  archivedCount > 0
+                    ? 'text-gray-500 dark:text-gray-400 cursor-pointer'
+                    : 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                }`}
+                title={
+                  archivedCount === 0
+                    ? 'No archived offices on this team'
+                    : `${archivedCount} archived office${archivedCount === 1 ? '' : 's'}`
+                }
+              >
                 <input
                   type="checkbox"
                   checked={showArchived}
                   onChange={(e) => setShowArchived(e.target.checked)}
+                  disabled={archivedCount === 0}
                   className="accent-[color:var(--color-blueprint)]"
                 />
                 Show archived
+                {archivedCount > 0 && (
+                  <span className="font-mono tabular-nums opacity-75">
+                    ({archivedCount})
+                  </span>
+                )}
               </label>
             </div>
             {archiveError && (
