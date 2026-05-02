@@ -7,6 +7,7 @@ export interface OfficeListItem {
   name: string
   updated_at: string
   is_private: boolean
+  archived_at?: string | null
   /**
    * Office payload. Present on entries returned by `listOffices` (which
    * selects it so the team-home thumbnails can render without a second
@@ -23,20 +24,43 @@ export interface OfficeLoaded extends OfficeListItem {
   created_by: string
 }
 
-export async function listOffices(teamId: string): Promise<OfficeListItem[]> {
+export async function listOffices(
+  teamId: string,
+  opts: { includeArchived?: boolean } = {},
+): Promise<OfficeListItem[]> {
   // `payload` is pulled here so the team-home page can render a
   // floor-plan thumbnail per office card in a single query. The payload
   // size grows with office complexity but is bounded by the same RLS
   // and UI the editor already loads — if this ever becomes a hot path
   // for teams with hundreds of offices, the thumbnail can be moved to
   // a derived `thumbnail_elements` column or a dedicated RPC.
-  const { data, error } = await supabase
+  let query = supabase
     .from('offices')
-    .select('id, slug, name, updated_at, is_private, payload')
+    .select('id, slug, name, updated_at, is_private, archived_at, payload')
     .eq('team_id', teamId)
     .order('updated_at', { ascending: false })
+  if (!opts.includeArchived) {
+    query = query.is('archived_at', null)
+  }
+  const { data, error } = await query
   if (error) throw error
   return (data ?? []) as OfficeListItem[]
+}
+
+/**
+ * Archive (soft-delete) an office. The row stays in place; the
+ * server stamps `archived_at` + `archived_by`. The team-home
+ * default `listOffices` call hides archived rows; users can opt in
+ * via the "Show archived" toggle.
+ */
+export async function archiveOffice(officeId: string): Promise<void> {
+  const { error } = await supabase.rpc('archive_office', { p_office_id: officeId })
+  if (error) throw error
+}
+
+export async function unarchiveOffice(officeId: string): Promise<void> {
+  const { error } = await supabase.rpc('unarchive_office', { p_office_id: officeId })
+  if (error) throw error
 }
 
 export async function loadOffice(teamId: string, officeSlug: string): Promise<OfficeLoaded | null> {

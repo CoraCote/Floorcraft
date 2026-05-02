@@ -13,6 +13,8 @@ import {
   listOffices,
   createOffice,
   deleteOffice,
+  archiveOffice,
+  unarchiveOffice,
   saveOffice,
   type OfficeListItem,
 } from '../../lib/offices/officeRepository'
@@ -287,6 +289,8 @@ export function TeamHomePage() {
   const [creating, setCreating] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<OfficeListItem | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [showArchived, setShowArchived] = useState(false)
+  const [archiveError, setArchiveError] = useState<string | null>(null)
   const [memberCount, setMemberCount] = useState<number>(0)
   const [canCreateOffices, setCanCreateOffices] = useState(false)
   // `recentSlugs` is captured at mount; we intentionally don't reactively
@@ -317,7 +321,7 @@ export function TeamHomePage() {
         const { data: t } = await supabase.from('teams').select('*').eq('slug', teamSlug).single()
         if (!t) return
         setTeam(t as TeamWithOptionalLogo)
-        setOffices(await listOffices((t as Team).id))
+        setOffices(await listOffices((t as Team).id, { includeArchived: showArchived }))
         setRecentSlugs(getRecents())
 
         // Team-admin gate for "+ New office". We check the session's
@@ -347,7 +351,7 @@ export function TeamHomePage() {
       }
     }
     load()
-  }, [teamSlug, sessionStatus, sessionUserId])
+  }, [teamSlug, sessionStatus, sessionUserId, showArchived])
 
   // Global "/" shortcut focuses the search input. Matches the
   // Linear / GitHub pattern — a single unshifted "/" while nothing
@@ -494,6 +498,40 @@ export function TeamHomePage() {
     } finally {
       setDeleting(false)
       setPendingDelete(null)
+    }
+  }
+
+  // Archive / unarchive flips `archived_at` via the SECURITY DEFINER
+  // RPC. We optimistically mutate the list: if the user has the
+  // "Show archived" toggle off and they archive, the card disappears;
+  // if it's on, the card stays put with the badge showing. Restoring
+  // an archived card re-fetches because the row likely fell out of the
+  // cached list when archived.
+  async function performArchive(office: OfficeListItem) {
+    const wasArchived = Boolean(office.archived_at)
+    const prev = offices
+    setArchiveError(null)
+    setOffices((os) => {
+      if (wasArchived) {
+        return os.map((o) =>
+          o.id === office.id ? { ...o, archived_at: null } : o,
+        )
+      }
+      if (!showArchived) return os.filter((o) => o.id !== office.id)
+      return os.map((o) =>
+        o.id === office.id
+          ? { ...o, archived_at: new Date().toISOString() }
+          : o,
+      )
+    })
+    try {
+      if (wasArchived) await unarchiveOffice(office.id)
+      else await archiveOffice(office.id)
+    } catch (err) {
+      console.warn('Archive toggle failed; restoring list', err)
+      setOffices(prev)
+      const msg = err instanceof Error ? err.message : 'archive failed'
+      setArchiveError(msg)
     }
   }
 
@@ -810,7 +848,24 @@ export function TeamHomePage() {
                   ))}
                 </select>
               </label>
+              <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 select-none cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showArchived}
+                  onChange={(e) => setShowArchived(e.target.checked)}
+                  className="accent-[color:var(--color-blueprint)]"
+                />
+                Show archived
+              </label>
             </div>
+            {archiveError && (
+              <div
+                role="alert"
+                className="mb-3 px-3 py-2 text-xs rounded-md bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-900/40"
+              >
+                Could not update archive state: {archiveError}
+              </div>
+            )}
 
             {/* Recent row. Hidden when there are no stored recents
                 that resolve to live offices. Shares the same card
@@ -844,7 +899,8 @@ export function TeamHomePage() {
                           thumbnailElements={extractThumbnailElements(o.payload)}
                           stats={stats}
                           avatars={avatars}
-                          onMenu={(target) => setPendingDelete(target)}
+                          onDelete={(target) => setPendingDelete(target)}
+                          onArchive={(target) => void performArchive(target)}
                         />
                       </li>
                     )
@@ -894,7 +950,8 @@ export function TeamHomePage() {
                           thumbnailElements={extractThumbnailElements(o.payload)}
                           stats={stats}
                           avatars={avatars}
-                          onMenu={(target) => setPendingDelete(target)}
+                          onDelete={(target) => setPendingDelete(target)}
+                          onArchive={(target) => void performArchive(target)}
                         />
                       </li>
                     )

@@ -1,5 +1,6 @@
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { MoreHorizontal } from 'lucide-react'
+import { Archive, ArchiveRestore, MoreHorizontal, Trash2 } from 'lucide-react'
 import { OfficeThumbnail, type ThumbnailElement } from './OfficeThumbnail'
 import { formatRelative } from '../../lib/time'
 import type { OfficeListItem } from '../../lib/offices/officeRepository'
@@ -22,7 +23,11 @@ interface Props {
   thumbnailElements: ThumbnailElement[]
   stats: CardStats
   avatars: Avatar[]
-  onMenu: (office: OfficeListItem) => void
+  /** Asks the parent to delete this office (opens its confirm dialog). */
+  onDelete: (office: OfficeListItem) => void
+  /** Soft-archive (or restore an archived) office. Optimistic remove
+   *  / restore is the parent's responsibility. */
+  onArchive: (office: OfficeListItem) => void
 }
 
 /**
@@ -31,7 +36,38 @@ interface Props {
  * click doesn't navigate. Stats are precomputed by the parent so the
  * card stays a pure presentational component.
  */
-export function OfficeCard({ office, teamSlug, thumbnailElements, stats, avatars, onMenu }: Props) {
+export function OfficeCard({
+  office,
+  teamSlug,
+  thumbnailElements,
+  stats,
+  avatars,
+  onDelete,
+  onArchive,
+}: Props) {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+  // Click-outside / Escape handlers for the kebab popover. Same shape
+  // the FileMenu primitive uses; this card is small enough that
+  // hand-rolling is cheaper than reaching for a generic dropdown.
+  useEffect(() => {
+    if (!menuOpen) return
+    function onPointer(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setMenuOpen(false)
+    }
+    document.addEventListener('mousedown', onPointer)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onPointer)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [menuOpen])
+  const isArchived = Boolean(office.archived_at)
   const rel = formatRelative(office.updated_at) ?? 'recently'
   const preciseTitle = new Date(office.updated_at).toUTCString()
 
@@ -126,19 +162,89 @@ export function OfficeCard({ office, teamSlug, thumbnailElements, stats, avatars
           </div>
         </div>
       </Link>
-      <button
-        type="button"
-        aria-label={`Actions for ${office.name}`}
-        title="More actions"
-        onClick={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          onMenu(office)
-        }}
-        className="absolute top-[10px] right-[10px] p-1.5 rounded-md text-gray-400 dark:text-gray-500 bg-[color:var(--color-paper-raised)]/80 dark:bg-gray-900/80 backdrop-blur-sm hover:text-gray-700 dark:hover:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)] opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-      >
-        <MoreHorizontal size={16} aria-hidden="true" />
-      </button>
+      <div ref={menuRef} className="absolute top-[10px] right-[10px]">
+        <button
+          type="button"
+          aria-label={`Actions for ${office.name}`}
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+          title="More actions"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            setMenuOpen((o) => !o)
+          }}
+          className={`p-1.5 rounded-md text-gray-400 dark:text-gray-500 bg-[color:var(--color-paper-raised)]/80 dark:bg-gray-900/80 backdrop-blur-sm hover:text-gray-700 dark:hover:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)] transition-opacity ${
+            menuOpen
+              ? 'opacity-100'
+              : 'opacity-0 group-hover:opacity-100 focus:opacity-100'
+          }`}
+        >
+          <MoreHorizontal size={16} aria-hidden="true" />
+        </button>
+        {menuOpen && (
+          <div
+            role="menu"
+            className="absolute right-0 mt-1 w-44 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 border border-[color:var(--color-paper-line)] dark:border-gray-800 rounded-lg shadow-lg py-1 z-10"
+          >
+            {isArchived ? (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setMenuOpen(false)
+                  onArchive(office)
+                }}
+                className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800"
+              >
+                <ArchiveRestore size={14} aria-hidden="true" />
+                Unarchive
+              </button>
+            ) : (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setMenuOpen(false)
+                  onArchive(office)
+                }}
+                className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800"
+              >
+                <Archive size={14} aria-hidden="true" />
+                Archive
+              </button>
+            )}
+            <button
+              type="button"
+              role="menuitem"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setMenuOpen(false)
+                onDelete(office)
+              }}
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30"
+            >
+              <Trash2 size={14} aria-hidden="true" />
+              Delete
+            </button>
+          </div>
+        )}
+      </div>
+      {isArchived && (
+        <span
+          aria-label="Archived"
+          title="Archived"
+          className="absolute top-[10px] left-[10px] inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold text-amber-700 dark:text-amber-300 bg-amber-50/95 dark:bg-amber-950/40 px-1.5 py-0.5 rounded backdrop-blur-sm"
+        >
+          <Archive size={11} aria-hidden="true" />
+          Archived
+        </span>
+      )}
     </div>
   )
 }
