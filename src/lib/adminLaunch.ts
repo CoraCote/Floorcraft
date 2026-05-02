@@ -147,6 +147,31 @@ export async function adminGetUserDetail(
   return data as AdminUserDetail
 }
 
+export interface SignupHistogramPoint {
+  day: string // YYYY-MM-DD
+  count: number
+}
+
+/**
+ * Per-day signup counts for the last N days, oldest first. Backs
+ * the trend chart on AdminOverviewPage.
+ *
+ * Migration 0026. Best-effort: pre-0026 projects return null and
+ * the chart is hidden.
+ */
+export async function adminSignupsHistogram(
+  days = 30,
+): Promise<SignupHistogramPoint[] | null> {
+  const { data, error } = await supabase.rpc('admin_signups_histogram', {
+    p_days: days,
+  })
+  if (error) {
+    console.warn('[admin-launch] signups histogram failed', error)
+    return null
+  }
+  return (data ?? []) as SignupHistogramPoint[]
+}
+
 /**
  * Generates a password-recovery link for `userId` and returns the
  * action URL. The admin pastes that URL to the user out-of-band
