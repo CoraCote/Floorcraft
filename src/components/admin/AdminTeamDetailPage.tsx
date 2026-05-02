@@ -13,6 +13,8 @@ import {
 import {
   adminTeamUsage,
   adminDeleteTeam,
+  adminListPlatformAudit,
+  type PlatformAuditRow,
   type TeamUsage,
 } from '../../lib/adminLaunch'
 import { useDocumentTitle } from '../../lib/useDocumentTitle'
@@ -34,6 +36,7 @@ export function AdminTeamDetailPage() {
   const [detail, setDetail] = useState<AdminTeamDetail | null>(null)
   const [sub, setSub] = useState<TeamSubscription | null>(null)
   const [usage, setUsage] = useState<TeamUsage | null>(null)
+  const [recent, setRecent] = useState<PlatformAuditRow[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [refreshNonce, setRefreshNonce] = useState(0)
   const [pendingDelete, setPendingDelete] = useState(false)
@@ -44,7 +47,7 @@ export function AdminTeamDetailPage() {
     if (!teamId) return
     let cancelled = false
     async function load() {
-      const [result, subResult, usageResult] = await Promise.all([
+      const [result, subResult, usageResult, recentResult] = await Promise.all([
         adminGetTeamDetail(teamId!),
         // Best-effort: a project that hasn't applied the billing
         // migration returns null and we hide the card. Don't block
@@ -53,6 +56,10 @@ export function AdminTeamDetailPage() {
         // Usage RPC came in migration 0022. Same best-effort
         // pattern — projects on older migrations skip the card.
         adminTeamUsage(teamId!).catch(() => null),
+        // Recent audit events for this team — same RPC the platform
+        // audit page uses, just pulled with a smaller limit. Best-
+        // effort like the others.
+        adminListPlatformAudit({ limit: 50 }).catch(() => null),
       ])
       if (cancelled) return
       if (!result) {
@@ -62,6 +69,13 @@ export function AdminTeamDetailPage() {
       setDetail(result)
       setSub(subResult)
       setUsage(usageResult)
+      // Filter the platform-wide list down to this team. The RPC
+      // doesn't accept a team filter; pulling a slightly larger
+      // window and filtering client-side keeps the API surface
+      // small without a second RPC.
+      setRecent(
+        recentResult ? recentResult.filter((r) => r.team_id === teamId) : null,
+      )
     }
     void load()
     return () => {
@@ -135,6 +149,8 @@ export function AdminTeamDetailPage() {
           {sub && <BillingCard sub={sub} />}
 
           {usage && <UsageCard usage={usage} />}
+
+          {recent && <RecentEventsCard rows={recent} teamId={detail.id} />}
 
           <section className="mt-6">
             <h2 className="text-sm font-semibold mb-2 text-gray-900 dark:text-gray-100">
@@ -272,6 +288,58 @@ function UsageCard({ usage }: { usage: TeamUsage }) {
             </>
           )}
         </p>
+      )}
+    </section>
+  )
+}
+
+function RecentEventsCard({
+  rows,
+  teamId,
+}: {
+  rows: PlatformAuditRow[]
+  teamId: string
+}) {
+  const top = rows.slice(0, 8)
+  return (
+    <section className="mt-6 rounded-lg border border-[color:var(--color-paper-line)] dark:border-gray-800 bg-[color:var(--color-paper-raised)] dark:bg-gray-900 overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-[color:var(--color-paper-line)] dark:border-gray-800">
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+          Recent activity
+        </h2>
+        <Link
+          to={`/admin/audit?team=${teamId}`}
+          className="text-xs text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)] hover:underline"
+        >
+          View all →
+        </Link>
+      </div>
+      {top.length === 0 ? (
+        <p className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">
+          No recent events for this team.
+        </p>
+      ) : (
+        <ul className="divide-y divide-[color:var(--color-paper-line)] dark:divide-gray-800">
+          {top.map((r) => (
+            <li
+              key={r.id}
+              className="flex items-center gap-3 px-4 py-2 text-xs"
+            >
+              <span
+                className="text-gray-400 dark:text-gray-500 tabular-nums w-32 shrink-0"
+                title={new Date(r.created_at).toUTCString()}
+              >
+                {new Date(r.created_at).toLocaleString()}
+              </span>
+              <span className="font-mono text-gray-700 dark:text-gray-200 w-44 truncate shrink-0">
+                {r.action}
+              </span>
+              <span className="flex-1 truncate text-gray-600 dark:text-gray-300">
+                {r.actor_email ?? r.actor_id ?? '—'}
+              </span>
+            </li>
+          ))}
+        </ul>
       )}
     </section>
   )

@@ -4,6 +4,7 @@ import { LayoutDashboard, Users, Building2, ShieldCheck, CreditCard, History } f
 import { useDocumentTitle } from '../../lib/useDocumentTitle'
 import { getPlatformOverview, type PlatformOverview } from '../../lib/platformAdmin'
 import { adminListSubscriptions } from '../../lib/billing'
+import { adminListTeams } from '../../lib/adminLists'
 import { AdminPalette } from './AdminPalette'
 
 /**
@@ -33,6 +34,14 @@ export function AdminLayout() {
   // the right tradeoff for a sidebar dot that's a "look here"
   // signal, not a live counter.
   const [atRiskCount, setAtRiskCount] = useState<number | null>(null)
+  // Suspended-team count for the Teams nav badge. Same shape +
+  // semantics as atRiskCount — best-effort; a project on an older
+  // admin_list_teams RPC returns rows without is_suspended and
+  // the count stays at 0 (the field-presence guard treats
+  // undefined as not-suspended).
+  const [suspendedTeamCount, setSuspendedTeamCount] = useState<number | null>(
+    null,
+  )
   useEffect(() => {
     let cancelled = false
     void getPlatformOverview().then((o) => {
@@ -51,6 +60,16 @@ export function AdminLayout() {
       })
       .catch(() => {
         // Migration not applied yet — leave the indicator hidden.
+      })
+    void adminListTeams()
+      .then((rows) => {
+        if (cancelled || !rows) return
+        setSuspendedTeamCount(
+          rows.filter((t) => t.is_suspended === true).length,
+        )
+      })
+      .catch(() => {
+        // Pre-0023 RPC shape — leave the indicator hidden.
       })
     return () => {
       cancelled = true
@@ -73,6 +92,12 @@ export function AdminLayout() {
             to="/admin/teams"
             icon={<Building2 size={14} aria-hidden="true" />}
             count={overview?.teams}
+            alertCount={
+              suspendedTeamCount && suspendedTeamCount > 0
+                ? suspendedTeamCount
+                : undefined
+            }
+            alertLabel="suspended teams"
           >
             Teams
           </AdminNavLink>
