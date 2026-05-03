@@ -442,6 +442,17 @@ export function TeamHomePage() {
   // OfficeCard handler. Stored as a Set for O(1) membership checks
   // in the render path.
   const [pinnedSlugs, setPinnedSlugs] = useState<Set<string>>(new Set())
+  // Multi-select state for bulk operations on office cards. Stored
+  // as a Set of office ids so toggle is O(1). Cleared after a
+  // successful bulk action and after the archive-toggle changes
+  // the visible list (otherwise selection would point at
+  // already-removed rows).
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkArchivePending, setBulkArchivePending] = useState(false)
+  const [bulkArchiveBusy, setBulkArchiveBusy] = useState(false)
+  const [bulkResults, setBulkResults] = useState<
+    Array<{ name: string; status: 'ok' | 'error'; message?: string }> | null
+  >(null)
   const searchRef = useRef<HTMLInputElement>(null)
   const session = useSession()
   const navigate = useNavigate()
@@ -829,6 +840,54 @@ export function TeamHomePage() {
     })
   }
 
+  function performToggleSelect(office: OfficeListItem) {
+    setSelectedIds((current) => {
+      const next = new Set(current)
+      if (next.has(office.id)) next.delete(office.id)
+      else next.add(office.id)
+      return next
+    })
+  }
+
+  // Run archive against every selected office. Per-row results so a
+  // partial failure (e.g. one office is locked) doesn't lose the rows
+  // that did succeed. Mirrors the bulk pattern AdminUsersPage uses.
+  async function runBulkArchive() {
+    if (bulkArchiveBusy) return
+    const targets = offices.filter((o) => selectedIds.has(o.id))
+    if (targets.length === 0) return
+    setBulkArchiveBusy(true)
+    setBulkResults(null)
+    setArchiveError(null)
+    const results: Array<{ name: string; status: 'ok' | 'error'; message?: string }> = []
+    for (const o of targets) {
+      try {
+        await archiveOffice(o.id)
+        results.push({ name: o.name, status: 'ok' })
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'archive failed'
+        results.push({ name: o.name, status: 'error', message: msg })
+      }
+    }
+    setBulkArchiveBusy(false)
+    setBulkArchivePending(false)
+    setBulkResults(results)
+    // Optimistically remove the OK rows from the visible list and
+    // clear their selection. Errored rows stay visible + selected
+    // so the operator can see what failed.
+    const okIds = new Set(
+      targets
+        .filter((o) => results.find((r) => r.name === o.name)?.status === 'ok')
+        .map((o) => o.id),
+    )
+    setOffices((os) => os.filter((o) => !okIds.has(o.id)))
+    setSelectedIds((current) => {
+      const next = new Set(current)
+      for (const id of okIds) next.delete(id)
+      return next
+    })
+  }
+
   // ----- derived view state ---------------------------------------
   // Filter → search → sort, in that order. Each step is a pure
   // transform over the prior list; the intermediate `filtered` is
@@ -1207,6 +1266,65 @@ export function TeamHomePage() {
                 )}
               </label>
             </div>
+
+            {/* Bulk action toolbar — appears when one or more
+                offices are selected via the on-card checkbox.
+                Mirrors the AdminUsersPage bulk pattern: count
+                chip, action button(s), Clear selection on the
+                trailing edge. Only renders for editors / admins
+                (the on-card checkbox is gated the same way), so
+                viewers don't see a dead toolbar. */}
+            {canCreateOffices && selectedIds.size > 0 && (
+              <div className="mb-3 flex items-center gap-3 rounded-lg border border-[color:var(--color-blueprint)]/40 bg-[color:var(--color-blueprint-soft)] dark:bg-gray-800/60 px-3 py-2 text-sm">
+                <span className="font-mono text-xs text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]">
+                  {selectedIds.size} selected
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setBulkArchivePending(true)}
+                  disabled={bulkArchiveBusy}
+                  className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/30 disabled:opacity-50"
+                >
+                  Archive selected
+                </button>
+                <span className="flex-1" />
+                <button
+                  type="button"
+                  onClick={() => setSelectedIds(new Set())}
+                  className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                >
+                  Clear selection
+                </button>
+              </div>
+            )}
+
+            {/* Per-row results from the most recent bulk run.
+                Cleared when the user starts a new selection or
+                the page reloads. Errored rows show inline so the
+                operator knows which ones to retry. */}
+            {bulkResults && bulkResults.length > 0 && (
+              <ul className="mb-3 max-h-32 overflow-y-auto divide-y divide-[color:var(--color-paper-line)] dark:divide-gray-800 rounded border border-[color:var(--color-paper-line)] dark:border-gray-800">
+                {bulkResults.map((r, i) => (
+                  <li
+                    key={`${r.name}-${i}`}
+                    className="flex items-center justify-between gap-2 px-3 py-1.5 text-xs"
+                  >
+                    <span className="text-gray-700 dark:text-gray-200 truncate">
+                      {r.name}
+                    </span>
+                    <span
+                      className={
+                        r.status === 'ok'
+                          ? 'text-emerald-700 dark:text-emerald-400'
+                          : 'text-red-700 dark:text-red-400'
+                      }
+                    >
+                      {r.status === 'ok' ? 'archived' : (r.message ?? 'failed')}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
             {archiveError && (
               <div
                 role="alert"
@@ -1255,6 +1373,12 @@ export function TeamHomePage() {
                           onTogglePrivacy={(target) => void performTogglePrivacy(target)}
                           isPinned={pinnedSlugs.has(o.slug)}
                           onTogglePin={(target) => performTogglePin(target)}
+                          isSelected={
+                            canCreateOffices ? selectedIds.has(o.id) : undefined
+                          }
+                          onToggleSelect={
+                            canCreateOffices ? performToggleSelect : undefined
+                          }
                         />
                       </li>
                     )
@@ -1311,6 +1435,12 @@ export function TeamHomePage() {
                           onTogglePrivacy={(target) => void performTogglePrivacy(target)}
                           isPinned={pinnedSlugs.has(o.slug)}
                           onTogglePin={(target) => performTogglePin(target)}
+                          isSelected={
+                            canCreateOffices ? selectedIds.has(o.id) : undefined
+                          }
+                          onToggleSelect={
+                            canCreateOffices ? performToggleSelect : undefined
+                          }
                         />
                       </li>
                     )
@@ -1368,6 +1498,41 @@ export function TeamHomePage() {
             onCancel={() => {
               if (deleting) return
               setPendingDelete(null)
+            }}
+          />
+        )}
+
+        {bulkArchivePending && (
+          <ConfirmDialog
+            title={`Archive ${selectedIds.size} office${selectedIds.size === 1 ? '' : 's'}?`}
+            body={
+              <div className="space-y-2">
+                <p>
+                  Archived offices stay in place and can be restored
+                  later via the &ldquo;Show archived&rdquo; toggle.
+                  They drop out of the active grid for everyone on the
+                  team.
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Errors on individual rows surface inline; the rest of
+                  the batch still runs.
+                </p>
+              </div>
+            }
+            confirmLabel={
+              bulkArchiveBusy
+                ? 'Archiving…'
+                : `Archive ${selectedIds.size} office${selectedIds.size === 1 ? '' : 's'}`
+            }
+            cancelLabel="Cancel"
+            tone="danger"
+            onConfirm={() => {
+              if (bulkArchiveBusy) return
+              void runBulkArchive()
+            }}
+            onCancel={() => {
+              if (bulkArchiveBusy) return
+              setBulkArchivePending(false)
             }}
           />
         )}

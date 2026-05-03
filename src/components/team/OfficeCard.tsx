@@ -46,6 +46,12 @@ interface Props {
   /** Toggles the pin state. Parent owns the persisted list so a
    *  second card or the header chip can stay in sync. */
   onTogglePin?: (office: OfficeListItem) => void
+  /** Multi-select state for bulk operations (archive, etc). When
+   *  undefined, the checkbox affordance is hidden. */
+  isSelected?: boolean
+  /** Toggles the multi-select state. Parent owns the Set of
+   *  selected ids. */
+  onToggleSelect?: (office: OfficeListItem) => void
 }
 
 /**
@@ -67,6 +73,8 @@ export function OfficeCard({
   onTogglePrivacy,
   isPinned,
   onTogglePin,
+  isSelected,
+  onToggleSelect,
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -146,6 +154,41 @@ export function OfficeCard({
 
   return (
     <div className="relative group">
+      {/* Multi-select checkbox — top-left mirror of the pin/kebab
+          on the right. Same opacity pattern: opaque when checked
+          (so a partially-selected grid is scannable from across
+          the screen), fades in on hover otherwise. Hidden entirely
+          if the parent didn't pass select state. */}
+      {isSelected !== undefined && onToggleSelect && (
+        <label
+          className={`absolute top-[10px] left-[10px] z-10 inline-flex items-center justify-center w-6 h-6 rounded-md backdrop-blur-sm transition-all cursor-pointer ${
+            isSelected
+              ? 'opacity-100 bg-[color:var(--color-blueprint-soft)] dark:bg-gray-800 ring-1 ring-[color:var(--color-blueprint)]'
+              : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100 bg-[color:var(--color-paper-raised)]/80 dark:bg-gray-900/80 ring-1 ring-[color:var(--color-paper-line)] dark:ring-gray-700 hover:ring-[color:var(--color-blueprint)]/60'
+          }`}
+          title={isSelected ? `Deselect ${office.name}` : `Select ${office.name}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={(e) => {
+              e.stopPropagation()
+              onToggleSelect(office)
+            }}
+            aria-label={isSelected ? `Deselect ${office.name}` : `Select ${office.name}`}
+            className="sr-only peer"
+          />
+          <span
+            aria-hidden="true"
+            className={`block w-3 h-3 ${isSelected ? 'text-[color:var(--color-blueprint-strong)] dark:text-[color:var(--color-blueprint)]' : 'text-transparent'}`}
+          >
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="2.5 6.5 5 9 9.5 3.5" />
+            </svg>
+          </span>
+        </label>
+      )}
       <Link
         to={`/t/${teamSlug}/o/${office.slug}/map`}
         className="block bg-[color:var(--color-paper-raised)] dark:bg-gray-900 rounded-xl border border-[color:var(--color-paper-line)] dark:border-gray-800 overflow-hidden hover:border-[color:var(--color-blueprint)]/40 hover:shadow-lg hover:-translate-y-px transition-all duration-200 motion-reduce:hover:transform-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
