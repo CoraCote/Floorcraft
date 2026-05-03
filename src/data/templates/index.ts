@@ -4,6 +4,8 @@ import { DEFAULT_CANVAS_SETTINGS } from '../../types/project'
 import { createOpenPlanOfficeTemplate } from './open-plan-office'
 import { createMixedOfficeTemplate } from './mixed-office'
 import { createExecutiveFloorTemplate } from './executive-floor'
+import { createSmallStudioTemplate } from './small-studio'
+import { createCoworkingHubTemplate } from './coworking-hub'
 
 export interface Template {
   id: string
@@ -45,6 +47,22 @@ export const TEMPLATES: Template[] = [
     category: 'office',
     description: '12 private offices, boardroom, executive lounge, admin desks',
     createElements: createExecutiveFloorTemplate,
+    canvasSettings: DEFAULT_CANVAS_SETTINGS,
+  },
+  {
+    id: 'small-studio',
+    name: 'Small Studio',
+    category: 'office',
+    description: '8 desks, conference room, phone booth, kitchen — fits a 5-15 person team',
+    createElements: createSmallStudioTemplate,
+    canvasSettings: DEFAULT_CANVAS_SETTINGS,
+  },
+  {
+    id: 'coworking-hub',
+    name: 'Coworking Hub',
+    category: 'office',
+    description: '24 hot desks, 4 phone booths, 2 meeting rooms, lounge — modern shared workspace',
+    createElements: createCoworkingHubTemplate,
     canvasSettings: DEFAULT_CANVAS_SETTINGS,
   },
 ]
