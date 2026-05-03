@@ -29,6 +29,7 @@ import { OfficeCard } from './OfficeCard'
 import type { ThumbnailElement } from './OfficeThumbnail'
 import type { Team } from '../../types/team'
 import { getRecents } from '../../lib/recentOffices'
+import { getPins, togglePin as togglePinSlug } from '../../lib/pinnedOffices'
 import { useDocumentTitle } from '../../lib/useDocumentTitle'
 import { UserMenu } from './UserMenu'
 import { TeamActivityFeed } from './TeamActivityFeed'
@@ -370,6 +371,11 @@ export function TeamHomePage() {
   // reflects what the user did *before* this dashboard view. Reloading
   // the page is the refresh gesture.
   const [recentSlugs, setRecentSlugs] = useState<string[]>([])
+  // User-pinned offices for this team (localStorage). Captured on
+  // mount and re-derived when the user toggles a pin via the
+  // OfficeCard handler. Stored as a Set for O(1) membership checks
+  // in the render path.
+  const [pinnedSlugs, setPinnedSlugs] = useState<Set<string>>(new Set())
   const searchRef = useRef<HTMLInputElement>(null)
   const session = useSession()
   const navigate = useNavigate()
@@ -396,6 +402,7 @@ export function TeamHomePage() {
         setTeam(t as TeamWithOptionalLogo)
         setOffices(await listOffices((t as Team).id, { includeArchived: showArchived }))
         setRecentSlugs(getRecents())
+        if (teamSlug) setPinnedSlugs(new Set(getPins(teamSlug)))
 
         // Always fetch the archived-count separately so the toggle
         // can show "Show archived (N)" — when the toggle is OFF the
@@ -716,6 +723,17 @@ export function TeamHomePage() {
     }
   }
 
+  function performTogglePin(office: OfficeListItem) {
+    if (!teamSlug) return
+    const isNowPinned = togglePinSlug(teamSlug, office.slug)
+    setPinnedSlugs((current) => {
+      const next = new Set(current)
+      if (isNowPinned) next.add(office.slug)
+      else next.delete(office.slug)
+      return next
+    })
+  }
+
   // ----- derived view state ---------------------------------------
   // Filter → search → sort, in that order. Each step is a pure
   // transform over the prior list; the intermediate `filtered` is
@@ -773,8 +791,20 @@ export function TeamHomePage() {
         })
         break
     }
+    // Pinned offices float to the top of *whatever* sort the user
+    // picked. The within-pinned ordering preserves the chosen sort
+    // (i.e. pinned offices don't all collapse to alphabetical), so
+    // the user's mental model of "Most employees first" still
+    // reads correctly within the pinned cluster.
+    if (pinnedSlugs.size > 0) {
+      list.sort((a, b) => {
+        const ap = pinnedSlugs.has(a.slug) ? 0 : 1
+        const bp = pinnedSlugs.has(b.slug) ? 0 : 1
+        return ap - bp
+      })
+    }
     return list
-  }, [searched, sortMode, officeStats, recentSlugs])
+  }, [searched, sortMode, officeStats, recentSlugs, pinnedSlugs])
 
   // Recent cards = up to 3 most-recent offices that still exist. We
   // walk `recentSlugs` in MRU order (not `offices.find` per slug,
@@ -1121,6 +1151,8 @@ export function TeamHomePage() {
                           onDuplicate={(target) => void performDuplicate(target)}
                           onRename={(target) => setRenameTarget(target)}
                           onTogglePrivacy={(target) => void performTogglePrivacy(target)}
+                          isPinned={pinnedSlugs.has(o.slug)}
+                          onTogglePin={(target) => performTogglePin(target)}
                         />
                       </li>
                     )
@@ -1175,6 +1207,8 @@ export function TeamHomePage() {
                           onDuplicate={(target) => void performDuplicate(target)}
                           onRename={(target) => setRenameTarget(target)}
                           onTogglePrivacy={(target) => void performTogglePrivacy(target)}
+                          isPinned={pinnedSlugs.has(o.slug)}
+                          onTogglePin={(target) => performTogglePin(target)}
                         />
                       </li>
                     )

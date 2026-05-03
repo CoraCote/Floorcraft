@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Archive, ArchiveRestore, Check, Copy, Globe, Link2, Lock, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import { Archive, ArchiveRestore, Check, Copy, Globe, Link2, Lock, MoreHorizontal, Pencil, Pin, PinOff, Trash2 } from 'lucide-react'
 import { OfficeThumbnail, type ThumbnailElement } from './OfficeThumbnail'
 import { formatRelative } from '../../lib/time'
 import type { OfficeListItem } from '../../lib/offices/officeRepository'
@@ -37,6 +37,15 @@ interface Props {
   /** Flip is_private on this office. Parent handles the RPC + the
    *  optimistic UI update. */
   onTogglePrivacy: (office: OfficeListItem) => void
+  /** Whether the office is currently pinned to the top of the
+   *  dashboard (per-team localStorage). When undefined, the pin
+   *  affordance is hidden — used in any future surface that wants
+   *  to render OfficeCard without the pin lever (e.g. the public
+   *  share view, if we ever reuse this component there). */
+  isPinned?: boolean
+  /** Toggles the pin state. Parent owns the persisted list so a
+   *  second card or the header chip can stay in sync. */
+  onTogglePin?: (office: OfficeListItem) => void
 }
 
 /**
@@ -56,6 +65,8 @@ export function OfficeCard({
   onDuplicate,
   onRename,
   onTogglePrivacy,
+  isPinned,
+  onTogglePin,
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -234,6 +245,36 @@ export function OfficeCard({
           </div>
         </div>
       </Link>
+      {/* Pin lever — sits to the LEFT of the kebab so the right edge
+          stays the menu's home. When the office is pinned, the
+          button stays opaque so it's clear from across the grid;
+          when not, it fades in with the rest of the card chrome on
+          hover (same pattern as the kebab). Hidden entirely if the
+          parent didn't pass `isPinned` / `onTogglePin`. */}
+      {isPinned !== undefined && onTogglePin && (
+        <button
+          type="button"
+          aria-pressed={isPinned}
+          aria-label={isPinned ? `Unpin ${office.name}` : `Pin ${office.name}`}
+          title={isPinned ? 'Unpin from top' : 'Pin to top'}
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onTogglePin(office)
+          }}
+          className={`absolute top-[10px] right-[44px] p-1.5 rounded-md backdrop-blur-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)] ${
+            isPinned
+              ? 'opacity-100 text-amber-600 dark:text-amber-400 bg-amber-50/80 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-950/60'
+              : 'opacity-0 group-hover:opacity-100 focus:opacity-100 text-gray-400 dark:text-gray-500 bg-[color:var(--color-paper-raised)]/80 dark:bg-gray-900/80 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50'
+          }`}
+        >
+          {isPinned ? (
+            <Pin size={14} aria-hidden="true" />
+          ) : (
+            <PinOff size={14} aria-hidden="true" />
+          )}
+        </button>
+      )}
       <div ref={menuRef} className="absolute top-[10px] right-[10px]">
         <button
           type="button"
