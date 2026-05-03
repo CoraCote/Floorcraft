@@ -118,6 +118,20 @@ const { fromMock, setTeamData, setMemberRole, setMemberCount } = vi.hoisted(() =
         }),
       }
     }
+    if (table === 'audit_events') {
+      // TeamActivityFeed reads team-scoped events; empty default
+      // means the feed hides itself, which is the correct behavior
+      // for these unrelated assertions.
+      return {
+        select: () => ({
+          eq: () => ({
+            order: () => ({
+              limit: () => Promise.resolve({ data: [], error: null }),
+            }),
+          }),
+        }),
+      }
+    }
     return {
       select: () => ({
         eq: () => ({

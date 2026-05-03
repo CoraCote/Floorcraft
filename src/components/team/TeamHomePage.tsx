@@ -31,6 +31,7 @@ import type { Team } from '../../types/team'
 import { getRecents } from '../../lib/recentOffices'
 import { useDocumentTitle } from '../../lib/useDocumentTitle'
 import { UserMenu } from './UserMenu'
+import { TeamActivityFeed } from './TeamActivityFeed'
 
 /**
  * Wave 14A: refresh the post-login dashboard to match the JSON-Crack /
@@ -950,6 +951,10 @@ export function TeamHomePage() {
             <StatCard label="Members" value={memberCount} />
             <StatCard label="Private" value={privateCount} />
           </div>
+        )}
+
+        {!loadingOffices && !isTeamEmpty && (
+          <TeamActivityFeed teamId={team.id} />
         )}
 
         {/* Empty / loaded body. Stops here early for the first-run

@@ -58,6 +58,20 @@ const { fromMock } = vi.hoisted(() => {
         }),
       }
     }
+    if (table === 'audit_events') {
+      // TeamActivityFeed reads team-scoped events with a profiles
+      // FK embed. Empty list is the right default — TeamActivityFeed
+      // hides itself when there's no activity.
+      return {
+        select: () => ({
+          eq: () => ({
+            order: () => ({
+              limit: () => Promise.resolve({ data: [], error: null }),
+            }),
+          }),
+        }),
+      }
+    }
     return {
       select: () => ({
         eq: () => ({
