@@ -20,6 +20,7 @@ import {
 } from '../../lib/platformAdmin'
 import { downloadCsv } from '../../lib/reports/csvExport'
 import { useDocumentTitle } from '../../lib/useDocumentTitle'
+import { useSession } from '../../lib/auth/AuthProvider'
 import { ConfirmDialog } from '../editor/ConfirmDialog'
 
 /**
@@ -34,6 +35,15 @@ import { ConfirmDialog } from '../editor/ConfirmDialog'
  */
 export function AdminAdminsPage() {
   useDocumentTitle('Admins · Admin — Floorcraft')
+  const session = useSession()
+  // Self-protection: an admin can revoke a peer but not themselves.
+  // The SQL guard only refuses the LAST admin — an admin with peers
+  // could otherwise lock themselves out by clicking Revoke on their
+  // own row, which is what produced the launch-wave incident this
+  // fix migration restored from. The Revoke button is disabled and
+  // the bulk-revoke list will skip the self-row.
+  const currentUserId =
+    session.status === 'authenticated' ? session.user.id : null
   const [admins, setAdmins] = useState<PlatformAdminRow[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [refreshNonce, setRefreshNonce] = useState(0)
@@ -374,8 +384,16 @@ export function AdminAdminsPage() {
           {sortedAdmins.map((a) => (
             <li key={a.id} className="flex items-center justify-between px-4 py-2.5">
               <div className="min-w-0">
-                <div className="text-sm text-gray-900 dark:text-gray-100 truncate">
-                  {a.name?.trim() || a.email}
+                <div className="text-sm text-gray-900 dark:text-gray-100 truncate flex items-center gap-1.5">
+                  <span className="truncate">{a.name?.trim() || a.email}</span>
+                  {a.id === currentUserId && (
+                    <span
+                      title="This is you"
+                      className="inline-flex items-center text-[9px] font-semibold uppercase tracking-wider px-1 py-0.5 rounded bg-[color:var(--color-blueprint-soft)] text-[color:var(--color-blueprint-strong)] dark:bg-gray-800 dark:text-[color:var(--color-blueprint)] shrink-0"
+                    >
+                      you
+                    </span>
+                  )}
                 </div>
                 {a.name?.trim() && (
                   <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
@@ -386,8 +404,13 @@ export function AdminAdminsPage() {
               <button
                 type="button"
                 onClick={() => setPendingRevoke(a)}
-                className="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 px-2 py-1 rounded"
-                title="Revoke admin"
+                disabled={a.id === currentUserId}
+                title={
+                  a.id === currentUserId
+                    ? "You can't revoke your own admin access. Ask another admin to revoke yours."
+                    : 'Revoke admin'
+                }
+                className="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 px-2 py-1 rounded disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <ShieldOff size={12} aria-hidden="true" />
                 Revoke

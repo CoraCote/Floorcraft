@@ -48,6 +48,7 @@ BUNDLE=(
   "0032_admin_audit_emissions.sql"
   "0033_admin_remove_user_from_team.sql"
   "0034_offices_last_edited_by.sql"
+  "0035_restore_admin_flag.sql"
 )
 
 # Verify every bundled migration exists before touching the output —
