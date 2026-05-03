@@ -288,6 +288,63 @@ function writePrefs(
 // Presentational sub-components.
 // ------------------------------------------------------------------
 
+/**
+ * Avatar strip surfaced under the team subtitle. Up to 5 visible
+ * discs with hashed colors + initials; a `+N` chip rolls up the
+ * tail when the team has more than that. The whole row is a Link
+ * to the members settings page so a click goes somewhere useful.
+ */
+function TeammateAvatars({
+  teammates,
+  totalCount,
+  teamSlug,
+}: {
+  teammates: Array<{
+    user_id: string
+    name: string | null
+    email: string | null
+  }>
+  totalCount: number
+  teamSlug: string
+}) {
+  const VISIBLE = 5
+  const visible = teammates.slice(0, VISIBLE)
+  const overflow = Math.max(0, totalCount - visible.length)
+  return (
+    <Link
+      to={`/t/${teamSlug}/settings/members`}
+      title="View team members"
+      className="mt-2 inline-flex items-center gap-1 rounded-md hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800/50 px-1 py-1 -mx-1 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-blueprint)]"
+    >
+      <ul className="flex -space-x-2" aria-label={`${totalCount} team members`}>
+        {visible.map((m) => {
+          const display = m.name?.trim() || m.email || 'member'
+          return (
+            <li
+              key={m.user_id}
+              title={display}
+              aria-label={display}
+              className="inline-flex items-center justify-center w-7 h-7 rounded-full text-[11px] font-semibold text-white ring-2 ring-[color:var(--color-paper)] dark:ring-gray-950"
+              style={{ backgroundColor: hashToColor(m.user_id) }}
+            >
+              {initialsFor(display)}
+            </li>
+          )
+        })}
+        {overflow > 0 && (
+          <li
+            className="inline-flex items-center justify-center w-7 h-7 rounded-full text-[10px] font-semibold tabular-nums text-gray-700 dark:text-gray-200 bg-[color:var(--color-paper-sunken)] dark:bg-gray-800 ring-2 ring-[color:var(--color-paper)] dark:ring-gray-950"
+            title={`${overflow} more`}
+            aria-label={`${overflow} more members`}
+          >
+            +{overflow}
+          </li>
+        )}
+      </ul>
+    </Link>
+  )
+}
+
 /** Stat card — uppercase label + large tabular-nums value. Non-interactive. */
 function StatCard({
   label,
@@ -364,6 +421,14 @@ export function TeamHomePage() {
   )
   const [archiveError, setArchiveError] = useState<string | null>(null)
   const [memberCount, setMemberCount] = useState<number>(0)
+  // First handful of team members (with profile join) for the
+  // avatar strip in the header. Capped at 8 in the SELECT — the
+  // strip shows up to 5 visually and rolls the rest into a "+N"
+  // chip, but we pull a few extra so a near-the-cap team doesn't
+  // hide the chip just because we cut at 5.
+  const [teammates, setTeammates] = useState<
+    Array<{ user_id: string; name: string | null; email: string | null }>
+  >([])
   const [archivedCount, setArchivedCount] = useState<number>(0)
   const [canCreateOffices, setCanCreateOffices] = useState(false)
   // `recentSlugs` is captured at mount; we intentionally don't reactively
@@ -438,6 +503,35 @@ export function TeamHomePage() {
             .select('user_id', { count: 'exact', head: true })
             .eq('team_id', (t as Team).id)
           setMemberCount(count ?? 0)
+
+          // First few teammates (with profile join) for the header
+          // avatar strip. Best-effort: a missing profile row or a
+          // mock that doesn't speak the FK embed lands as an empty
+          // list and the strip hides itself, which is a fine
+          // fallback. Capped at 8 server-side.
+          try {
+            const { data: members } = await supabase
+              .from('team_members')
+              .select(
+                'user_id, profile:profiles!team_members_user_id_fkey(name, email)',
+              )
+              .eq('team_id', (t as Team).id)
+              .limit(8)
+            if (members) {
+              setTeammates(
+                (members as unknown as Array<{
+                  user_id: string
+                  profile: { name: string | null; email: string | null } | null
+                }>).map((m) => ({
+                  user_id: m.user_id,
+                  name: m.profile?.name ?? null,
+                  email: m.profile?.email ?? null,
+                })),
+              )
+            }
+          } catch {
+            // Silently fall through — avatar strip is decorative.
+          }
         }
       } finally {
         setLoadingOffices(false)
@@ -912,6 +1006,13 @@ export function TeamHomePage() {
               >
                 {subtitleText}
               </p>
+              {teammates.length > 0 && (
+                <TeammateAvatars
+                  teammates={teammates}
+                  totalCount={memberCount}
+                  teamSlug={team.slug}
+                />
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0 flex-wrap">
