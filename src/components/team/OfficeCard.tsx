@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Archive, ArchiveRestore, Check, Copy, Globe, Link2, Lock, MoreHorizontal, Pencil, Pin, PinOff, Trash2 } from 'lucide-react'
+import { Archive, ArchiveRestore, Check, Copy, Globe, History, Link2, Lock, MoreHorizontal, Pencil, Pin, PinOff, Trash2 } from 'lucide-react'
 import { OfficeThumbnail, type ThumbnailElement } from './OfficeThumbnail'
 import { formatRelative } from '../../lib/time'
 import type { OfficeListItem } from '../../lib/offices/officeRepository'
@@ -440,6 +440,21 @@ export function OfficeCard({
                 <Copy size={14} aria-hidden="true" />
                 Duplicate
               </button>
+            )}
+            {!isArchived && (
+              <Link
+                to={`/t/${teamSlug}/o/${office.slug}/audit`}
+                role="menuitem"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setMenuOpen(false)
+                }}
+                className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left text-gray-700 dark:text-gray-200 hover:bg-[color:var(--color-paper-sunken)] dark:hover:bg-gray-800"
+                title="See who edited this office and when"
+              >
+                <History size={14} aria-hidden="true" />
+                View activity
+              </Link>
             )}
             <button
               type="button"
