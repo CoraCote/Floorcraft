@@ -33,6 +33,7 @@ import { getPins, togglePin as togglePinSlug } from '../../lib/pinnedOffices'
 import { useDocumentTitle } from '../../lib/useDocumentTitle'
 import { UserMenu } from './UserMenu'
 import { TeamActivityFeed } from './TeamActivityFeed'
+import { TeamPalette } from './TeamPalette'
 
 /**
  * Wave 14A: refresh the post-login dashboard to match the JSON-Crack /
@@ -1434,6 +1435,7 @@ export function TeamHomePage() {
             </div>
             <ul className="space-y-1.5 text-sm">
               <ShortcutRow keys={['/']} label="Focus search" />
+              <ShortcutRow keys={['⌘', 'K']} label="Open command palette" />
               {canCreateOffices && <ShortcutRow keys={['n']} label="New office" />}
               <ShortcutRow keys={['?']} label="Toggle this card" />
               <ShortcutRow keys={['Esc']} label="Close" />
@@ -1441,6 +1443,13 @@ export function TeamHomePage() {
           </div>
         )}
       </div>
+      {team && (
+        <TeamPalette
+          teamSlug={team.slug}
+          offices={offices}
+          teammates={teammates}
+        />
+      )}
     </div>
   )
 }
