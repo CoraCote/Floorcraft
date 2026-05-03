@@ -137,7 +137,12 @@ export function OfficeCard({
   const metaParts: string[] = []
   if (stats.floors > 0) metaParts.push(`${stats.floors} ${stats.floors === 1 ? 'floor' : 'floors'}`)
   if (stats.desks > 0) metaParts.push(`${stats.desks} ${stats.desks === 1 ? 'desk' : 'desks'}`)
-  metaParts.push(`updated ${rel}`)
+  // Prefer name → email → bare relative; the optional fields collapse
+  // gracefully on pre-0034 projects (no FK embed) so the card still
+  // reads correctly without attribution.
+  const editorName =
+    office.last_editor?.name?.trim() || office.last_editor?.email || null
+  metaParts.push(editorName ? `updated by ${editorName} ${rel}` : `updated ${rel}`)
 
   return (
     <div className="relative group">

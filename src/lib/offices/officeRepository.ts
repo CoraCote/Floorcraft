@@ -16,6 +16,11 @@ export interface OfficeListItem {
    * need to mint an empty payload.
    */
   payload?: Record<string, unknown> | null
+  /** Migration 0034. Optional — pre-0034 projects don't have the
+   *  column, the FK embed below returns undefined, and the UI
+   *  falls back to bare "updated 3h ago". */
+  last_edited_by?: string | null
+  last_editor?: { name: string | null; email: string | null } | null
 }
 
 export interface OfficeLoaded extends OfficeListItem {
@@ -36,7 +41,14 @@ export async function listOffices(
   // a derived `thumbnail_elements` column or a dedicated RPC.
   let query = supabase
     .from('offices')
-    .select('id, slug, name, updated_at, is_private, archived_at, payload')
+    .select(
+      // FK embed pulls the editor's profile in one query so the
+      // OfficeCard can render "Updated by Sarah 3h ago" without an
+      // N+1 fan-out per card. Pre-0034 projects don't have the
+      // column or the FK; supabase returns null for the embed and
+      // the UI falls back to the bare relative-time string.
+      'id, slug, name, updated_at, is_private, archived_at, payload, last_edited_by, last_editor:profiles!offices_last_edited_by_fkey(name, email)',
+    )
     .eq('team_id', teamId)
     .order('updated_at', { ascending: false })
   if (!opts.includeArchived) {
@@ -44,7 +56,10 @@ export async function listOffices(
   }
   const { data, error } = await query
   if (error) throw error
-  return (data ?? []) as OfficeListItem[]
+  // The FK embed returns a single object for a scalar foreign key,
+  // but supabase-js's TS inference widens it to an array. Cast via
+  // unknown to land on our declared single-object shape.
+  return (data ?? []) as unknown as OfficeListItem[]
 }
 
 /**
