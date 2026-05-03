@@ -2,7 +2,10 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
-import { humanizeAuthError } from '../../lib/auth/humanizeAuthError'
+import {
+  humanizeAuthError,
+  isSuspendedAuthError,
+} from '../../lib/auth/humanizeAuthError'
 import { Button, Input } from '../ui'
 import {
   AuthShell,
@@ -52,6 +55,15 @@ export function LoginPage() {
     }
     setBusy(false)
     if (error) {
+      // Banned account → route to a dedicated landing page instead
+      // of leaking "User is banned until 2099-01-01T00:00:00Z" into
+      // the inline error banner. Sign out any cached partial session
+      // first so the suspended page renders unauthenticated.
+      if (isSuspendedAuthError(error)) {
+        await supabase.auth.signOut().catch(() => {})
+        navigate('/suspended', { replace: true })
+        return
+      }
       setError(humanizeAuthError(error))
       return
     }

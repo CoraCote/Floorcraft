@@ -35,6 +35,9 @@ const AuthVerifyPage = lazy(() =>
 const AuthResetPage = lazy(() =>
   import('./components/auth/AuthResetPage').then((m) => ({ default: m.AuthResetPage })),
 )
+const SuspendedPage = lazy(() =>
+  import('./components/auth/SuspendedPage').then((m) => ({ default: m.SuspendedPage })),
+)
 const InvitePage = lazy(() =>
   import('./components/team/InvitePage').then((m) => ({ default: m.InvitePage })),
 )
@@ -251,6 +254,7 @@ function App() {
             <Route path="/forgot" element={<ForgotPasswordPage />} />
             <Route path="/auth/verify" element={<AuthVerifyPage />} />
             <Route path="/auth/reset" element={<AuthResetPage />} />
+            <Route path="/suspended" element={<SuspendedPage />} />
             <Route path="/invite/:token" element={<InvitePage />} />
             {/* Read-only share links — intentionally unauthenticated.
                 RLS policies on share_tokens + offices are the gate. */}

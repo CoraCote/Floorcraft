@@ -25,6 +25,27 @@ const NETWORK_ERROR_FRAGMENTS = [
   'load failed',
 ]
 
+/**
+ * Substrings Supabase Auth uses when a sign-in / refresh fails because
+ * `auth.users.banned_until` is in the future. The message has varied
+ * across GoTrue versions ("User is banned", "user_banned", "user is
+ * banned until …"), so we match on a few overlapping fragments.
+ *
+ * Used by both `humanizeAuthError` and `isSuspendedAuthError` — the
+ * login flow checks for it to redirect to /suspended instead of
+ * showing the raw banned-until timestamp inline.
+ */
+const SUSPENDED_FRAGMENTS = ['user is banned', 'user_banned', 'banned until']
+
+export function isSuspendedAuthError(err: unknown): boolean {
+  const raw =
+    err && typeof err === 'object' && 'message' in err
+      ? String((err as { message: unknown }).message ?? '')
+      : String(err ?? '')
+  const lower = raw.toLowerCase()
+  return SUSPENDED_FRAGMENTS.some((f) => lower.includes(f))
+}
+
 export function humanizeAuthError(err: unknown): string {
   const raw =
     err && typeof err === 'object' && 'message' in err
