@@ -8,14 +8,17 @@ import {
   ShieldAlert,
   ShieldCheck,
   ShieldOff,
+  Trash2,
   User as UserIcon,
   X as XIcon,
 } from 'lucide-react'
 import {
   adminGetUserDetail,
   adminGeneratePasswordResetLink,
+  adminRemoveUserFromTeam,
   adminSetUserSuspension,
   type AdminUserDetail,
+  type AdminUserTeam,
 } from '../../lib/adminLaunch'
 import {
   grantPlatformAdmin,
@@ -55,6 +58,11 @@ export function AdminUserDetailPage() {
     'suspend' | 'unsuspend' | null
   >(null)
   const [suspendBusy, setSuspendBusy] = useState(false)
+  // Per-team-row removal state. Holds the team being targeted while
+  // the confirm dialog is up; null when idle.
+  const [pendingRemoveTeam, setPendingRemoveTeam] =
+    useState<AdminUserTeam | null>(null)
+  const [removeBusy, setRemoveBusy] = useState(false)
   // Password-reset link state. We surface the generated link in a
   // small modal with a Copy button so the admin can hand it to the
   // user out-of-band. `pendingLink` is null while idle, 'pending'
@@ -144,6 +152,20 @@ export function AdminUserDetailPage() {
     }
     setError(null)
     setSuspendReason('')
+    setRefreshNonce((n) => n + 1)
+  }
+
+  async function onConfirmRemoveTeam() {
+    if (!detail || !pendingRemoveTeam || removeBusy) return
+    setRemoveBusy(true)
+    const r = await adminRemoveUserFromTeam(detail.id, pendingRemoveTeam.team_id)
+    setRemoveBusy(false)
+    setPendingRemoveTeam(null)
+    if (r.kind === 'error') {
+      setError(r.message)
+      return
+    }
+    setError(null)
     setRefreshNonce((n) => n + 1)
   }
 
@@ -401,6 +423,7 @@ export function AdminUserDetailPage() {
                       <th className="px-3 py-2">Team</th>
                       <th className="px-3 py-2">Role</th>
                       <th className="px-3 py-2">Joined</th>
+                      <th className="px-3 py-2 text-right" aria-label="Actions" />
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[color:var(--color-paper-line)] dark:divide-gray-800">
@@ -441,6 +464,18 @@ export function AdminUserDetailPage() {
                         </td>
                         <td className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
                           {new Date(t.joined_at).toLocaleDateString()}
+                        </td>
+                        <td className="px-3 py-2 text-right">
+                          <button
+                            type="button"
+                            onClick={() => setPendingRemoveTeam(t)}
+                            disabled={removeBusy}
+                            title={`Remove ${detail.email} from ${t.team_name}`}
+                            className="inline-flex items-center gap-1 px-2 py-1 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded disabled:opacity-50"
+                          >
+                            <Trash2 size={11} aria-hidden="true" />
+                            Remove
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -618,6 +653,40 @@ export function AdminUserDetailPage() {
           onCancel={() => {
             if (suspendBusy) return
             setPendingSuspend(null)
+          }}
+        />
+      )}
+
+      {pendingRemoveTeam && detail && (
+        <ConfirmDialog
+          title={`Remove ${detail.email} from ${pendingRemoveTeam.team_name}?`}
+          body={
+            <div className="space-y-2">
+              <p>
+                They&rsquo;ll lose access to the team&rsquo;s offices
+                immediately. Their account, role on other teams, and
+                authored content (offices, employee records) are not
+                affected.
+              </p>
+              {pendingRemoveTeam.role === 'admin' && (
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  This user is a team admin. The action will refuse if
+                  they&rsquo;re the only admin left — promote another
+                  member first or delete the team instead.
+                </p>
+              )}
+            </div>
+          }
+          confirmLabel={removeBusy ? 'Removing…' : 'Remove from team'}
+          cancelLabel="Cancel"
+          tone="danger"
+          onConfirm={() => {
+            if (removeBusy) return
+            void onConfirmRemoveTeam()
+          }}
+          onCancel={() => {
+            if (removeBusy) return
+            setPendingRemoveTeam(null)
           }}
         />
       )}

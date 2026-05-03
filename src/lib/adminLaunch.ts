@@ -342,3 +342,40 @@ export async function adminSetUserSuspension(
   }
   return { kind: 'ok' }
 }
+
+/**
+ * Removes a user from a single team. Goes through the
+ * `admin_remove_user_from_team` SECURITY DEFINER RPC (migration
+ * 0033) which bypasses team-membership checks for platform admins
+ * and emits an audit row.
+ *
+ * Server-side guard: refuses if removing the row would leave the
+ * team with zero admins (`last_team_admin_protected`). The platform
+ * admin can still delete the team if that's the intent.
+ */
+export async function adminRemoveUserFromTeam(
+  userId: string,
+  teamId: string,
+): Promise<
+  | { kind: 'ok' }
+  | { kind: 'error'; reason: 'last_team_admin' | 'forbidden' | 'unknown'; message: string }
+> {
+  const { error } = await supabase.rpc('admin_remove_user_from_team', {
+    p_user_id: userId,
+    p_team_id: teamId,
+  })
+  if (error) {
+    const msg = error.message ?? ''
+    if (msg.includes('last_team_admin_protected'))
+      return {
+        kind: 'error',
+        reason: 'last_team_admin',
+        message:
+          "Can't remove the last admin of this team. Promote another member first or delete the team.",
+      }
+    if (msg.includes('forbidden'))
+      return { kind: 'error', reason: 'forbidden', message: 'Only platform admins can remove team members from here.' }
+    return { kind: 'error', reason: 'unknown', message: msg || 'Could not remove member.' }
+  }
+  return { kind: 'ok' }
+}
